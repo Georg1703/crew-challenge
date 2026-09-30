@@ -6,16 +6,16 @@ Full detail: `docs/architecture/frontend.md`.
 ## Layout
 ```
 frontend/src/
-├── main.tsx
-├── app/             # App, router, providers, queryClient, tab-bar layout
-├── api/             # client.ts (openapi-fetch), schema.gen.ts (generated), csrf.ts, errors.ts
-├── features/<name>/ # api.ts (query/mutation hooks), routes/, components/, index.ts (public API)
-├── shared/ui/       # Button, Sheet, Avatar, Toast, TabBar
-├── shared/motion/   # spring presets, useReducedMotion
-├── shared/lib/
-├── pwa/             # service worker registration, install prompt, iOS guide, update toast
-├── i18n/            # ro.json (default), en.json, setup
-└── styles/          # tokens.css, global.css
+|-- main.tsx
+|-- app/             # App, router, providers, queryClient, tab-bar layout
+|-- api/             # client.ts (openapi-fetch), schema.gen.ts (generated), csrf.ts, errors.ts
+|-- features/<name>/ # api.ts (query/mutation hooks), routes/, components/, index.ts (public API)
+|-- shared/ui/       # Button, Sheet, Avatar, Toast, TabBar
+|-- shared/motion/   # spring presets, useReducedMotion
+|-- shared/lib/
+|-- pwa/             # service worker registration, install prompt, iOS guide, update toast
+|-- i18n/            # ro.json (default), en.json, setup
+`-- styles/          # tokens.css, global.css
 ```
 
 ## Rules (enforced by ESLint and tsc in `make check`)

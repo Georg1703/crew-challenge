@@ -6,18 +6,18 @@ Full detail: `docs/architecture/backend.md`. API rules: `docs/architecture/api-c
 ## Layout
 ```
 backend/
-├── config/settings/{base,local,test,production}.py   # django-environ; no secrets in code
-├── config/{urls.py, celery.py, wsgi.py}
-├── apps/<app>/                                       # one folder per domain area
-│   ├── models.py        # data + invariants only
-│   ├── services.py      # every write and business rule
-│   ├── selectors.py     # every non-trivial read
-│   ├── api/{serializers.py, views.py, urls.py}
-│   ├── admin.py
-│   ├── tasks.py         # thin Celery wrappers around services
-│   └── tests/{test_services.py, test_selectors.py, test_api.py}
-├── integrations/<name>/ # boto3 / pywebpush live ONLY here (ABC + implementations + factory)
-└── tests/               # conftest.py, factories/, cross-app tests
+|-- config/settings/{base,local,test,production}.py   # django-environ; no secrets in code
+|-- config/{urls.py, celery.py, wsgi.py}
+|-- apps/<app>/                                       # one folder per domain area
+|   |-- models.py        # data + invariants only
+|   |-- services.py      # every write and business rule
+|   |-- selectors.py     # every non-trivial read
+|   |-- api/{serializers.py, views.py, urls.py}
+|   |-- admin.py
+|   |-- tasks.py         # thin Celery wrappers around services
+|   `-- tests/{test_services.py, test_selectors.py, test_api.py}
+|-- integrations/<name>/ # boto3 / pywebpush live ONLY here (ABC + implementations + factory)
+`-- tests/               # conftest.py, factories/, cross-app tests
 ```
 
 Apps: `core`, `accounts`, `crews` (M1) · `challenges`, `checkins`, `media` (M2) · `doom` (M3) ·

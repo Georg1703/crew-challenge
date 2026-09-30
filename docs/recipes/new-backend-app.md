@@ -6,19 +6,19 @@ Example: adding `challenges`.
 2. Create the folder with the standard layout:
    ```
    backend/apps/challenges/
-   ├── __init__.py
-   ├── apps.py            # ChallengesConfig, name = "apps.challenges"
-   ├── models.py
-   ├── services.py
-   ├── selectors.py
-   ├── api/__init__.py
-   ├── api/serializers.py
-   ├── api/views.py
-   ├── api/urls.py
-   ├── admin.py
-   ├── tasks.py
-   ├── migrations/__init__.py
-   └── tests/__init__.py
+   |-- __init__.py
+   |-- apps.py            # ChallengesConfig, name = "apps.challenges"
+   |-- models.py
+   |-- services.py
+   |-- selectors.py
+   |-- api/__init__.py
+   |-- api/serializers.py
+   |-- api/views.py
+   |-- api/urls.py
+   |-- admin.py
+   |-- tasks.py
+   |-- migrations/__init__.py
+   `-- tests/__init__.py
    ```
 3. Add `"apps.challenges"` to `INSTALLED_APPS` in `config/settings/base.py`.
 4. Include `apps.challenges.api.urls` under `/api/v1/` in `config/urls.py`.

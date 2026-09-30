@@ -7,42 +7,42 @@ Dependencies are managed with `uv`.
 
 ```
 backend/
-├── pyproject.toml          # dependencies + ruff, mypy, pytest, import-linter config
-├── manage.py
-├── config/
-│   ├── settings/base.py    # shared defaults, reads env with django-environ
-│   ├── settings/local.py   # DEBUG, local S3 profile
-│   ├── settings/test.py    # fast password hasher, in-memory storage adapter, eager Celery
-│   ├── settings/production.py
-│   ├── urls.py             # /api/v1/, /admin/, /healthz
-│   ├── celery.py
-│   └── wsgi.py
-├── apps/
-│   ├── core/               # shared building blocks, no domain logic
-│   ├── accounts/           # User, login/logout/me
-│   └── crews/              # Crew, Member, Invite, rotation
-├── integrations/
-│   └── storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
-└── tests/
-    ├── conftest.py
-    └── factories/
+|-- pyproject.toml          # dependencies + ruff, mypy, pytest, import-linter config
+|-- manage.py
+|-- config/
+|   |-- settings/base.py    # shared defaults, reads env with django-environ
+|   |-- settings/local.py   # DEBUG, local S3 profile
+|   |-- settings/test.py    # fast password hasher, in-memory storage adapter, eager Celery
+|   |-- settings/production.py
+|   |-- urls.py             # /api/v1/, /admin/, /healthz
+|   |-- celery.py
+|   `-- wsgi.py
+|-- apps/
+|   |-- core/               # shared building blocks, no domain logic
+|   |-- accounts/           # User, login/logout/me
+|   `-- crews/              # Crew, Member, Invite, rotation
+|-- integrations/
+|   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
+`-- tests/
+    |-- conftest.py
+    `-- factories/
 ```
 
 ## Layers inside an app
 
 ```
 apps/crews/
-├── models.py        # fields, constraints, small computed properties
-├── services.py      # writes: create_crew_with_admin, create_invite, accept_invite, reorder_rotation
-├── selectors.py     # reads: get_member_for_user, list_members, next_proposer
-├── api/
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-├── admin.py
-├── tasks.py
-├── migrations/
-└── tests/
+|-- models.py        # fields, constraints, small computed properties
+|-- services.py      # writes: create_crew_with_admin, create_invite, accept_invite, reorder_rotation
+|-- selectors.py     # reads: get_member_for_user, list_members, next_proposer
+|-- api/
+|   |-- serializers.py
+|   |-- views.py
+|   `-- urls.py
+|-- admin.py
+|-- tasks.py
+|-- migrations/
+`-- tests/
 ```
 
 ```mermaid

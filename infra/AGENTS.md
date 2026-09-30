@@ -19,9 +19,9 @@ Production runs on one Amazon Lightsail instance with Docker Compose. AWS resour
 ## Layout
 ```
 infra/
-├── aws/      # JSON pasted into the AWS console; one file per policy or bucket setting
-├── caddy/    # Caddyfile: HTTPS, SPA fallback, /api + /admin proxy, cache headers
-└── scripts/  # bootstrap-host.sh, deploy.sh, backup-db.sh, restore-db.sh
+|-- aws/      # JSON pasted into the AWS console; one file per policy or bucket setting
+|-- caddy/    # Caddyfile: HTTPS, SPA fallback, /api + /admin proxy, cache headers
+`-- scripts/  # bootstrap-host.sh, deploy.sh, backup-db.sh, restore-db.sh
 ```
 
 ## Principles
