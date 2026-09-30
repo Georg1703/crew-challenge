@@ -12,7 +12,7 @@ infrastructure. This page is the map; the other pages in this folder go deeper.
 
 ```mermaid
 flowchart LR
-  PWA["React PWA<br/>(phone or laptop)"] -->|"/api/v1 · session cookie"| CADDY["Caddy<br/>HTTPS, static SPA"]
+  PWA["React PWA<br/>(phone or laptop)"] -->|"/api/v1 - session cookie"| CADDY["Caddy<br/>HTTPS, static SPA"]
   CADDY --> DJ["Django + DRF<br/>(gunicorn)"]
   DJ --> PG[("PostgreSQL")]
   DJ --> RD[("Redis")]

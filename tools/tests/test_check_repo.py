@@ -78,11 +78,19 @@ class CheckRepoTests(unittest.TestCase):
         write(
             self.root,
             "docs/milestones/m1.md",
-            "### M1.1 · Good\n**Status:** done\n\n### M1.2 · Bad\n**Status:** maybe\n",
+            "### M1.1 - Good\n**Status:** done\n\n### M1.2 - Bad\n**Status:** maybe\n",
         )
         errors = self.errors(check_repo.check_milestones)
         self.assertEqual(len(errors), 1)
         self.assertIn("M1.2", errors[0])
+
+    def test_docs_must_be_plain_ascii(self) -> None:
+        write(self.root, "docs/a.md", "ok - plain\nbad \u2014 dash\n")
+        write(self.root, "frontend/src/i18n/ro.json", '{"crew": "Echip\u0103"}')
+        errors = self.errors(check_repo.check_ascii)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("docs/a.md:2", errors[0])
+        self.assertIn("U+2014", errors[0])
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ Cookies: `sessionid` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-
 | Kind | Format | Example |
 |---|---|---|
 | Keys | `snake_case` on both sides | `display_name` |
-| Ids | UUID strings | `"3f1c…"` |
+| Ids | UUID strings | `"3f1c..."` |
 | Instants | ISO 8601 UTC | `"2026-11-03T21:04:11Z"` |
 | Crew-local dates | `YYYY-MM-DD` | `"2026-11-03"` |
 | Money / counts | integers | `"goal_target": 2` |
@@ -85,7 +85,7 @@ GET    /api/v1/me                        user + member + crew
 PATCH  /api/v1/me                        display_name, preferred_language
 GET    /api/v1/crew                      crew + members ordered by rotation
 PATCH  /api/v1/crew/rotation             admin: reorder members
-POST   /api/v1/crew/invites              admin: create invite → code + link
+POST   /api/v1/crew/invites              admin: create invite -> code + link
 GET    /api/v1/invites/{code}            public: crew name, validity
 POST   /api/v1/invites/{code}/accept     public: create user + member, log in
 ```

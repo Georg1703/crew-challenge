@@ -1,4 +1,4 @@
-# Recipe: new endpoint (backend → contract → frontend)
+# Recipe: new endpoint (backend -> contract -> frontend)
 
 Example: `POST /api/v1/crew/invites` (admin creates an invite).
 
@@ -13,7 +13,7 @@ Example: `POST /api/v1/crew/invites` (admin creates an invite).
 3. **Serializers** in `api/serializers.py`: one input serializer (`CreateInviteIn`) and one output
    serializer (`InviteOut`). Suffix `In` / `Out`. No logic in serializers.
 4. **View** in `api/views.py`: permission classes, `@extend_schema(request=..., responses=...)`,
-   validate → call service → serialize.
+   validate -> call service -> serialize.
 5. **URL** in `api/urls.py`, following `docs/architecture/api-conventions.md`.
 6. **API tests** in `api` tests: status codes, permission denied for non-admins, response shape,
    error `code` values.

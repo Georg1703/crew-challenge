@@ -10,6 +10,8 @@ These checks keep the documentation that agents rely on trustworthy:
 4. ADRs are numbered, have a valid status, and are listed in docs/adr/README.md.
 5. Every work package in docs/milestones/*.md has a valid status line.
 6. No secret files are tracked by git.
+7. Docs, the Makefile, and repo tooling use plain ASCII (no em dashes, arrows, box drawing).
+   UI translation files are not checked, so Romanian diacritics stay allowed there.
 
 Standard library only, so it runs before any project dependency is installed.
 """
@@ -55,7 +57,7 @@ PACKAGE_STATUSES = {"todo", "in progress", "done", "blocked"}
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 BACKTICK_PATH_RE = re.compile(r"`([.\w][\w./-]*)`")
 ADR_FILE_RE = re.compile(r"^(\d{4})-[a-z0-9-]+\.md$")
-PACKAGE_HEADING_RE = re.compile(r"^### (M\d+\.\d+) · .+$")
+PACKAGE_HEADING_RE = re.compile(r"^### (M\d+\.\d+) - .+$")
 PACKAGE_STATUS_RE = re.compile(r"^\*\*Status:\*\* (.+?)\s*$")
 
 
@@ -172,7 +174,32 @@ def check_milestones(root: Path, report: Report) -> None:
                     f"'**Status:** <{'|'.join(sorted(PACKAGE_STATUSES))}>'",
                 )
         if not seen:
-            report.error(path, "no work packages found (headings must look like '### M1.1 · Title')")
+            report.error(path, "no work packages found (headings must look like '### M1.1 - Title')")
+
+
+ASCII_ONLY_SUFFIXES = (".md", ".py", ".yml", ".yaml", ".toml", ".sh", ".example")
+ASCII_ONLY_NAMES = {"Makefile", ".editorconfig", ".gitignore", ".gitattributes"}
+ASCII_EXEMPT_PREFIXES = ("frontend/src/i18n/",)
+
+
+def check_ascii(root: Path, report: Report) -> None:
+    for path in sorted(root.rglob("*")):
+        rel = path.relative_to(root).as_posix()
+        if not path.is_file() or any(part in {".git", "node_modules", ".venv"} for part in path.parts):
+            continue
+        if rel.startswith(ASCII_EXEMPT_PREFIXES):
+            continue
+        if not (path.name in ASCII_ONLY_NAMES or path.name.endswith(ASCII_ONLY_SUFFIXES)):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            bad = sorted({ch for ch in line if ord(ch) > 127})
+            if bad:
+                shown = " ".join(f"U+{ord(ch):04X}" for ch in bad)
+                report.error(f"{rel}:{lineno}", f"non-ASCII character(s) {shown}; use plain ASCII")
 
 
 def check_no_tracked_secrets(root: Path, report: Report) -> None:
@@ -198,17 +225,18 @@ def run(root: Path = ROOT) -> Report:
     check_adrs(root, report)
     check_milestones(root, report)
     check_no_tracked_secrets(root, report)
+    check_ascii(root, report)
     return report
 
 
 def main() -> int:
     report = run()
     if report.errors:
-        print(f"✗ repo checks found {len(report.errors)} problem(s):")
+        print(f"ERROR: repo checks found {len(report.errors)} problem(s):")
         for err in report.errors:
             print(f"  - {err}")
         return 1
-    print("✓ repo checks passed")
+    print("OK: repo checks passed")
     return 0
 
 

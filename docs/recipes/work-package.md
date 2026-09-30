@@ -10,7 +10,7 @@
 6. Run `make check`. Fix everything it reports. Do not disable a check to make it pass.
 7. Check each acceptance criterion of the package and note how it was verified.
 8. Set `**Status:** done` and add one line under the package: `Done: <what, how verified>`.
-9. Commit with a scope prefix (`backend: …`, `frontend: …`, `docs: …`) and open a pull request
+9. Commit with a scope prefix (`backend: ...`, `frontend: ...`, `docs: ...`) and open a pull request
    using the template.
 
 If you are blocked (missing decision, missing credentials, unclear rule), set

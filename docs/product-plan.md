@@ -61,11 +61,11 @@ member can be excused for a day.
 ## Garden and streaks
 
 - **Tree** per member, planted fresh on day 1 of each challenge. Stage from done days this month:
-  seed (0), sprout (1–3), sapling (4–9), bloom (10–19), fruit tree (20+). A perfect month earns a
-  golden fruit. Missed day → wilted look with a rain cloud until the punishment is served.
-  Built in Rive: number input `stage` (0–4), booleans `wilted` and `golden`, trigger `grow`.
-- **Flame** shows the unbroken streak across challenges: ember (1–2), flame (3–6), blaze (7–13),
-  blue fire (14–29), legendary (30+). Dim with a countdown when today is not done; sputters after 20:00.
+  seed (0), sprout (1-3), sapling (4-9), bloom (10-19), fruit tree (20+). A perfect month earns a
+  golden fruit. Missed day -> wilted look with a rain cloud until the punishment is served.
+  Built in Rive: number input `stage` (0-4), booleans `wilted` and `golden`, trigger `grow`.
+- **Flame** shows the unbroken streak across challenges: ember (1-2), flame (3-6), blaze (7-13),
+  blue fire (14-29), legendary (30+). Dim with a countdown when today is not done; sputters after 20:00.
 - **Crew status row** under the garden: who checked in today, who is uploading, who has not yet.
 - **Greenhouse** archives each month's trees.
 
@@ -87,15 +87,15 @@ member can be excused for a day.
 
 ## Screens
 
-Home/Garden · Check-in sheet · Feed · Challenge · Profile (flame, calendar, greenhouse) ·
-Wheel of Doom · Proposer studio · Reveal · Install guide.
+Home/Garden - Check-in sheet - Feed - Challenge - Profile (flame, calendar, greenhouse) -
+Wheel of Doom - Proposer studio - Reveal - Install guide.
 
 ## Milestones
 
 | Milestone | Dates (2026) | Outcome |
 |---|---|---|
-| M1 Foundations | Oct 1–5 | Deployed, installable app; crew, invites, login; agent-ready repo |
-| M2 Core loop | Oct 6–12 | Challenges, check-ins, multipart uploads with resume |
-| M3 Media & judgment | Oct 13–18 | MediaConvert pipeline, feed, reactions, midnight jobs, streaks, Wheel of Doom backend |
-| M4 Delight | Oct 19–25 | Rive tree and flame, garden, wheel and reveal animations, Web Push, performance pass |
-| M5 Launch | Oct 26–31 | Everyone installed; first proposer creates November's challenge; reveal on Oct 31 |
+| M1 Foundations | Oct 1-5 | Deployed, installable app; crew, invites, login; agent-ready repo |
+| M2 Core loop | Oct 6-12 | Challenges, check-ins, multipart uploads with resume |
+| M3 Media & judgment | Oct 13-18 | MediaConvert pipeline, feed, reactions, midnight jobs, streaks, Wheel of Doom backend |
+| M4 Delight | Oct 19-25 | Rive tree and flame, garden, wheel and reveal animations, Web Push, performance pass |
+| M5 Launch | Oct 26-31 | Everyone installed; first proposer creates November's challenge; reveal on Oct 31 |

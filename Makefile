@@ -22,12 +22,12 @@ HAS_COMPOSE  := $(wildcard compose.yaml)
 
 # $(call require,<path>,<what>,<package>) - stop with a helpful message if <path> is missing.
 define require
-	@test -e $(1) || { echo "✗ $(2) is not available yet. It is added in work package $(3) (docs/milestones/m1.md)."; exit 1; }
+	@test -e $(1) || { echo "ERROR: $(2) is not available yet. It is added in work package $(3) (docs/milestones/m1.md)."; exit 1; }
 endef
 
 # $(call skip,<what>,<package>)
 define skip
-	@echo "• skipped $(1): not scaffolded yet (added in $(2))"
+	@echo "SKIP: $(1): not scaffolded yet (added in $(2))"
 endef
 
 ##@ Getting started
@@ -42,12 +42,12 @@ help: ## Show this help
 .PHONY: setup
 setup: ## First-time setup: .env, images, migrations, seed data
 	$(call require,compose.yaml,Local environment,M1.6)
-	@test -f .env || { cp .env.example .env; echo "• created .env from .env.example"; }
+	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 	$(COMPOSE) build
 	$(COMPOSE) up -d db redis
 	$(COMPOSE) run --rm backend python manage.py migrate
 	$(COMPOSE) run --rm backend python manage.py seed_demo
-	@echo "✓ setup done - run: make dev"
+	@echo "OK: setup done - run: make dev"
 
 ##@ Running locally
 
@@ -97,11 +97,11 @@ seed: ## Load the demo crew (known users and passwords, local only)
 
 .PHONY: check
 check: check-repo check-backend check-frontend check-contract ## Everything CI runs; must pass before a package is done
-	@echo "✓ make check passed"
+	@echo "OK: make check passed"
 
 .PHONY: check-repo
 check-repo: ## Repo-level checks: docs links, ADR index, milestone format, required files
-	@out=$$($(PYTHON) -m unittest discover -s tools/tests 2>&1) || { echo "$$out"; echo "✗ tool tests failed"; exit 1; }; echo "✓ tool tests passed"
+	@out=$$($(PYTHON) -m unittest discover -s tools/tests 2>&1) || { echo "$$out"; echo "ERROR: tool tests failed"; exit 1; }; echo "OK: tool tests passed"
 	@$(PYTHON) tools/check_repo.py
 
 .PHONY: check-backend
@@ -136,7 +136,7 @@ ifeq ($(and $(HAS_BACKEND),$(HAS_FRONTEND)),)
 else
 	@$(MAKE) schema
 	@git diff --exit-code -- contracts/openapi.yaml $(FRONTEND_DIR)/src/api/schema.gen.ts \
-		|| { echo "✗ API contract is out of date: run 'make schema' and commit the result."; exit 1; }
+		|| { echo "ERROR: API contract is out of date: run 'make schema' and commit the result."; exit 1; }
 endif
 
 .PHONY: test
@@ -178,4 +178,4 @@ schema: ## Regenerate contracts/openapi.yaml and the frontend TS client
 	$(call require,$(FRONTEND_DIR)/package.json,Frontend,M1.4)
 	$(UV) python manage.py spectacular --validate --file ../contracts/openapi.yaml
 	$(PNPM) exec openapi-typescript ../contracts/openapi.yaml -o src/api/schema.gen.ts
-	@echo "✓ contract regenerated"
+	@echo "OK: contract regenerated"

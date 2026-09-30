@@ -93,10 +93,10 @@ export const springs = {
 - Workbox precaches the app shell and Rive files. `/api/*`, `/admin/*`, and any S3 or CloudFront URL
   are network-only.
 - Android: capture `beforeinstallprompt` and show our install button.
-- iOS Safari, not installed: show the animated "Share → Add to Home Screen" guide.
+- iOS Safari, not installed: show the animated "Share -> Add to Home Screen" guide.
 - Ask for push permission after the first check-in, never on first load.
 
 ## Testing
 
 - Vitest + Testing Library. Mock the typed client with a small in-test handler map, not global `fetch`.
-- Playwright: `login → home` smoke test in M1; check-in and upload flows in M2.
+- Playwright: `login -> home` smoke test in M1; check-in and upload flows in M2.

@@ -21,7 +21,7 @@ Both run the same backend Docker image; only configuration differs.
 | Phone testing | `make tunnel` (temporary HTTPS URL) | real domain |
 | Settings module | `config.settings.local` | `config.settings.production` |
 | Container images | built locally | built by GitHub Actions, pushed to GitHub Container Registry |
-| Deploys | - | GitHub Actions → SSH → `deploy.sh <git-sha>` |
+| Deploys | - | GitHub Actions -> SSH -> `deploy.sh <git-sha>` |
 
 ## Why a real S3 dev bucket
 
@@ -70,4 +70,4 @@ The JSON documents pasted into the console live in `infra/aws/`.
 | MediaConvert role | Lets MediaConvert read and write the media bucket |
 | IAM user `cc-prod-app` | Server credentials: media + backups buckets, MediaConvert, pass role |
 | IAM user or profile `cc-dev` | Your local credentials: dev bucket + MediaConvert in dev only |
-| DNS record | Your domain → the static IP |
+| DNS record | Your domain -> the static IP |

@@ -30,7 +30,7 @@ frontend/src/
 - Use spring presets from `shared/motion` (`snappy`, `bouncy`, `gentle`), not ad-hoc numbers.
 - Animate only `transform` and `opacity`. Respect `useReducedMotion()`.
 - Mutations are optimistic when the result is predictable; roll back on error with a toast.
-- Touch targets ≥ 44 px; layouts use `100dvh` and safe-area insets.
+- Touch targets >= 44 px; layouts use `100dvh` and safe-area insets.
 
 ## PWA
 - `vite-plugin-pwa` with `registerType: 'prompt'`; show the update toast, never reload silently.
@@ -39,7 +39,7 @@ frontend/src/
 
 ## Tests
 - Vitest + Testing Library for components and hooks (mock the API client, not `fetch`).
-- Playwright for end-to-end flows (login → home in M1; check-in and upload later).
+- Playwright for end-to-end flows (login -> home in M1; check-in and upload later).
 
 ## Recipes
 - New screen: `docs/recipes/new-screen.md`

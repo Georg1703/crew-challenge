@@ -57,7 +57,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Use `timezone.now()` or `date.today()` for business dates; use `apps/core/clock.py`.
 - Add a dependency without a one-line reason in the PR description.
 
-## Frontend ↔ backend
+## Frontend <-> backend
 - One origin: Vite (local) and Caddy (server) serve the SPA and proxy `/api` and `/admin` to Django.
   No CORS for the API.
 - Base path `/api/v1/`. snake_case JSON on both sides. UUID ids. ISO 8601 UTC datetimes.
@@ -65,7 +65,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Errors always `{"error": {"code": "...", "message": "...", "fields": {...}}}`.
   The frontend maps `code` to i18n text.
 - Session cookie + CSRF: `GET /api/v1/auth/csrf` first, send `X-CSRFToken` on unsafe requests,
-  401 → redirect to `/login`.
+  401 -> redirect to `/login`.
 - Details: `docs/architecture/api-conventions.md`.
 
 ## Environments
@@ -85,7 +85,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
   TanStack Query, openapi-fetch, Zustand, Motion, i18next, @rive-app/react-canvas, canvas-confetti,
   hls.js, Uppy core + @uppy/aws-s3. CSS Modules + tokens in `src/styles/tokens.css`.
-- **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert → HLS.
+- **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
 - **Auth:** Django session cookie + CSRF. No JWT.
 
 ## Architecture rules
@@ -102,16 +102,16 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Game rules that code must respect
 - One proposer per month, taken from a fixed rotation (`Member.rotation_position`). Only the
-  proposer can create or edit the next challenge. Challenges go draft → sealed → active → finished.
+  proposer can create or edit the next challenge. Challenges go draft -> sealed -> active -> finished.
 - A check-in is created the moment proof upload *starts* (status `uploading`). It counts for the
   day if the upload completes within 24 h after that day's midnight deadline.
-- Missed day → streak reset, tree wilted, one pending Wheel of Doom spin per missed day.
+- Missed day -> streak reset, tree wilted, one pending Wheel of Doom spin per missed day.
 - The Wheel of Doom result is chosen on the server before the client animation starts.
 
 ## Large uploads (up to 20 GB) - non-negotiable
-- Files never go through Django. Browser → S3 multipart upload with presigned part URLs.
+- Files never go through Django. Browser -> S3 multipart upload with presigned part URLs.
 - Part size 16 MiB (< 1 GiB files) or 64 MiB (larger). S3 limits: 5 MiB min part (except last),
-  5 GiB max part, 10,000 parts max. Validate size ≤ 20 GB server-side.
+  5 GiB max part, 10,000 parts max. Validate size <= 20 GB server-side.
 - 4 parallel parts, 6 retries with exponential backoff, auto re-sign expired URLs,
   pause on `offline`, resume on `online`.
 - Report each completed part (number + ETag) to the API. Also keep `upload_id`, file fingerprint
@@ -126,7 +126,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## PWA constraints (iOS + Android)
 - Android: capture `beforeinstallprompt`, show our own install button.
-- iOS: no install prompt. Provide an animated "Share → Add to Home Screen" guide.
+- iOS: no install prompt. Provide an animated "Share -> Add to Home Screen" guide.
 - iOS push works only when installed to the Home Screen (16.4+) and after a user gesture.
   Ask for push permission after the first check-in, never on first load.
 - No background upload, background sync or background fetch on iOS. Uploads pause when the app is
@@ -136,11 +136,11 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   MP4/AAC (Safari) and WebM/Opus (Chrome); normalize on the server.
 - Service worker: precache app shell + Rive assets; network-only for `/api` and `/admin`; never
   cache presigned URLs or media uploads.
-- Use `100dvh`, respect `env(safe-area-inset-*)`, touch targets ≥ 44 px.
+- Use `100dvh`, respect `env(safe-area-inset-*)`, touch targets >= 44 px.
 
 ## UI and motion
 - The product goal is fun: every important action has a satisfying animation
-  (check-in → tree grows + confetti + flame spark; spin; reveal flip).
+  (check-in -> tree grows + confetti + flame spark; spin; reveal flip).
 - Every tap responds within 100 ms (optimistic updates with TanStack Query, rollback on error).
 - Animate only `transform` and `opacity`; target 60 fps on a mid-range Android phone.
 - Lazy-load the Rive runtime and hls.js; code-split routes; first load < 2 s on 4G.
@@ -152,6 +152,11 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   moto for S3 and MediaConvert.
 - Frontend: Vitest + Testing Library; Playwright for check-in and upload flows.
 - Before calling an upload change done: test a multi-GB upload with a network interruption and a resume.
+
+## Writing style
+- Docs, the Makefile, scripts, and code comments use plain ASCII: `-` not em or en dashes,
+  `->` not arrows, `|--` and `` `-- `` for directory trees. `make check` enforces this.
+  Romanian diacritics are fine in UI translation files (`frontend/src/i18n/`).
 
 ## Commits and pull requests
 - Small commits, imperative subject line, scope prefix: `backend: add invite service`.

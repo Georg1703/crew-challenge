@@ -20,11 +20,11 @@ backend/
 `-- tests/               # conftest.py, factories/, cross-app tests
 ```
 
-Apps: `core`, `accounts`, `crews` (M1) · `challenges`, `checkins`, `media` (M2) · `doom` (M3) ·
+Apps: `core`, `accounts`, `crews` (M1) - `challenges`, `checkins`, `media` (M2) - `doom` (M3) -
 `notifications` (M4).
 
 ## Layer rules (enforced by import-linter in `make check`)
-- `api` → `services`, `selectors`, serializers. Views never write through the ORM.
+- `api` -> `services`, `selectors`, serializers. Views never write through the ORM.
 - `services` and `selectors` never import from `api`.
 - Another app is used only through its `services` / `selectors`.
 - `integrations/*` is the only place that imports `boto3` or `pywebpush`. Services get adapters from
