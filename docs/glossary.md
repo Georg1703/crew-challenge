@@ -1,6 +1,6 @@
 # Glossary
 
-Use these words exactly — in code (models, functions, variables), API fields, UI translation keys,
+Use these words exactly - in code (models, functions, variables), API fields, UI translation keys,
 and docs. If you need a new domain word, add it here in the same pull request.
 
 | Term | Code name | Meaning |
@@ -22,10 +22,10 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for an `uploading` check-in to finish. |
 | Streak | `current_streak`, `best_streak` | Consecutive days with a `done` check-in, across challenges. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1–2, `flame` 3–6, `blaze` 7–13, `blue` 14–29, `legendary` 30+. |
-| Garden | — | Home screen showing every member's tree. |
+| Garden | - | Home screen showing every member's tree. |
 | Tree stage | `tree_stage` | Derived from done days this challenge: `seed` 0, `sprout` 1–3, `sapling` 4–9, `bloom` 10–19, `fruit` 20+. |
 | Wilted | `wilted` | A tree's look while its member has an unserved punishment. |
-| Greenhouse | — | Archive of past months' trees. |
+| Greenhouse | - | Archive of past months' trees. |
 | Goal | `goal_label`, `goal_target` | Optional numeric monthly target of a challenge (e.g. "books", 2). |
 | Reaction | `Reaction` | An emoji another member puts on a proof. |
 | Punishment | `Punishment` | An entry in the crew's pool of forfeits. |

@@ -93,6 +93,6 @@ POST   /api/v1/invites/{code}/accept     public: create user + member, log in
 ## Changing the contract
 
 1. Change serializers or views.
-2. Run `make schema` — writes `contracts/openapi.yaml` and `frontend/src/api/schema.gen.ts`.
+2. Run `make schema` - writes `contracts/openapi.yaml` and `frontend/src/api/schema.gen.ts`.
 3. Fix TypeScript errors in the frontend.
 4. Commit all three together. CI fails if the generated files are out of date.

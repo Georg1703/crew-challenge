@@ -1,6 +1,6 @@
 ---
 description: Add a PWA screen following the feature-folder conventions
-argument-hint: <feature/screen name — what it shows>
+argument-hint: <feature/screen name - what it shows>
 ---
 
 Add this screen: $ARGUMENTS

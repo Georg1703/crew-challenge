@@ -100,7 +100,7 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | Module | Provides |
 |---|---|
 | `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`), `CrewScopedModel` (adds `crew` FK, manager with `.for_crew(crew)`) |
-| `clock.py` | `now()` and `crew_today(crew)` — the only source of "current time" for business logic |
+| `clock.py` | `now()` and `crew_today(crew)` - the only source of "current time" for business logic |
 | `errors.py` | `DomainError(code, message, fields=None)` and subclasses: `NotFound`, `PermissionDenied`, `Conflict`, `ValidationFailed` |
 | `exception_handler.py` | DRF handler that turns every error into the standard error shape |
 | `permissions.py` | `IsCrewMember`, `IsCrewAdmin` |

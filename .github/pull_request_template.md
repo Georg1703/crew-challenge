@@ -1,6 +1,6 @@
 ## Work package
 
-<!-- e.g. M1.3 · Accounts and crews — link the milestone file section -->
+<!-- e.g. M1.3 · Accounts and crews - link the milestone file section -->
 
 ## What changed
 
@@ -20,4 +20,4 @@
 
 ## New dependencies
 
-<!-- package — reason, or "none" -->
+<!-- package - reason, or "none" -->

@@ -1,4 +1,4 @@
-# Crew Challenges — the single entry point for every command.
+# Crew Challenges - the single entry point for every command.
 # Agents and humans: run `make help`. Never call tools directly when a target exists.
 #
 # Targets for parts that do not exist yet print which work package adds them.
@@ -20,7 +20,7 @@ HAS_BACKEND  := $(wildcard $(BACKEND_DIR)/pyproject.toml)
 HAS_FRONTEND := $(wildcard $(FRONTEND_DIR)/package.json)
 HAS_COMPOSE  := $(wildcard compose.yaml)
 
-# $(call require,<path>,<what>,<package>) — stop with a helpful message if <path> is missing.
+# $(call require,<path>,<what>,<package>) - stop with a helpful message if <path> is missing.
 define require
 	@test -e $(1) || { echo "✗ $(2) is not available yet. It is added in work package $(3) (docs/milestones/m1.md)."; exit 1; }
 endef
@@ -47,7 +47,7 @@ setup: ## First-time setup: .env, images, migrations, seed data
 	$(COMPOSE) up -d db redis
 	$(COMPOSE) run --rm backend python manage.py migrate
 	$(COMPOSE) run --rm backend python manage.py seed_demo
-	@echo "✓ setup done — run: make dev"
+	@echo "✓ setup done - run: make dev"
 
 ##@ Running locally
 

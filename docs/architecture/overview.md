@@ -3,10 +3,10 @@
 Crew Challenges is a monorepo with a Django API, a React PWA, and a small amount of hand-made AWS
 infrastructure. This page is the map; the other pages in this folder go deeper.
 
-- [Backend](backend.md) — Django apps, layers, conventions
-- [Frontend](frontend.md) — features, state, motion, PWA
-- [API conventions](api-conventions.md) — the contract between them
-- [Environments](environments.md) — local and production
+- [Backend](backend.md) - Django apps, layers, conventions
+- [Frontend](frontend.md) - features, state, motion, PWA
+- [API conventions](api-conventions.md) - the contract between them
+- [Environments](environments.md) - local and production
 
 ## System
 

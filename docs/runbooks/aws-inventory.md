@@ -1,6 +1,6 @@
 # AWS inventory
 
-**Status:** placeholder — filled in by the owner during M1.7.
+**Status:** placeholder - filled in by the owner during M1.7.
 
 Record what was created: names, regions, and ARNs only. Never put keys or passwords here.
 

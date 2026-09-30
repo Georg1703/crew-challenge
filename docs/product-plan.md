@@ -5,15 +5,15 @@ change it here first (and in the root `AGENTS.md` if it is listed there).
 
 ## Vision
 
-A PWA for a small group of people — a **crew** — who set one shared challenge each month and
+A PWA for a small group of people - a **crew** - who set one shared challenge each month and
 check in daily with proof. It should be fun enough that people *want* to open it: every action has
 a satisfying animation, the home screen is a living garden, and missing a day has a playful cost.
 The first crew is the owner's family; any group can use it.
 
 ## Game rules
 
-1. **Rotation.** Members have a fixed order. Each month exactly one member — the next in the
-   rotation — is the proposer for the following month. The order wraps around.
+1. **Rotation.** Members have a fixed order. Each month exactly one member - the next in the
+   rotation - is the proposer for the following month. The order wraps around.
 2. **Proposal window.** The proposer drafts the challenge near the end of the month and must
    publish it by the crew's deadline (for example the 28th at 21:00). Only the proposer can create
    or edit it.
@@ -56,7 +56,7 @@ member can be excused for a day.
 | Badges, month-end "Crew Wrapped" | Later |
 | Transcription, compilation video | Later |
 | Weekly / one-off challenges (UI) | Later |
-| Several crews per person (crew switcher UI) | Later — the data model supports it from day one |
+| Several crews per person (crew switcher UI) | Later - the data model supports it from day one |
 
 ## Garden and streaks
 

@@ -1,6 +1,6 @@
 ---
 description: Add an API endpoint from service to typed frontend hook
-argument-hint: <METHOD /api/v1/path — what it does>
+argument-hint: <METHOD /api/v1/path - what it does>
 ---
 
 Add this endpoint: $ARGUMENTS

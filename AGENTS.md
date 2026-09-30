@@ -1,4 +1,4 @@
-# AGENTS.md — Crew Challenges
+# AGENTS.md - Crew Challenges
 
 A PWA for any small group (a **crew**: a family, friends, a team) that sets one shared challenge
 per month: daily check-ins with proof (often video), a growing tree per member, streak flames,
@@ -108,7 +108,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Missed day → streak reset, tree wilted, one pending Wheel of Doom spin per missed day.
 - The Wheel of Doom result is chosen on the server before the client animation starts.
 
-## Large uploads (up to 20 GB) — non-negotiable
+## Large uploads (up to 20 GB) - non-negotiable
 - Files never go through Django. Browser → S3 multipart upload with presigned part URLs.
 - Part size 16 MiB (< 1 GiB files) or 64 MiB (larger). S3 limits: 5 MiB min part (except last),
   5 GiB max part, 10,000 parts max. Validate size ≤ 20 GB server-side.
