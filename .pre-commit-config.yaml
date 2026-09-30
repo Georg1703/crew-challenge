@@ -1,0 +1,35 @@
+# Install once: `pipx install pre-commit && pre-commit install`
+# Update pinned versions: `pre-commit autoupdate`
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: check-repo
+        name: repo consistency (docs links, ADRs, milestones)
+        entry: python3 tools/check_repo.py
+        language: system
+        pass_filenames: false
+        files: \.(md|json)$|^tools/

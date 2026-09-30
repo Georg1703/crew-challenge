@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.riv binary
+*.woff2 binary
+contracts/openapi.yaml linguist-generated=true
+frontend/src/api/schema.gen.ts linguist-generated=true
