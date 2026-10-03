@@ -53,8 +53,9 @@ Create each one when it is first needed.
 - Saving a naive datetime fails the test run (Django's warning is turned into an error).
 - Service tests cover rules and edge cases; API tests cover auth, permissions, and the response shape.
 - Freeze time with `time_machine` for anything date-related, including a DST transition case.
-- Storage: services get `InMemoryObjectStorage` automatically (the `object_storage` fixture); the S3
-  adapter itself is tested against moto. Never call real AWS from tests.
+- Storage: services get `InMemoryObjectStorage` automatically (the `object_storage` fixture). The S3
+  adapter is a thin boto3 wrapper without unit tests (excluded from coverage); it is checked against
+  the real dev bucket by the upload smoke test. Never call AWS from tests.
 
 ## Recipes
 - New app: `docs/recipes/new-backend-app.md`

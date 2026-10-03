@@ -13,7 +13,7 @@ Both run the same backend Docker image; only configuration differs.
 | Celery | worker + beat containers | worker + beat containers |
 | Database | Postgres 17 container, named volume | Postgres 17 container on the instance SSD; nightly `pg_dump` to `cc-prod-backups` (14 days) |
 | Redis | container | container |
-| Media storage | real S3 bucket `cc-dev-media`; tests use moto | S3 bucket `cc-prod-media` + CloudFront |
+| Media storage | real S3 bucket `cc-dev-media`; tests use an in-memory fake | S3 bucket `cc-prod-media` + CloudFront |
 | Transcoding | MediaConvert, from the dev bucket | MediaConvert |
 | AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in the root-only `/opt/cc/.env` |
 | Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, `chmod 600` |

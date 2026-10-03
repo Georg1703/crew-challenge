@@ -105,6 +105,7 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | `exception_handler.py` | DRF handler that turns every error into the standard error shape |
 | `authentication.py` | Session auth that answers 401 (not 403) when nobody is logged in |
 | `pagination.py` | Cursor pagination with `{results, next}` |
+| `api/errors.py` | JSON 404/500 for `/api/` paths (`handler404`, `handler500` in `config/urls.py`) |
 | `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
 | `tasks.py` | `core.ping`, proves a worker is connected |
 
@@ -183,4 +184,5 @@ class AcceptInviteView(APIView):
   that computes crew-local days (Moldova switches on the last Sundays of March and October).
 - Service tests (`test_services.py`) cover rules and edge cases. API tests (`test_api.py`) cover
   status codes, permissions, and the response shape.
-- AWS is mocked with moto or replaced by `InMemoryObjectStorage`. Tests never reach real AWS.
+- AWS is replaced by `InMemoryObjectStorage`; tests never reach AWS. The S3 adapter itself is a thin
+  boto3 wrapper, checked against the real dev bucket by the upload smoke test.

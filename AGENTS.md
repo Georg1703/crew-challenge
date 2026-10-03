@@ -69,7 +69,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Environments
 - **Local:** `compose.yaml`, Django `runserver` + Vite dev server, Postgres and Redis containers,
-  a real S3 dev bucket through the `cc-dev` AWS profile. Tests use moto, never real AWS.
+  a real S3 dev bucket through the `cc-dev` AWS profile. Tests never call AWS.
 - **Production:** one Amazon Lightsail instance running `compose.prod.yaml`: Caddy, gunicorn,
   Celery worker + beat, Redis, Postgres (nightly `pg_dump` to S3). Images from GitHub Container
   Registry; deploys over SSH from GitHub Actions. Media in S3 + CloudFront, transcoding by
@@ -80,7 +80,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 ## Stack
 - **Backend:** Python 3.13, Django 5.2 LTS, DRF, drf-spectacular, PostgreSQL 17, Redis, Celery +
   django-celery-beat, boto3, pywebpush. Tooling: uv, ruff, mypy + django-stubs, pytest-django,
-  factory-boy, time-machine, moto, import-linter.
+  factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
   TanStack Query, openapi-fetch, Zustand, Motion, i18next, @rive-app/react-canvas, canvas-confetti,
   hls.js, Uppy core + @uppy/aws-s3. CSS Modules + tokens in `src/styles/tokens.css`.
@@ -148,8 +148,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Testing
 - Backend: pytest + pytest-django against Postgres (never SQLite); time-machine for date logic;
-  moto only for testing the AWS adapters, in-memory fakes everywhere else. 90% coverage of
-  services, selectors, core and integrations is enforced by `make check`.
+  in-memory fakes instead of AWS (the S3 adapter is checked against the real dev bucket by the
+  upload smoke test, not in unit tests). `make check` enforces 90% coverage of services,
+  selectors, core and integrations.
 - Frontend: Vitest + Testing Library; Playwright for check-in and upload flows.
 - Before calling an upload change done: test a multi-GB upload with a network interruption and a resume.
 

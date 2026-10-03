@@ -23,7 +23,6 @@ dev = [
     "pytest-cov>=6,<8",
     "factory-boy>=3.3,<4",
     "time-machine>=2.15,<3",
-    "moto[s3]>=5.0,<6",
     "ruff>=0.8,<0.13",
     "mypy>=1.13,<2",
     "django-stubs[compatible-mypy]>=5.1,<6",
@@ -96,7 +95,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "factory.*", "celery.*", "django_celery_beat.*", "moto.*", "kombu.*"]
+module = ["environ.*", "factory.*", "celery.*", "django_celery_beat.*", "kombu.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]
@@ -127,7 +126,13 @@ include = [
     "apps/core/*",
     "integrations/*",
 ]
-omit = ["*/migrations/*", "*/tests/*", "*/apps.py"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/apps.py",
+    # Thin boto3 wrapper, checked against the real dev bucket by the upload smoke test.
+    "integrations/storage/s3.py",
+]
 
 [tool.coverage.report]
 fail_under = 90
