@@ -62,6 +62,10 @@ Every error, from any layer, has this shape:
 | 404 | Not found or not in your crew | `not_found` |
 | 409 | Valid request that conflicts with state | `invite_expired`, `already_checked_in` |
 | 429 | Rate limited | `throttled` |
+| 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
+
+Unknown `/api/` URLs return `404 not_found` and crashes return `500 server_error` in the same
+shape (Django's own HTML pages are used only outside `/api/`).
 
 `code` values are stable and documented in the endpoint's schema. The frontend translates
 `errors.<code>` from i18n and falls back to `message`.

@@ -3,6 +3,8 @@
 - /api/health   liveness check (database + Redis), not versioned, not in the API contract
 - /api/v1/...   the app's API; each app adds its own `api/urls.py` here
 - /admin/       Django admin
+
+Unknown /api/ URLs and unhandled errors return the standard JSON error shape (handler404/500).
 """
 
 from django.conf import settings
@@ -14,6 +16,10 @@ from apps.core.api.views import HealthView
 api_v1: list[URLPattern | URLResolver] = [
     # path("", include("apps.accounts.api.urls")),  # added with the accounts endpoints
 ]
+
+# JSON instead of HTML for unknown /api/ URLs and crashes (see apps/core/api/errors.py).
+handler404 = "apps.core.api.errors.not_found"
+handler500 = "apps.core.api.errors.server_error"
 
 urlpatterns = [
     path("api/health", HealthView.as_view(), name="health"),
