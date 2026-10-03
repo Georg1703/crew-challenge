@@ -7,6 +7,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 |---|---|---|
 | Crew | `Crew`, `crew`, `crew_id` | A group of people who challenge each other (a family, friends, a team). Not "family" or "group" (`Group` clashes with Django's auth model). UI: "Crew" / ro: "Echipa". |
 | Member | `Member` | A user's membership in one crew. Holds display name, role, and rotation position. A user can be a member of several crews. |
+| Active crew | session `active_crew_id` | The crew a user is acting in when they belong to several. Defaults to their oldest membership. |
 | Role | `Member.role` | `admin` (can invite, reorder rotation) or `member`. |
 | Invite | `Invite` | A one-time code/link that lets a new person join a crew. |
 | Rotation | `Member.rotation_position` | The fixed order in which members take turns proposing challenges. |

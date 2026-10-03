@@ -24,7 +24,7 @@ Example: adding `challenges`.
 4. Include `apps.challenges.api.urls` under `/api/v1/` in `config/urls.py`.
 5. Add the app to the import-linter "core does not depend on domain apps" contract in
    `backend/pyproject.toml`.
-6. Models inherit `CrewScopedModel` if they belong to a crew (almost always), otherwise
+6. Models inherit `apps.crews.models.CrewScopedModel` if they belong to a crew (almost always), otherwise
    `TimeStampedModel`.
 7. Add factories in `backend/tests/factories/challenges.py`.
 8. Create the first migration (`docs/recipes/new-migration.md`).

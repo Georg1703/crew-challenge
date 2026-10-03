@@ -109,8 +109,30 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
 | `tasks.py` | `core.ping`, proves a worker is connected |
 
-Added with the `crews` app (core must not depend on it): `CrewScopedModel` (a `crew` FK and
-`.for_crew(crew)`), `IsCrewMember` / `IsCrewAdmin` permissions, and `request.member`.
+| `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`), counted in Redis |
+| `schema.py` | drf-spectacular extensions (documents our session auth) |
+
+Crew building blocks live in the `crews` app, because core must not depend on domain apps:
+
+| Where | What |
+|---|---|
+| `apps.crews.models.CrewScopedModel` | Abstract base with a `crew` FK and `Model.objects.for_crew(crew)`; every crew-owned model inherits it |
+| `apps.crews.api.permissions.IsCrewMember` | Logged in and in a crew; sets `request.member` (the member in the session's active crew) |
+| `apps.crews.selectors.next_in_rotation` | Who proposes after a given member, wrapping around |
+
+Admin-only actions are checked in services (`NotCrewAdmin`), not by a permission class, so the rule
+lives in one place and also protects Celery tasks and commands.
+
+## Security defaults
+
+- CSRF is checked on every unsafe request, including anonymous ones (login, joining a crew);
+  DRF alone only checks logged-in users. See `apps/core/authentication.py`.
+- Login and joining are rate-limited per IP in Redis; behind Caddy the IP comes from
+  `X-Forwarded-For` (`TRUSTED_PROXY_COUNT`, 1 in production).
+- Invites are single-use, expire after 7 days, and are locked (`select_for_update`) while used.
+- Database constraints back the rules: one membership per user per crew, unique rotation
+  positions (deferred, so a rotation can be reordered in one transaction), unique display names
+  per crew ignoring case.
 
 ## Time
 

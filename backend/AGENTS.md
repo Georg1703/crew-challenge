@@ -33,7 +33,7 @@ Create each one when it is first needed.
 
 ## Conventions
 - Models inherit `TimeStampedModel` (UUID pk, `created_at`, `updated_at`); crew data inherits
-  `CrewScopedModel` (adds `crew` FK and `.for_crew(crew)`).
+  `apps.crews.models.CrewScopedModel` (adds `crew` FK and `.for_crew(crew)`).
 - Service functions are keyword-only and typed: `def accept_invite(*, code: str, username: str, password: str) -> Member:`.
   Wrap multi-step writes in `transaction.atomic()`.
 - Services raise `DomainError` subclasses with a stable `code`; never raise DRF exceptions from services.
@@ -42,8 +42,9 @@ Create each one when it is first needed.
   ruff bans `timezone.now()`, `datetime.now()` and `date.today()` elsewhere. Never use "24 hours ago"
   as a day boundary: DST days are 23 or 25 hours.
 - Every endpoint has `@extend_schema` with request and response serializers, so the contract is exact.
-- Permissions (added with the `crews` app): `IsCrewMember`, `IsCrewAdmin`; the current member is
-  `request.member`.
+- Crew endpoints use `apps.crews.api.permissions.IsCrewMember`, which sets `request.member`.
+  Admin-only rules are enforced in services (`NotCrewAdmin`), not in permission classes.
+- Every unsafe request must carry a CSRF token, also for anonymous users (login, join).
 - Celery tasks are idempotent, take ids (not objects), and call one service.
 
 ## Tests
@@ -52,6 +53,9 @@ Create each one when it is first needed.
   `integrations`. Test rules and edge cases there, not getters and settings.
 - Saving a naive datetime fails the test run (Django's warning is turned into an error).
 - Service tests cover rules and edge cases; API tests cover auth, permissions, and the response shape.
+- Create test data with `XFactory.create(...)`, not `XFactory(...)`: only `.create()` is typed.
+- For unsafe requests use the `browser` fixture (sends a real CSRF token) and `force_login`;
+  a test that gets `403 csrf_failed` is usually using the wrong client.
 - Freeze time with `time_machine` for anything date-related, including a DST transition case.
 - Storage: services get `InMemoryObjectStorage` automatically (the `object_storage` fixture). The S3
   adapter is a thin boto3 wrapper without unit tests (excluded from coverage); it is checked against
