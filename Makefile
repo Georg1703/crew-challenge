@@ -86,7 +86,7 @@ migrate: ## Apply database migrations
 .PHONY: makemigrations
 makemigrations: ## Create migrations (optional: make makemigrations app=crews)
 	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
-	$(UV) python manage.py makemigrations $(app)
+	$(UV) python manage.py makemigrations $(app) --settings=config.settings.test
 
 .PHONY: seed
 seed: ## Load the demo crew (known users and passwords, local only)
@@ -94,6 +94,13 @@ seed: ## Load the demo crew (known users and passwords, local only)
 	$(COMPOSE) run --rm backend python manage.py seed_demo
 
 ##@ Quality
+
+.PHONY: install
+install: ## Install backend dependencies and the git hooks (pre-commit + commit-msg)
+	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
+	uv --directory $(BACKEND_DIR) sync --frozen
+	@command -v pre-commit >/dev/null && pre-commit install \
+		|| echo "SKIP: pre-commit not found; install it with 'pipx install pre-commit', then run make install"
 
 .PHONY: check
 check: check-repo check-backend check-frontend check-contract ## Everything CI runs; must pass before a task is done
@@ -105,7 +112,7 @@ check-repo: ## Repo-level checks: docs links, referenced paths, ASCII, required 
 	@$(PYTHON) tools/check_repo.py
 
 .PHONY: check-backend
-check-backend: ## Backend: format, lint, types, layers, migrations, tests
+check-backend: ## Backend: format, lint, types, layers, migrations, tests + coverage
 ifeq ($(HAS_BACKEND),)
 	$(call skip,backend checks)
 else
@@ -113,8 +120,8 @@ else
 	$(UV) ruff check .
 	$(UV) mypy .
 	$(UV) lint-imports
-	$(UV) python manage.py makemigrations --check --dry-run
-	$(UV) pytest
+	$(UV) python manage.py makemigrations --check --dry-run --settings=config.settings.test
+	$(UV) pytest --cov
 endif
 
 .PHONY: check-frontend
