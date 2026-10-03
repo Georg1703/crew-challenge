@@ -137,13 +137,14 @@ else
 endif
 
 .PHONY: check-contract
-check-contract: ## Fail if the committed API contract or TS client is out of date
-ifeq ($(and $(HAS_BACKEND),$(HAS_FRONTEND)),)
+check-contract: ## Fail if the committed API contract (and TS client) is out of date
+ifeq ($(HAS_BACKEND),)
 	$(call skip,contract drift check)
 else
-	@$(MAKE) schema
-	@git diff --exit-code -- contracts/openapi.yaml $(FRONTEND_DIR)/src/api/schema.gen.ts \
+	@$(MAKE) schema >/dev/null
+	@git diff --exit-code -- contracts/openapi.yaml $(if $(HAS_FRONTEND),$(FRONTEND_DIR)/src/api/schema.gen.ts) \
 		|| { echo "ERROR: API contract is out of date: run 'make schema' and commit the result."; exit 1; }
+	@echo "OK: API contract is up to date"
 endif
 
 .PHONY: test
@@ -180,9 +181,11 @@ endif
 ##@ API contract
 
 .PHONY: schema
-schema: ## Regenerate contracts/openapi.yaml and the frontend TS client
+schema: ## Regenerate contracts/openapi.yaml (and the frontend TS client once frontend/ exists)
 	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
-	$(call require,$(FRONTEND_DIR)/package.json,Frontend)
-	$(UV) python manage.py spectacular --validate --file ../contracts/openapi.yaml
+	$(UV) python manage.py spectacular --validate --fail-on-warn --settings=config.settings.test \
+		--file ../contracts/openapi.yaml
+ifneq ($(HAS_FRONTEND),)
 	$(PNPM) exec openapi-typescript ../contracts/openapi.yaml -o src/api/schema.gen.ts
+endif
 	@echo "OK: contract regenerated"
