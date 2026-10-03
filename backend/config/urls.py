@@ -14,7 +14,8 @@ from django.urls import URLPattern, URLResolver, include, path
 from apps.core.api.views import HealthView
 
 api_v1: list[URLPattern | URLResolver] = [
-    # path("", include("apps.accounts.api.urls")),  # added with the accounts endpoints
+    path("", include("apps.accounts.api.urls")),
+    path("", include("apps.crews.api.urls")),
 ]
 
 # JSON instead of HTML for unknown /api/ URLs and crashes (see apps/core/api/errors.py).

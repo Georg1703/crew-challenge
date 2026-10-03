@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "apps.core",
     "apps.accounts",
+    "apps.crews",
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,9 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exception_handler.exception_handler",
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
+    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "join": "10/min"},
+    # How many reverse proxies to trust for X-Forwarded-For (Caddy in production = 1).
+    "NUM_PROXIES": env.int("TRUSTED_PROXY_COUNT", default=0),
 }
 
 SPECTACULAR_SETTINGS = {
@@ -129,8 +133,16 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
 }
 
-# --- Redis and Celery -----------------------------------------------------------------------
+# --- Redis, cache and Celery ----------------------------------------------------------------
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+# Shared cache (rate limits, later short-lived data). Redis so every worker sees the same counts.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("CACHE_URL", default="redis://localhost:6379/3"),
+        "TIMEOUT": 300,
+    }
+}
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/2")
 CELERY_TIMEZONE = "UTC"

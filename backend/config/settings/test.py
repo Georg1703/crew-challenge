@@ -24,6 +24,8 @@ CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "cache+memory://"
 
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
 OBJECT_STORAGE_BACKEND = "memory"
 MEDIA_BUCKET = "cc-test-media"
 AWS_PROFILE = None

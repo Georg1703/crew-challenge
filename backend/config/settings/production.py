@@ -3,12 +3,15 @@
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
-from .base import SECRET_KEY, env
+from .base import REST_FRAMEWORK, SECRET_KEY, env
 
 DEBUG = False
 
 if SECRET_KEY == "insecure-local-only" or len(SECRET_KEY) < 40:
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value in production.")
+
+# Caddy is the one proxy in front of Django: trust one X-Forwarded-For hop for client IPs.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env.int("TRUSTED_PROXY_COUNT", default=1)}
 
 # Caddy terminates HTTPS and forwards the original scheme.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

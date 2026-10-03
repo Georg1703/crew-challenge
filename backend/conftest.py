@@ -6,6 +6,7 @@ from collections.abc import Iterator
 import psycopg
 import pytest
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from integrations.storage import InMemoryObjectStorage, get_object_storage
@@ -41,6 +42,14 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         pytest.exit("test database unreachable", returncode=3)
 
 
+@pytest.fixture(autouse=True)
+def _clear_cache() -> Iterator[None]:
+    """Rate-limit counters live in the cache; start every test from zero."""
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     """An anonymous client that enforces CSRF like a browser does."""
@@ -48,8 +57,16 @@ def api_client() -> APIClient:
 
 
 @pytest.fixture
+def browser(api_client: APIClient) -> APIClient:
+    """Like the SPA: fetched /auth/csrf once and sends X-CSRFToken on every request."""
+    token = api_client.get("/api/v1/auth/csrf").json()["csrf_token"]
+    api_client.credentials(HTTP_X_CSRFTOKEN=token)
+    return api_client
+
+
+@pytest.fixture
 def user(db):
-    return UserFactory()
+    return UserFactory.create()
 
 
 @pytest.fixture

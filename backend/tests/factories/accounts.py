@@ -5,7 +5,7 @@ from apps.accounts.models import User
 DEFAULT_PASSWORD = "correct-horse-battery"
 
 
-class UserFactory(factory.django.DjangoModelFactory):
+class UserFactory(factory.django.DjangoModelFactory[User]):
     class Meta:
         model = User
         django_get_or_create = ("username",)
