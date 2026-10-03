@@ -17,7 +17,8 @@ backend/
 |   |-- tasks.py         # thin Celery wrappers around services
 |   `-- tests/{test_services.py, test_selectors.py, test_api.py}
 |-- integrations/<name>/ # boto3 / pywebpush live ONLY here (ABC + implementations + factory)
-`-- tests/               # conftest.py, factories/, cross-app tests
+|-- tests/factories/     # factory-boy factories, one module per app
+`-- conftest.py          # fixtures for all tests: api_client, user, auth_client, object_storage
 ```
 
 Apps: `core`, `accounts`, `crews`, `challenges`, `checkins`, `media`, `doom`, `notifications`.
@@ -36,16 +37,24 @@ Create each one when it is first needed.
 - Service functions are keyword-only and typed: `def accept_invite(*, code: str, username: str, password: str) -> Member:`.
   Wrap multi-step writes in `transaction.atomic()`.
 - Services raise `DomainError` subclasses with a stable `code`; never raise DRF exceptions from services.
-- Business dates come from `apps.core.clock` (`now()`, `crew_today(crew)`), never `timezone.now()`.
+- Time: instants are aware UTC datetimes; a challenge day is a `DateField` in the crew's time zone.
+  Get time only from `apps.core.clock` (`now()`, `crew_today(crew)`, `day_bounds_utc(day, tz)`).
+  ruff bans `timezone.now()`, `datetime.now()` and `date.today()` elsewhere. Never use "24 hours ago"
+  as a day boundary: DST days are 23 or 25 hours.
 - Every endpoint has `@extend_schema` with request and response serializers, so the contract is exact.
-- Permissions: `IsCrewMember`, `IsCrewAdmin`. The current member is `request.member`.
+- Permissions (added with the `crews` app): `IsCrewMember`, `IsCrewAdmin`; the current member is
+  `request.member`.
 - Celery tasks are idempotent, take ids (not objects), and call one service.
 
 ## Tests
-- pytest-django on Postgres. factory-boy factories in `backend/tests/factories/`.
+- pytest-django on Postgres (`TEST_DATABASE_URL`, default localhost). Factories in `backend/tests/factories/`.
+- `make check` enforces 90% line + branch coverage of `services.py`, `selectors.py`, `apps/core` and
+  `integrations`. Test rules and edge cases there, not getters and settings.
+- Saving a naive datetime fails the test run (Django's warning is turned into an error).
 - Service tests cover rules and edge cases; API tests cover auth, permissions, and the response shape.
 - Freeze time with `time_machine` for anything date-related, including a DST transition case.
-- S3 and MediaConvert: moto or the in-memory adapter. Never call real AWS from tests.
+- Storage: services get `InMemoryObjectStorage` automatically (the `object_storage` fixture); the S3
+  adapter itself is tested against moto. Never call real AWS from tests.
 
 ## Recipes
 - New app: `docs/recipes/new-backend-app.md`

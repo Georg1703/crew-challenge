@@ -1,0 +1,11 @@
+"""Celery application. Tasks live in each app's tasks.py and are discovered automatically."""
+
+import os
+
+from celery import Celery
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+
+app = Celery("crew_challenges")
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks()
