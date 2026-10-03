@@ -39,7 +39,7 @@ frontend/src/
 
 ## Tests
 - Vitest + Testing Library for components and hooks (mock the API client, not `fetch`).
-- Playwright for end-to-end flows (login -> home in M1; check-in and upload later).
+- Playwright for end-to-end flows (login -> home, check-in, upload).
 
 ## Recipes
 - New screen: `docs/recipes/new-screen.md`

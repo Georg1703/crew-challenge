@@ -38,7 +38,7 @@ src/
 |-- features/
 |   |-- auth/               # login, join by invite
 |   |-- crew/               # members list, invite sheet
-|   `-- home/               # garden (placeholder in M1)
+|   `-- home/               # garden
 |-- shared/
 |   |-- ui/
 |   |-- motion/             # presets.ts, useReducedMotion.ts
