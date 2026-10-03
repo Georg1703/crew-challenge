@@ -6,21 +6,19 @@ and a Wheel of Doom for missed days. The first crew is the owner's family.
 
 Read this file before changing anything. Then read the nested `AGENTS.md` of the area you touch.
 
-- Product rules: `docs/product-plan.md`
-- Current work: `docs/milestones/` (one work package per session)
-- Why things are the way they are: `docs/adr/`
+- How the system is built, and why: `docs/architecture/`
 - Words we use: `docs/glossary.md`
+- How to make common changes: `docs/recipes/`
 
 ## How to work in this repo
 1. Read this file, then `backend/AGENTS.md`, `frontend/AGENTS.md` or `infra/AGENTS.md` as needed.
-2. Take exactly one work package from `docs/milestones/mN.md`. Stay inside its scope. If you find
-   work outside the scope, write it under "Follow-ups" in the milestone file instead of doing it.
+2. Do what the task asks and nothing more. Mention anything else you notice in your final summary
+   instead of doing it.
 3. Follow the matching recipe in `docs/recipes/` (backend app, endpoint, screen, migration, Celery task).
-4. Read the relevant ADRs before changing architecture. If you change a decision, add a new ADR
-   that supersedes the old one (`docs/recipes/new-adr.md`).
+4. Follow `docs/architecture/`. If a task seems to need a different approach, stop and ask first.
+   When an approach changes, update the docs in the same change.
 5. Use names from `docs/glossary.md` in code, API fields, and UI keys.
-6. Done means: `make check` passes, the package's acceptance criteria are met, and the package is
-   ticked in its milestone file with a one-line note of what was done.
+6. Done means: `make check` passes and the task's acceptance criteria are met.
 
 ## Repository map
 | Path | What lives there |
@@ -29,7 +27,7 @@ Read this file before changing anything. Then read the nested `AGENTS.md` of the
 | `frontend/` | React PWA: `src/app/`, `src/api/` (generated client), `src/features/<name>/`, `src/shared/`, `src/pwa/`, `src/i18n/`, `src/styles/` |
 | `contracts/openapi.yaml` | Generated API contract. Never edit by hand. |
 | `infra/` | `aws/` JSON documents for the hand-made AWS setup, `caddy/`, `scripts/` (deploy, backup, host bootstrap) |
-| `docs/` | `architecture/`, `adr/`, `recipes/`, `runbooks/`, `milestones/`, `glossary.md`, `product-plan.md` |
+| `docs/` | `architecture/`, `recipes/`, `glossary.md` |
 | `tools/` | Repo helpers: docs checker, seed data, upload smoke test |
 | `.claude/` | Agent permissions and slash commands |
 
@@ -40,7 +38,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 |---|---|
 | `make setup` | First-time setup |
 | `make dev` | Run everything locally |
-| `make check` | Everything CI runs. Must pass before a package is done. |
+| `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
 | `make fmt` | Format all code |
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
@@ -50,7 +48,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Never
 - Create or change AWS resources, SSH into servers, run deploy scripts, or touch production.
-  Write the runbook step or JSON document; the owner applies it.
+  Write the JSON document or the console steps; the owner applies them.
 - Read, print, or commit `.env` files or secrets. Use `.env.example` for variable names.
 - Edit generated files (`contracts/openapi.yaml`, `frontend/src/api/schema.gen.ts`) by hand.
 - Call `boto3` or `pywebpush` outside `backend/integrations/`, or `fetch` outside `frontend/src/api/`.
@@ -160,4 +158,4 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Commits and pull requests
 - Small commits, imperative subject line, scope prefix: `backend: add invite service`.
-- One work package per pull request. Fill in `.github/pull_request_template.md`.
+- One task per pull request. Fill in `.github/pull_request_template.md`.

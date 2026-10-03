@@ -35,7 +35,7 @@ frontend/src/
 ## PWA
 - `vite-plugin-pwa` with `registerType: 'prompt'`; show the update toast, never reload silently.
 - The service worker never caches `/api`, `/admin`, presigned URLs, or uploads.
-- Test install on a real iPhone and Android phone before closing any PWA package (`make tunnel`).
+- Test install on a real iPhone and Android phone before finishing any PWA change (`make tunnel`).
 
 ## Tests
 - Vitest + Testing Library for components and hooks (mock the API client, not `fetch`).

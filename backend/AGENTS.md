@@ -20,8 +20,8 @@ backend/
 `-- tests/               # conftest.py, factories/, cross-app tests
 ```
 
-Apps: `core`, `accounts`, `crews` (M1) - `challenges`, `checkins`, `media` (M2) - `doom` (M3) -
-`notifications` (M4).
+Apps: `core`, `accounts`, `crews`, `challenges`, `checkins`, `media`, `doom`, `notifications`.
+Create each one when it is first needed.
 
 ## Layer rules (enforced by import-linter in `make check`)
 - `api` -> `services`, `selectors`, serializers. Views never write through the ORM.

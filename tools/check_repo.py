@@ -7,10 +7,8 @@ These checks keep the documentation that agents rely on trustworthy:
 2. Relative links in Markdown files resolve to real files.
 3. Repo paths mentioned in backticks inside agent-facing docs exist
    (only for folders that must already exist: docs/, tools/, .claude/, .github/, infra/aws/).
-4. ADRs are numbered, have a valid status, and are listed in docs/adr/README.md.
-5. Every work package in docs/milestones/*.md has a valid status line.
-6. No secret files are tracked by git.
-7. Docs, the Makefile, and repo tooling use plain ASCII (no em dashes, arrows, box drawing).
+4. No secret files are tracked by git.
+5. Docs, the Makefile, and repo tooling use plain ASCII (no em dashes, arrows, box drawing).
    UI translation files are not checked, so Romanian diacritics stay allowed there.
 
 Standard library only, so it runs before any project dependency is installed.
@@ -39,10 +37,8 @@ REQUIRED_FILES = [
     "infra/AGENTS.md",
     "infra/CLAUDE.md",
     "docs/glossary.md",
-    "docs/product-plan.md",
-    "docs/adr/README.md",
     "docs/recipes/README.md",
-    "docs/milestones/m1.md",
+    "docs/architecture/overview.md",
     ".claude/settings.json",
 ]
 
@@ -51,14 +47,9 @@ SKIP_DIRS = {".git", "node_modules", ".venv", "dist", "dev-dist", ".pytest_cache
 # Backticked paths starting with these prefixes must exist today.
 CHECKED_PATH_PREFIXES = ("docs/", "tools/", ".claude/", ".github/", "infra/aws/")
 
-ADR_STATUSES = {"Proposed", "Accepted", "Deprecated", "Superseded"}
-PACKAGE_STATUSES = {"todo", "in progress", "done", "blocked"}
 
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 BACKTICK_PATH_RE = re.compile(r"`([.\w][\w./-]*)`")
-ADR_FILE_RE = re.compile(r"^(\d{4})-[a-z0-9-]+\.md$")
-PACKAGE_HEADING_RE = re.compile(r"^### (M\d+\.\d+) - .+$")
-PACKAGE_STATUS_RE = re.compile(r"^\*\*Status:\*\* (.+?)\s*$")
 
 
 @dataclass
@@ -121,60 +112,10 @@ def check_backtick_paths(root: Path, report: Report) -> None:
         for candidate in BACKTICK_PATH_RE.findall(text):
             if not candidate.startswith(CHECKED_PATH_PREFIXES):
                 continue
-            if any(ch in candidate for ch in "<>*{}") or re.search(r"\bmN\b|NNNN", candidate):
+            if any(ch in candidate for ch in "<>*{}") or re.search(r"NNNN", candidate):
                 continue  # a pattern, not a concrete path
             if not (root / candidate.rstrip("/")).exists():
                 report.error(md, f"mentions `{candidate}`, which does not exist")
-
-
-def check_adrs(root: Path, report: Report) -> None:
-    adr_dir = root / "docs" / "adr"
-    index_path = adr_dir / "README.md"
-    if not index_path.is_file():
-        return
-    index = index_path.read_text(encoding="utf-8")
-    numbers: list[int] = []
-    for path in sorted(adr_dir.glob("*.md")):
-        if path.name in {"README.md", "template.md"}:
-            continue
-        match = ADR_FILE_RE.match(path.name)
-        if not match:
-            report.error(path, "ADR file name must look like 0001-short-title.md")
-            continue
-        numbers.append(int(match.group(1)))
-        text = path.read_text(encoding="utf-8")
-        status = re.search(r"^\*\*Status:\*\* (\w+)", text, flags=re.MULTILINE)
-        if not status or status.group(1) not in ADR_STATUSES:
-            report.error(path, f"needs a '**Status:** <{'|'.join(sorted(ADR_STATUSES))}>' line")
-        if f"({path.name})" not in index:
-            report.error(index_path, f"does not link to {path.name}")
-    expected = list(range(1, len(numbers) + 1))
-    if sorted(numbers) != expected:
-        report.error(adr_dir, f"ADR numbers must be contiguous from 0001, found {sorted(numbers)}")
-
-
-def check_milestones(root: Path, report: Report) -> None:
-    for path in sorted((root / "docs" / "milestones").glob("m*.md")):
-        lines = path.read_text(encoding="utf-8").splitlines()
-        seen: set[str] = set()
-        for i, line in enumerate(lines):
-            heading = PACKAGE_HEADING_RE.match(line)
-            if not heading:
-                continue
-            package = heading.group(1)
-            if package in seen:
-                report.error(path, f"work package {package} is listed twice")
-            seen.add(package)
-            status_line = next((line for line in lines[i + 1 : i + 4] if line.strip()), "")
-            status = PACKAGE_STATUS_RE.match(status_line)
-            if not status or status.group(1) not in PACKAGE_STATUSES:
-                report.error(
-                    path,
-                    f"{package}: the line after the heading must be "
-                    f"'**Status:** <{'|'.join(sorted(PACKAGE_STATUSES))}>'",
-                )
-        if not seen:
-            report.error(path, "no work packages found (headings must look like '### M1.1 - Title')")
 
 
 ASCII_ONLY_SUFFIXES = (".md", ".py", ".yml", ".yaml", ".toml", ".sh", ".example")
@@ -222,8 +163,6 @@ def run(root: Path = ROOT) -> Report:
     check_required_files(root, report)
     check_links(root, report)
     check_backtick_paths(root, report)
-    check_adrs(root, report)
-    check_milestones(root, report)
     check_no_tracked_secrets(root, report)
     check_ascii(root, report)
     return report

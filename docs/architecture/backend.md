@@ -70,7 +70,7 @@ flowchart TB
    or `pywebpush`.
 6. **Tasks are thin and idempotent.** They take ids, load objects, and call one service.
 
-### import-linter contracts (added in M1.2)
+### import-linter contracts
 
 ```toml
 [tool.importlinter]

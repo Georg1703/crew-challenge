@@ -9,14 +9,14 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | React Router (data routers) | Routing, route-level code splitting |
 | TanStack Query | All server state: fetching, caching, optimistic updates |
 | openapi-fetch + openapi-typescript | Typed API client generated from `contracts/openapi.yaml` |
-| Zustand | Client-only state that outlives a screen (the upload manager in M2) |
+| Zustand | Client-only state that outlives a screen (the upload manager) |
 | Motion | UI animation (springs, layout, gestures) |
-| Rive (`@rive-app/react-canvas`) | Character animation: trees, flame, wheel (M4) |
+| Rive (`@rive-app/react-canvas`) | Character animation: trees, flame, wheel |
 | canvas-confetti | Celebrations |
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
-| hls.js | HLS playback outside Safari (M3) |
-| Uppy core + @uppy/aws-s3 | Multipart upload engine, no Uppy UI (M2) |
+| hls.js | HLS playback outside Safari |
+| Uppy core + @uppy/aws-s3 | Multipart upload engine, no Uppy UI |
 
 Do not add a library that overlaps one of these.
 
@@ -99,4 +99,4 @@ export const springs = {
 ## Testing
 
 - Vitest + Testing Library. Mock the typed client with a small in-test handler map, not global `fetch`.
-- Playwright: `login -> home` smoke test in M1; check-in and upload flows in M2.
+- Playwright for main flows: login -> home, check-in, upload.

@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: "3.13"
 
-      # Backend and frontend toolchains are added here in M1.2 / M1.4, and a Postgres
-      # service container in M1.10. Until then `make check` skips those areas.
+      # Add the backend (uv) and frontend (pnpm) toolchains and a Postgres service here when
+      # those areas are created. Until then `make check` skips them.
 
       - name: make check
         run: make check

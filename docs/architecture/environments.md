@@ -14,7 +14,7 @@ Both run the same backend Docker image; only configuration differs.
 | Database | Postgres 17 container, named volume | Postgres 17 container on the instance SSD; nightly `pg_dump` to `cc-prod-backups` (14 days) |
 | Redis | container | container |
 | Media storage | real S3 bucket `cc-dev-media`; tests use moto | S3 bucket `cc-prod-media` + CloudFront |
-| Transcoding | MediaConvert (M2), from the dev bucket | MediaConvert |
+| Transcoding | MediaConvert, from the dev bucket | MediaConvert |
 | AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in the root-only `/opt/cc/.env` |
 | Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, `chmod 600` |
 | HTTPS | not needed (localhost is a secure context) | Caddy with automatic Let's Encrypt certificates |
@@ -26,7 +26,7 @@ Both run the same backend Docker image; only configuration differs.
 ## Why a real S3 dev bucket
 
 Browser multipart uploads depend on CORS, the `ETag` header, and presigned URL details. Emulators
-differ exactly there. A dev bucket costs cents per month. See [ADR 0005](../adr/0005-real-s3-dev-bucket.md).
+differ exactly there. A dev bucket costs cents per month.
 
 ## Production host
 
@@ -37,7 +37,7 @@ differ exactly there. A dev bucket costs cents per month. See [ADR 0005](../adr/
   nightly backup cron. It is pasted as the instance's launch script.
 - Automatic Lightsail snapshots are optional extra protection for the whole disk.
 
-## Deploy flow (M1.9)
+## Deploy flow
 
 ```mermaid
 flowchart LR
@@ -57,8 +57,8 @@ flowchart LR
 
 ## AWS resources
 
-Created by hand by the owner following `docs/runbooks/aws-setup.md` (written in M1.7).
-The JSON documents pasted into the console live in `infra/aws/`.
+Created by hand in the AWS console by the owner. The JSON documents pasted into the console
+(CORS, lifecycle rules, IAM policies) live in `infra/aws/`.
 
 | Resource | Purpose |
 |---|---|

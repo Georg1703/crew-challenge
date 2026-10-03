@@ -59,31 +59,6 @@ class CheckRepoTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("docs/fake.md", errors[0])
 
-    def test_adr_must_be_indexed_and_have_status(self) -> None:
-        write(self.root, "docs/adr/README.md", "- [0001](0001-first.md)")
-        write(self.root, "docs/adr/0001-first.md", "# 1\n\n**Status:** Accepted\n")
-        write(self.root, "docs/adr/0002-second.md", "# 2\n\nno status\n")
-        errors = self.errors(check_repo.check_adrs)
-        self.assertTrue(any("Status" in e for e in errors))
-        self.assertTrue(any("does not link to 0002-second.md" in e for e in errors))
-
-    def test_adr_numbers_must_be_contiguous(self) -> None:
-        write(self.root, "docs/adr/README.md", "[a](0001-a.md) [c](0003-c.md)")
-        write(self.root, "docs/adr/0001-a.md", "**Status:** Accepted")
-        write(self.root, "docs/adr/0003-c.md", "**Status:** Accepted")
-        errors = self.errors(check_repo.check_adrs)
-        self.assertTrue(any("contiguous" in e for e in errors))
-
-    def test_milestone_packages_need_valid_status(self) -> None:
-        write(
-            self.root,
-            "docs/milestones/m1.md",
-            "### M1.1 - Good\n**Status:** done\n\n### M1.2 - Bad\n**Status:** maybe\n",
-        )
-        errors = self.errors(check_repo.check_milestones)
-        self.assertEqual(len(errors), 1)
-        self.assertIn("M1.2", errors[0])
-
     def test_docs_must_be_plain_ascii(self) -> None:
         write(self.root, "docs/a.md", "ok - plain\nbad \u2014 dash\n")
         write(self.root, "frontend/src/i18n/ro.json", '{"crew": "Echip\u0103"}')

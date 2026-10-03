@@ -5,7 +5,7 @@ Production runs on one Amazon Lightsail instance with Docker Compose. AWS resour
 
 ## What agents may do here
 - Write and review the JSON documents in `infra/aws/` (bucket CORS, lifecycle rules, IAM policies).
-- Write and update the step-by-step console runbook `docs/runbooks/aws-setup.md`.
+- Describe console steps for the owner in the pull request or the task summary.
 - Write Caddy configuration, compose files, and shell scripts (`deploy.sh`, `backup-db.sh`,
   `bootstrap-host.sh`).
 - Lint scripts with `shellcheck` and validate JSON.
@@ -28,5 +28,5 @@ infra/
 - Least privilege: the server's IAM user can only reach `cc-prod-media`, `cc-prod-backups`, and
   start MediaConvert jobs with `iam:PassRole` on the MediaConvert role. Nothing else.
 - Scripts are idempotent, use `set -euo pipefail`, and print what they do.
-- Every manual step has a runbook entry, and every created resource is recorded in
-  `docs/runbooks/aws-inventory.md` (names and ARNs only, no secrets).
+- Every JSON document the owner pastes into AWS is kept in `infra/aws/`, so the setup stays
+  reproducible.
