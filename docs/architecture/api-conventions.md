@@ -77,7 +77,7 @@ Every error, from any layer, has this shape:
 ## Milestone 1 endpoints
 
 ```
-GET    /healthz                          liveness: database and Redis
+GET    /api/health                       liveness: database and Redis (not versioned, not in the contract)
 GET    /api/v1/auth/csrf
 POST   /api/v1/auth/login
 POST   /api/v1/auth/logout

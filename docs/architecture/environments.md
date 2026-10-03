@@ -46,7 +46,7 @@ flowchart LR
   B --> R["push to GHCR<br/>tag = git sha"]
   R --> S["SSH to server"]
   S --> D["deploy.sh sha:<br/>pull, migrate, up -d"]
-  D --> H{"/healthz ok?"}
+  D --> H{"/api/health ok?"}
   H -->|yes| OK["done"]
   H -->|no| RB["deploy.sh previous sha"]
 ```

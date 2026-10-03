@@ -37,6 +37,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | Command | Purpose |
 |---|---|
 | `make setup` | First-time setup |
+| `make install` | Install backend dependencies and the git hooks |
 | `make dev` | Run everything locally |
 | `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
@@ -147,7 +148,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Testing
 - Backend: pytest + pytest-django against Postgres (never SQLite); time-machine for date logic;
-  moto for S3 and MediaConvert.
+  moto only for testing the AWS adapters, in-memory fakes everywhere else. 90% coverage of
+  services, selectors, core and integrations is enforced by `make check`.
 - Frontend: Vitest + Testing Library; Playwright for check-in and upload flows.
 - Before calling an upload change done: test a multi-GB upload with a network interruption and a resume.
 
@@ -156,6 +158,11 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   `->` not arrows, `|--` and `` `-- `` for directory trees. `make check` enforces this.
   Romanian diacritics are fine in UI translation files (`frontend/src/i18n/`).
 
-## Commits and pull requests
-- Small commits, imperative subject line, scope prefix: `backend: add invite service`.
+## Commits, branches and pull requests
+- Branches: `<type>/<short-description>`, e.g. `feat/invite-links`. Never commit to `main`.
+- Commits follow Conventional Commits: `<type>(<scope>): <subject>`, e.g.
+  `feat(backend): add invite service`. Types: feat, fix, refactor, perf, test, docs, build, ci,
+  chore, revert. Scopes (optional): backend, frontend, infra, repo, deps. Lowercase subject, no
+  period, at most 72 characters.
+- Both are checked by the git hooks (`make install`) and by CI (`tools/git_rules.py`).
 - One task per pull request. Fill in `.github/pull_request_template.md`.
