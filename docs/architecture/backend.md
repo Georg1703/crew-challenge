@@ -99,7 +99,7 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 
 | Module | Provides |
 |---|---|
-| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`) |
+| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`); `SoftDeleteModel` (adds `deleted_at`; `objects` hides deleted rows, `all_objects` shows all; see `docs/recipes/soft-delete.md`) |
 | `clock.py` | The only source of current time: `now()`, `crew_today(crew)`, `local_today(tz)`, `day_bounds_utc(day, tz)`, `deadline_utc(day, tz)` |
 | `errors.py` | `DomainError(message, code=, fields=)` and subclasses: `ValidationFailed`, `PermissionDenied`, `NotFound`, `Conflict` |
 | `exception_handler.py` | DRF handler that turns every error into the standard error shape |
@@ -108,7 +108,6 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | `api/errors.py` | JSON 404/500 for `/api/` paths (`handler404`, `handler500` in `config/urls.py`) |
 | `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
 | `tasks.py` | `core.ping`, proves a worker is connected |
-
 | `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`, `InvitePreviewRateThrottle`), counted in Redis |
 | `schema.py` | drf-spectacular extensions (documents our session auth) |
 
@@ -117,6 +116,7 @@ Crew building blocks live in the `crews` app, because core must not depend on do
 | Where | What |
 |---|---|
 | `apps.crews.models.CrewScopedModel` | Abstract base with a `crew` FK and `Model.objects.for_crew(crew)`; every crew-owned model inherits it |
+| `apps.crews.models.CrewScopedSoftDeleteModel` | The same, soft deleted: `objects.for_crew(crew)` returns only rows that are not deleted |
 | `apps.crews.api.permissions.IsCrewMember` | Logged in and in a crew; sets `request.member` (the member in the session's active crew) |
 
 Admin-only actions are checked in services (`NotCrewAdmin`), not by a permission class, so the rule

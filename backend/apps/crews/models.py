@@ -11,7 +11,12 @@ from django.db import models
 from django.db.models.functions import Lower
 
 from apps.core import clock
-from apps.core.models import TimeStampedModel
+from apps.core.models import (
+    SoftDeleteManager,
+    SoftDeleteModel,
+    SoftDeleteQuerySet,
+    TimeStampedModel,
+)
 
 
 def validate_timezone(value: str) -> None:
@@ -54,6 +59,38 @@ class CrewScopedModel(TimeStampedModel):
     objects = CrewScopedQuerySet.as_manager()
 
     class Meta:
+        abstract = True
+
+
+class CrewScopedSoftDeleteQuerySet[M: models.Model](  # type: ignore[override]
+    CrewScopedQuerySet[M], SoftDeleteQuerySet[M]
+):
+    def for_crew(self, crew: Crew) -> CrewScopedSoftDeleteQuerySet[M]:
+        return self.filter(crew=crew)
+
+
+class CrewScopedSoftDeleteManager[M: models.Model](SoftDeleteManager[M]):
+    """Only rows that are not deleted, with `.for_crew(crew)`."""
+
+    def get_queryset(self) -> CrewScopedSoftDeleteQuerySet[M]:
+        rows: CrewScopedSoftDeleteQuerySet[M] = CrewScopedSoftDeleteQuerySet(
+            self.model, using=self._db
+        )
+        return rows.filter(deleted_at__isnull=True)
+
+    def for_crew(self, crew: Crew) -> CrewScopedSoftDeleteQuerySet[M]:
+        return self.get_queryset().for_crew(crew)
+
+
+class CrewScopedSoftDeleteModel(SoftDeleteModel):
+    """A crew-owned row that is soft deleted (see `apps.core.models.SoftDeleteModel`)."""
+
+    crew = models.ForeignKey(Crew, on_delete=models.CASCADE, related_name="%(class)ss")
+
+    objects = CrewScopedSoftDeleteManager()
+    all_objects = CrewScopedSoftDeleteQuerySet.as_manager()  # type: ignore[assignment]
+
+    class Meta(SoftDeleteModel.Meta):
         abstract = True
 
 

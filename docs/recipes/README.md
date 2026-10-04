@@ -9,4 +9,5 @@ or missing a step, fix the recipe in the same pull request.
 | [New endpoint](new-endpoint.md) | Adding or changing an API endpoint, backend to frontend |
 | [New screen](new-screen.md) | Adding a route/screen to the PWA |
 | [New migration](new-migration.md) | Changing models |
+| [Soft delete](soft-delete.md) | A model whose rows people delete but we keep |
 | [New Celery task](new-celery-task.md) | Background or scheduled work |

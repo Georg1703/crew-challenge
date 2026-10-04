@@ -105,6 +105,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Business rules live in `services.py`, never in views, serializers or tasks. Views and Celery
   tasks call services. Non-trivial reads go through `selectors.py`.
 - Every domain row carries `crew_id`. A user can belong to several crews (through `Member`).
+- Rows people delete but we keep (challenges, proofs) inherit `SoftDeleteModel` or
+  `CrewScopedSoftDeleteModel`: `objects` hides deleted rows, `delete()` is soft. See
+  `docs/recipes/soft-delete.md`.
 - Store datetimes in UTC. A "challenge day" is a local date in `Crew.timezone`
   (default `Europe/Chisinau`). Test around midnight and DST switches.
 - Scheduled jobs are idempotent (safe to run twice).
