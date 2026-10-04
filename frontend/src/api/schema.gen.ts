@@ -55,6 +55,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Chosen challenges, by start date. */
+        get: operations["challenges_list"];
+        put?: never;
+        /** @description Propose a challenge for the open round. */
+        post: operations["challenges_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["challenges_retrieve"];
+        /** @description The creator replaces their proposal while the round is open. Resets its votes. */
+        put: operations["challenges_update"];
+        post?: never;
+        /** @description The creator or an admin withdraws a proposal while the round is open. */
+        delete: operations["challenges_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/participation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Take part again (before the start). */
+        put: operations["challenges_take_part"];
+        post?: never;
+        /** @description Opt out before the start, or leave a running challenge from tomorrow. */
+        delete: operations["challenges_opt_out"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/repropose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Propose a challenge that was not chosen again, in the open round. */
+        post: operations["challenges_repropose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -193,6 +264,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rounds/{round_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["rounds_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rounds/{round_id}/choice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Admin: choose the round's challenge, or change the choice before it starts. */
+        put: operations["rounds_choose"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rounds/{round_id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Vote for a proposal in this round (replaces your vote), or clear your vote. */
+        put: operations["rounds_vote"];
+        post?: never;
+        /** @description Vote for a proposal in this round (replaces your vote), or clear your vote. */
+        delete: operations["rounds_vote_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rounds/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The round people propose and vote in now (created on first use). */
+        get: operations["rounds_current"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -213,6 +352,101 @@ export interface components {
             /** Format: uuid */
             crew_id: string;
         };
+        ChallengeDetailOut: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            round_id: string;
+            title: string;
+            rules: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            weekdays: number[];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            state: components["schemas"]["ChallengeStateEnum"];
+            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            created_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            created_at: string;
+            revision: number;
+            participants: components["schemas"]["ParticipantOut"][];
+            /** @description The current member counts in it today. */
+            taking_part: boolean;
+        };
+        /** @description The creator's choices. Combinations are checked in services.clean_shape. */
+        ChallengeInRequest: {
+            title: string;
+            /** @default  */
+            rules: string;
+            /** @default star */
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            /** @default  */
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            /** @description For frequency=weekdays: 0 = Monday ... 6 = Sunday. */
+            weekdays?: number[];
+            times?: number | null;
+            /** @default none */
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: decimal */
+            target_value?: string | null;
+            /** @default none */
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            /** @default false */
+            proof_required: boolean;
+        };
+        ChallengeOut: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            round_id: string;
+            title: string;
+            rules: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            weekdays: number[];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            state: components["schemas"]["ChallengeStateEnum"];
+            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            created_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            created_at: string;
+            revision: number;
+        };
+        ChallengeRefInRequest: {
+            /** Format: uuid */
+            challenge_id: string;
+        };
+        /**
+         * @description * `proposed` - Proposed
+         *     * `chosen` - Chosen
+         *     * `not_chosen` - Not chosen
+         * @enum {string}
+         */
+        ChallengeStateEnum: "proposed" | "chosen" | "not_chosen";
         CrewDetailOut: {
             /** Format: uuid */
             id: string;
@@ -230,6 +464,31 @@ export interface components {
         CsrfOut: {
             csrf_token: string;
         };
+        /**
+         * @description * `daily` - Every day
+         *     * `weekdays` - Chosen days of the week
+         *     * `times_per_week` - A number of times a week
+         *     * `times_per_period` - A number of times in the period
+         *     * `once` - Once, by the end
+         * @enum {string}
+         */
+        FrequencyEnum: "daily" | "weekdays" | "times_per_week" | "times_per_period" | "once";
+        /**
+         * @description * `dumbbell` - dumbbell
+         *     * `running` - running
+         *     * `book` - book
+         *     * `water` - water
+         *     * `sugar` - sugar
+         *     * `phone` - phone
+         *     * `sleep` - sleep
+         *     * `walk` - walk
+         *     * `meditate` - meditate
+         *     * `food` - food
+         *     * `money` - money
+         *     * `star` - star
+         * @enum {string}
+         */
+        IconEnum: "dumbbell" | "running" | "book" | "water" | "sugar" | "phone" | "sleep" | "walk" | "meditate" | "food" | "money" | "star";
         InviteOut: {
             code: string;
             /** Format: uri */
@@ -268,6 +527,13 @@ export interface components {
             /** @description Every crew the user belongs to, by name. */
             crews: components["schemas"]["MembershipOut"][];
         };
+        /**
+         * @description * `check` - Just check in
+         *     * `quantity` - A number with a unit
+         *     * `abstain` - Held it (did not do something)
+         * @enum {string}
+         */
+        MeasureEnum: "check" | "quantity" | "abstain";
         MemberOut: {
             /** Format: uuid */
             id: string;
@@ -286,6 +552,15 @@ export interface components {
             display_name: string;
             role: string;
         };
+        /** @enum {unknown} */
+        NullEnum: null;
+        ParticipantOut: {
+            member: components["schemas"]["PersonOut"];
+            /** Format: date */
+            joined_on: string;
+            /** Format: date */
+            ended_on: string | null;
+        };
         PatchedMePatchInRequest: {
             display_name?: string;
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
@@ -301,11 +576,107 @@ export interface components {
             created_by: components["schemas"]["MemberSummaryOut"] | null;
         };
         /**
+         * @description * `month` - Month
+         *     * `week` - Week
+         *     * `custom` - Custom
+         * @enum {string}
+         */
+        PeriodKindEnum: "month" | "week" | "custom";
+        PersonOut: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            avatar_seed: string;
+        };
+        /**
+         * @description * `upcoming` - upcoming
+         *     * `active` - active
+         *     * `finished` - finished
+         * @enum {string}
+         */
+        PhaseEnum: "upcoming" | "active" | "finished";
+        /**
          * @description * `ro` - Romana
          *     * `en` - English
          * @enum {string}
          */
         PreferredLanguageEnum: "ro" | "en";
+        /**
+         * @description * `none` - No proof
+         *     * `photo` - Photo
+         *     * `video` - Video
+         *     * `photo_or_video` - Photo or video
+         * @enum {string}
+         */
+        ProofKindEnum: "none" | "photo" | "video" | "photo_or_video";
+        ProposalOut: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            round_id: string;
+            title: string;
+            rules: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            weekdays: number[];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            state: components["schemas"]["ChallengeStateEnum"];
+            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            created_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            created_at: string;
+            revision: number;
+            vote_count: number;
+            voters: components["schemas"]["PersonOut"][];
+            /** @description Proposed by the current member. */
+            mine: boolean;
+        };
+        RoundOut: {
+            /** Format: uuid */
+            id: string;
+            period_kind: components["schemas"]["PeriodKindEnum"];
+            /** Format: date */
+            period_start: string;
+            /** Format: date */
+            period_end: string;
+            state: components["schemas"]["RoundStateEnum"];
+            selection: components["schemas"]["SelectionEnum"];
+            /** Format: uuid */
+            chosen_id: string | null;
+            chosen_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            chosen_at: string | null;
+            /** @description Oldest first. */
+            proposals: components["schemas"]["ProposalOut"][];
+            /**
+             * Format: uuid
+             * @description The proposal you voted for.
+             */
+            my_vote: string | null;
+            votes_cast: number;
+        };
+        /**
+         * @description * `open` - Open
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        RoundStateEnum: "open" | "closed";
+        /**
+         * @description * `admin` - An admin chooses
+         * @enum {string}
+         */
+        SelectionEnum: "admin";
         /**
          * @description * `valid` - valid
          *     * `expired` - expired
@@ -313,6 +684,14 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "valid" | "expired" | "used";
+        /**
+         * @description * `none` - No target
+         *     * `per_check_in` - Each check-in
+         *     * `per_week` - Each week
+         *     * `per_period` - The whole period
+         * @enum {string}
+         */
+        TargetScopeEnum: "none" | "per_check_in" | "per_week" | "per_period";
         UserOut: {
             /** Format: uuid */
             id: string;
@@ -384,6 +763,179 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    challenges_list: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated: upcoming, active, finished. Default: all three. */
+                phase?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"][];
+                };
+            };
+        };
+    };
+    challenges_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeDetailOut"];
+                };
+            };
+        };
+    };
+    challenges_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_take_part: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeDetailOut"];
+                };
+            };
+        };
+    };
+    challenges_opt_out: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_repropose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
             };
         };
     };
@@ -596,6 +1148,116 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    rounds_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundOut"];
+                };
+            };
+        };
+    };
+    rounds_choose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRefInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundOut"];
+                };
+            };
+        };
+    };
+    rounds_vote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeRefInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundOut"];
+                };
+            };
+        };
+    };
+    rounds_vote_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                round_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rounds_current: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundOut"];
                 };
             };
         };

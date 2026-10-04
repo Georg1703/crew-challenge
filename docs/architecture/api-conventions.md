@@ -108,6 +108,18 @@ POST   /api/v1/crew/invites             admin: -> 201 {code, url, expires_at} (s
 GET    /api/v1/invites/{code}           public: {crew_name, status: valid|expired|used, expires_at}
 POST   /api/v1/invites/{code}/accept    public: {username, password, display_name}
                                         -> 201 me, logged in, a member of the crew
+
+GET    /api/v1/rounds/current           the open round: period, proposals with votes, my_vote
+GET    /api/v1/rounds/{id}              any round of the crew (closed ones show the choice)
+PUT    /api/v1/rounds/{id}/vote         {challenge_id}: vote (replaces your vote); DELETE clears it
+PUT    /api/v1/rounds/{id}/choice       admin: {challenge_id}: choose, or change before the start
+GET    /api/v1/challenges?phase=...     chosen challenges: upcoming, active, finished
+POST   /api/v1/challenges               propose into the open round -> 201
+GET    /api/v1/challenges/{id}          one challenge with participants
+PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
+DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
+POST   /api/v1/challenges/{id}/repropose   copy a not-chosen challenge into the open round
+PUT    /api/v1/challenges/{id}/participation   take part again (before the start); DELETE opts out
 ```
 
 ## Changing the contract

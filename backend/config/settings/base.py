@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.crews",
+    "apps.challenges",
 ]
 
 MIDDLEWARE = [
@@ -131,6 +132,11 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    # Several models have a "state" field; give each enum its own name in the contract.
+    "ENUM_NAME_OVERRIDES": {
+        "ChallengeStateEnum": "apps.challenges.models.Challenge.State",
+        "RoundStateEnum": "apps.challenges.models.Round.State",
+    },
 }
 
 # --- Redis, cache and Celery ----------------------------------------------------------------

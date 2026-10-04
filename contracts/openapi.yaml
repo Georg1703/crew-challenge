@@ -48,6 +48,177 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges:
+    get:
+      operationId: challenges_list
+      description: Chosen challenges, by start date.
+      parameters:
+      - in: query
+        name: phase
+        schema:
+          type: string
+        description: 'Comma-separated: upcoming, active, finished. Default: all three.'
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    post:
+      operationId: challenges_create
+      description: Propose a challenge for the open round.
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}:
+    get:
+      operationId: challenges_retrieve
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDetailOut'
+          description: ''
+    put:
+      operationId: challenges_update
+      description: The creator replaces their proposal while the round is open. Resets
+        its votes.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    delete:
+      operationId: challenges_destroy
+      description: The creator or an admin withdraws a proposal while the round is
+        open.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/participation:
+    put:
+      operationId: challenges_take_part
+      description: Take part again (before the start).
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDetailOut'
+          description: ''
+    delete:
+      operationId: challenges_opt_out
+      description: Opt out before the start, or leave a running challenge from tomorrow.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/repropose:
+    post:
+      operationId: challenges_repropose
+      description: Propose a challenge that was not chosen again, in the open round.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -251,6 +422,118 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeOut'
           description: ''
+  /api/v1/rounds/{round_id}:
+    get:
+      operationId: rounds_retrieve
+      parameters:
+      - in: path
+        name: round_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - rounds
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundOut'
+          description: ''
+  /api/v1/rounds/{round_id}/choice:
+    put:
+      operationId: rounds_choose
+      description: 'Admin: choose the round''s challenge, or change the choice before
+        it starts.'
+      parameters:
+      - in: path
+        name: round_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - rounds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeRefInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundOut'
+          description: ''
+  /api/v1/rounds/{round_id}/vote:
+    put:
+      operationId: rounds_vote
+      description: Vote for a proposal in this round (replaces your vote), or clear
+        your vote.
+      parameters:
+      - in: path
+        name: round_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - rounds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeRefInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundOut'
+          description: ''
+    delete:
+      operationId: rounds_vote_clear
+      description: Vote for a proposal in this round (replaces your vote), or clear
+        your vote.
+      parameters:
+      - in: path
+        name: round_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - rounds
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/rounds/current:
+    get:
+      operationId: rounds_current
+      description: The round people propose and vote in now (created on first use).
+      tags:
+      - rounds
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundOut'
+          description: ''
 components:
   schemas:
     AcceptInviteInRequest:
@@ -289,6 +572,265 @@ components:
           format: uuid
       required:
       - crew_id
+    ChallengeDetailOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        round_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        rules:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          maximum: 100000000
+          minimum: -100000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        state:
+          $ref: '#/components/schemas/ChallengeStateEnum'
+        phase:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantOut'
+        taking_part:
+          type: boolean
+          description: The current member counts in it today.
+      required:
+      - created_at
+      - created_by
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - participants
+      - phase
+      - proof_kind
+      - proof_required
+      - revision
+      - round_id
+      - rules
+      - start_date
+      - state
+      - taking_part
+      - target_scope
+      - target_value
+      - times
+      - title
+      - unit
+      - weekdays
+    ChallengeInRequest:
+      type: object
+      description: The creator's choices. Combinations are checked in services.clean_shape.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 60
+        rules:
+          type: string
+          default: ''
+          maxLength: 500
+        icon:
+          allOf:
+          - $ref: '#/components/schemas/IconEnum'
+          default: star
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+          default: ''
+          maxLength: 20
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+            maximum: 6
+            minimum: 0
+          description: 'For frequency=weekdays: 0 = Monday ... 6 = Sunday.'
+          maxItems: 7
+        times:
+          type: integer
+          minimum: 1
+          nullable: true
+        target_scope:
+          allOf:
+          - $ref: '#/components/schemas/TargetScopeEnum'
+          default: none
+        target_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        proof_kind:
+          allOf:
+          - $ref: '#/components/schemas/ProofKindEnum'
+          default: none
+        proof_required:
+          type: boolean
+          default: false
+      required:
+      - frequency
+      - measure
+      - title
+    ChallengeOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        round_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        rules:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          maximum: 100000000
+          minimum: -100000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        state:
+          $ref: '#/components/schemas/ChallengeStateEnum'
+        phase:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+      required:
+      - created_at
+      - created_by
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - phase
+      - proof_kind
+      - proof_required
+      - revision
+      - round_id
+      - rules
+      - start_date
+      - state
+      - target_scope
+      - target_value
+      - times
+      - title
+      - unit
+      - weekdays
+    ChallengeRefInRequest:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+      required:
+      - challenge_id
+    ChallengeStateEnum:
+      enum:
+      - proposed
+      - chosen
+      - not_chosen
+      type: string
+      description: |-
+        * `proposed` - Proposed
+        * `chosen` - Chosen
+        * `not_chosen` - Not chosen
     CrewDetailOut:
       type: object
       properties:
@@ -330,6 +872,48 @@ components:
           type: string
       required:
       - csrf_token
+    FrequencyEnum:
+      enum:
+      - daily
+      - weekdays
+      - times_per_week
+      - times_per_period
+      - once
+      type: string
+      description: |-
+        * `daily` - Every day
+        * `weekdays` - Chosen days of the week
+        * `times_per_week` - A number of times a week
+        * `times_per_period` - A number of times in the period
+        * `once` - Once, by the end
+    IconEnum:
+      enum:
+      - dumbbell
+      - running
+      - book
+      - water
+      - sugar
+      - phone
+      - sleep
+      - walk
+      - meditate
+      - food
+      - money
+      - star
+      type: string
+      description: |-
+        * `dumbbell` - dumbbell
+        * `running` - running
+        * `book` - book
+        * `water` - water
+        * `sugar` - sugar
+        * `phone` - phone
+        * `sleep` - sleep
+        * `walk` - walk
+        * `meditate` - meditate
+        * `food` - food
+        * `money` - money
+        * `star` - star
     InviteOut:
       type: object
       properties:
@@ -429,6 +1013,16 @@ components:
       - crews
       - member
       - user
+    MeasureEnum:
+      enum:
+      - check
+      - quantity
+      - abstain
+      type: string
+      description: |-
+        * `check` - Just check in
+        * `quantity` - A number with a unit
+        * `abstain` - Held it (did not do something)
     MemberOut:
       type: object
       properties:
@@ -473,6 +1067,25 @@ components:
       - crew_name
       - display_name
       - role
+    NullEnum:
+      enum:
+      - null
+    ParticipantOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        joined_on:
+          type: string
+          format: date
+        ended_on:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - ended_on
+      - joined_on
+      - member
     PatchedMePatchInRequest:
       type: object
       properties:
@@ -506,6 +1119,40 @@ components:
       - expires_at
       - id
       - url
+    PeriodKindEnum:
+      enum:
+      - month
+      - week
+      - custom
+      type: string
+      description: |-
+        * `month` - Month
+        * `week` - Week
+        * `custom` - Custom
+    PersonOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_seed:
+          type: string
+      required:
+      - avatar_seed
+      - display_name
+      - id
+    PhaseEnum:
+      enum:
+      - upcoming
+      - active
+      - finished
+      type: string
+      description: |-
+        * `upcoming` - upcoming
+        * `active` - active
+        * `finished` - finished
     PreferredLanguageEnum:
       enum:
       - ro
@@ -514,6 +1161,186 @@ components:
       description: |-
         * `ro` - Romana
         * `en` - English
+    ProofKindEnum:
+      enum:
+      - none
+      - photo
+      - video
+      - photo_or_video
+      type: string
+      description: |-
+        * `none` - No proof
+        * `photo` - Photo
+        * `video` - Video
+        * `photo_or_video` - Photo or video
+    ProposalOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        round_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        rules:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          maximum: 100000000
+          minimum: -100000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        state:
+          $ref: '#/components/schemas/ChallengeStateEnum'
+        phase:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+        vote_count:
+          type: integer
+        voters:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+        mine:
+          type: boolean
+          description: Proposed by the current member.
+      required:
+      - created_at
+      - created_by
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - mine
+      - phase
+      - proof_kind
+      - proof_required
+      - revision
+      - round_id
+      - rules
+      - start_date
+      - state
+      - target_scope
+      - target_value
+      - times
+      - title
+      - unit
+      - vote_count
+      - voters
+      - weekdays
+    RoundOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        period_kind:
+          $ref: '#/components/schemas/PeriodKindEnum'
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        state:
+          $ref: '#/components/schemas/RoundStateEnum'
+        selection:
+          $ref: '#/components/schemas/SelectionEnum'
+        chosen_id:
+          type: string
+          format: uuid
+          nullable: true
+        chosen_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        chosen_at:
+          type: string
+          format: date-time
+          nullable: true
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposalOut'
+          description: Oldest first.
+        my_vote:
+          type: string
+          format: uuid
+          nullable: true
+          description: The proposal you voted for.
+        votes_cast:
+          type: integer
+      required:
+      - chosen_at
+      - chosen_by
+      - chosen_id
+      - id
+      - my_vote
+      - period_end
+      - period_kind
+      - period_start
+      - proposals
+      - selection
+      - state
+      - votes_cast
+    RoundStateEnum:
+      enum:
+      - open
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `closed` - Closed
+    SelectionEnum:
+      enum:
+      - admin
+      type: string
+      description: '* `admin` - An admin chooses'
     StatusEnum:
       enum:
       - valid
@@ -524,6 +1351,18 @@ components:
         * `valid` - valid
         * `expired` - expired
         * `used` - used
+    TargetScopeEnum:
+      enum:
+      - none
+      - per_check_in
+      - per_week
+      - per_period
+      type: string
+      description: |-
+        * `none` - No target
+        * `per_check_in` - Each check-in
+        * `per_week` - Each week
+        * `per_period` - The whole period
     UserOut:
       type: object
       properties:

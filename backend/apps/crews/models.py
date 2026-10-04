@@ -87,8 +87,8 @@ class CrewScopedSoftDeleteModel(SoftDeleteModel):
 
     crew = models.ForeignKey(Crew, on_delete=models.CASCADE, related_name="%(class)ss")
 
-    objects = CrewScopedSoftDeleteManager()
-    all_objects = CrewScopedSoftDeleteQuerySet.as_manager()  # type: ignore[assignment]
+    objects = CrewScopedSoftDeleteManager()  # type: ignore[misc]
+    all_objects = CrewScopedSoftDeleteQuerySet.as_manager()  # type: ignore[assignment, misc]
 
     class Meta(SoftDeleteModel.Meta):
         abstract = True

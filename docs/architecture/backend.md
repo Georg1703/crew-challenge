@@ -20,7 +20,8 @@ backend/
 |-- apps/
 |   |-- core/               # shared building blocks, no domain logic
 |   |-- accounts/           # User, login/logout/me
-|   `-- crews/              # Crew, Member, Invite, switching crews
+|   |-- crews/              # Crew, Member, Invite, switching crews
+|   `-- challenges/         # Round, Challenge (soft deleted), Vote, Participation
 |-- integrations/
 |   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
 |-- tests/
