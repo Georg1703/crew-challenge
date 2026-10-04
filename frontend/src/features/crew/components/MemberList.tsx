@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Member } from "@/api";
 import { Avatar, List, ListRow, StatusPill } from "@/shared/ui";
 
-/** Members in rotation order, in one list. */
+/** Members in the order they joined, in one list. */
 export function MemberList({ members, meId }: { members: Member[]; meId?: string }) {
   const { t } = useTranslation();
   return (

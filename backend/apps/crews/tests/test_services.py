@@ -25,7 +25,6 @@ def test_create_crew_makes_the_creator_its_first_admin():
     assert member.crew.name == "Familia"
     assert member.crew.timezone == "Europe/Chisinau"
     assert member.is_admin
-    assert member.rotation_position == 0
     assert member.avatar_seed
 
 
@@ -67,7 +66,6 @@ def test_accept_invite_creates_user_member_and_uses_up_the_invite():
     assert member.user.username == "cristina"
     assert member.display_name == "Cris"
     assert member.role == Member.Role.MEMBER
-    assert member.rotation_position == 1  # after the admin who created the invite
     assert invite.used_by == member
     assert invite.used_at is not None
 
@@ -142,73 +140,6 @@ def test_database_rejects_used_by_without_used_at():
     invite.used_by = MemberFactory.create(crew=invite.crew)
     with pytest.raises(IntegrityError), transaction.atomic():
         invite.save()
-
-
-# --- rotation --------------------------------------------------------------------------------
-
-
-def _crew_of(n):
-    admin = AdminFactory.create()
-    return [admin] + [MemberFactory.create(crew=admin.crew) for _ in range(n - 1)]
-
-
-def test_reorder_rotation_swaps_positions_in_one_go():
-    a, b, c = _crew_of(3)
-    services.reorder_rotation(by=a, member_ids=[c.id, a.id, b.id])
-    order = [m.id for m in selectors.list_members(crew=a.crew)]
-    assert order == [c.id, a.id, b.id]
-    assert [m.rotation_position for m in selectors.list_members(crew=a.crew)] == [0, 1, 2]
-
-
-@pytest.mark.parametrize("ids", ["missing_one", "duplicate", "stranger"])
-def test_reorder_rotation_requires_every_member_exactly_once(ids):
-    a, b, c = _crew_of(3)
-    member_ids = {
-        "missing_one": [a.id, b.id],
-        "duplicate": [a.id, b.id, b.id],
-        "stranger": [a.id, b.id, MemberFactory.create().id],
-    }[ids]
-    with pytest.raises(ValidationFailed):
-        services.reorder_rotation(by=a, member_ids=member_ids)
-
-
-def test_only_admins_reorder_the_rotation():
-    a, b = _crew_of(2)
-    with pytest.raises(services.NotCrewAdmin):
-        services.reorder_rotation(by=b, member_ids=[b.id, a.id])
-
-
-def test_next_in_rotation_wraps_around():
-    a, b, c = _crew_of(3)
-    crew = a.crew
-    assert selectors.next_in_rotation(crew=crew, after=None) == a
-    assert selectors.next_in_rotation(crew=crew, after=a) == b
-    assert selectors.next_in_rotation(crew=crew, after=b) == c
-    assert selectors.next_in_rotation(crew=crew, after=c) == a
-
-
-def test_next_in_rotation_follows_the_new_order():
-    a, b, c = _crew_of(3)
-    services.reorder_rotation(by=a, member_ids=[c.id, b.id, a.id])
-    for m in (a, b, c):
-        m.refresh_from_db()
-    assert selectors.next_in_rotation(crew=a.crew, after=c) == b
-    assert selectors.next_in_rotation(crew=a.crew, after=a) == c
-
-
-def test_next_in_rotation_needs_members():
-    with pytest.raises(ValueError, match="no members"):
-        selectors.next_in_rotation(crew=CrewFactory.create(), after=None)
-
-
-def test_a_new_member_joins_at_the_end_of_the_rotation():
-    a, b = _crew_of(2)
-    invite = services.create_invite(by=a)
-    c = services.accept_invite(
-        code=invite.code, username="newbie", password=STRONG, display_name="N"
-    )
-    assert c.rotation_position == 2
-    assert selectors.next_in_rotation(crew=a.crew, after=b) == c
 
 
 # --- selectors -------------------------------------------------------------------------------

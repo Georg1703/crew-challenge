@@ -111,8 +111,12 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Tree stage and flame tier (after v1) are derived in the API, not stored.
 
 ## Game rules that code must respect
-- One proposer per month, taken from a fixed rotation (`Member.rotation_position`). Only the
-  proposer can create or edit the next challenge. Challenges go draft -> sealed -> active -> finished.
+- Any member proposes challenges for the next period (v1: next month), the crew votes, and a crew
+  admin chooses which proposal becomes the challenge. Votes guide the admin; they do not decide.
+- Challenges are visible only inside their crew and show who proposed them and when. A proposal can
+  be edited by its creator while the round is open (every edit resets its votes); once chosen,
+  nothing can be edited. The whole crew takes part by default; members can opt out before the start.
+- Plan and details: `docs/plans/monthly-challenges.md`.
 - A check-in is created the moment proof upload *starts* (status `uploading`). It counts for the
   day if the upload completes within 24 h after that day's midnight deadline.
 - Missed day -> streak reset. After v1: tree wilted and one pending Wheel of Doom spin per missed day.

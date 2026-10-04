@@ -34,8 +34,8 @@ def list_memberships(*, user: User) -> list[Member]:
 
 
 def list_members(*, crew: Crew) -> list[Member]:
-    """Members in rotation order."""
-    return list(Member.objects.for_crew(crew).select_related("user").order_by("rotation_position"))
+    """Members in the order they joined."""
+    return list(Member.objects.for_crew(crew).select_related("user").order_by("created_at", "id"))
 
 
 def get_invite(*, code: str) -> Invite | None:
@@ -54,17 +54,3 @@ def list_pending_invites(*, crew: Crew) -> list[Invite]:
         .filter(used_at__isnull=True, expires_at__gt=clock.now())
         .order_by("-created_at")
     )
-
-
-def next_in_rotation(*, crew: Crew, after: Member | None) -> Member:
-    """The member who proposes after `after`, wrapping around to the first.
-
-    With `after=None` (nobody has proposed yet) it is the first member in the rotation.
-    """
-    members = list_members(crew=crew)
-    if not members:
-        raise ValueError(f"Crew {crew.pk} has no members.")
-    if after is None:
-        return members[0]
-    later = [m for m in members if m.rotation_position > after.rotation_position]
-    return later[0] if later else members[0]

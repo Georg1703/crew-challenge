@@ -5,11 +5,8 @@ Business rules live in services.py; this module holds data and database-level in
 
 from __future__ import annotations
 
-from datetime import time
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -36,24 +33,9 @@ class Crew(TimeStampedModel):
         validators=[validate_timezone],
         help_text="IANA time zone, for example Europe/Chisinau. Challenge days follow it.",
     )
-    proposal_deadline_day = models.PositiveSmallIntegerField(
-        default=28,
-        validators=[MinValueValidator(1), MaxValueValidator(28)],
-        help_text="Day of the month by which the proposer must publish the next challenge.",
-    )
-    reveal_time = models.TimeField(
-        default=time(20, 0),
-        help_text="Local time on the last day of the month when the next challenge is revealed.",
-    )
 
     class Meta:
         ordering = ("name",)
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(proposal_deadline_day__gte=1, proposal_deadline_day__lte=28),
-                name="crew_deadline_day_1_to_28",
-            ),
-        ]
 
     def __str__(self) -> str:
         return self.name
@@ -88,9 +70,6 @@ class Member(CrewScopedModel):
     display_name = models.CharField(max_length=40)
     avatar_seed = models.CharField(max_length=16, help_text="Seed for the generated avatar.")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
-    rotation_position = models.PositiveSmallIntegerField(
-        help_text="Order in which members propose challenges, starting at 0."
-    )
     last_active_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -98,15 +77,9 @@ class Member(CrewScopedModel):
     )
 
     class Meta:
-        ordering = ("crew", "rotation_position")
+        ordering = ("crew", "created_at")
         constraints = [
             models.UniqueConstraint(fields=["crew", "user"], name="member_unique_user_per_crew"),
-            # Deferred so a whole rotation can be reordered inside one transaction.
-            models.UniqueConstraint(
-                fields=["crew", "rotation_position"],
-                name="member_unique_rotation_position",
-                deferrable=models.Deferrable.DEFERRED,
-            ),
             models.UniqueConstraint(
                 Lower("display_name"), "crew", name="member_unique_display_name_per_crew"
             ),

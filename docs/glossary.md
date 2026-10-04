@@ -6,19 +6,19 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Term | Code name | Meaning |
 |---|---|---|
 | Crew | `Crew`, `crew`, `crew_id` | A group of people who challenge each other (a family, friends, a team). Not "family" or "group" (`Group` clashes with Django's auth model). UI: "Crew" / ro: "Echipa". |
-| Member | `Member` | A user's membership in one crew. Holds display name, role, and rotation position. A user can be a member of several crews. |
-| Active crew | session `active_crew_id` | The crew a user is acting in when they belong to several. Defaults to their oldest membership. |
-| Role | `Member.role` | `admin` (can invite, reorder rotation) or `member`. |
+| Member | `Member` | A user's membership in one crew. Holds display name and role. A user can be a member of several crews. |
+| Role | `Member.role` | `admin` (can invite, choose the next challenge) or `member`. |
 | Invite | `Invite` | A one-time code/link that lets a new person join a crew. |
 | Pending invite | `list_pending_invites` | An invite nobody has used and that has not expired. Admins see these and can revoke them. |
 | Revoke | `revoke_invite` | An admin cancels a pending invite; its link stops working at once (the row is deleted). |
 | Join with account | `join_with_account` | Someone who already has an account (from another crew) joins a crew through an invite. |
 | Active crew | `active_crew_id` (session), `Member.last_active_at` | The crew a user in several crews acts in. Chosen in Me; the most recent choice opens after the next login. |
-| Rotation | `Member.rotation_position` | The fixed order in which members take turns proposing challenges. |
-| Proposer | `Challenge.proposer` | The member whose turn it is to create next month's challenge. |
-| Challenge | `Challenge` | The shared task for one month. Status: `draft` -> `sealed` -> `active` -> `finished`. |
-| Sealed | `Challenge.Status.SEALED` | Published by the proposer but hidden until the reveal. |
-| Reveal | `reveal_at` | The moment a sealed challenge flips open for everyone. |
+| Round | `Round` | Choosing the challenge for one period (v1: next month). Open while members propose and vote; closed once an admin chooses. |
+| Proposal | `Challenge` with `state=proposed` | A challenge a member suggests for the open round. Visible only to the crew, with who proposed it and when. |
+| Vote | `Vote` | A member's pick among the round's proposals; one per member per round, changeable while the round is open. |
+| Choose | `choose_challenge` | An admin picks which proposal becomes the period's challenge (votes guide, they do not decide). |
+| Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` or `not_chosen`. Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
+| Participation | `Participation` | A member taking part in a chosen challenge. The whole crew by default; members can opt out before the start or leave after. |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
 | Check-in | `CheckIn` (not "Checkin") | A member's completion of one challenge day. Status: `uploading`, `done`, `missed`, `excused`. |
 | Proof | `Proof` | What backs a check-in or a served punishment: `video`, `audio`, `photo`, or `text`. |

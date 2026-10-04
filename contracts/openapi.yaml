@@ -51,7 +51,8 @@ paths:
   /api/v1/crew:
     get:
       operationId: crew_retrieve
-      description: The crew the user is acting in, with members in rotation order.
+      description: The crew the user is acting in, with its members in the order they
+        joined.
       tags:
       - crew
       security:
@@ -114,27 +115,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/crew/rotation:
-    patch:
-      operationId: crew_rotation_update
-      description: 'Admin: set the proposer order. Send every member id once, in the
-        new order.'
-      tags:
-      - crew
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedRotationInRequest'
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CrewDetailOut'
-          description: ''
   /api/v1/invites/{code}:
     get:
       operationId: invites_retrieve
@@ -319,22 +299,15 @@ components:
           type: string
         timezone:
           type: string
-        proposal_deadline_day:
-          type: integer
-        reveal_time:
-          type: string
-          format: time
         members:
           type: array
           items:
             $ref: '#/components/schemas/MemberOut'
-          description: In rotation order.
+          description: In the order they joined.
       required:
       - id
       - members
       - name
-      - proposal_deadline_day
-      - reveal_time
       - timezone
     CrewOut:
       type: object
@@ -346,16 +319,9 @@ components:
           type: string
         timezone:
           type: string
-        proposal_deadline_day:
-          type: integer
-        reveal_time:
-          type: string
-          format: time
       required:
       - id
       - name
-      - proposal_deadline_day
-      - reveal_time
       - timezone
     CsrfOut:
       type: object
@@ -398,7 +364,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MemberSummaryOut'
-          description: Members in rotation order. Empty unless the invite is valid.
+          description: Members in the order they joined. Empty unless the invite is
+            valid.
         already_member:
           type: boolean
           description: True when the logged-in user is already in this crew.
@@ -472,8 +439,6 @@ components:
           type: string
         role:
           type: string
-        rotation_position:
-          type: integer
         avatar_seed:
           type: string
       required:
@@ -481,7 +446,6 @@ components:
       - display_name
       - id
       - role
-      - rotation_position
     MemberSummaryOut:
       type: object
       properties:
@@ -518,16 +482,6 @@ components:
           maxLength: 40
         preferred_language:
           $ref: '#/components/schemas/PreferredLanguageEnum'
-    PatchedRotationInRequest:
-      type: object
-      properties:
-        member_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
-          maxItems: 100
-          minItems: 1
     PendingInviteOut:
       type: object
       properties:

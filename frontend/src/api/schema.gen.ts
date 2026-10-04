@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The crew the user is acting in, with members in rotation order. */
+        /** @description The crew the user is acting in, with its members in the order they joined. */
         get: operations["crew_retrieve"];
         put?: never;
         post?: never;
@@ -105,23 +105,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/api/v1/crew/rotation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description Admin: set the proposer order. Send every member id once, in the new order. */
-        patch: operations["crew_rotation_update"];
         trace?: never;
     };
     "/api/v1/invites/{code}": {
@@ -235,10 +218,7 @@ export interface components {
             id: string;
             name: string;
             timezone: string;
-            proposal_deadline_day: number;
-            /** Format: time */
-            reveal_time: string;
-            /** @description In rotation order. */
+            /** @description In the order they joined. */
             members: components["schemas"]["MemberOut"][];
         };
         CrewOut: {
@@ -246,9 +226,6 @@ export interface components {
             id: string;
             name: string;
             timezone: string;
-            proposal_deadline_day: number;
-            /** Format: time */
-            reveal_time: string;
         };
         CsrfOut: {
             csrf_token: string;
@@ -267,7 +244,7 @@ export interface components {
             expires_at: string;
             /** @description Who created the invite. Only for valid invites. */
             invited_by: components["schemas"]["MemberSummaryOut"] | null;
-            /** @description Members in rotation order. Empty unless the invite is valid. */
+            /** @description Members in the order they joined. Empty unless the invite is valid. */
             members: components["schemas"]["MemberSummaryOut"][];
             /** @description True when the logged-in user is already in this crew. */
             already_member: boolean;
@@ -296,7 +273,6 @@ export interface components {
             id: string;
             display_name: string;
             role: string;
-            rotation_position: number;
             avatar_seed: string;
         };
         MemberSummaryOut: {
@@ -313,9 +289,6 @@ export interface components {
         PatchedMePatchInRequest: {
             display_name?: string;
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
-        };
-        PatchedRotationInRequest: {
-            member_ids?: string[];
         };
         PendingInviteOut: {
             code: string;
@@ -488,29 +461,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    crew_rotation_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedRotationInRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrewDetailOut"];
-                };
             };
         };
     };

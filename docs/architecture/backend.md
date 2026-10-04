@@ -20,7 +20,7 @@ backend/
 |-- apps/
 |   |-- core/               # shared building blocks, no domain logic
 |   |-- accounts/           # User, login/logout/me
-|   `-- crews/              # Crew, Member, Invite, rotation
+|   `-- crews/              # Crew, Member, Invite, switching crews
 |-- integrations/
 |   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
 |-- tests/
@@ -33,8 +33,8 @@ backend/
 ```
 apps/crews/
 |-- models.py        # fields, constraints, small computed properties
-|-- services.py      # writes: create_crew_with_admin, create_invite, accept_invite, reorder_rotation
-|-- selectors.py     # reads: get_member_for_user, list_members, next_proposer
+|-- services.py      # writes: create_crew_with_admin, create_invite, accept_invite, switch_crew
+|-- selectors.py     # reads: get_active_member, list_members, list_pending_invites
 |-- api/
 |   |-- serializers.py
 |   |-- views.py
@@ -118,7 +118,6 @@ Crew building blocks live in the `crews` app, because core must not depend on do
 |---|---|
 | `apps.crews.models.CrewScopedModel` | Abstract base with a `crew` FK and `Model.objects.for_crew(crew)`; every crew-owned model inherits it |
 | `apps.crews.api.permissions.IsCrewMember` | Logged in and in a crew; sets `request.member` (the member in the session's active crew) |
-| `apps.crews.selectors.next_in_rotation` | Who proposes after a given member, wrapping around |
 
 Admin-only actions are checked in services (`NotCrewAdmin`), not by a permission class, so the rule
 lives in one place and also protects Celery tasks and commands.
@@ -130,8 +129,7 @@ lives in one place and also protects Celery tasks and commands.
 - Login and joining are rate-limited per IP in Redis; behind Caddy the IP comes from
   `X-Forwarded-For` (`TRUSTED_PROXY_COUNT`, 1 in production).
 - Invites are single-use, expire after 7 days, and are locked (`select_for_update`) while used.
-- Database constraints back the rules: one membership per user per crew, unique rotation
-  positions (deferred, so a rotation can be reordered in one transaction), unique display names
+- Database constraints back the rules: one membership per user per crew and unique display names
   per crew ignoring case.
 
 ## Time

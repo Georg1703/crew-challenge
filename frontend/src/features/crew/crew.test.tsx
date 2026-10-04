@@ -25,7 +25,7 @@ function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = []) {
 }
 
 describe("crew screen", () => {
-  it("lists members in rotation order and marks you", async () => {
+  it("lists members in join order and marks you", async () => {
     mockGets(meAs(bogdan));
     renderScreen(<CrewRoute />);
 

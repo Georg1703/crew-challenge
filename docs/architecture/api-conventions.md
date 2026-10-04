@@ -102,13 +102,12 @@ POST   /api/v1/auth/logout              -> 204
 GET    /api/v1/me                       {user, member, crew}; member and crew are null outside a crew
 PATCH  /api/v1/me                       {display_name?, preferred_language?} -> me
 
-GET    /api/v1/crew                     the active crew + members in rotation order
-PATCH  /api/v1/crew/rotation            admin: {member_ids: [...every member, in the new order]}
+GET    /api/v1/crew                     the active crew + members in the order they joined
 POST   /api/v1/crew/invites             admin: -> 201 {code, url, expires_at} (single use, 7 days)
 
 GET    /api/v1/invites/{code}           public: {crew_name, status: valid|expired|used, expires_at}
 POST   /api/v1/invites/{code}/accept    public: {username, password, display_name}
-                                        -> 201 me, logged in, joined at the end of the rotation
+                                        -> 201 me, logged in, a member of the crew
 ```
 
 ## Changing the contract

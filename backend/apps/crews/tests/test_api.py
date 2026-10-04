@@ -67,39 +67,19 @@ def test_me_update_display_name_needs_a_crew(auth_client):
 # --- /crew -----------------------------------------------------------------------------------
 
 
-def test_crew_lists_members_in_rotation_order(api_client):
+def test_crew_lists_members_in_join_order(api_client):
     admin = AdminFactory.create()
     second = MemberFactory.create(crew=admin.crew)
     MemberFactory.create()  # another crew, must not appear
     body = logged_in(api_client, second).get("/api/v1/crew").json()
     assert [m["id"] for m in body["members"]] == [str(admin.id), str(second.id)]
-    assert body["reveal_time"] == "20:00:00"
+    assert "rotation_position" not in body["members"][0]
 
 
 def test_crew_requires_membership(auth_client):
     response = auth_client.get("/api/v1/crew")
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "not_crew_member"
-
-
-def test_admin_reorders_rotation(browser):
-    admin = AdminFactory.create()
-    other = MemberFactory.create(crew=admin.crew)
-    response = logged_in(browser, admin).patch(
-        "/api/v1/crew/rotation", {"member_ids": [str(other.id), str(admin.id)]}, format="json"
-    )
-    assert response.status_code == 200
-    assert [m["id"] for m in response.json()["members"]] == [str(other.id), str(admin.id)]
-
-
-def test_member_cannot_reorder_rotation(browser):
-    admin = AdminFactory.create()
-    other = MemberFactory.create(crew=admin.crew)
-    response = logged_in(browser, other).patch(
-        "/api/v1/crew/rotation", {"member_ids": [str(other.id), str(admin.id)]}, format="json"
-    )
-    assert response.status_code == 403
-    assert response.json()["error"]["code"] == "not_crew_admin"
 
 
 # --- invites ---------------------------------------------------------------------------------
@@ -207,7 +187,6 @@ def test_joining_creates_the_account_logs_in_and_lands_in_the_crew(browser):
     body = response.json()
     assert body["user"]["username"] == "cristina"
     assert body["crew"]["id"] == str(invite.crew_id)
-    assert body["member"]["rotation_position"] == 1
     # The session is live: the new member can see the crew right away.
     assert browser.get("/api/v1/crew").status_code == 200
 
