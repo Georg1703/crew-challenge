@@ -5,10 +5,10 @@
 }
 
 .title {
-  font-size: var(--text-xl);
+  font-size: var(--text-title-m);
 }
 
 .link {
   color: var(--color-accent);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-bold);
 }

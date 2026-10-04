@@ -39,6 +39,6 @@
 }
 
 .label {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
 }

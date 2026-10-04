@@ -2,9 +2,9 @@ import { cx } from "@/shared/lib/cx";
 
 import styles from "./Avatar.module.css";
 
-const COLORS = 6; // matches --color-avatar-1..6 in tokens.css
+const COLORS = 5; // matches --color-avatar-1..5 in tokens.css
 
-/** A stable color index (1..6) from the member's avatar seed. */
+/** A stable color index (1..5) from the member's avatar seed. */
 export function avatarColor(seed: string): number {
   let hash = 0;
   for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;

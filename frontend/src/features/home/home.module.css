@@ -1,16 +1,16 @@
 .crewName {
   color: var(--color-accent);
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
   font-weight: var(--weight-bold);
 }
 
 .greeting {
-  font-size: var(--text-3xl);
+  font-size: var(--text-title-l);
   font-weight: var(--weight-bold);
 }
 
 .cardTitle {
-  font-size: var(--text-xl);
+  font-size: var(--text-title-m);
 }
 
 .muted {
@@ -24,5 +24,5 @@
 }
 
 .sectionTitle {
-  font-size: var(--text-lg);
+  font-size: var(--text-title-s);
 }

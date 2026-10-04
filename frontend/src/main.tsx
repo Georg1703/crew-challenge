@@ -1,3 +1,4 @@
+import "@fontsource-variable/nunito-sans/wght.css";
 import "./styles/tokens.css";
 import "./styles/global.css";
 import "./i18n";

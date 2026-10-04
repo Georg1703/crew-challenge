@@ -23,7 +23,14 @@ import {
 } from "@/shared/ui";
 
 import styles from "./design.module.css";
-import { colorTokens, radiusTokens, shadowTokens, spaceTokens, textTokens } from "./tokens";
+import {
+  colorTokens,
+  radiusTokens,
+  shadowTokens,
+  sizeTokens,
+  spaceTokens,
+  textTokens,
+} from "./tokens";
 
 type Theme = "system" | "light" | "dark";
 
@@ -74,7 +81,17 @@ export function DesignRoute() {
 
       <Section title="Typography">
         {textTokens.map((size) => (
-          <p key={size} style={{ fontSize: `var(--text-${size})` }}>
+          <p
+            key={size}
+            style={{
+              fontSize: `var(--text-${size})`,
+              lineHeight: `var(--leading-${size})`,
+              fontWeight:
+                size === "body" || size === "small"
+                  ? "var(--weight-regular)"
+                  : "var(--weight-bold)",
+            }}
+          >
             --text-{size} Provocarea lunii: citește două cărți
           </p>
         ))}
@@ -106,6 +123,17 @@ export function DesignRoute() {
               style={{ boxShadow: `var(--shadow-${shadow})` }}
             >
               <code>shadow-{shadow}</code>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Sizes">
+        <div className={styles.row}>
+          {sizeTokens.map((size) => (
+            <div key={size} className={styles.spaceItem}>
+              <span className={styles.spaceBar} style={{ width: `var(--${size})` }} />
+              <code>{size}</code>
             </div>
           ))}
         </div>

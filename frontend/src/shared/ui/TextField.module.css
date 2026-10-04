@@ -5,17 +5,17 @@
 }
 
 .label {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
 }
 
 .input {
   min-height: var(--tap-min);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: var(--text-md);
+  font-size: var(--text-body);
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
@@ -34,11 +34,11 @@
 }
 
 .hint {
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
   color: var(--color-text-muted);
 }
 
 .error {
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
   color: var(--color-danger);
 }

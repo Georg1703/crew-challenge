@@ -18,12 +18,12 @@
 }
 
 .installTitle {
-  font-size: var(--text-lg);
+  font-size: var(--text-title-s);
 }
 
 .muted {
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
 }
 
 .actions {
@@ -45,7 +45,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-bold);
 }
 
 .stepNumber {
@@ -58,7 +58,7 @@
   align-items: center;
   gap: var(--space-2);
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
 }
 
 .pointer {

@@ -1,90 +1,109 @@
 /*
  * Design tokens - the ONLY place where the look of the app is defined.
+ * Source: the "Crew Challenges" design system (docs/design-system.md).
  *
  * Two layers:
- *   1. Primitives (--palette-*, raw scales). Never used by components directly.
- *   2. Semantic tokens (--color-*, --space-*, --radius-*, ...). Components use only these.
+ *   1. Primitives (--palette-*). Never used by components directly.
+ *   2. Semantic tokens (--color-*, --text-*, --space-*, --radius-*, ...). Components use only these.
  *
- * To restyle the app, change this file. Dark mode re-maps semantic tokens to other primitives.
- * The current values are a deliberately plain PLACEHOLDER theme until the visual direction is
- * chosen. See docs/design-system.md.
+ * Dark mode re-maps semantic colors and shadows only.
  */
 
 :root {
   /* ---------- 1. Primitives ---------- */
-  --palette-neutral-0: #fff;
-  --palette-neutral-50: #f7f7f8;
-  --palette-neutral-100: #eeeef1;
-  --palette-neutral-200: #dcdce1;
-  --palette-neutral-300: #c2c2ca;
-  --palette-neutral-400: #9a9aa5;
-  --palette-neutral-500: #73737f;
-  --palette-neutral-600: #565661;
-  --palette-neutral-700: #3d3d46;
-  --palette-neutral-800: #27272e;
-  --palette-neutral-900: #18181d;
-  --palette-neutral-950: #0f0f13;
-  --palette-accent-100: #e8e6ff;
-  --palette-accent-300: #a9a2ff;
-  --palette-accent-500: #5b4cf0;
-  --palette-accent-600: #4a3bd6;
-  --palette-accent-700: #3b2eb0;
-  --palette-green-500: #1f9d55;
-  --palette-green-300: #6fd39a;
-  --palette-red-500: #d93d3d;
-  --palette-red-300: #f08a8a;
-  --palette-amber-500: #c98500;
-  --palette-amber-300: #f2c35c;
-  --palette-black-alpha-50: #0000008c;
-  --palette-avatar-1: #e8a87c;
-  --palette-avatar-2: #85cdca;
-  --palette-avatar-3: #c38d9e;
-  --palette-avatar-4: #9ab87a;
-  --palette-avatar-5: #8e9aaf;
-  --palette-avatar-6: #e2c275;
+  --palette-white: #fff;
+  --palette-black-alpha-60: #0009;
+  --palette-stone-50: #fbfaf6;
+  --palette-stone-100: #f3f4ef;
+  --palette-stone-200: #e6e8e1;
+  --palette-ink-400: #9aa19c;
+  --palette-ink-600: #5f6a64;
+  --palette-ink-900: #25313a;
+  --palette-ink-900-alpha-34: #25313a57;
+  --palette-night-950: #161a18;
+  --palette-night-900: #1f2421;
+  --palette-night-800: #272d29;
+  --palette-night-700: #333a35;
+  --palette-mist-50: #f1f3ef;
+  --palette-mist-300: #a8b1ab;
+  --palette-mist-600: #5f6762;
+  --palette-clay-50: #fdeee8;
+  --palette-clay-200: #f4a189;
+  --palette-clay-300: #f08a6e;
+  --palette-clay-500: #c25137;
+  --palette-clay-700: #a9452f;
+  --palette-clay-950: #3a2620;
+  --palette-green-50: #e7f2e9;
+  --palette-green-300: #6cc59a;
+  --palette-green-700: #2f7556;
+  --palette-green-950: #1e3328;
+  --palette-amber-50: #fff4d8;
+  --palette-amber-300: #e8bc5a;
+  --palette-amber-700: #8a6210;
+  --palette-amber-950: #3a2f14;
+  --palette-red-50: #fcebea;
+  --palette-red-300: #f2867e;
+  --palette-red-700: #b3261e;
+  --palette-red-950: #3d1e1c;
+  --palette-avatar-1: #b5583a;
+  --palette-avatar-2: #44779a;
+  --palette-avatar-3: #96691a;
+  --palette-avatar-4: #7c6ca0;
+  --palette-avatar-5: #3f7a58;
 
   /* ---------- 2. Semantic: color ---------- */
-  --color-bg: var(--palette-neutral-50);
-  --color-surface: var(--palette-neutral-0);
-  --color-surface-sunken: var(--palette-neutral-100);
-  --color-border: var(--palette-neutral-200);
-  --color-border-strong: var(--palette-neutral-300);
-  --color-text: var(--palette-neutral-900);
-  --color-text-muted: var(--palette-neutral-500);
-  --color-text-inverse: var(--palette-neutral-0);
-  --color-accent: var(--palette-accent-500);
-  --color-accent-pressed: var(--palette-accent-700);
-  --color-accent-soft: var(--palette-accent-100);
-  --color-on-accent: var(--palette-neutral-0);
-  --color-success: var(--palette-green-500);
-  --color-danger: var(--palette-red-500);
-  --color-warning: var(--palette-amber-500);
-  --color-focus-ring: var(--palette-accent-300);
-  --color-overlay: var(--palette-black-alpha-50);
+  --color-bg: var(--palette-stone-50);
+  --color-surface: var(--palette-white);
+  --color-surface-sunken: var(--palette-stone-100);
+  --color-border: var(--palette-stone-200);
+  --color-text: var(--palette-ink-900);
+  --color-text-muted: var(--palette-ink-600);
+  --color-text-disabled: var(--palette-ink-400);
+  --color-text-inverse: var(--palette-white);
+  --color-accent: var(--palette-clay-500);
+  --color-accent-pressed: var(--palette-clay-700);
+  --color-accent-soft: var(--palette-clay-50);
+  --color-on-accent: var(--palette-white);
+  --color-success: var(--palette-green-700);
+  --color-success-soft: var(--palette-green-50);
+  --color-warning: var(--palette-amber-700);
+  --color-warning-soft: var(--palette-amber-50);
+  --color-danger: var(--palette-red-700);
+  --color-danger-soft: var(--palette-red-50);
+  --color-focus-ring: var(--palette-clay-500);
+  --color-overlay: var(--palette-ink-900-alpha-34);
   --color-avatar-1: var(--palette-avatar-1);
   --color-avatar-2: var(--palette-avatar-2);
   --color-avatar-3: var(--palette-avatar-3);
   --color-avatar-4: var(--palette-avatar-4);
   --color-avatar-5: var(--palette-avatar-5);
-  --color-avatar-6: var(--palette-avatar-6);
-  --color-on-avatar: var(--palette-neutral-900);
+  --color-on-avatar: var(--palette-white);
 
-  /* ---------- Semantic: typography ---------- */
-  --font-sans: system-ui, -apple-system, "Segoe UI", roboto, sans-serif;
+  /* ---------- Semantic: typography (Nunito Sans, 400 and 700 only) ---------- */
+  --font-sans:
+    "Nunito Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-sans);
   --font-mono: ui-monospace, "SF Mono", menlo, monospace;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
-  --text-3xl: 2.25rem;
   --weight-regular: 400;
-  --weight-medium: 550;
   --weight-bold: 700;
-  --leading-tight: 1.2;
-  --leading-normal: 1.5;
+
+  /* One title per screen (title-l). Sizes and line heights come in pairs. */
+  --text-title-l: 1.75rem;
+  --leading-title-l: 2.125rem;
+  --text-title-m: 1.25rem;
+  --leading-title-m: 1.625rem;
+  --text-title-s: 1.0625rem;
+  --leading-title-s: 1.375rem;
+  --text-body: 0.9375rem;
+  --leading-body: 1.375rem;
+  --text-small: 0.8125rem;
+  --leading-small: 1.125rem;
+  --text-caption: 0.75rem;
+  --leading-caption: 1rem;
+  --text-number: 2rem;
+  --leading-number: 2.25rem;
+  --tracking-title: -0.02em;
+  --tracking-tight: -0.01em;
 
   /* ---------- Semantic: space (4px grid) ---------- */
   --space-1: 0.25rem;
@@ -100,11 +119,11 @@
   /* ---------- Semantic: shape and depth ---------- */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1.25rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-full: 999px;
-  --shadow-sm: 0 1px 2px #0000000f;
-  --shadow-md: 0 4px 16px #00000014;
-  --shadow-lg: 0 12px 40px #0000002e;
+  --shadow-card: 0 1px 2px #25313a0a, 0 8px 24px #25313a0f;
+  --shadow-sheet: 0 -12px 40px #25313a24;
 
   /* ---------- Semantic: layering ---------- */
   --z-tabbar: 10;
@@ -117,8 +136,14 @@
   --duration-slow: 400ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* ---------- Semantic: layout ---------- */
+  /* ---------- Semantic: sizes and layout ---------- */
   --tap-min: 44px;
+  --button-height: 3.25rem;
+  --button-height-sm: 2.75rem;
+  --input-height: 3rem;
+  --avatar-sm: 1.75rem;
+  --avatar-md: 2.5rem;
+  --avatar-lg: 4rem;
   --tabbar-height: 64px;
   --content-max-width: 34rem;
 }
@@ -126,44 +151,56 @@
 /* Dark theme: re-map semantic colors only. Follows the phone unless data-theme forces one. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: var(--palette-neutral-950);
-    --color-surface: var(--palette-neutral-900);
-    --color-surface-sunken: var(--palette-neutral-800);
-    --color-border: var(--palette-neutral-800);
-    --color-border-strong: var(--palette-neutral-700);
-    --color-text: var(--palette-neutral-50);
-    --color-text-muted: var(--palette-neutral-400);
-    --color-text-inverse: var(--palette-neutral-950);
-    --color-accent: var(--palette-accent-300);
-    --color-accent-pressed: var(--palette-accent-100);
-    --color-accent-soft: var(--palette-accent-700);
-    --color-on-accent: var(--palette-neutral-950);
+    --color-bg: var(--palette-night-950);
+    --color-surface: var(--palette-night-900);
+    --color-surface-sunken: var(--palette-night-800);
+    --color-border: var(--palette-night-700);
+    --color-text: var(--palette-mist-50);
+    --color-text-muted: var(--palette-mist-300);
+    --color-text-disabled: var(--palette-mist-600);
+    --color-text-inverse: var(--palette-night-950);
+    --color-accent: var(--palette-clay-300);
+    --color-accent-pressed: var(--palette-clay-200);
+    --color-accent-soft: var(--palette-clay-950);
+    --color-on-accent: var(--palette-night-950);
     --color-success: var(--palette-green-300);
-    --color-danger: var(--palette-red-300);
+    --color-success-soft: var(--palette-green-950);
     --color-warning: var(--palette-amber-300);
-    --color-focus-ring: var(--palette-accent-500);
+    --color-warning-soft: var(--palette-amber-950);
+    --color-danger: var(--palette-red-300);
+    --color-danger-soft: var(--palette-red-950);
+    --color-focus-ring: var(--palette-clay-300);
+    --color-overlay: var(--palette-black-alpha-60);
+    --shadow-card: none;
+    --shadow-sheet: 0 -12px 40px #00000080;
 
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-bg: var(--palette-neutral-950);
-  --color-surface: var(--palette-neutral-900);
-  --color-surface-sunken: var(--palette-neutral-800);
-  --color-border: var(--palette-neutral-800);
-  --color-border-strong: var(--palette-neutral-700);
-  --color-text: var(--palette-neutral-50);
-  --color-text-muted: var(--palette-neutral-400);
-  --color-text-inverse: var(--palette-neutral-950);
-  --color-accent: var(--palette-accent-300);
-  --color-accent-pressed: var(--palette-accent-100);
-  --color-accent-soft: var(--palette-accent-700);
-  --color-on-accent: var(--palette-neutral-950);
+  --color-bg: var(--palette-night-950);
+  --color-surface: var(--palette-night-900);
+  --color-surface-sunken: var(--palette-night-800);
+  --color-border: var(--palette-night-700);
+  --color-text: var(--palette-mist-50);
+  --color-text-muted: var(--palette-mist-300);
+  --color-text-disabled: var(--palette-mist-600);
+  --color-text-inverse: var(--palette-night-950);
+  --color-accent: var(--palette-clay-300);
+  --color-accent-pressed: var(--palette-clay-200);
+  --color-accent-soft: var(--palette-clay-950);
+  --color-on-accent: var(--palette-night-950);
   --color-success: var(--palette-green-300);
-  --color-danger: var(--palette-red-300);
+  --color-success-soft: var(--palette-green-950);
   --color-warning: var(--palette-amber-300);
-  --color-focus-ring: var(--palette-accent-500);
+  --color-warning-soft: var(--palette-amber-950);
+  --color-danger: var(--palette-red-300);
+  --color-danger-soft: var(--palette-red-950);
+  --color-focus-ring: var(--palette-clay-300);
+  --color-overlay: var(--palette-black-alpha-60);
+  --shadow-card: none;
+  --shadow-sheet: 0 -12px 40px #00000080;
 
   color-scheme: dark;
 }

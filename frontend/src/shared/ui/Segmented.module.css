@@ -10,8 +10,8 @@
 .legend {
   padding: 0;
   margin-bottom: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
 }
 
 .options {
@@ -30,7 +30,7 @@
   min-height: calc(var(--tap-min) - var(--space-2));
   border-radius: var(--radius-full);
   color: var(--color-text-muted);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out);
 }
@@ -38,7 +38,7 @@
 .selected {
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .option:has(.input:focus-visible) {

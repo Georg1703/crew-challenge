@@ -12,19 +12,19 @@
 .sm {
   width: var(--space-8);
   height: var(--space-8);
-  font-size: var(--text-xs);
+  font-size: var(--text-caption);
 }
 
 .md {
   width: var(--space-10);
   height: var(--space-10);
-  font-size: var(--text-sm);
+  font-size: var(--text-small);
 }
 
 .lg {
   width: calc(var(--space-12) * 1.5);
   height: calc(var(--space-12) * 1.5);
-  font-size: var(--text-xl);
+  font-size: var(--text-title-m);
 }
 
 .avatar[data-color="1"] {
@@ -45,8 +45,4 @@
 
 .avatar[data-color="5"] {
   background: var(--color-avatar-5);
-}
-
-.avatar[data-color="6"] {
-  background: var(--color-avatar-6);
 }
