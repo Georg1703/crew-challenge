@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "Crew Challenges",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "save": "Save",
+    "saved": "Saved",
+    "close": "Close",
+    "copied": "Copied",
+    "somethingWrong": "Something went wrong."
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "crew": "Crew",
+    "me": "Me"
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Log in to see your crew.",
+    "username": "Username",
+    "password": "Password",
+    "login": "Log in"
+  },
+  "join": {
+    "title": "You're invited to {{crew}}",
+    "subtitle": "Create an account to join the crew.",
+    "displayName": "How the others see you",
+    "displayNameHint": "For example: Mom, Andrei, Grandpa",
+    "username": "Username",
+    "usernameHint": "You log in with it. Letters, digits, dots or dashes.",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "submit": "Join the crew",
+    "unavailableTitle": "This invite no longer works",
+    "expired": "The link has expired. Ask whoever invited you for a new one.",
+    "used": "The link was already used. Ask whoever invited you for a new one.",
+    "notFound": "The link doesn't exist. Check that you copied all of it.",
+    "haveAccount": "Already have an account? Log in"
+  },
+  "home": {
+    "greeting": "Hi, {{name}}!",
+    "membersTitle": "Your crew",
+    "comingSoon": "Your crew's garden grows here soon.",
+    "noCrewTitle": "You're not in a crew yet",
+    "noCrewBody": "Ask someone in a crew for an invite link."
+  },
+  "crew": {
+    "title": "Crew",
+    "rotationHint": "The order in which you propose the month's challenge.",
+    "you": "you",
+    "admin": "admin",
+    "invite": "Invite someone",
+    "inviteTitle": "Invite someone",
+    "inviteBody": "Send the link to one person. It works only once.",
+    "inviteExpires": "Valid until {{date}}",
+    "copyLink": "Copy link",
+    "shareLink": "Share",
+    "shareText": "Join our challenge crew!"
+  },
+  "me": {
+    "title": "Me",
+    "profile": "Profile",
+    "displayName": "Name in the crew",
+    "language": "Language",
+    "logout": "Log out"
+  },
+  "languages": {
+    "ro": "Română",
+    "en": "English"
+  },
+  "notFound": {
+    "title": "This page doesn't exist",
+    "back": "Back home"
+  },
+  "errors": {
+    "network_error": "No internet connection. Try again.",
+    "server_error": "Something went wrong on our side. Try again.",
+    "invalid_credentials": "Wrong username or password.",
+    "throttled": "Too many attempts. Wait a minute.",
+    "csrf_failed": "Your session expired. Reload the page.",
+    "invite_expired": "The link has expired. Ask for a new one.",
+    "invite_used": "The link was already used. Ask for a new one.",
+    "invite_not_found": "This invite link doesn't exist.",
+    "username_taken": "This username is taken.",
+    "display_name_taken": "Someone in the crew already uses this name.",
+    "already_signed_in": "You're already logged in. Log out to create another account.",
+    "not_crew_member": "You're not in a crew yet.",
+    "not_crew_admin": "Only a crew admin can do this.",
+    "validation_failed": "Some fields are not valid.",
+    "not_authenticated": "Please log in again.",
+    "not_found": "We couldn't find that."
+  }
+}

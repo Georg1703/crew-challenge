@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "Crew Challenges",
+    "loading": "Se încarcă…",
+    "retry": "Încearcă din nou",
+    "save": "Salvează",
+    "saved": "Salvat",
+    "close": "Închide",
+    "copied": "Copiat",
+    "somethingWrong": "Ceva nu a mers."
+  },
+  "nav": {
+    "label": "Navigare principală",
+    "home": "Acasă",
+    "crew": "Echipa",
+    "me": "Eu"
+  },
+  "auth": {
+    "loginTitle": "Bine ai revenit",
+    "loginSubtitle": "Intră ca să-ți vezi echipa.",
+    "username": "Nume de utilizator",
+    "password": "Parolă",
+    "login": "Intră"
+  },
+  "join": {
+    "title": "Ai fost invitat în {{crew}}",
+    "subtitle": "Fă-ți un cont ca să te alături echipei.",
+    "displayName": "Cum să te vadă ceilalți",
+    "displayNameHint": "De exemplu: Mama, Andrei, Bunicul",
+    "username": "Nume de utilizator",
+    "usernameHint": "Îl folosești la logare. Litere, cifre, punct sau cratimă.",
+    "password": "Parolă",
+    "passwordHint": "Cel puțin 8 caractere.",
+    "submit": "Intră în echipă",
+    "unavailableTitle": "Invitația nu mai merge",
+    "expired": "Linkul a expirat. Cere unul nou de la cine te-a invitat.",
+    "used": "Linkul a fost deja folosit. Cere unul nou de la cine te-a invitat.",
+    "notFound": "Linkul nu există. Verifică dacă l-ai copiat complet.",
+    "haveAccount": "Ai deja cont? Intră"
+  },
+  "home": {
+    "greeting": "Salut, {{name}}!",
+    "membersTitle": "Echipa ta",
+    "comingSoon": "Grădina echipei crește aici în curând.",
+    "noCrewTitle": "Încă nu ești într-o echipă",
+    "noCrewBody": "Cere cuiva din echipă un link de invitație."
+  },
+  "crew": {
+    "title": "Echipa",
+    "rotationHint": "Ordinea în care propuneți provocarea lunii.",
+    "you": "tu",
+    "admin": "admin",
+    "invite": "Invită pe cineva",
+    "inviteTitle": "Invită pe cineva",
+    "inviteBody": "Trimite linkul unei singure persoane. Poate fi folosit o singură dată.",
+    "inviteExpires": "Valabil până pe {{date}}",
+    "copyLink": "Copiază linkul",
+    "shareLink": "Trimite",
+    "shareText": "Hai în echipa noastră de provocări!"
+  },
+  "me": {
+    "title": "Eu",
+    "profile": "Profil",
+    "displayName": "Numele din echipă",
+    "language": "Limba",
+    "logout": "Ieși din cont"
+  },
+  "languages": {
+    "ro": "Română",
+    "en": "English"
+  },
+  "notFound": {
+    "title": "Pagina nu există",
+    "back": "Înapoi acasă"
+  },
+  "errors": {
+    "network_error": "Nu e conexiune la internet. Încearcă din nou.",
+    "server_error": "Ceva nu a mers la noi. Încearcă din nou.",
+    "invalid_credentials": "Nume de utilizator sau parolă greșită.",
+    "throttled": "Prea multe încercări. Așteaptă un minut.",
+    "csrf_failed": "Sesiunea a expirat. Reîncarcă pagina.",
+    "invite_expired": "Linkul a expirat. Cere unul nou.",
+    "invite_used": "Linkul a fost deja folosit. Cere unul nou.",
+    "invite_not_found": "Linkul de invitație nu există.",
+    "username_taken": "Numele de utilizator e deja luat.",
+    "display_name_taken": "Cineva din echipă are deja acest nume.",
+    "already_signed_in": "Ești deja logat. Ieși din cont ca să creezi altul.",
+    "not_crew_member": "Încă nu ești într-o echipă.",
+    "not_crew_admin": "Doar un admin al echipei poate face asta.",
+    "validation_failed": "Unele câmpuri nu sunt corecte.",
+    "not_authenticated": "Intră din nou în cont.",
+    "not_found": "Nu am găsit ce căutai."
+  }
+}
