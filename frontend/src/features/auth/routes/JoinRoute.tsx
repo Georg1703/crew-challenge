@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 
 import { isApiError, type InvitePreview, type Me } from "@/api";
+import { setLanguage } from "@/i18n";
 import { errorMessage } from "@/i18n/errors";
 import { formatDate, formatList } from "@/shared/lib/format";
 import { AvatarStack, Banner, Button, Card, Screen, Skeleton, Stack, TextField } from "@/shared/ui";
@@ -195,9 +196,16 @@ function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
 }
 
 function JoinWithAccount({ code, preview, me }: { code: string; preview: InvitePreview; me: Me }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const join = useJoinWithAccount(code);
+  const preferred = me.user.preferred_language;
+
+  // A logged-in person sees their own language, as on every other screen after login.
+  useEffect(() => {
+    if (preferred !== i18n.language) setLanguage(preferred);
+  }, [preferred, i18n]);
+
   const [displayName, setDisplayName] = useState(me.member?.display_name ?? "");
   const error = isApiError(join.error) ? join.error : undefined;
   const generalError =

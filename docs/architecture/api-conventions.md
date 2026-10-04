@@ -23,7 +23,8 @@ The contract between the React app and Django. The machine-readable version is
 Cookies: `sessionid` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
 Usernames are case-insensitive (stored in lowercase).
 
-Rate limits per client IP: login 5/minute, joining a crew 10/minute (`429 throttled`).
+Rate limits per client IP: login 5/minute, joining a crew 10/minute, looking up an invite
+30/minute (`429 throttled`). Local settings use looser limits so `make e2e` can log in many times.
 
 **Active crew.** A user can belong to several crews. Crew endpoints act in the session's active
 crew (set when joining), falling back to the user's oldest membership.

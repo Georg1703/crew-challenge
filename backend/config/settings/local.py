@@ -11,6 +11,9 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
+    # Looser limits than production so `make e2e` (many logins from one IP) and manual testing
+    # do not lock you out. The production limits are tested in the unit tests.
+    "DEFAULT_THROTTLE_RATES": {"login": "60/min", "join": "60/min", "invite_preview": "120/min"},
 }
 
 # `make tunnel` serves the app on a temporary https://<random>.trycloudflare.com address.
