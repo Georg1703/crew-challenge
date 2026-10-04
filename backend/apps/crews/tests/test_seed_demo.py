@@ -21,6 +21,9 @@ def test_seed_demo_creates_the_crew_once(settings):
     assert members[0].is_admin
     assert "already exists" in out.getvalue()
 
+    eva = selectors.list_members(crew=Crew.objects.get(name="Echipa Eva"))
+    assert [(m.user.username, m.is_admin) for m in eva] == [("eva", True)]
+
 
 def test_seed_demo_refuses_without_debug(settings):
     settings.DEBUG = False

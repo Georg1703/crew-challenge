@@ -10,15 +10,16 @@
 .legend {
   padding: 0;
   margin-bottom: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
 }
 
 .options {
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: var(--color-surface-sunken);
 }
 
@@ -27,10 +28,10 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: calc(var(--tap-min) - var(--space-2));
-  border-radius: var(--radius-full);
+  min-height: var(--tap-min);
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out);
 }
@@ -38,11 +39,11 @@
 .selected {
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .option:has(.input:focus-visible) {
-  outline: 3px solid var(--color-focus-ring);
+  outline: 2px solid var(--color-focus-ring);
 }
 
 .input {

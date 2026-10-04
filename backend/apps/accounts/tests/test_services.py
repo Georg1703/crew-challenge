@@ -64,3 +64,25 @@ def test_set_preferred_language():
     assert services.set_preferred_language(user=user, language="en").preferred_language == "en"
     with pytest.raises(ValidationFailed):
         services.set_preferred_language(user=user, language="fr")
+
+
+@pytest.mark.parametrize("name", ["\u0430na1", "an\u00e1", "ana\u2603", "ana b"])
+def test_usernames_are_plain_ascii(name):
+    with pytest.raises(ValidationFailed):
+        services.create_user(username=name, password=STRONG)
+
+
+def test_usernames_are_nfkc_normalized():
+    assert services.create_user(username="\uff21NA1", password=STRONG).username == "ana1"
+
+
+def test_a_lost_race_on_the_username_becomes_username_taken(monkeypatch):
+    services.create_user(username="taken", password=STRONG)
+    monkeypatch.setattr(services, "validate_new_username", lambda name: name)
+    with pytest.raises(services.UsernameTaken):
+        services.create_user(username="taken", password=STRONG)
+
+
+def test_unknown_language_is_rejected():
+    with pytest.raises(ValidationFailed):
+        services.create_user(username="lang1", password=STRONG, language="xx")

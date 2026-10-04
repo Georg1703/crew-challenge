@@ -51,8 +51,41 @@ export function useInvitePreview(code: string) {
 export function useAcceptInvite(code: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { username: string; password: string; display_name: string }) =>
-      call(api.POST("/api/v1/invites/{code}/accept", { params: { path: { code } }, body })),
-    onSuccess: (me) => queryClient.setQueryData(meKey, me),
+    mutationFn: (body: {
+      username: string;
+      password: string;
+      display_name: string;
+      preferred_language?: "ro" | "en";
+    }) => call(api.POST("/api/v1/invites/{code}/accept", { params: { path: { code } }, body })),
+    onSuccess: (me) => {
+      queryClient.removeQueries({ queryKey: ["invite", code] }); // used up now
+      queryClient.setQueryData(meKey, me);
+    },
+  });
+}
+
+/** Act in the invite's crew when you are already one of its members. */
+export function useOpenCrew() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (crewId: string) => call(api.PUT("/api/v1/me/crew", { body: { crew_id: crewId } })),
+    onSuccess: (me) => {
+      queryClient.clear();
+      queryClient.setQueryData(meKey, me);
+    },
+  });
+}
+
+/** A logged-in user joins the invite's crew with the account they already have. */
+export function useJoinWithAccount(code: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { display_name: string }) =>
+      call(api.POST("/api/v1/invites/{code}/join", { params: { path: { code } }, body })),
+    onSuccess: (me) => {
+      // Everything cached belonged to the previous crew.
+      queryClient.clear();
+      queryClient.setQueryData(meKey, me);
+    },
   });
 }

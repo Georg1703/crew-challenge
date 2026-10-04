@@ -33,6 +33,14 @@ export function meAs(member: Member, language: "ro" | "en" = "en"): Me {
     },
     member,
     crew,
+    crews: [
+      {
+        crew_id: crew.id,
+        crew_name: crew.name,
+        display_name: member.display_name,
+        role: member.role,
+      },
+    ],
   };
 }
 

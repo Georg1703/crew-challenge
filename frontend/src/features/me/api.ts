@@ -15,3 +15,15 @@ export function useUpdateMe() {
     },
   });
 }
+
+/** Act in another of the user's crews. Everything cached belonged to the previous crew. */
+export function useSwitchCrew() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (crewId: string) => call(api.PUT("/api/v1/me/crew", { body: { crew_id: crewId } })),
+    onSuccess: (me) => {
+      queryClient.clear();
+      queryClient.setQueryData(meKey, me);
+    },
+  });
+}

@@ -109,7 +109,7 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
 | `tasks.py` | `core.ping`, proves a worker is connected |
 
-| `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`), counted in Redis |
+| `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`, `InvitePreviewRateThrottle`), counted in Redis |
 | `schema.py` | drf-spectacular extensions (documents our session auth) |
 
 Crew building blocks live in the `crews` app, because core must not depend on domain apps:

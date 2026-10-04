@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Generate the PLACEHOLDER app icons in public/icons/ (three circles = a crew).
+"""Generate the app icons in public/icons/ (three circles = a crew).
 
-Replace when the visual direction is chosen: edit ACCENT/FOREGROUND or the drawing below and run
+Edit ACCENT/FOREGROUND or the drawing below and run
     python3 scripts/make_icons.py
-Needs Pillow (pip install pillow). Keep ACCENT in sync with --palette-accent-500 in tokens.css.
+Needs Pillow (pip install pillow). Keep ACCENT in sync with --palette-clay-500 in tokens.css.
 """
 
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-ACCENT = (91, 76, 240)  # --palette-accent-500
+ACCENT = (194, 81, 55)  # --palette-clay-500 (#c25137)
 FOREGROUND = (255, 255, 255)
 OUT = Path(__file__).resolve().parent.parent / "public" / "icons"
 

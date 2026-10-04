@@ -9,3 +9,5 @@ export type Member = components["schemas"]["MemberOut"];
 export type CrewDetail = components["schemas"]["CrewDetailOut"];
 export type Invite = components["schemas"]["InviteOut"];
 export type InvitePreview = components["schemas"]["InvitePreviewOut"];
+export type PendingInvite = components["schemas"]["PendingInviteOut"];
+export type MemberSummary = components["schemas"]["MemberSummaryOut"];

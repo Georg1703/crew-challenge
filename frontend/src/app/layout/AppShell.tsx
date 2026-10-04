@@ -11,9 +11,9 @@ export function AppShell() {
       <TabBar
         label={t("nav.label")}
         tabs={[
-          { to: "/", label: t("nav.home"), icon: "home", end: true },
-          { to: "/crew", label: t("nav.crew"), icon: "crew" },
-          { to: "/me", label: t("nav.me"), icon: "me" },
+          { to: "/", label: t("nav.home"), icon: "sun", end: true },
+          { to: "/crew", label: t("nav.crew"), icon: "users" },
+          { to: "/me", label: t("nav.me"), icon: "user" },
         ]}
       />
     </>

@@ -16,8 +16,9 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: var(--text-md);
-  line-height: var(--leading-normal);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -33,7 +34,26 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  line-height: var(--leading-tight);
+  font-weight: var(--weight-bold);
+}
+
+/* Type styles from the design system. Screens use these through shared/ui; the classes exist for
+   the rare text that is not a component (for example a sentence inside a card). */
+h1 {
+  font-size: var(--text-title-l);
+  line-height: var(--leading-title-l);
+  letter-spacing: var(--tracking-title);
+}
+
+h2 {
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+  letter-spacing: var(--tracking-tight);
+}
+
+h3 {
+  font-size: var(--text-title-s);
+  line-height: var(--leading-title-s);
 }
 
 button,
@@ -47,7 +67,7 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-focus-ring);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 

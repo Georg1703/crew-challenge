@@ -3,6 +3,7 @@ import { createContext, use, useCallback, useMemo, useRef, useState, type ReactN
 import { cx } from "@/shared/lib/cx";
 import { AnimatePresence, motion, useSpring } from "@/shared/motion";
 
+import { Icon } from "./Icon";
 import styles from "./Toast.module.css";
 
 type Tone = "info" | "success" | "error";
@@ -40,11 +41,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               layout
               className={cx(styles.toast, styles[item.tone])}
               role={item.tone === "error" ? "alert" : "status"}
-              initial={{ opacity: 0, y: -16, scale: 0.95 }}
+              initial={{ opacity: 0, y: 16, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={spring}
             >
+              <span className={styles.mark} aria-hidden="true">
+                <Icon name={item.tone === "error" ? "alert" : "check"} size={16} />
+              </span>
               {item.message}
             </motion.div>
           ))}

@@ -26,19 +26,19 @@
 }
 
 .active {
-  color: var(--color-accent);
+  color: var(--color-success);
 }
 
 .indicator {
   position: absolute;
   top: 0;
   width: var(--space-8);
-  height: var(--space-1);
+  height: 2px;
   border-radius: 0 0 var(--radius-full) var(--radius-full);
-  background: var(--color-accent);
+  background: var(--color-success);
 }
 
 .label {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
 }

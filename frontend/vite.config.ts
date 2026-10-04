@@ -14,10 +14,10 @@ const proxy = {
   "/static": { target: apiTarget },
 };
 
-// Placeholder brand colors: keep in sync with --palette-accent-500 / --palette-neutral-50 in
-// src/styles/tokens.css (manifest values cannot use CSS variables).
-const THEME_COLOR = "#5b4cf0";
-const BACKGROUND_COLOR = "#f7f7f8";
+// Keep in sync with --color-bg (--palette-stone-50) in src/styles/tokens.css. Manifest values
+// cannot use CSS variables. The status bar takes the page color, not the accent.
+const THEME_COLOR = "#fbfaf6";
+const BACKGROUND_COLOR = "#fbfaf6";
 
 export default defineConfig({
   plugins: [
@@ -53,6 +53,8 @@ export default defineConfig({
       workbox: {
         // Precache the app shell; every navigation falls back to it (offline start works).
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
+        // Nunito Sans ships one file per script; precache only Latin (covers Romanian).
+        globIgnores: ["**/*-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2"],
         navigateFallback: "/index.html",
         // Never answer API, admin, Django static or media requests from the service worker.
         navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/static\//],
