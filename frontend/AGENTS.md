@@ -14,7 +14,7 @@ frontend/src/
 |-- shared/ui/       # design system components (Screen, Button, TextField, Sheet, ...)
 |-- shared/motion/   # spring presets; the only import point for animation
 |-- shared/lib/
-|-- pwa/             # service worker registration, install prompt, iOS guide, update toast
+|-- pwa/             # service worker registration, install card, iOS guide, update banner
 |-- i18n/            # ro.json (default), en.json, setup
 |-- styles/          # tokens.css (the only place the look is defined), global.css
 |-- design/          # /design page (development only)
@@ -46,7 +46,9 @@ frontend/src/
 
 ## PWA
 
-- `vite-plugin-pwa` with `registerType: 'prompt'`; show the update toast, never reload silently.
+- `vite-plugin-pwa` with `registerType: 'prompt'`; show the update banner, never reload silently.
+- Manifest colors in `vite.config.ts` mirror the tokens; icons come from `scripts/make_icons.py`.
+- `src/pwa` follows the shared-code rules: it must not import features or the app shell.
 - The service worker never caches `/api`, `/admin`, presigned URLs, or uploads.
 - Test install on a real iPhone and Android phone before finishing any PWA change (`make tunnel`).
 

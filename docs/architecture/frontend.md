@@ -47,7 +47,7 @@ src/
 |   `-- lib/                # cx, date formatting in the crew's time zone
 |-- design/                 # /design page (development only) and token tests
 |-- test/                   # setup, renderRoutes/renderScreen, ok()/fail(), fixtures
-|-- pwa/                    # register.ts, InstallPrompt.tsx, IosInstallGuide.tsx, UpdateToast.tsx
+|-- pwa/                    # platform.ts, installPrompt.ts, usePwaUpdate.ts, InstallCard, IosInstallGuide, UpdateBanner
 |-- i18n/                   # index.ts, ro.json, en.json
 `-- styles/                 # tokens.css, global.css
 ```
@@ -98,13 +98,27 @@ prefers reduced motion. One signature animation per screen; everything else stay
 
 ## PWA
 
-- Manifest: name, short name, theme and background colors, icons 192/512 and maskable, apple-touch-icon.
-- `registerType: 'prompt'`: a new version shows "New version ready - tap to update".
-- Workbox precaches the app shell and Rive files. `/api/*`, `/admin/*`, and any S3 or CloudFront URL
-  are network-only.
-- Android: capture `beforeinstallprompt` and show our install button.
-- iOS Safari, not installed: show the animated "Share -> Add to Home Screen" guide.
+- Configured in `vite.config.ts` (`VitePWA`). The manifest `theme_color` and `background_color`
+  copy the accent and background tokens; change them together with `src/styles/tokens.css`.
+- Icons live in `public/icons/` and are drawn by `scripts/make_icons.py` (placeholder art; rerun
+  it, or replace the PNGs, when the look changes).
+- `registerType: 'prompt'`: `usePwaUpdate` registers the service worker, checks for a new version
+  every hour and when the app comes back to the foreground. `UpdateBanner` then shows
+  "New version ready" with Update / Later. The app never reloads by itself.
+- Workbox precaches the built app shell (JS, CSS, HTML, icons) and serves `index.html` for
+  navigations, so the app opens offline. `/api/*`, `/admin*` and `/static/*` are excluded from the
+  navigation fallback and nothing is cached at runtime: API calls, S3 and CloudFront URLs are
+  network-only. Add `runtimeCaching` only for static assets such as Rive files.
+- Install: `captureInstallPrompt()` runs in `main.tsx` before React so Chrome's
+  `beforeinstallprompt` is never missed. `InstallCard` shows our Install button on Android/desktop
+  Chrome and the "Share -> Add to Home Screen" sheet (`IosInstallGuide`) on iOS Safari. It hides
+  when the app already runs standalone. On Home it can be dismissed for 14 days; Me always shows it.
 - Ask for push permission after the first check-in, never on first load.
+- The server must send `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`
+  so updates are seen (Caddy config).
+- Service worker behavior is checked by `e2e/pwa.spec.ts` against `vite preview` (production build):
+  installability (Chrome DevTools Protocol), offline start, API not served from cache.
+  A real install still needs HTTPS on a phone: `make tunnel`.
 
 ## Testing
 
