@@ -1,7 +1,7 @@
 """Local development settings (make dev)."""
 
 from .base import *  # noqa: F403
-from .base import REST_FRAMEWORK, env
+from .base import ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, REST_FRAMEWORK, env
 
 DEBUG = env.bool("DJANGO_DEBUG", default=True)
 
@@ -12,3 +12,7 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
 }
+
+# `make tunnel` serves the app on a temporary https://<random>.trycloudflare.com address.
+ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".trycloudflare.com"]
+CSRF_TRUSTED_ORIGINS = [*CSRF_TRUSTED_ORIGINS, "https://*.trycloudflare.com"]
