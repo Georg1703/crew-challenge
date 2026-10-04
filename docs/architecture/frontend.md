@@ -118,7 +118,7 @@ prefers reduced motion. One signature animation per screen; everything else stay
   so updates are seen (Caddy config).
 - Service worker behavior is checked by `e2e/pwa.spec.ts` against `vite preview` (production build):
   installability (Chrome DevTools Protocol), offline start, API not served from cache.
-  A real install still needs HTTPS on a phone: `make tunnel`.
+  A real install still needs HTTPS on a phone: `make preview`.
 
 ## Testing
 

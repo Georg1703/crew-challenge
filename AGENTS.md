@@ -48,7 +48,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | `make migrate` / `make makemigrations` | Database migrations |
 | `make seed` | Demo crew with known users |
 | `make superuser` | Create a Django admin user (interactive) |
-| `make shell` / `make logs` / `make tunnel` | Django shell / service logs / HTTPS tunnel for phone testing |
+| `make shell` / `make logs` | Django shell / service logs |
+| `make tunnel` / `make preview` | HTTPS URL for a phone: dev server / production build (to install) |
 
 ## Never
 - Create or change AWS resources, SSH into servers, run deploy scripts, or touch production.

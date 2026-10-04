@@ -50,7 +50,7 @@ frontend/src/
 - Manifest colors in `vite.config.ts` mirror the tokens; icons come from `scripts/make_icons.py`.
 - `src/pwa` follows the shared-code rules: it must not import features or the app shell.
 - The service worker never caches `/api`, `/admin`, presigned URLs, or uploads.
-- Test install on a real iPhone and Android phone before finishing any PWA change (`make tunnel`).
+- Test install on a real iPhone and Android phone before finishing any PWA change (`make preview`).
 
 ## Tests
 

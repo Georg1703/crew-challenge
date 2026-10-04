@@ -17,7 +17,8 @@ make help     # list every command
 make setup    # first-time setup: .env, images, database, demo crew
 make dev      # start in the background: http://localhost:5173 (log in as ana / garden-flame-2026)
 make logs     # follow the output; make stop stops everything
-make tunnel   # HTTPS URL to open the app on your phone
+make tunnel   # HTTPS URL to the dev server for your phone
+make preview  # production build + HTTPS URL: install the app on your phone
 make check    # everything CI runs
 ```
 

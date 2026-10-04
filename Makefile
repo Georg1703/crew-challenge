@@ -60,7 +60,7 @@ dev: ## Start everything in the background, wait until healthy (app at http://lo
 .PHONY: stop
 stop: ## Stop local containers (data is kept)
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) down
+	$(COMPOSE) --profile preview --profile tunnel down
 
 .PHONY: ps
 ps: ## Show local containers and their health
@@ -78,9 +78,18 @@ shell: ## Django shell inside the backend container
 	$(COMPOSE) exec backend python manage.py shell
 
 .PHONY: tunnel
-tunnel: ## Public HTTPS URL to the local app, for testing on a phone (run make dev first)
+tunnel: ## HTTPS URL to the dev server for a phone (hot reload, not installable; run make dev first)
 	$(call require,compose.yaml,Local environment)
 	$(COMPOSE) --profile tunnel run --rm tunnel
+
+.PHONY: preview
+preview: ## Production build + HTTPS URL for a phone: test installing and offline (Ctrl+C ends the tunnel)
+	$(call require,compose.yaml,Local environment)
+	@echo "Building the production frontend (about a minute)..."
+	@$(COMPOSE) --profile preview up --build --detach --wait --wait-timeout 300 --force-recreate preview \
+		|| { echo "ERROR: preview did not start; see: make logs s=preview"; exit 1; }
+	@echo "OK: preview at http://localhost:4173 - opening the tunnel"
+	TUNNEL_TARGET=http://preview:4173 $(COMPOSE) --profile tunnel run --rm tunnel
 
 ##@ Database
 

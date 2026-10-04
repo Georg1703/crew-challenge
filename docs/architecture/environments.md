@@ -38,7 +38,8 @@ every service is healthy (or fails and says so). `make logs` follows the output,
 | `worker` | Celery worker (restart it after changing a task) | - |
 | `beat` | Celery beat, schedules in the database | - |
 | `frontend` | Vite dev server, `frontend/` mounted, hot reload | 5173 |
-| `tunnel` | Cloudflare quick tunnel, only with `make tunnel` | - |
+| `preview` | Production build of the frontend, only with `make preview` | 4173 |
+| `tunnel` | Cloudflare quick tunnel, only with `make tunnel` or `make preview` | - |
 
 - Ports are published on 127.0.0.1 only. Postgres and Redis are published so `make check` and
   `make e2e` can run from your machine against the same containers.
@@ -51,8 +52,17 @@ every service is healthy (or fails and says so). `make logs` follows the output,
 
 ### Testing on a phone
 
-Service workers and installing need HTTPS. Run `make dev`, then `make tunnel` in a second terminal and
-open the printed `https://<random>.trycloudflare.com` URL on the phone. The URL changes every run.
+A phone reaches your machine only through a non-localhost address, and browsers allow service
+workers, installing, push and the camera there only over HTTPS. Two commands print a temporary
+`https://<random>.trycloudflare.com` URL to open on the phone (it changes every run, and anyone with
+it reaches your local app, so do not share it):
+
+| Command | Serves | Use it for |
+|---|---|---|
+| `make tunnel` (after `make dev`) | Vite dev server, hot reload | Layout and flows while you edit; not installable (no service worker in dev) |
+| `make preview` | Production build on port 4173, rebuilt each run | Installing, offline start, update banner. Run it again after changes |
+
+An app installed from a tunnel URL stops working when that tunnel ends; uninstall it before the next test.
 Local settings trust `*.trycloudflare.com` for hosts and CSRF. Invite links still use
 `APP_PUBLIC_URL`; set it to the tunnel URL in `.env` and restart the backend to test joining from a phone.
 
