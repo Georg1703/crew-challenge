@@ -59,7 +59,13 @@ export default tseslint.config(
   },
   // Shared code is the foundation: it must not depend on features or the app shell.
   {
-    files: ["src/shared/**/*.{ts,tsx}", "src/api/**/*.{ts,tsx}", "src/i18n/**/*.{ts,tsx}"],
+    files: [
+      "src/shared/**/*.{ts,tsx}",
+      "src/api/**/*.{ts,tsx}",
+      "src/i18n/**/*.{ts,tsx}",
+      "src/pwa/**/*.{ts,tsx}",
+    ],
+    ignores: ["**/*.test.{ts,tsx}"], // tests may render inside the real app providers
     rules: {
       "no-restricted-imports": [
         "error",

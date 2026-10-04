@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
 import { MemberList, useCrew } from "@/features/crew";
+import { InstallCard } from "@/pwa";
 import { motion, useSpring, variants } from "@/shared/motion";
 import { Card, Screen, Skeleton } from "@/shared/ui";
 
@@ -32,6 +33,7 @@ export function HomeRoute() {
         <p className={styles.crewName}>{me.data?.crew?.name}</p>
         <h1 className={styles.greeting}>{t("home.greeting", { name: member.display_name })}</h1>
       </motion.div>
+      <InstallCard dismissible />
       <Card>
         <p className={styles.muted}>{t("home.comingSoon")}</p>
       </Card>

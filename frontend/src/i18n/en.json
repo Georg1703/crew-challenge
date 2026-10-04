@@ -90,5 +90,20 @@
     "validation_failed": "Some fields are not valid.",
     "not_authenticated": "Please log in again.",
     "not_found": "We couldn't find that."
+  },
+  "pwa": {
+    "updateReady": "A new version of the app is ready.",
+    "update": "Update",
+    "later": "Later",
+    "installTitle": "Install the app",
+    "installBody": "Put it on your home screen: it opens like an app and can send you notifications.",
+    "install": "Install",
+    "notNow": "Not now",
+    "iosTitle": "Add it to your Home Screen",
+    "iosStep1": "Tap the Share button in Safari's toolbar",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add” in the top-right corner",
+    "iosHint": "The Share button is in the bottom bar (at the top on iPad).",
+    "iosDone": "Got it"
   }
 }

@@ -90,5 +90,20 @@
     "validation_failed": "Unele câmpuri nu sunt corecte.",
     "not_authenticated": "Intră din nou în cont.",
     "not_found": "Nu am găsit ce căutai."
+  },
+  "pwa": {
+    "updateReady": "E gata o versiune nouă a aplicației.",
+    "update": "Actualizează",
+    "later": "Mai târziu",
+    "installTitle": "Instalează aplicația",
+    "installBody": "Pune-o pe ecranul telefonului: se deschide ca o aplicație și primești notificări.",
+    "install": "Instalează",
+    "notNow": "Nu acum",
+    "iosTitle": "Adaug-o pe ecranul principal",
+    "iosStep1": "Atinge butonul Partajează din bara Safari",
+    "iosStep2": "Alege „Adaugă pe ecranul principal”",
+    "iosStep3": "Apasă „Adaugă” sus în dreapta",
+    "iosHint": "Butonul Partajează e în bara de jos (pe iPad, sus).",
+    "iosDone": "Am înțeles"
   }
 }

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { isApiError } from "@/api";
 import { useLogout, useMe } from "@/features/auth";
 import { setLanguage, type Language } from "@/i18n";
+import { InstallCard } from "@/pwa";
 import { errorMessage } from "@/i18n/errors";
 import {
   Avatar,
@@ -89,6 +90,7 @@ export function MeRoute() {
           ]}
         />
       </Card>
+      <InstallCard />
       <Button
         variant="danger"
         fullWidth
