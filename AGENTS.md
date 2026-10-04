@@ -1,10 +1,17 @@
 # AGENTS.md - Crew Challenges
 
-A PWA for any small group (a **crew**: a family, friends, a team) that sets one shared challenge
-per month: daily check-ins with proof (often video), a growing tree per member, streak flames,
-and a Wheel of Doom for missed days. The first crew is the owner's family.
+A PWA for any small group (a **crew**: a family, friends, a team) that sets shared challenges
+(monthly, weekly or daily) and checks in every day with proof (photo or video). The first crew is
+the owner's family.
 
 Read this file before changing anything. Then read the nested `AGENTS.md` of the area you touch.
+
+## First version (v1) scope
+v1 ships four things: inviting members, flexible challenge creation, the daily check-in (you and
+your crew), and proof upload (photo or video). Everything below marked **after v1** stays in the
+docs as the long-term direction but must not be built yet: growing trees and the garden, streak
+flames as artwork, the Wheel of Doom, confetti and Rive animations, reactions, and Web Push.
+If a task seems to need one of these, stop and ask.
 
 - How the system is built, and why: `docs/architecture/`
 - Words we use: `docs/glossary.md`
@@ -86,8 +93,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   django-celery-beat, boto3, pywebpush. Tooling: uv, ruff, mypy + django-stubs, pytest-django,
   factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
-  TanStack Query, openapi-fetch, Zustand, Motion, i18next, @rive-app/react-canvas, canvas-confetti,
-  hls.js, Uppy core + @uppy/aws-s3. CSS Modules + tokens in `src/styles/tokens.css`.
+  TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3
+  (after v1: @rive-app/react-canvas, canvas-confetti). CSS Modules + tokens in `src/styles/tokens.css`.
 - **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
 - **Auth:** Django session cookie + CSRF. No JWT.
 
@@ -101,15 +108,15 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Store datetimes in UTC. A "challenge day" is a local date in `Crew.timezone`
   (default `Europe/Chisinau`). Test around midnight and DST switches.
 - Scheduled jobs are idempotent (safe to run twice).
-- Tree stage and flame tier are derived in the API, not stored.
+- Tree stage and flame tier (after v1) are derived in the API, not stored.
 
 ## Game rules that code must respect
 - One proposer per month, taken from a fixed rotation (`Member.rotation_position`). Only the
   proposer can create or edit the next challenge. Challenges go draft -> sealed -> active -> finished.
 - A check-in is created the moment proof upload *starts* (status `uploading`). It counts for the
   day if the upload completes within 24 h after that day's midnight deadline.
-- Missed day -> streak reset, tree wilted, one pending Wheel of Doom spin per missed day.
-- The Wheel of Doom result is chosen on the server before the client animation starts.
+- Missed day -> streak reset. After v1: tree wilted and one pending Wheel of Doom spin per missed day.
+- After v1: the Wheel of Doom result is chosen on the server before the client animation starts.
 
 ## Large uploads (up to 20 GB) - non-negotiable
 - Files never go through Django. Browser -> S3 multipart upload with presigned part URLs.
@@ -130,27 +137,28 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 ## PWA constraints (iOS + Android)
 - Android: capture `beforeinstallprompt`, show our own install button.
 - iOS: no install prompt. Provide an animated "Share -> Add to Home Screen" guide.
-- iOS push works only when installed to the Home Screen (16.4+) and after a user gesture.
+- After v1: iOS push works only when installed to the Home Screen (16.4+) and after a user gesture.
   Ask for push permission after the first check-in, never on first load.
 - No background upload, background sync or background fetch on iOS. Uploads pause when the app is
   backgrounded or the screen locks. All timed logic runs on the server and reaches users by Web Push.
 - Browser storage may be evicted on iOS: it is a cache; the server is the source of truth.
 - Video capture: `<input type="file" accept="video/*" capture>`. Audio: MediaRecorder. Handle both
   MP4/AAC (Safari) and WebM/Opus (Chrome); normalize on the server.
-- Service worker: precache app shell + Rive assets; network-only for `/api` and `/admin`; never
+- Service worker: precache app shell and fonts; network-only for `/api` and `/admin`; never
   cache presigned URLs or media uploads.
 - Use `100dvh`, respect `env(safe-area-inset-*)`, touch targets >= 44 px.
 
 ## UI and motion
-- The product goal is fun: every important action has a satisfying animation
-  (check-in -> tree grows + confetti + flame spark; spin; reveal flip).
+- Calm and clear first: every important action gets short feedback (a check mark, a toast,
+  a progress change) through the `shared/motion` presets. Big celebrations (tree growth, confetti,
+  flame spark, spin, reveal flip) come after v1.
 - Every tap responds within 100 ms (optimistic updates with TanStack Query, rollback on error).
 - Animate only `transform` and `opacity`; target 60 fps on a mid-range Android phone.
-- Lazy-load the Rive runtime and hls.js; code-split routes; first load < 2 s on 4G.
+- Lazy-load hls.js (and the Rive runtime after v1); code-split routes; first load < 2 s on 4G.
 - Honor `prefers-reduced-motion`. Sounds only after user interaction and off by default.
 - Romanian (default) and English from the start; no hard-coded UI strings.
-- The visual design is a placeholder that will change. Follow `docs/design-system.md`: tokens,
-  `shared/ui` components and motion presets only, so a redesign never touches screens.
+- The look is defined by the design system in `docs/design-system.md`: tokens, `shared/ui`
+  components and motion presets only. Read it before any UI work; `make check` enforces it.
 
 ## Testing
 - Backend: pytest + pytest-django against Postgres (never SQLite); time-machine for date logic;

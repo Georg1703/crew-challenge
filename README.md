@@ -1,8 +1,8 @@
 # Crew Challenges
 
-A fun, animated PWA for a small group of people (a *crew*) who set one shared challenge per month,
-check in every day with proof, grow a tree in the crew garden, keep a streak flame alive, and spin
-the Wheel of Doom when they miss a day.
+A PWA for a small group of people (a *crew*) who set shared challenges (monthly, weekly or daily)
+and check in every day with proof: a photo or a video. Trees, streak flames and the Wheel of Doom
+are planned for after the first version (see `AGENTS.md`).
 
 The first crew is our family. The app is built so any group can use it.
 

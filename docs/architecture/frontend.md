@@ -11,8 +11,8 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | openapi-fetch + openapi-typescript | Typed API client generated from `contracts/openapi.yaml` |
 | Zustand | Client-only state that outlives a screen (the upload manager) |
 | Motion | UI animation (springs, layout, gestures) |
-| Rive (`@rive-app/react-canvas`) | Character animation: trees, flame, wheel |
-| canvas-confetti | Celebrations |
+| Rive (`@rive-app/react-canvas`) | After v1: character animation (trees, flame, wheel) |
+| canvas-confetti | After v1: celebrations |
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
 | hls.js | HLS playback outside Safari |
@@ -113,7 +113,7 @@ prefers reduced motion. One signature animation per screen; everything else stay
   `beforeinstallprompt` is never missed. `InstallCard` shows our Install button on Android/desktop
   Chrome and the "Share -> Add to Home Screen" sheet (`IosInstallGuide`) on iOS Safari. It hides
   when the app already runs standalone. On Home it can be dismissed for 14 days; Me always shows it.
-- Ask for push permission after the first check-in, never on first load.
+- After v1: ask for push permission after the first check-in, never on first load.
 - The server must send `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`
   so updates are seen (Caddy config).
 - Service worker behavior is checked by `e2e/pwa.spec.ts` against `vite preview` (production build):
