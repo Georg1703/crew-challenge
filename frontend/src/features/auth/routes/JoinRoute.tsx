@@ -8,7 +8,7 @@ import { errorMessage } from "@/i18n/errors";
 import { formatDate, formatList } from "@/shared/lib/format";
 import { AvatarStack, Banner, Button, Card, Screen, Skeleton, Stack, TextField } from "@/shared/ui";
 
-import { useAcceptInvite, useInvitePreview, useJoinWithAccount, useMe } from "../api";
+import { useAcceptInvite, useInvitePreview, useJoinWithAccount, useMe, useOpenCrew } from "../api";
 import styles from "../auth.module.css";
 
 /**
@@ -43,6 +43,7 @@ export function JoinRoute() {
   if (unavailable || !preview.data) {
     return <Unavailable message={unavailable ?? t("common.somethingWrong")} signedIn={!!me.data} />;
   }
+  if (me.data && preview.data.already_member) return <AlreadyMember preview={preview.data} />;
   if (me.data) return <JoinWithAccount code={code} preview={preview.data} me={me.data} />;
   return <JoinAsNewPerson code={code} preview={preview.data} />;
 }
@@ -60,6 +61,26 @@ function Unavailable({ message, signedIn }: { message: string; signedIn: boolean
         onClick={() => navigate(signedIn ? "/" : "/login")}
       >
         {signedIn ? t("join.goHome") : t("join.haveAccount")}
+      </Button>
+    </Screen>
+  );
+}
+
+/** You opened a link to a crew you are already in: offer to go there. */
+function AlreadyMember({ preview }: { preview: InvitePreview }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const open = useOpenCrew();
+  const go = () => {
+    if (!preview.crew_id) return navigate("/");
+    open.mutate(preview.crew_id, { onSuccess: () => navigate("/", { replace: true }) });
+  };
+  return (
+    <Screen withTabBar={false} title={t("join.alreadyTitle", { crew: preview.crew_name })}>
+      <p className={styles.muted}>{t("join.alreadyBody")}</p>
+      {open.error && <Banner tone="danger" title={errorMessage(t, open.error)} />}
+      <Button size="lg" fullWidth loading={open.isPending} onClick={go}>
+        {t("join.alreadyOpen", { crew: preview.crew_name })}
       </Button>
     </Screen>
   );
@@ -124,7 +145,7 @@ function JoinAsNewPerson({ code, preview }: { code: string; preview: InvitePrevi
 }
 
 function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const accept = useAcceptInvite(code);
   const [form, setForm] = useState({ display_name: "", username: "", password: "" });
@@ -135,7 +156,10 @@ function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    accept.mutate(form, { onSuccess: () => navigate("/welcome", { replace: true }) });
+    accept.mutate(
+      { ...form, preferred_language: i18n.language === "en" ? "en" : "ro" },
+      { onSuccess: () => navigate("/welcome", { replace: true }) },
+    );
   };
 
   const generalError =
@@ -153,6 +177,7 @@ function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
             label={t("join.displayName")}
             hint={t("join.displayNameHint")}
             name="display_name"
+            maxLength={40}
             autoComplete="nickname"
             value={form.display_name}
             onChange={set("display_name")}
@@ -163,6 +188,7 @@ function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
             label={t("join.username")}
             hint={t("join.usernameHint")}
             name="username"
+            maxLength={30}
             autoComplete="username"
             autoCapitalize="none"
             value={form.username}
@@ -230,6 +256,7 @@ function JoinWithAccount({ code, preview, me }: { code: string; preview: InviteP
             label={t("join.displayName")}
             hint={t("join.displayNameHint")}
             name="display_name"
+            maxLength={40}
             autoComplete="nickname"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}

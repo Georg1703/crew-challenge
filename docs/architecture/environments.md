@@ -65,6 +65,8 @@ it reaches your local app, so do not share it):
 An app installed from a tunnel URL stops working when that tunnel ends; uninstall it before the next test.
 Local settings trust `*.trycloudflare.com` for hosts and CSRF. Invite links still use
 `APP_PUBLIC_URL`; set it to the tunnel URL in `.env` and restart the backend to test joining from a phone.
+Production refuses to start unless `APP_PUBLIC_URL` is the public `https://` address (not localhost),
+so invite links never point at a developer machine.
 
 ### Troubleshooting
 

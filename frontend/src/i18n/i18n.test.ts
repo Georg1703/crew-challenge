@@ -29,6 +29,7 @@ describe("translations", () => {
       "display_name_taken",
       "already_signed_in",
       "already_member",
+      "crew_not_found",
       "not_crew_member",
       "not_crew_admin",
       "validation_failed",

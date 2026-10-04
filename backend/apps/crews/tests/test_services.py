@@ -312,3 +312,122 @@ def test_revoking_needs_an_admin_of_the_same_crew_and_an_unused_invite():
     services.accept_invite(code=invite.code, username="used1", password=STRONG, display_name="U")
     with pytest.raises(services.InviteUsed):
         services.revoke_invite(by=admin, invite_id=invite.id)
+
+
+# --- display names that look alike ------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "lookalike",
+    [
+        "Ana\u200b",  # zero-width space
+        "\u200bAna",
+        "Ana\u202e",  # right-to-left override
+        "\uff21na",  # full-width A, NFKC turns it into "Ana"
+        " ana ",
+        "ANA",
+    ],
+)
+def test_lookalike_display_names_count_as_taken(lookalike):
+    invite = InviteFactory.create(created_by__display_name="Ana")
+    with pytest.raises(services.DisplayNameTaken):
+        services.accept_invite(
+            code=invite.code, username="lookalike", password=STRONG, display_name=lookalike
+        )
+
+
+@pytest.mark.parametrize("bad", ["\u200b", "\u200b\u200c", "...", "A\u0430na"])
+def test_invisible_punctuation_only_or_mixed_alphabet_names_are_rejected(bad):
+    invite = InviteFactory.create()
+    with pytest.raises(ValidationFailed) as error:
+        services.accept_invite(
+            code=invite.code, username="baduser", password=STRONG, display_name=bad
+        )
+    assert "display_name" in error.value.fields
+
+
+def test_names_in_one_other_alphabet_are_fine():
+    invite = InviteFactory.create()
+    member = services.accept_invite(
+        code=invite.code, username="ivan1", password=STRONG, display_name="\u0418\u0432\u0430\u043d"
+    )
+    assert member.display_name == "\u0418\u0432\u0430\u043d"
+
+
+def test_a_lost_race_on_the_name_becomes_display_name_taken(monkeypatch):
+    invite = InviteFactory.create(created_by__display_name="Ana")
+    # Pretend the check ran before the other insert committed.
+    monkeypatch.setattr(services, "_clean_display_name", lambda name, **_: name)
+    with pytest.raises(services.DisplayNameTaken):
+        services.accept_invite(
+            code=invite.code, username="racer", password=STRONG, display_name="Ana"
+        )
+
+
+def test_rename_uses_the_same_rules():
+    admin = AdminFactory.create(display_name="Ana")
+    member = MemberFactory.create(crew=admin.crew, display_name="Bogdan")
+    with pytest.raises(services.DisplayNameTaken):
+        services.rename_member(member=member, display_name="An\u200ba")
+    assert (
+        services.rename_member(member=member, display_name=" Bo\u200bgdan ").display_name
+        == "Bogdan"
+    )
+
+
+# --- invite codes, languages, leaving admins ---------------------------------------------------
+
+
+def test_codes_work_in_capitals_and_with_spaces():
+    invite = InviteFactory.create()
+    assert selectors.get_invite(code=f" {invite.code.upper()} ") == invite
+    member = services.accept_invite(
+        code=invite.code.upper(), username="caps1", password=STRONG, display_name="Caps"
+    )
+    assert member.crew == invite.crew
+
+
+def test_new_accounts_keep_the_language_they_signed_up_in():
+    invite = InviteFactory.create()
+    member = services.accept_invite(
+        code=invite.code, username="eng1", password=STRONG, display_name="Eng", language="en"
+    )
+    assert member.user.preferred_language == "en"
+
+
+def test_invites_survive_when_their_admin_leaves():
+    admin = AdminFactory.create()
+    pending = services.create_invite(by=admin)
+    used = services.create_invite(by=admin)
+    joined = services.accept_invite(
+        code=used.code, username="stay1", password=STRONG, display_name="S"
+    )
+    Member.objects.filter(pk=admin.pk).delete()
+    pending.refresh_from_db()
+    used.refresh_from_db()
+    assert pending.created_by is None
+    assert used.used_by == joined
+    assert selectors.list_pending_invites(crew=joined.crew) == [pending]
+
+
+# --- switching crews ----------------------------------------------------------------------------
+
+
+def test_switch_crew_remembers_the_choice_for_the_next_login():
+    first = MemberFactory.create()
+    with time_machine.travel("2026-11-01 12:00Z", tick=False):
+        second = services.join_with_account(
+            user=first.user, code=InviteFactory.create().code, display_name="Me"
+        )
+    with time_machine.travel("2026-11-02 12:00Z", tick=False):
+        assert selectors.get_active_member(user=first.user) == second  # joined last
+        services.switch_crew(user=first.user, crew_id=first.crew_id)
+    assert selectors.get_active_member(user=first.user) == first
+    names = [m.crew.name for m in selectors.list_memberships(user=first.user)]
+    assert names == sorted([first.crew.name, second.crew.name])
+
+
+def test_switching_to_a_crew_you_are_not_in_fails():
+    member = MemberFactory.create()
+    with pytest.raises(services.CrewNotFound):
+        services.switch_crew(user=member.user, crew_id=CrewFactory.create().id)

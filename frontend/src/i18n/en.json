@@ -47,7 +47,10 @@
     "expired": "The link has expired. Ask whoever invited you for a new one.",
     "used": "The link was already used. Ask whoever invited you for a new one.",
     "notFound": "The link doesn't exist or was cancelled. Ask whoever invited you for a new one.",
-    "goHome": "Go to Today"
+    "goHome": "Go to Today",
+    "alreadyTitle": "You're already in {{crew}}",
+    "alreadyBody": "This link is for someone new. You can pass it on.",
+    "alreadyOpen": "Open {{crew}}"
   },
   "home": {
     "greeting": "Hi, {{name}}",
@@ -88,7 +91,11 @@
     "profile": "Profile",
     "displayName": "Name in the crew",
     "language": "Language",
-    "logout": "Log out"
+    "logout": "Log out",
+    "crewsTitle": "My crews",
+    "crewAs": "As {{name}}",
+    "crewCurrent": "Current",
+    "crewSwitched": "Switched to {{crew}}"
   },
   "languages": {
     "ro": "Română",
@@ -115,7 +122,8 @@
     "validation_failed": "Some fields are not valid.",
     "not_authenticated": "Please log in again.",
     "not_found": "We couldn't find that.",
-    "already_member": "You're already in this crew."
+    "already_member": "You're already in this crew.",
+    "crew_not_found": "You're not in this crew."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from apps.accounts.models import User
+from apps.accounts.services import USERNAME_MAX
+from apps.crews.services import DISPLAY_NAME_MAX
 
 
 class UserOut(serializers.Serializer):
@@ -29,14 +31,26 @@ class CrewDetailOut(CrewOut):
     members = MemberOut(many=True, help_text="In rotation order.")
 
 
+class MembershipOut(serializers.Serializer):
+    crew_id = serializers.UUIDField()
+    crew_name = serializers.CharField(source="crew.name")
+    display_name = serializers.CharField()
+    role = serializers.CharField()
+
+
 class MeOut(serializers.Serializer):
     user = UserOut()
     member = MemberOut(allow_null=True)
     crew = CrewOut(allow_null=True)
+    crews = MembershipOut(many=True, help_text="Every crew the user belongs to, by name.")
+
+
+class ActiveCrewIn(serializers.Serializer):
+    crew_id = serializers.UUIDField()
 
 
 class MePatchIn(serializers.Serializer):
-    display_name = serializers.CharField(max_length=60, required=False)
+    display_name = serializers.CharField(max_length=DISPLAY_NAME_MAX, required=False)
     preferred_language = serializers.ChoiceField(choices=User.Language.choices, required=False)
 
 
@@ -57,7 +71,7 @@ class MemberSummaryOut(serializers.Serializer):
 
 class PendingInviteOut(InviteOut):
     id = serializers.UUIDField()
-    created_by = MemberSummaryOut()
+    created_by = MemberSummaryOut(allow_null=True)
 
 
 class InvitePreviewOut(serializers.Serializer):
@@ -70,13 +84,22 @@ class InvitePreviewOut(serializers.Serializer):
     members = MemberSummaryOut(
         many=True, help_text="Members in rotation order. Empty unless the invite is valid."
     )
+    already_member = serializers.BooleanField(
+        help_text="True when the logged-in user is already in this crew."
+    )
+    crew_id = serializers.UUIDField(
+        allow_null=True, help_text="The crew's id, only for its own members (to switch to it)."
+    )
 
 
 class JoinWithAccountIn(serializers.Serializer):
-    display_name = serializers.CharField(max_length=60)
+    display_name = serializers.CharField(max_length=DISPLAY_NAME_MAX)
 
 
 class AcceptInviteIn(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
+    username = serializers.CharField(max_length=USERNAME_MAX)
     password = serializers.CharField(max_length=128, trim_whitespace=False, write_only=True)
-    display_name = serializers.CharField(max_length=60)
+    display_name = serializers.CharField(max_length=DISPLAY_NAME_MAX)
+    preferred_language = serializers.ChoiceField(
+        choices=User.Language.choices, required=False, help_text="The language used to sign up."
+    )

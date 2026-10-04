@@ -5,15 +5,20 @@ Usernames are stored in lowercase so "Ana" and "ana" are the same person on a ph
 
 from __future__ import annotations
 
+import string
+import unicodedata
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 
 from apps.core.errors import DomainError, ValidationFailed
 
 from .models import User
 
 USERNAME_MIN, USERNAME_MAX = 3, 30
+USERNAME_CHARACTERS = set(string.ascii_lowercase + string.digits + "._-")
 
 
 class InvalidCredentials(DomainError):
@@ -28,14 +33,14 @@ class UsernameTaken(ValidationFailed):
 
 
 def normalize_username(username: str) -> str:
-    return username.strip().lower()
+    return unicodedata.normalize("NFKC", username).strip().lower()
 
 
 def validate_new_username(username: str) -> str:
     """Return the normalized username or raise ValidationFailed / UsernameTaken."""
     normalized = normalize_username(username)
-    if not USERNAME_MIN <= len(normalized) <= USERNAME_MAX or not all(
-        ch.isalnum() or ch in "._-" for ch in normalized
+    if not USERNAME_MIN <= len(normalized) <= USERNAME_MAX or not set(normalized) <= (
+        USERNAME_CHARACTERS
     ):
         raise ValidationFailed(
             fields={
@@ -50,16 +55,24 @@ def validate_new_username(username: str) -> str:
     return normalized
 
 
-def create_user(*, username: str, password: str) -> User:
+def create_user(*, username: str, password: str, language: str | None = None) -> User:
     """Create a login. Validates the username and the password strength."""
     normalized = validate_new_username(username)
     candidate = User(username=normalized)
+    if language is not None:
+        if language not in User.Language.values:
+            raise ValidationFailed(fields={"preferred_language": ["Unknown language."]})
+        candidate.preferred_language = language
     try:
         validate_password(password, user=candidate)
     except DjangoValidationError as exc:
         raise ValidationFailed(fields={"password": list(exc.messages)}) from exc
     candidate.set_password(password)
-    candidate.save()
+    try:
+        with transaction.atomic():
+            candidate.save()
+    except IntegrityError as exc:  # someone took the name in the same moment
+        raise UsernameTaken(fields={"username": [UsernameTaken.message]}) from exc
     return candidate
 
 

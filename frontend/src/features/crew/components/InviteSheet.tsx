@@ -1,17 +1,16 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { Invite } from "@/api";
 import { errorMessage } from "@/i18n/errors";
 import { formatDate } from "@/shared/lib/format";
 import { Banner, Button, Icon, QrCode, Sheet, Skeleton, TextField, useToast } from "@/shared/ui";
 
-import { useCreateInvite, usePendingInvites } from "../api";
+import { useCreateInvite } from "../api";
 import styles from "../crew.module.css";
 
 /**
- * G15 Invite someone. Shows the newest unused invite, or creates one when there is none, so
- * opening the sheet twice does not leave a trail of links. QR code, link, copy and share.
+ * G15 Invite someone. Every time it opens it creates a new single-use link, so two people never
+ * get the same one. QR code, link, copy and share.
  */
 export function InviteSheet({
   open,
@@ -24,23 +23,19 @@ export function InviteSheet({
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
-  const pending = usePendingInvites();
-  const create = useCreateInvite();
-  const requested = useRef(false);
-
-  const newest: Invite | undefined = pending.data?.[0];
-  const invite = newest ?? create.data;
+  const { mutate, reset, data: invite, error } = useCreateInvite();
+  const created = useRef(false); // once per opening, also under React's double effects
 
   useEffect(() => {
+    if (open && !created.current) {
+      created.current = true;
+      mutate();
+    }
     if (!open) {
-      requested.current = false;
-      return;
+      created.current = false;
+      reset();
     }
-    if (pending.isSuccess && !newest && !requested.current) {
-      requested.current = true;
-      create.mutate();
-    }
-  }, [open, pending.isSuccess, newest, create]);
+  }, [open, mutate, reset]);
 
   const copy = async () => {
     if (!invite) return;
@@ -57,8 +52,6 @@ export function InviteSheet({
     if (invite)
       void navigator.share({ text: t("crew.shareText"), url: invite.url }).catch(() => {});
   };
-
-  const error = create.error ?? pending.error;
 
   return (
     <Sheet

@@ -68,14 +68,30 @@ describe("crew screen", () => {
     expect(await screen.findByText("Link copied")).toBeInTheDocument();
   });
 
-  it("reuses the newest unused invite instead of creating another", async () => {
+  it("creates a new link every time the sheet opens", async () => {
     mockGets(meAs(ana), [invite]);
-    const post = vi.spyOn(api, "POST");
+    const post = vi
+      .spyOn(api, "POST")
+      .mockImplementationOnce((() =>
+        ok({ ...invite, url: "https://crew.example/join/first" }, 201)) as never)
+      .mockImplementationOnce((() =>
+        ok({ ...invite, url: "https://crew.example/join/second" }, 201)) as never);
     renderScreen(<CrewRoute />);
+
     await userEvent.click(await screen.findByRole("button", { name: "Invite someone" }));
-    const sheet = await screen.findByRole("dialog", { name: "Invite someone" });
-    expect(await within(sheet).findByLabelText("Invite link")).toHaveValue(invite.url);
-    expect(post).not.toHaveBeenCalled();
+    let sheet = await screen.findByRole("dialog", { name: "Invite someone" });
+    expect(await within(sheet).findByLabelText("Invite link")).toHaveValue(
+      "https://crew.example/join/first",
+    );
+    await userEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole("button", { name: "Invite someone" }));
+    sheet = await screen.findByRole("dialog", { name: "Invite someone" });
+    expect(await within(sheet).findByLabelText("Invite link")).toHaveValue(
+      "https://crew.example/join/second",
+    );
+    expect(post).toHaveBeenCalledTimes(2);
   });
 
   it("an admin cancels a pending invite after confirming", async () => {

@@ -20,6 +20,7 @@ from apps.crews.models import Invite, Member
 from .permissions import ACTIVE_CREW_SESSION_KEY, IsCrewMember, active_member, current_user
 from .serializers import (
     AcceptInviteIn,
+    ActiveCrewIn,
     CrewDetailOut,
     CrewOut,
     InviteOut,
@@ -39,7 +40,14 @@ class AlreadySignedIn(Conflict):
 
 
 def me_payload(user: User, member: Member | None) -> dict[str, Any]:
-    return MeOut({"user": user, "member": member, "crew": member.crew if member else None}).data
+    return MeOut(
+        {
+            "user": user,
+            "member": member,
+            "crew": member.crew if member else None,
+            "crews": selectors.list_memberships(user=user),
+        }
+    ).data
 
 
 def crew_payload(member: Member) -> dict[str, Any]:
@@ -72,6 +80,21 @@ class MeView(APIView):
                 raise ValidationFailed(fields={"display_name": ["You are not in a crew yet."]})
             services.rename_member(member=member, display_name=data.validated_data["display_name"])
         return Response(me_payload(current_user(request), member))
+
+
+class ActiveCrewView(APIView):
+    """Switch the crew the user acts in (for people in several crews)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=ActiveCrewIn, responses=MeOut, operation_id="me_crew_update")
+    def put(self, request: Request) -> Response:
+        data = ActiveCrewIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = current_user(request)
+        member = services.switch_crew(user=user, crew_id=data.validated_data["crew_id"])
+        request.session[ACTIVE_CREW_SESSION_KEY] = str(member.crew_id)
+        return Response(me_payload(user, member))
 
 
 class CrewView(APIView):
@@ -157,15 +180,22 @@ class InvitePreviewView(APIView):
         except services.InviteExpired:
             invite_status = "expired"
         valid = invite_status == "valid"
+        member = (
+            selectors.get_active_member(user=current_user(request), crew_id=invite.crew_id)
+            if request.user.is_authenticated
+            else None
+        )
+        already_member = member is not None and member.crew_id == invite.crew_id
         return Response(
             InvitePreviewOut(
                 {
                     "crew_name": invite.crew.name,
                     "status": invite_status,
                     "expires_at": invite.expires_at,
-                    # Who is in the crew only shows while the link can still be used.
                     "invited_by": invite.created_by if valid else None,
                     "members": selectors.list_members(crew=invite.crew) if valid else [],
+                    "already_member": already_member,
+                    "crew_id": invite.crew_id if already_member else None,
                 }
             ).data
         )
@@ -183,7 +213,14 @@ class AcceptInviteView(APIView):
             raise AlreadySignedIn()
         data = AcceptInviteIn(data=request.data)
         data.is_valid(raise_exception=True)
-        member = services.accept_invite(code=code, **data.validated_data)
+        values = data.validated_data
+        member = services.accept_invite(
+            code=code,
+            username=values["username"],
+            password=values["password"],
+            display_name=values["display_name"],
+            language=values.get("preferred_language"),
+        )
         login(request, member.user, backend="django.contrib.auth.backends.ModelBackend")
         request.session[ACTIVE_CREW_SESSION_KEY] = str(member.crew_id)
         return Response(me_payload(member.user, member), status=status.HTTP_201_CREATED)

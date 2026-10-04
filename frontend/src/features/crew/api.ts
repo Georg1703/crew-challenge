@@ -42,14 +42,17 @@ export function useRevokeInvite() {
       ),
     onMutate: async (invite) => {
       await queryClient.cancelQueries({ queryKey: pendingInvitesKey });
-      const previous = queryClient.getQueryData<PendingInvite[]>(pendingInvitesKey);
       queryClient.setQueryData<PendingInvite[]>(pendingInvitesKey, (current) =>
         current?.filter((item) => item.id !== invite.id),
       );
-      return { previous };
     },
-    onError: (_error, _invite, context) => {
-      if (context?.previous) queryClient.setQueryData(pendingInvitesKey, context.previous);
+    // Put back only this invite, so a second cancel that is still running is not undone.
+    onError: (_error, invite) => {
+      queryClient.setQueryData<PendingInvite[]>(pendingInvitesKey, (current) =>
+        current && !current.some((item) => item.id === invite.id)
+          ? [...current, invite].sort((a, b) => b.expires_at.localeCompare(a.expires_at))
+          : current,
+      );
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: pendingInvitesKey }),
   });

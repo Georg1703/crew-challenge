@@ -193,6 +193,23 @@ export interface paths {
         patch: operations["me_update"];
         trace?: never;
     };
+    "/api/v1/me/crew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Switch the crew the user acts in (for people in several crews). */
+        put: operations["me_crew_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -201,6 +218,17 @@ export interface components {
             username: string;
             password: string;
             display_name: string;
+            /**
+             * @description The language used to sign up.
+             *
+             *     * `ro` - Romana
+             *     * `en` - English
+             */
+            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+        };
+        ActiveCrewInRequest: {
+            /** Format: uuid */
+            crew_id: string;
         };
         CrewDetailOut: {
             /** Format: uuid */
@@ -241,6 +269,13 @@ export interface components {
             invited_by: components["schemas"]["MemberSummaryOut"] | null;
             /** @description Members in rotation order. Empty unless the invite is valid. */
             members: components["schemas"]["MemberSummaryOut"][];
+            /** @description True when the logged-in user is already in this crew. */
+            already_member: boolean;
+            /**
+             * Format: uuid
+             * @description The crew's id, only for its own members (to switch to it).
+             */
+            crew_id: string | null;
         };
         JoinWithAccountInRequest: {
             display_name: string;
@@ -253,6 +288,8 @@ export interface components {
             user: components["schemas"]["UserOut"];
             member: components["schemas"]["MemberOut"] | null;
             crew: components["schemas"]["CrewOut"] | null;
+            /** @description Every crew the user belongs to, by name. */
+            crews: components["schemas"]["MembershipOut"][];
         };
         MemberOut: {
             /** Format: uuid */
@@ -265,6 +302,13 @@ export interface components {
         MemberSummaryOut: {
             display_name: string;
             avatar_seed: string;
+        };
+        MembershipOut: {
+            /** Format: uuid */
+            crew_id: string;
+            crew_name: string;
+            display_name: string;
+            role: string;
         };
         PatchedMePatchInRequest: {
             display_name?: string;
@@ -281,7 +325,7 @@ export interface components {
             expires_at: string;
             /** Format: uuid */
             id: string;
-            created_by: components["schemas"]["MemberSummaryOut"];
+            created_by: components["schemas"]["MemberSummaryOut"] | null;
         };
         /**
          * @description * `ro` - Romana
@@ -570,6 +614,29 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["PatchedMePatchInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    me_crew_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActiveCrewInRequest"];
             };
         };
         responses: {

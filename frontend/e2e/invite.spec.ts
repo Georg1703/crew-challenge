@@ -2,8 +2,8 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 // The invite flow end to end against the real backend and the demo crews from `make seed`:
 // Demo Crew (ana is the admin, bogdan a member) and Echipa Eva (eva is the admin).
-// Anonymous pages follow the browser (English). After login the UI switches to the account's
-// saved language, Romanian for demo and new accounts.
+// Anonymous pages follow the browser (English here). After login the UI switches to the
+// account's saved language: Romanian for the demo accounts, the sign-up language for new ones.
 
 const PASSWORD = "garden-flame-2026";
 
@@ -62,9 +62,9 @@ test("a new person joins with an invite link, and the link then stops working", 
 
   const name = unique("Lena");
   await createAccount(guest, path, name, unique("lena"));
-  await expect(guest.getByRole("heading", { name: `Bun venit, ${name}` })).toBeVisible();
-  await guest.getByRole("button", { name: "Începe" }).click();
-  await expect(guest.getByRole("heading", { name: `Bună, ${name}` })).toBeVisible();
+  await expect(guest.getByRole("heading", { name: `Welcome, ${name}` })).toBeVisible();
+  await guest.getByRole("button", { name: "Start" }).click();
+  await expect(guest.getByRole("heading", { name: `Hi, ${name}` })).toBeVisible();
 
   // The admin sees the new member, and the invite is no longer pending.
   await page.reload();
@@ -119,15 +119,31 @@ test("someone with an account in another crew joins with it", async ({ page, bro
   await person.getByRole("button", { name: "Log in" }).click();
 
   await expect(
-    person.getByRole("heading", { name: "Intră în Demo Crew cu contul tău" }),
+    person.getByRole("heading", { name: "Join Demo Crew with your account" }),
   ).toBeVisible();
-  await expect(person.getByLabel("Cum să-ți spunem?")).toHaveValue(name);
-  await person.getByRole("button", { name: "Intră în echipă" }).click();
+  await expect(person.getByLabel("What should we call you?")).toHaveValue(name);
+  await person.getByRole("button", { name: "Join the crew" }).click();
   await expect(person).toHaveURL(/\/welcome$/);
-  await expect(person.getByText("Așa merge totul în Demo Crew:")).toBeVisible();
+  await expect(person.getByText("This is how Demo Crew works:")).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("list", { name: "Membrii echipei" }).getByText(name)).toBeVisible();
+
+  // Both crews are in Me; switching back to Eva's crew changes the crew everywhere.
+  await person.goto("/me");
+  const crews = person.getByRole("list", { name: "My crews" });
+  await expect(crews.getByText("Demo Crew")).toBeVisible();
+  await crews.getByRole("button", { name: /Echipa Eva/ }).click();
+  await expect(person.getByText("Switched to Echipa Eva")).toBeVisible();
+  await person.goto("/crew");
+  await expect(person.getByRole("heading", { name: "Echipa Eva" })).toBeVisible();
+});
+
+test("a member opening a link to their own crew is told they are already in", async ({ page }) => {
+  await logIn(page, "ana");
+  const path = await inviteLink(page);
+  await page.goto(path);
+  await expect(page.getByRole("heading", { name: "Ești deja în Demo Crew" })).toBeVisible();
 });
 
 test("a taken username shows under the username field", async ({ page, browser }) => {

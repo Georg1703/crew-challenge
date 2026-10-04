@@ -106,7 +106,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `Button` | Every action. `primary` (one per screen), `secondary`, `ghost` (text action), `danger` (destructive, never primary). `size="lg"` (52px) for main actions, `md` (44px) inside cards. States: loading, disabled |
 | `TextField` | Every text input: label above, hint or error below, wired for screen readers |
 | `Card` | A group of related content. `tone="accent"` highlights the one thing that needs the user |
-| `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link |
+| `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring), a row of up to five members then "+N" |
 | `Sheet` | Bottom sheets for a short task (invite, check in, confirm). Title, close button, one primary action |

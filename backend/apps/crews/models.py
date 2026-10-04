@@ -91,6 +91,11 @@ class Member(CrewScopedModel):
     rotation_position = models.PositiveSmallIntegerField(
         help_text="Order in which members propose challenges, starting at 0."
     )
+    last_active_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the user last chose this crew; their most recent crew opens after login.",
+    )
 
     class Meta:
         ordering = ("crew", "rotation_position")
@@ -119,7 +124,9 @@ class Invite(CrewScopedModel):
     """A single-use link that lets one new person join a crew."""
 
     code = models.CharField(max_length=16, unique=True)
-    created_by = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="invites_sent")
+    created_by = models.ForeignKey(
+        Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="invites_sent"
+    )
     expires_at = models.DateTimeField()
     used_by = models.OneToOneField(
         Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="joined_with"

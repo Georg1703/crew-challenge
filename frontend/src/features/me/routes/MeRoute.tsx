@@ -12,24 +12,46 @@ import {
   Button,
   Card,
   Icon,
+  IconTile,
+  List,
+  ListRow,
   Screen,
   Segmented,
+  Skeleton,
   Stack,
+  StatusPill,
   TextField,
   useToast,
 } from "@/shared/ui";
 
-import { useUpdateMe } from "../api";
+import { useSwitchCrew, useUpdateMe } from "../api";
 import styles from "../me.module.css";
 
+/** Me: profile, crews (when you are in several), language, install, log out. */
 export function MeRoute() {
+  const { t } = useTranslation();
+  const me = useMe();
+  if (me.isPending) {
+    return (
+      <Screen title={t("me.title")}>
+        <Skeleton lines={4} />
+      </Screen>
+    );
+  }
+  // A new crew means a new display name: remount the form so it starts from the right value.
+  return <MeScreen key={me.data?.member?.id ?? "none"} />;
+}
+
+function MeScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
   const me = useMe();
   const update = useUpdateMe();
   const logout = useLogout();
+  const switchCrew = useSwitchCrew();
   const member = me.data?.member;
+  const crews = me.data?.crews ?? [];
   const [name, setName] = useState(member?.display_name ?? "");
 
   const saveName = (event: FormEvent) => {
@@ -63,6 +85,7 @@ export function MeRoute() {
               <TextField
                 label={t("me.displayName")}
                 name="display_name"
+                maxLength={40}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 error={nameError}
@@ -78,6 +101,46 @@ export function MeRoute() {
             </Stack>
           </form>
         </Card>
+      )}
+      {crews.length > 1 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("me.crewsTitle")}</h2>
+          <List label={t("me.crewsTitle")}>
+            {crews.map((crew) => {
+              const current = crew.crew_id === me.data?.crew?.id;
+              return (
+                <ListRow
+                  key={crew.crew_id}
+                  current={current}
+                  leading={
+                    <IconTile tone={current ? "accent" : "neutral"}>
+                      <Icon name="users" size={20} />
+                    </IconTile>
+                  }
+                  title={crew.crew_name}
+                  subtitle={t("me.crewAs", { name: crew.display_name })}
+                  trailing={
+                    current ? (
+                      <StatusPill tone="success">{t("me.crewCurrent")}</StatusPill>
+                    ) : (
+                      <Icon name="chevronRight" size={20} />
+                    )
+                  }
+                  onClick={
+                    current || switchCrew.isPending
+                      ? undefined
+                      : () =>
+                          switchCrew.mutate(crew.crew_id, {
+                            onSuccess: () =>
+                              toast(t("me.crewSwitched", { crew: crew.crew_name }), "success"),
+                            onError: (error) => toast(errorMessage(t, error), "error"),
+                          })
+                  }
+                />
+              );
+            })}
+          </List>
+        </section>
       )}
       <Card>
         <Segmented<Language>

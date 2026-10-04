@@ -10,6 +10,11 @@ DEBUG = False
 if SECRET_KEY == "insecure-local-only" or len(SECRET_KEY) < 40:
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value in production.")
 
+# Invite links are built from APP_PUBLIC_URL; a missing value would send people to localhost.
+APP_PUBLIC_URL = env("APP_PUBLIC_URL", default="")
+if not APP_PUBLIC_URL.startswith("https://") or "localhost" in APP_PUBLIC_URL:
+    raise ImproperlyConfigured("Set APP_PUBLIC_URL to the public https:// address of the app.")
+
 # Caddy is the one proxy in front of Django: trust one X-Forwarded-For hop for client IPs.
 REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env.int("TRUSTED_PROXY_COUNT", default=1)}
 

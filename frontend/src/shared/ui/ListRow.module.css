@@ -27,6 +27,14 @@
   transition: background-color var(--duration-fast) var(--ease-out);
 }
 
+.button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
 .link:active {
   background: var(--color-surface-sunken);
 }

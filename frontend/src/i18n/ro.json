@@ -47,7 +47,10 @@
     "expired": "Linkul a expirat. Cere unul nou de la cine te-a invitat.",
     "used": "Linkul a fost deja folosit. Cere unul nou de la cine te-a invitat.",
     "notFound": "Linkul nu există sau a fost anulat. Cere unul nou de la cine te-a invitat.",
-    "goHome": "Mergi la Azi"
+    "goHome": "Mergi la Azi",
+    "alreadyTitle": "Ești deja în {{crew}}",
+    "alreadyBody": "Linkul ăsta e pentru cineva nou. Îl poți trimite mai departe.",
+    "alreadyOpen": "Deschide {{crew}}"
   },
   "home": {
     "greeting": "Bună, {{name}}",
@@ -88,7 +91,11 @@
     "profile": "Profil",
     "displayName": "Numele din echipă",
     "language": "Limba",
-    "logout": "Ieși din cont"
+    "logout": "Ieși din cont",
+    "crewsTitle": "Echipele mele",
+    "crewAs": "Ca {{name}}",
+    "crewCurrent": "Acum",
+    "crewSwitched": "Ai trecut în {{crew}}"
   },
   "languages": {
     "ro": "Română",
@@ -115,7 +122,8 @@
     "validation_failed": "Unele câmpuri nu sunt corecte.",
     "not_authenticated": "Intră din nou în cont.",
     "not_found": "Nu am găsit ce căutai.",
-    "already_member": "Ești deja în echipa asta."
+    "already_member": "Ești deja în echipa asta.",
+    "crew_not_found": "Nu ești în această echipă."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",

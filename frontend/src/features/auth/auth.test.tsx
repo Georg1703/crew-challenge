@@ -14,6 +14,8 @@ const get = () => vi.spyOn(api, "GET");
 const post = () => vi.spyOn(api, "POST");
 
 const preview = {
+  already_member: false,
+  crew_id: null,
   crew_name: "Demo Crew",
   status: "valid",
   expires_at: "2026-11-10T10:00:00Z",
@@ -95,6 +97,9 @@ describe("login", () => {
     ["https://evil.example", "/"],
     ["//evil.example", "/"],
     ["/\\evil.example", "/"],
+    ["/\t/evil.example", "/"],
+    ["/\n/evil.example", "/"],
+    ["/%09/evil.example", "/%09/evil.example"],
     ["crew", "/"],
     [null, "/"],
   ])("only follows next=%s inside the app", (next, expected) => {
@@ -134,7 +139,12 @@ describe("join", () => {
     expect(await screen.findByText("welcome page")).toBeInTheDocument();
     expect(api.POST).toHaveBeenCalledWith("/api/v1/invites/{code}/accept", {
       params: { path: { code: "abc123" } },
-      body: { display_name: "Lena", username: "lena", password: "garden-flame-2026" },
+      body: {
+        display_name: "Lena",
+        username: "lena",
+        password: "garden-flame-2026",
+        preferred_language: "en",
+      },
     });
   });
 
@@ -184,6 +194,22 @@ describe("join", () => {
       params: { path: { code: "abc123" } },
       body: { display_name: "Bogdan" },
     });
+  });
+
+  it("tells members they are already in the crew and opens it", async () => {
+    mockGets({
+      me: meAs(bogdan),
+      invite: ok({ ...preview, already_member: true, crew_id: "c-1" }),
+    });
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(meAs(bogdan))) as never);
+    const { router } = renderRoutes(routes, { at: "/join/abc123" });
+    expect(
+      await screen.findByRole("heading", { name: "You're already in Demo Crew" }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Open Demo Crew" }));
+    expect(await screen.findByText("home page")).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/");
+    expect(put).toHaveBeenCalledWith("/api/v1/me/crew", { body: { crew_id: "c-1" } });
   });
 
   it("explains when you are already in the crew", async () => {

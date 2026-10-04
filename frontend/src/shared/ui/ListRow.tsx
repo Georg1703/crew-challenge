@@ -23,10 +23,22 @@ interface ListRowProps {
   trailing?: ReactNode;
   /** Makes the whole row a link. */
   to?: string;
+  /** Makes the whole row a button (for example "switch to this crew"). */
+  onClick?: () => void;
+  /** Marks the row as the current choice for screen readers. */
+  current?: boolean;
 }
 
 /** A member, an invite, a setting: leading visual, title, one secondary line, one trailing item. */
-export function ListRow({ leading, title, subtitle, trailing, to }: ListRowProps) {
+export function ListRow({
+  leading,
+  title,
+  subtitle,
+  trailing,
+  to,
+  onClick,
+  current,
+}: ListRowProps) {
   const body = (
     <>
       {leading && <span className={styles.leading}>{leading}</span>}
@@ -40,11 +52,22 @@ export function ListRow({ leading, title, subtitle, trailing, to }: ListRowProps
   return (
     <li className={styles.item}>
       {to ? (
-        <Link to={to} className={cx(styles.row, styles.link)}>
+        <Link to={to} className={cx(styles.row, styles.link)} aria-current={current || undefined}>
           {body}
         </Link>
+      ) : onClick ? (
+        <button
+          type="button"
+          className={cx(styles.row, styles.link, styles.button)}
+          onClick={onClick}
+          aria-current={current || undefined}
+        >
+          {body}
+        </button>
       ) : (
-        <div className={styles.row}>{body}</div>
+        <div className={styles.row} aria-current={current || undefined}>
+          {body}
+        </div>
       )}
     </li>
   );
