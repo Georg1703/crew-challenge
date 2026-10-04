@@ -2,9 +2,14 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { Avatar, avatarColor, initials } from "./Avatar";
+import { renderScreen } from "@/test/render";
+
+import { Avatar, AvatarStack, avatarColor, initials } from "./Avatar";
 import { Button } from "./Button";
+import { List, ListRow } from "./ListRow";
+import { QrCode } from "./QrCode";
 import { Sheet } from "./Sheet";
+import { StatusPill } from "./StatusPill";
 import { TextField } from "./TextField";
 
 describe("Button", () => {
@@ -56,5 +61,45 @@ describe("Avatar", () => {
     expect(avatarColor("abc")).toBeLessThanOrEqual(6);
     render(<Avatar name="Ana" seed="s1" />);
     expect(screen.getByRole("img", { name: "Ana" })).toHaveTextContent("A");
+  });
+});
+
+describe("AvatarStack", () => {
+  it("shows five avatars, then the rest as +N, under one accessible name", () => {
+    const members = ["A", "B", "C", "D", "E", "F", "G"].map((name) => ({
+      id: name,
+      name,
+      seed: name,
+    }));
+    render(<AvatarStack members={members} label="7 members" />);
+    expect(screen.getByRole("img", { name: "7 members" })).toHaveTextContent("ABCDE+2");
+  });
+});
+
+describe("StatusPill", () => {
+  it("adds a check to success so meaning does not rest on color", () => {
+    const { container } = render(<StatusPill tone="success">Done</StatusPill>);
+    expect(container.querySelector("svg")).not.toBeNull();
+    expect(screen.getByText("Done")).toBeInTheDocument();
+  });
+});
+
+describe("ListRow", () => {
+  it("makes the whole row a link when given `to`", () => {
+    renderScreen(
+      <List label="Members">
+        <ListRow to="/crew/1" title="Bogdan" subtitle="Admin" />
+      </List>,
+    );
+    expect(screen.getByRole("list", { name: "Members" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Bogdan/ })).toHaveAttribute("href", "/crew/1");
+  });
+});
+
+describe("QrCode", () => {
+  it("draws the code as a labelled image", () => {
+    render(<QrCode value="https://example.com/join/abc" label="Invite QR code" />);
+    const image = screen.getByRole("img", { name: "Invite QR code" });
+    expect(image.querySelector("path")?.getAttribute("d")).toMatch(/^M\d+ \d+h1v1h-1z/);
   });
 });

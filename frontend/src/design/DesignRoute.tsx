@@ -8,15 +8,20 @@ import { useState } from "react";
 import { motion, springs, type SpringName } from "@/shared/motion";
 import {
   Avatar,
-  Badge,
+  AvatarStack,
   Banner,
   Button,
   Card,
   Icon,
+  IconTile,
+  List,
+  ListRow,
+  QrCode,
   Segmented,
   Sheet,
   Skeleton,
   Spinner,
+  StatusPill,
   TabBar,
   TextField,
   useToast,
@@ -51,7 +56,8 @@ export function DesignRoute() {
       <header className={styles.header}>
         <h1>Design system</h1>
         <p className={styles.muted}>
-          Placeholder theme. Tokens: src/styles/tokens.css. Components: src/shared/ui.
+          Crew Challenges design system. Rules: docs/design-system.md. Tokens:
+          src/styles/tokens.css. Components: src/shared/ui.
         </p>
         <Segmented<Theme>
           label="Theme"
@@ -174,18 +180,92 @@ export function DesignRoute() {
         <TextField label="Disabled" defaultValue="Disabled" disabled />
       </Section>
 
-      <Section title="Badges and avatars">
+      <Section title="Status pills and avatars">
         <div className={styles.row}>
-          <Badge>neutral</Badge>
-          <Badge tone="accent">accent</Badge>
-          <Badge tone="success">success</Badge>
-          <Badge tone="danger">danger</Badge>
+          <StatusPill>neutral</StatusPill>
+          <StatusPill tone="accent">accent</StatusPill>
+          <StatusPill tone="success">success</StatusPill>
+          <StatusPill tone="warning">warning</StatusPill>
+          <StatusPill tone="danger">danger</StatusPill>
         </div>
         <div className={styles.row}>
-          {["Ana", "Bogdan Popa", "Cristina", "Dan", "Elena M", "Florin"].map((name, i) => (
-            <Avatar key={name} name={name} seed={`seed-${i * 7}`} size={i % 2 ? "md" : "lg"} />
+          {["Ana", "Bogdan Popa", "Cristina", "Dan", "Elena M"].map((name, i) => (
+            <Avatar
+              key={name}
+              name={name}
+              seed={`seed-${i * 7}`}
+              size={(["sm", "md", "lg"] as const)[i % 3]}
+              ring={i === 1 ? "done" : i === 2 ? "todo" : undefined}
+            />
           ))}
+          <AvatarStack
+            label="Six members"
+            members={["Ana", "Bogdan", "Cristina", "Dan", "Elena", "Florin"].map((name, i) => ({
+              id: name,
+              name,
+              seed: `seed-${i * 7}`,
+            }))}
+          />
         </div>
+      </Section>
+
+      <Section title="Lists">
+        <List label="Members">
+          <ListRow
+            leading={<Avatar name="Bogdan" seed="seed-7" />}
+            title="Bogdan"
+            subtitle="Admin"
+            trailing={<StatusPill tone="success">Checked in</StatusPill>}
+          />
+          <ListRow
+            leading={
+              <IconTile tone="accent">
+                <Icon name="link" size={20} />
+              </IconTile>
+            }
+            title="Invite K7P4QD"
+            subtitle="Expires in 5 days"
+            trailing={
+              <Button variant="ghost" size="md">
+                Cancel
+              </Button>
+            }
+          />
+          <ListRow
+            to="/design"
+            leading={
+              <IconTile>
+                <Icon name="users" size={20} />
+              </IconTile>
+            }
+            title="A row that is a link"
+            subtitle="The whole row is the tap target"
+            trailing={<Icon name="chevronRight" size={20} />}
+          />
+        </List>
+      </Section>
+
+      <Section title="QR code">
+        <QrCode value="https://crew.example/join/k7p4qdx2mn" label="QR code for the invite link" />
+      </Section>
+
+      <Section title="Cards">
+        <Card>
+          <p>A default card groups related content.</p>
+        </Card>
+        <Card tone="accent">
+          <p>An accent card highlights the one thing that needs you.</p>
+        </Card>
+      </Section>
+
+      <Section title="Banners">
+        <Banner title="Your turn to pick" message="Pick next month's challenge by the 25th." />
+        <Banner tone="warning" title="No internet" message="We continue when it is back." />
+        <Banner
+          tone="danger"
+          title="Wrong username or password"
+          message="Check them and try again."
+        />
       </Section>
 
       <Section title="Feedback">
@@ -214,7 +294,8 @@ export function DesignRoute() {
         </Card>
         <Banner
           open={bannerOpen}
-          message="A new version of the app is ready."
+          floating
+          title="A new version of the app is ready."
           actions={
             <>
               <Button variant="ghost" onClick={() => setBannerOpen(false)}>
@@ -254,9 +335,9 @@ export function DesignRoute() {
           <TabBar
             label="Preview"
             tabs={[
-              { to: "/design", label: "Home", icon: "home", end: true },
-              { to: "/crew", label: "Crew", icon: "crew" },
-              { to: "/me", label: "Me", icon: "me" },
+              { to: "/design", label: "Today", icon: "sun", end: true },
+              { to: "/crew", label: "Crew", icon: "users" },
+              { to: "/me", label: "Me", icon: "user" },
             ]}
           />
         </div>

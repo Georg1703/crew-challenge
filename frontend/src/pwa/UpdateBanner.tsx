@@ -11,7 +11,8 @@ export function UpdateBanner() {
   return (
     <Banner
       open={needRefresh}
-      message={t("pwa.updateReady")}
+      floating
+      title={t("pwa.updateReady")}
       actions={
         <>
           <Button variant="ghost" onClick={later}>

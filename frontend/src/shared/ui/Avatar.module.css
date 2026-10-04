@@ -10,21 +10,29 @@
 }
 
 .sm {
-  width: var(--space-8);
-  height: var(--space-8);
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
   font-size: var(--text-caption);
 }
 
 .md {
-  width: var(--space-10);
-  height: var(--space-10);
-  font-size: var(--text-small);
+  width: var(--avatar-md);
+  height: var(--avatar-md);
+  font-size: var(--text-body);
 }
 
 .lg {
-  width: calc(var(--space-12) * 1.5);
-  height: calc(var(--space-12) * 1.5);
+  width: var(--avatar-lg);
+  height: var(--avatar-lg);
   font-size: var(--text-title-m);
+}
+
+.done {
+  box-shadow: var(--ring-done);
+}
+
+.todo {
+  box-shadow: var(--ring-todo);
 }
 
 .avatar[data-color="1"] {
@@ -45,4 +53,23 @@
 
 .avatar[data-color="5"] {
   background: var(--color-avatar-5);
+}
+
+/* A stack of avatars: overlap with a bg outline, up to five, then "+N". */
+.stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.stack > * + * {
+  margin-left: calc(var(--space-2) * -1);
+}
+
+.stack > * {
+  box-shadow: var(--ring-gap);
+}
+
+.more {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
 }

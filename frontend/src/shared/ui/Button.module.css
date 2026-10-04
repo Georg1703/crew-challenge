@@ -1,29 +1,37 @@
+/* Button: radius-md, label body-strong. lg = main action (52px), md = inside cards (44px). */
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--tap-min);
-  padding: var(--space-2) var(--space-5);
+  min-height: var(--button-height-sm);
+  padding: 0 var(--space-5);
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-size: var(--text-body);
   font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
 .button:disabled {
+  border-color: transparent;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-disabled);
   cursor: not-allowed;
-  opacity: 0.5;
+}
+
+.button[aria-busy="true"] {
+  cursor: progress;
 }
 
 .lg {
-  min-height: calc(var(--tap-min) + var(--space-2));
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-title-s);
+  min-height: var(--button-height);
 }
 
 .fullWidth {
@@ -40,18 +48,50 @@
 }
 
 .secondary {
-  background: var(--color-surface);
   border-color: var(--color-border);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
+.secondary:active:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+
+/* Text button: inline actions such as "Change" or "All". */
 .ghost {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
   background: transparent;
   color: var(--color-accent);
 }
 
-.danger {
+.ghost:disabled {
   background: transparent;
-  border-color: var(--color-danger);
+}
+
+/* Destructive: secondary look with a danger label. Never primary. */
+.danger {
+  border-color: var(--color-border);
+  background: var(--color-surface);
   color: var(--color-danger);
+}
+
+.danger:active:not(:disabled) {
+  background: var(--color-danger-soft);
+}
+
+.primary[aria-busy="true"]:disabled {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.ghost[aria-busy="true"]:disabled {
+  color: var(--color-accent);
+}
+
+.secondary[aria-busy="true"]:disabled,
+.danger[aria-busy="true"]:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
 }

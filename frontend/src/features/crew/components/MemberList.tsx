@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { motion, staggerStep, useSpring, variants } from "@/shared/motion";
-import { Avatar, Badge } from "@/shared/ui";
+import { Avatar, StatusPill } from "@/shared/ui";
 
 import styles from "../crew.module.css";
 
@@ -27,8 +27,8 @@ export function MemberList({ members, meId }: { members: Member[]; meId?: string
           <span className={styles.position}>{member.rotation_position + 1}</span>
           <Avatar name={member.display_name} seed={member.avatar_seed} />
           <span className={styles.name}>{member.display_name}</span>
-          {member.id === meId && <Badge tone="accent">{t("crew.you")}</Badge>}
-          {member.role === "admin" && <Badge>{t("crew.admin")}</Badge>}
+          {member.id === meId && <StatusPill tone="accent">{t("crew.you")}</StatusPill>}
+          {member.role === "admin" && <StatusPill>{t("crew.admin")}</StatusPill>}
         </motion.li>
       ))}
     </motion.ol>

@@ -42,8 +42,10 @@ Two layers in `tokens.css`:
 | `Card` | A group of related content on a surface |
 | `Sheet` | Bottom-sheet dialogs (forms, details, share) |
 | `Segmented` | A small set of exclusive options (language, theme) |
-| `Badge` | Short status labels |
-| `Avatar` | A member (initials + color from `avatar_seed`) |
+| `StatusPill` | Short status labels (done, to do, missed, admin) |
+| `List`, `ListRow`, `IconTile` | Rows of members, invites and settings inside one surface |
+| `QrCode` | A scannable code for a link (invites) |
+| `Avatar`, `AvatarStack` | A member (initials + color from `avatar_seed`), a row of members |
 | `Toast` (`useToast`) | Short feedback after an action |
 | `Banner` | Persistent notice with actions at the top of the screen (app update) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |

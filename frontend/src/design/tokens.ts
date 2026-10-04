@@ -25,6 +25,8 @@ export const colorTokens = [
   "avatar-3",
   "avatar-4",
   "avatar-5",
+  "code-bg",
+  "code-fg",
 ] as const;
 
 export const textTokens = [
