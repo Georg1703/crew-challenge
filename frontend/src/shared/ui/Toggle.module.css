@@ -1,0 +1,57 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  cursor: pointer;
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.label {
+  font-weight: var(--weight-bold);
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: calc(var(--space-12) - var(--space-1));
+  height: calc(var(--space-6) + var(--space-1));
+  margin: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  cursor: pointer;
+  appearance: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.switch::after {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  content: "";
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.switch:checked {
+  background: var(--color-success);
+}
+
+.switch:checked::after {
+  transform: translateX(calc(var(--space-5) - var(--space-1)));
+}

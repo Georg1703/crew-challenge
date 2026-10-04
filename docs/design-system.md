@@ -114,6 +114,12 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `Toast` (`useToast`) | A short confirmation after an action, above the tab bar |
 | `QrCode` | A scannable code for a link |
 | `Segmented` | A small set of exclusive options (language, theme) |
+| `OptionList` | One choice among a few that each need a line of explanation (how often, what proof) |
+| `ChipGroup` | Several short choices that combine (days of the week, quick ideas) |
+| `Stepper` | A small whole number with minus and plus (times a week) |
+| `TextArea` | A labelled multi-line field (rules, notes); same states as `TextField` |
+| `Toggle` | An on/off setting with a label and an optional explanation |
+| `StepProgress` | Where you are in a multi-step form (segments) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation; the shared icon set (Lucide shapes, stroke 1.75) |
 

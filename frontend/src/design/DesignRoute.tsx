@@ -12,10 +12,12 @@ import {
   Banner,
   Button,
   Card,
+  ChipGroup,
   Icon,
   IconTile,
   List,
   ListRow,
+  OptionList,
   QrCode,
   Segmented,
   Sheet,
@@ -23,8 +25,12 @@ import {
   Spinner,
   Stack,
   StatusPill,
+  StepProgress,
+  Stepper,
   TabBar,
+  TextArea,
   TextField,
+  Toggle,
   useToast,
 } from "@/shared/ui";
 
@@ -50,6 +56,10 @@ export function DesignRoute() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
   const [segment, setSegment] = useState("ro");
+  const [often, setOften] = useState("daily");
+  const [days, setDays] = useState<number[]>([0, 2, 4]);
+  const [times, setTimes] = useState(3);
+  const [proof, setProof] = useState(true);
   const toast = useToast();
 
   return (
@@ -319,6 +329,51 @@ export function DesignRoute() {
             Done
           </Button>
         </Sheet>
+      </Section>
+
+      <Section title="Form controls">
+        <StepProgress current={2} total={5} label="Step 2 of 5" />
+        <OptionList
+          label="How often"
+          value={often}
+          onChange={setOften}
+          options={[
+            { value: "daily", title: "Every day", description: "One check-in a day, 7 of 7" },
+            {
+              value: "weekdays",
+              title: "Chosen days",
+              description: "For example Monday to Friday",
+            },
+            { value: "times", title: "A number of times a week", description: "Any days you like" },
+          ]}
+        />
+        <ChipGroup
+          label="Days"
+          values={days}
+          onChange={setDays}
+          options={["M", "T", "W", "T", "F", "S", "S"].map((day, index) => ({
+            value: index,
+            label: day,
+            name: `Day ${index + 1}`,
+          }))}
+        />
+        <Stepper
+          label="Times a week"
+          value={times}
+          min={1}
+          max={7}
+          onChange={setTimes}
+          decreaseLabel="Fewer"
+          increaseLabel="More"
+          suffix="times"
+        />
+        <TextArea label="Rules" hint="What counts and what does not." />
+        <Toggle
+          label="Proof is required"
+          description="Without it the check-in does not count."
+          checked={proof}
+          onChange={setProof}
+        />
       </Section>
 
       <Section title="Segmented control">

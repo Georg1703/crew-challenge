@@ -1,0 +1,16 @@
+.bar {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.segment {
+  flex: 1;
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  transition: background-color var(--duration-normal) var(--ease-out);
+}
+
+.done {
+  background: var(--color-accent);
+}
