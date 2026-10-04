@@ -45,6 +45,7 @@ Two layers in `tokens.css`:
 | `Badge` | Short status labels |
 | `Avatar` | A member (initials + color from `avatar_seed`) |
 | `Toast` (`useToast`) | Short feedback after an action |
+| `Banner` | Persistent notice with actions at the top of the screen (app update) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation; the shared icon set |
 

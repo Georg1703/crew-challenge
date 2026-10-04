@@ -9,6 +9,8 @@ const PATHS = {
   logout: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11",
   close: "m6 6 12 12M18 6 6 18",
   share: "M12 3v12M7 8l5-5 5 5M5 13v7h14v-7",
+  addSquare: "M4 4h16v16H4zM12 8v8M8 12h8",
+  download: "M12 4v11M7 10l5 5 5-5M5 20h14",
 } as const;
 
 export type IconName = keyof typeof PATHS;

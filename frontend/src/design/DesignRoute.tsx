@@ -9,6 +9,7 @@ import { motion, springs, type SpringName } from "@/shared/motion";
 import {
   Avatar,
   Badge,
+  Banner,
   Button,
   Card,
   Icon,
@@ -34,6 +35,7 @@ function applyTheme(theme: Theme) {
 export function DesignRoute() {
   const [theme, setTheme] = useState<Theme>("system");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [bannerOpen, setBannerOpen] = useState(false);
   const [segment, setSegment] = useState("ro");
   const toast = useToast();
 
@@ -172,6 +174,9 @@ export function DesignRoute() {
           <Button variant="secondary" onClick={() => setSheetOpen(true)}>
             Open sheet
           </Button>
+          <Button variant="secondary" onClick={() => setBannerOpen(true)}>
+            Show banner
+          </Button>
         </div>
         <div className={styles.row}>
           <Spinner label="Loading" />
@@ -179,6 +184,18 @@ export function DesignRoute() {
         <Card>
           <Skeleton lines={2} />
         </Card>
+        <Banner
+          open={bannerOpen}
+          message="A new version of the app is ready."
+          actions={
+            <>
+              <Button variant="ghost" onClick={() => setBannerOpen(false)}>
+                Later
+              </Button>
+              <Button onClick={() => setBannerOpen(false)}>Update</Button>
+            </>
+          }
+        />
         <Sheet
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}

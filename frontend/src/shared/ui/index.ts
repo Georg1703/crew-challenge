@@ -1,6 +1,7 @@
 /** The design system's components. Screens are built only from these (plus layout CSS). */
 export { Avatar, avatarColor, initials } from "./Avatar";
 export { Badge } from "./Badge";
+export { Banner } from "./Banner";
 export { Button, type ButtonProps } from "./Button";
 export { Card } from "./Card";
 export { Icon, type IconName } from "./Icon";
