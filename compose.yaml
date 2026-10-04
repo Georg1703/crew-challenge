@@ -1,4 +1,5 @@
-# Local development. First time: `make setup`; then every day: `make dev`.
+# Local development. First time: `make setup`; then every day: `make dev` (starts in the
+# background and waits until every service is healthy; `make stop` stops it).
 # App: http://localhost:5173 (Vite, proxies /api, /admin and /static to Django).
 #
 # Code is mounted into the containers, so Django and Vite reload on save. Restart the worker

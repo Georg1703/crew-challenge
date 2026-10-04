@@ -15,8 +15,9 @@ For `make check` and `make e2e` on your machine also: uv and Node 22 with pnpm (
 ```sh
 make help     # list every command
 make setup    # first-time setup: .env, images, database, demo crew
-make dev      # run the app at http://localhost:5173 (log in as ana / garden-flame-2026)
-make tunnel   # in a second terminal: HTTPS URL to open the app on your phone
+make dev      # start in the background: http://localhost:5173 (log in as ana / garden-flame-2026)
+make logs     # follow the output; make stop stops everything
+make tunnel   # HTTPS URL to open the app on your phone
 make check    # everything CI runs
 ```
 

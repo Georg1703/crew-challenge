@@ -51,9 +51,11 @@ setup: ## First-time setup: .env, images, migrations, seed data
 ##@ Running locally
 
 .PHONY: dev
-dev: ## Run everything locally (app at http://localhost:5173); Ctrl+C stops it
+dev: ## Start everything in the background, wait until healthy (app at http://localhost:5173)
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) up --build
+	@$(COMPOSE) up --build --detach --wait --wait-timeout 300 \
+		|| { echo "ERROR: a service did not start; see: make ps, then make logs s=<service>"; exit 1; }
+	@echo "OK: running at http://localhost:5173 - make logs to follow output, make stop to stop"
 
 .PHONY: stop
 stop: ## Stop local containers (data is kept)

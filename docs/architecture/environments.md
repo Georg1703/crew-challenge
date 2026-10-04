@@ -26,7 +26,8 @@ Both run the same backend Docker image; only configuration differs.
 ## Local development
 
 `compose.yaml` runs the whole app. `make setup` once (creates `.env`, builds images, migrates,
-loads the demo crew), then `make dev`.
+loads the demo crew), then `make dev`. It starts the containers in the background and returns when
+every service is healthy (or fails and says so). `make logs` follows the output, `make stop` stops it.
 
 | Service | What it runs | Port on localhost |
 |---|---|---|
