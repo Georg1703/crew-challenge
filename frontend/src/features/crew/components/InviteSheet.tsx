@@ -1,14 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { Invite } from "@/api";
 import { errorMessage } from "@/i18n/errors";
-import { formatDateTime } from "@/shared/lib/format";
-import { Button, Icon, Sheet, Skeleton, Stack, useToast } from "@/shared/ui";
+import { formatDate } from "@/shared/lib/format";
+import { Banner, Button, Icon, QrCode, Sheet, Skeleton, TextField, useToast } from "@/shared/ui";
 
-import { useCreateInvite } from "../api";
+import { useCreateInvite, usePendingInvites } from "../api";
 import styles from "../crew.module.css";
 
-/** Creates a fresh single-use invite when opened, then lets the admin copy or share it. */
+/**
+ * G15 Invite someone. Shows the newest unused invite, or creates one when there is none, so
+ * opening the sheet twice does not leave a trail of links. QR code, link, copy and share.
+ */
 export function InviteSheet({
   open,
   onClose,
@@ -20,30 +24,41 @@ export function InviteSheet({
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
-  const invite = useCreateInvite();
-  const { mutate, reset } = invite;
+  const pending = usePendingInvites();
+  const create = useCreateInvite();
+  const requested = useRef(false);
+
+  const newest: Invite | undefined = pending.data?.[0];
+  const invite = newest ?? create.data;
 
   useEffect(() => {
-    if (open) mutate();
-    else reset();
-  }, [open, mutate, reset]);
-
-  const url = invite.data?.url;
-  const canShare = typeof navigator.share === "function";
+    if (!open) {
+      requested.current = false;
+      return;
+    }
+    if (pending.isSuccess && !newest && !requested.current) {
+      requested.current = true;
+      create.mutate();
+    }
+  }, [open, pending.isSuccess, newest, create]);
 
   const copy = async () => {
-    if (!url) return;
+    if (!invite) return;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(invite.url);
       toast(t("common.copied"), "success");
     } catch {
       toast(t("common.somethingWrong"), "error");
     }
   };
 
+  const canShare = typeof navigator.share === "function";
   const share = () => {
-    if (url) void navigator.share({ text: t("crew.shareText"), url }).catch(() => undefined);
+    if (invite)
+      void navigator.share({ text: t("crew.shareText"), url: invite.url }).catch(() => {});
   };
+
+  const error = create.error ?? pending.error;
 
   return (
     <Sheet
@@ -53,25 +68,32 @@ export function InviteSheet({
       closeLabel={t("common.close")}
     >
       <p className={styles.muted}>{t("crew.inviteBody")}</p>
-      {invite.isPending && <Skeleton lines={2} />}
-      {invite.isError && <p role="alert">{errorMessage(t, invite.error)}</p>}
-      {invite.data && (
-        <Stack>
-          <output className={styles.link}>{invite.data.url}</output>
+      {error && <Banner tone="danger" title={errorMessage(t, error)} />}
+      {!invite && !error && <Skeleton lines={3} />}
+      {invite && (
+        <>
+          <QrCode value={invite.url} label={t("crew.qrLabel")} />
+          <div className={styles.linkRow}>
+            <TextField
+              className={styles.linkField}
+              label={t("crew.linkLabel")}
+              value={invite.url}
+              readOnly
+              onFocus={(event) => event.target.select()}
+            />
+            <Button variant="secondary" icon={<Icon name="copy" size={20} />} onClick={copy}>
+              {t("crew.copyLink")}
+            </Button>
+          </div>
           <p className={styles.muted}>
-            {t("crew.inviteExpires", {
-              date: formatDateTime(invite.data.expires_at, i18n.language, timeZone),
-            })}
+            {t("crew.inviteRule", { date: formatDate(invite.expires_at, i18n.language, timeZone) })}
           </p>
-          <Button size="lg" fullWidth icon={<Icon name="copy" />} onClick={copy}>
-            {t("crew.copyLink")}
-          </Button>
           {canShare && (
-            <Button variant="secondary" fullWidth icon={<Icon name="share" />} onClick={share}>
+            <Button size="lg" fullWidth icon={<Icon name="share" size={20} />} onClick={share}>
               {t("crew.shareLink")}
             </Button>
           )}
-        </Stack>
+        </>
       )}
     </Sheet>
   );

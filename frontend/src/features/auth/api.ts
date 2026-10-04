@@ -56,3 +56,17 @@ export function useAcceptInvite(code: string) {
     onSuccess: (me) => queryClient.setQueryData(meKey, me),
   });
 }
+
+/** A logged-in user joins the invite's crew with the account they already have. */
+export function useJoinWithAccount(code: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { display_name: string }) =>
+      call(api.POST("/api/v1/invites/{code}/join", { params: { path: { code } }, body })),
+    onSuccess: (me) => {
+      // Everything cached belonged to the previous crew.
+      queryClient.clear();
+      queryClient.setQueryData(meKey, me);
+    },
+  });
+}

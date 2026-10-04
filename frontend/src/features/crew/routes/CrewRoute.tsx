@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
 import { errorMessage } from "@/i18n/errors";
-import { Button, Card, Icon, Screen, Skeleton } from "@/shared/ui";
+import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
 
 import { useCrew } from "../api";
 import { InviteSheet } from "../components/InviteSheet";
 import { MemberList } from "../components/MemberList";
-import styles from "../crew.module.css";
+import { PendingInvites } from "../components/PendingInvites";
 
+/** Crew: the members; admins also invite people and see the invites they sent. */
 export function CrewRoute() {
   const { t } = useTranslation();
   const me = useMe();
@@ -18,34 +19,41 @@ export function CrewRoute() {
   const isAdmin = me.data?.member?.role === "admin";
 
   return (
-    <Screen
-      title={crew.data?.name ?? t("crew.title")}
-      action={
-        isAdmin && (
-          <Button size="md" icon={<Icon name="plus" />} onClick={() => setInviting(true)}>
-            {t("crew.invite")}
-          </Button>
-        )
-      }
-    >
+    <Screen title={crew.data?.name ?? t("crew.title")}>
       {crew.isPending && <Skeleton lines={4} />}
       {crew.isError && (
-        <Card>
-          <p role="alert">{errorMessage(t, crew.error)}</p>
-          <Button variant="secondary" onClick={() => void crew.refetch()}>
-            {t("common.retry")}
-          </Button>
-        </Card>
+        <Banner
+          tone="danger"
+          title={errorMessage(t, crew.error)}
+          actions={
+            <Button variant="ghost" onClick={() => void crew.refetch()}>
+              {t("common.retry")}
+            </Button>
+          }
+        />
       )}
       {crew.data && (
         <>
-          <p className={styles.muted}>{t("crew.rotationHint")}</p>
           <MemberList members={crew.data.members} meId={me.data?.member?.id} />
-          <InviteSheet
-            open={inviting}
-            onClose={() => setInviting(false)}
-            timeZone={crew.data.timezone}
-          />
+          {isAdmin && (
+            <>
+              <Button
+                variant="secondary"
+                size="lg"
+                fullWidth
+                icon={<Icon name="userPlus" size={20} />}
+                onClick={() => setInviting(true)}
+              >
+                {t("crew.invite")}
+              </Button>
+              <PendingInvites timeZone={crew.data.timezone} />
+              <InviteSheet
+                open={inviting}
+                onClose={() => setInviting(false)}
+                timeZone={crew.data.timezone}
+              />
+            </>
+          )}
         </>
       )}
     </Screen>

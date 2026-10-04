@@ -18,6 +18,10 @@ export const routes: RouteObject[] = [
     element: <RequireAuth />,
     children: [
       {
+        path: "welcome",
+        lazy: () => import("@/features/auth").then((m) => ({ Component: m.WelcomeRoute })),
+      },
+      {
         element: <AppShell />,
         children: [
           {
