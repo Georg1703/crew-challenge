@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Commit message and branch name rules, run by pre-commit.
 
-Commit messages follow Conventional Commits:
+Commit messages are one line in Conventional Commits form (no body, no trailers):
 
     <type>(<scope>): <subject>        scope is optional; "!" before ":" marks a breaking change
     feat(backend): add invite service
@@ -43,7 +43,12 @@ AUTO_COMMIT_RE = re.compile(r"^(Merge |Revert \"|fixup! |squash! |amend! )")
 ALLOWED_BRANCHES = {"main", "HEAD"}  # HEAD = detached (rebase, CI checkouts)
 
 
+# `git commit -v` appends the diff below this line; it is not part of the message.
+SCISSORS_RE = re.compile(r"^# -+ >8 -+$", re.MULTILINE)
+
+
 def check_commit_message(message: str) -> list[str]:
+    message = SCISSORS_RE.split(message, maxsplit=1)[0]
     lines = [line for line in message.splitlines() if not line.startswith("#")]
     subject = lines[0].strip() if lines else ""
     if not subject:
@@ -67,8 +72,8 @@ def check_commit_message(message: str) -> list[str]:
             errors.append("Subject starts with a lowercase verb: 'add invite service'.")
     if len(subject) > MAX_SUBJECT:
         errors.append(f"Subject is {len(subject)} characters; keep it to {MAX_SUBJECT}.")
-    if len(lines) > 1 and lines[1].strip():
-        errors.append("Leave a blank line between the subject and the body.")
+    if any(line.strip() for line in lines[1:]):
+        errors.append("Use one line only: no body and no trailers such as Co-Authored-By.")
     return errors
 
 

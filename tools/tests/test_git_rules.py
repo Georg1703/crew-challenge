@@ -16,7 +16,8 @@ class CommitMessageTests(unittest.TestCase):
     def test_valid_messages(self) -> None:
         for message in [
             "feat(backend): add invite service",
-            "fix: handle dst midnight\n\nLonger explanation.",
+            "fix: handle dst midnight\n\n",
+            "feat: add x\n# ------------------------ >8 ------------------------\ndiff --git a b",
             "refactor(frontend)!: rename upload store",
             "docs(repo): explain recipes",
             "Merge branch 'feat/x'",
@@ -35,7 +36,9 @@ class CommitMessageTests(unittest.TestCase):
             "feat(backend): Add invite": "lowercase",
             "feat(backend): add invite.": "period",
             "feat(backend): " + "x" * 80: "characters",
-            "feat: add invite\nbody without blank line": "blank line",
+            "feat: add invite\nbody without blank line": "one line",
+            "fix: handle dst midnight\n\nLonger explanation.": "one line",
+            "feat: add invite\n\nCo-Authored-By: Someone <x@example.com>": "one line",
             "": "empty",
         }
         for message, expected in cases.items():

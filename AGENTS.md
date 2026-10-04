@@ -171,5 +171,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   `feat(backend): add invite service`. Types: feat, fix, refactor, perf, test, docs, build, ci,
   chore, revert. Scopes (optional): backend, frontend, infra, repo, deps. Lowercase subject, no
   period, at most 72 characters.
+- A commit message is that one line only: no body, no trailers (no `Co-Authored-By`, no AI or
+  session attribution). Commits are authored by the repo owner's git identity.
 - Both are checked by the git hooks (`make install`) and by CI (`tools/git_rules.py`).
 - One task per pull request. Fill in `.github/pull_request_template.md`.
