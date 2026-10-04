@@ -11,11 +11,12 @@ Example: a "Challenge" screen in a `challenge` feature.
    ```
 4. If it belongs in the bottom tab bar, add it to the tabs in `src/app/layout/AppShell.tsx`.
 5. Strings: add keys under `challenge.*` to `ro.json` and `en.json`.
-6. Build it from `Screen` and other `shared/ui` components. Layout-only CSS goes in a CSS Module
-   using tokens. Need a new kind of element? Add it to `shared/ui` with all states and show it on
-   `/design` first (`docs/design-system.md`).
-7. Motion: pick one signature animation for the screen using `shared/motion` presets; check it
-   with reduced motion turned on.
+6. Read `docs/design-system.md`. Build the screen from `Screen` and other `shared/ui` components;
+   one title, one primary button, no taglines. Layout-only CSS goes in a CSS Module using tokens.
+   Need a new kind of element? Add it to `shared/ui` with all states, document it and show it on
+   `/design` first.
+7. Motion: short feedback only, through `shared/motion` presets; check it with reduced motion
+   turned on.
 8. States: design loading (skeleton), empty, and error states. The screen must look complete in
    each.
 9. Check at 360 px width, with safe-area insets, and in dark mode.

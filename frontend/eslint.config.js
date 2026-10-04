@@ -82,6 +82,25 @@ export default tseslint.config(
       ],
     },
   },
+  // Screens use the design system's components, never raw form elements (docs/design-system.md).
+  {
+    files: ["src/features/**/*.tsx", "src/app/**/*.tsx"],
+    ignores: ["**/*.test.tsx"],
+    rules: {
+      "react/forbid-elements": [
+        "error",
+        {
+          forbid: [
+            { element: "button", message: "Use Button from @/shared/ui." },
+            { element: "input", message: "Use TextField (or another field) from @/shared/ui." },
+            { element: "textarea", message: "Add a field to @/shared/ui and use it." },
+            { element: "select", message: "Use Segmented or add a field to @/shared/ui." },
+            { element: "dialog", message: "Use Sheet from @/shared/ui." },
+          ],
+        },
+      ],
+    },
+  },
   // The few places allowed to do what the rules above forbid elsewhere.
   { files: ["src/api/**"], rules: { "no-restricted-globals": "off" } },
   {

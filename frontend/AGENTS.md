@@ -33,12 +33,19 @@ frontend/src/
 
 ## Design system (read `docs/design-system.md` before any UI work)
 
-- The look is a placeholder and will change; the structure is fixed.
-- Colors, spacing, type, radii, shadows and durations come only from `src/styles/tokens.css`
-  (semantic tokens, never `--palette-*`).
-- Screens are built from `src/shared/ui` components. Need something new? Add it to `shared/ui`
-  with all its states and show it on `/design` first.
-- Animation only through `@/shared/motion` presets (`snappy`, `bouncy`, `gentle`).
+- The look is fixed by the Crew Challenges design system; follow it exactly. Do not invent styles.
+- Writing: one title per screen, no taglines, no small labels above titles, no italic or colored
+  words in titles, sentence case, buttons say what happens.
+- Colors, spacing, type, radii, shadows, sizes and durations come only from
+  `src/styles/tokens.css` (semantic tokens, never `--palette-*`).
+- Screens are built from `src/shared/ui` components (`Screen`, `Button`, `TextField`, `Card`,
+  `List`/`ListRow`, `StatusPill`, `Avatar`, `Sheet`, `Banner`, `Toast`, ...). No raw `<button>`,
+  `<input>`, `<textarea>`, `<select>` or `<dialog>` in features. Need something new? Add it to
+  `shared/ui` with all its states, document it in `docs/design-system.md` and show it on
+  `/design` first.
+- Icons come from `Icon` (Lucide shapes). Add new ones there.
+- Animation only through `@/shared/motion` presets (`snappy`, `bouncy`, `gentle`). No trees,
+  confetti or illustrations in v1.
 - No inline `style`, no hex/rgb colors, no raw px for spacing or font sizes outside tokens.
 - Every screen has loading, empty and error states; touch targets >= `--tap-min` (44px);
   layouts use `Screen` (safe areas, `100dvh`, tab bar space).

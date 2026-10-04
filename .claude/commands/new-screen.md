@@ -5,6 +5,7 @@ argument-hint: <feature/screen name - what it shows>
 
 Add this screen: $ARGUMENTS
 
-Follow `docs/recipes/new-screen.md` and `frontend/AGENTS.md`. Include loading, empty, and error
-states, one signature animation using `shared/motion` presets, translations in both languages, and
-a component test. Finish with `make check` passing.
+Read `docs/design-system.md` first, then follow `docs/recipes/new-screen.md` and
+`frontend/AGENTS.md`. Build only from `shared/ui` components and tokens. Include loading, empty,
+and error states, translations in both languages, and a component test. Finish with `make check`
+passing.

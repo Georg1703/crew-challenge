@@ -21,6 +21,7 @@ import {
   Sheet,
   Skeleton,
   Spinner,
+  Stack,
   StatusPill,
   TabBar,
   TextField,
@@ -250,12 +251,14 @@ export function DesignRoute() {
       </Section>
 
       <Section title="Cards">
-        <Card>
-          <p>A default card groups related content.</p>
-        </Card>
-        <Card tone="accent">
-          <p>An accent card highlights the one thing that needs you.</p>
-        </Card>
+        <Stack gap="sm">
+          <Card>
+            <p>A default card groups related content.</p>
+          </Card>
+          <Card tone="accent">
+            <p>An accent card highlights the one thing that needs you.</p>
+          </Card>
+        </Stack>
       </Section>
 
       <Section title="Banners">
