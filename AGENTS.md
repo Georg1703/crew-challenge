@@ -39,7 +39,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 |---|---|
 | `make setup` | First-time setup |
 | `make install` | Install backend and frontend dependencies and the git hooks |
-| `make dev` | Run everything locally |
+| `make dev` / `make stop` / `make ps` | Run everything locally / stop it / show container health |
 | `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
 | `make e2e` | Playwright end-to-end tests against the real backend (needs Postgres and Redis) |

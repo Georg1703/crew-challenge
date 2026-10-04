@@ -23,6 +23,46 @@ Both run the same backend Docker image; only configuration differs.
 | Container images | built locally | built by GitHub Actions, pushed to GitHub Container Registry |
 | Deploys | - | GitHub Actions -> SSH -> `deploy.sh <git-sha>` |
 
+## Local development
+
+`compose.yaml` runs the whole app. `make setup` once (creates `.env`, builds images, migrates,
+loads the demo crew), then `make dev`.
+
+| Service | What it runs | Port on localhost |
+|---|---|---|
+| `db` | Postgres 17, data in the `pgdata` volume | 5432 (`POSTGRES_PORT`) |
+| `redis` | Redis 7 (Celery broker, results, cache) | 6379 (`REDIS_PORT`) |
+| `migrate` | `manage.py migrate`, then exits; the services below wait for it | - |
+| `backend` | `runserver`, `backend/` mounted, reloads on save | 8000 |
+| `worker` | Celery worker (restart it after changing a task) | - |
+| `beat` | Celery beat, schedules in the database | - |
+| `frontend` | Vite dev server, `frontend/` mounted, hot reload | 5173 |
+| `tunnel` | Cloudflare quick tunnel, only with `make tunnel` | - |
+
+- Ports are published on 127.0.0.1 only. Postgres and Redis are published so `make check` and
+  `make e2e` can run from your machine against the same containers.
+- `.env` holds addresses as seen from your machine (`localhost`); compose overrides them with the
+  service names inside the containers. So the same `.env` works for both.
+- The backend containers mount `~/.aws` read-only; `AWS_PROFILE` in `.env` picks the profile.
+- `frontend/node_modules` inside the container is a volume with Linux packages; it never mixes with
+  the one on your machine. A changed `pnpm-lock.yaml` is installed when the container starts.
+- A changed `uv.lock` is picked up because `make dev` rebuilds the image (cached when nothing changed).
+
+### Testing on a phone
+
+Service workers and installing need HTTPS. Run `make dev`, then `make tunnel` in a second terminal and
+open the printed `https://<random>.trycloudflare.com` URL on the phone. The URL changes every run.
+Local settings trust `*.trycloudflare.com` for hosts and CSRF. Invite links still use
+`APP_PUBLIC_URL`; set it to the tunnel URL in `.env` and restart the backend to test joining from a phone.
+
+### Troubleshooting
+
+- "port is already allocated": something else uses 5432, 6379, 8000 or 5173 (often a Postgres
+  installed on your machine). Stop it, or change `POSTGRES_PORT` / `REDIS_PORT` and the matching URLs
+  in `.env`.
+- Start from an empty database: `docker compose down -v` (deletes the database volume), then `make setup`.
+- A container is unhealthy: `make ps`, then `make logs s=<service>`.
+
 ## Why a real S3 dev bucket
 
 Browser multipart uploads depend on CORS, the `ETag` header, and presigned URL details. Emulators
