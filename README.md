@@ -42,4 +42,5 @@ make check    # everything CI runs
 
 - [Architecture overview and key decisions](docs/architecture/overview.md)
 - [Recipes](docs/recipes/README.md)
+- [Design system](docs/design-system.md)
 - [Glossary](docs/glossary.md)
