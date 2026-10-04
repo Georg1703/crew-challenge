@@ -96,9 +96,10 @@ seed: ## Load the demo crew (known users and passwords, local only)
 ##@ Quality
 
 .PHONY: install
-install: ## Install backend dependencies and the git hooks (pre-commit + commit-msg)
+install: ## Install backend and frontend dependencies and the git hooks
 	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
 	uv --directory $(BACKEND_DIR) sync --frozen
+	$(PNPM) install --frozen-lockfile
 	@command -v pre-commit >/dev/null && pre-commit install \
 		|| echo "SKIP: pre-commit not found; install it with 'pipx install pre-commit', then run make install"
 
@@ -146,6 +147,11 @@ else
 		|| { echo "ERROR: API contract is out of date: run 'make schema' and commit the result."; exit 1; }
 	@echo "OK: API contract is up to date"
 endif
+
+.PHONY: e2e
+e2e: ## End-to-end tests (Playwright) against the real backend; needs Postgres and Redis
+	$(call require,$(FRONTEND_DIR)/package.json,Frontend)
+	$(PNPM) exec playwright test
 
 .PHONY: test
 test: ## Run all tests
