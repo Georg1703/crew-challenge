@@ -1,0 +1,57 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {
+    "selector-class-pattern": "^[a-z][a-zA-Z0-9]*$",
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla", "oklch", "color-mix"],
+    "declaration-property-value-disallowed-list": {
+      "/^(transition|animation)/": ["/\\d+m?s/"]
+    },
+    "scale-unlimited/declaration-strict-value": [
+      [
+        "/color$/",
+        "background",
+        "fill",
+        "stroke",
+        "z-index",
+        "font-family",
+        "font-size",
+        "font-weight",
+        "line-height",
+        "border-radius",
+        "box-shadow",
+        "/^(margin|padding|gap|row-gap|column-gap)/"
+      ],
+      {
+        "ignoreValues": [
+          "0",
+          "auto",
+          "none",
+          "inherit",
+          "initial",
+          "unset",
+          "transparent",
+          "currentcolor",
+          "100%",
+          "50%"
+        ],
+        "disableFix": true,
+        "message": "Use a design token: var(--...) from src/styles/tokens.css (see docs/design-system.md)."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/styles/tokens.css"],
+      "rules": {
+        "color-no-hex": null,
+        "function-disallowed-list": null,
+        "scale-unlimited/declaration-strict-value": null,
+        "declaration-property-value-disallowed-list": null,
+        "custom-property-pattern": null
+      }
+    }
+  ]
+}

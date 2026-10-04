@@ -14,7 +14,7 @@ backend/
 |   |-- settings/local.py   # DEBUG, local S3 profile
 |   |-- settings/test.py    # fast password hasher, in-memory storage adapter, eager Celery
 |   |-- settings/production.py
-|   |-- urls.py             # /api/v1/, /admin/, /healthz
+|   |-- urls.py             # /api/health, /api/v1/, /admin/
 |   |-- celery.py
 |   `-- wsgi.py
 |-- apps/
@@ -23,9 +23,9 @@ backend/
 |   `-- crews/              # Crew, Member, Invite, rotation
 |-- integrations/
 |   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
-`-- tests/
-    |-- conftest.py
-    `-- factories/
+|-- tests/
+|   `-- factories/          # factory-boy factories, one module per app
+`-- conftest.py             # fixtures for every test: api_client, user, auth_client, object_storage
 ```
 
 ## Layers inside an app
@@ -99,14 +99,60 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 
 | Module | Provides |
 |---|---|
-| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`), `CrewScopedModel` (adds `crew` FK, manager with `.for_crew(crew)`) |
-| `clock.py` | `now()` and `crew_today(crew)` - the only source of "current time" for business logic |
-| `errors.py` | `DomainError(code, message, fields=None)` and subclasses: `NotFound`, `PermissionDenied`, `Conflict`, `ValidationFailed` |
+| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`) |
+| `clock.py` | The only source of current time: `now()`, `crew_today(crew)`, `local_today(tz)`, `day_bounds_utc(day, tz)`, `deadline_utc(day, tz)` |
+| `errors.py` | `DomainError(message, code=, fields=)` and subclasses: `ValidationFailed`, `PermissionDenied`, `NotFound`, `Conflict` |
 | `exception_handler.py` | DRF handler that turns every error into the standard error shape |
-| `permissions.py` | `IsCrewMember`, `IsCrewAdmin` |
-| `middleware.py` | Sets `request.member` for the authenticated user's current crew |
+| `authentication.py` | Session auth that answers 401 (not 403) when nobody is logged in |
 | `pagination.py` | Cursor pagination with `{results, next}` |
-| `views.py` | `/healthz` (checks database and Redis) |
+| `api/errors.py` | JSON 404/500 for `/api/` paths (`handler404`, `handler500` in `config/urls.py`) |
+| `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
+| `tasks.py` | `core.ping`, proves a worker is connected |
+
+| `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`), counted in Redis |
+| `schema.py` | drf-spectacular extensions (documents our session auth) |
+
+Crew building blocks live in the `crews` app, because core must not depend on domain apps:
+
+| Where | What |
+|---|---|
+| `apps.crews.models.CrewScopedModel` | Abstract base with a `crew` FK and `Model.objects.for_crew(crew)`; every crew-owned model inherits it |
+| `apps.crews.api.permissions.IsCrewMember` | Logged in and in a crew; sets `request.member` (the member in the session's active crew) |
+| `apps.crews.selectors.next_in_rotation` | Who proposes after a given member, wrapping around |
+
+Admin-only actions are checked in services (`NotCrewAdmin`), not by a permission class, so the rule
+lives in one place and also protects Celery tasks and commands.
+
+## Security defaults
+
+- CSRF is checked on every unsafe request, including anonymous ones (login, joining a crew);
+  DRF alone only checks logged-in users. See `apps/core/authentication.py`.
+- Login and joining are rate-limited per IP in Redis; behind Caddy the IP comes from
+  `X-Forwarded-For` (`TRUSTED_PROXY_COUNT`, 1 in production).
+- Invites are single-use, expire after 7 days, and are locked (`select_for_update`) while used.
+- Database constraints back the rules: one membership per user per crew, unique rotation
+  positions (deferred, so a rotation can be reordered in one transaction), unique display names
+  per crew ignoring case.
+
+## Time
+
+- `USE_TZ = True` and `TIME_ZONE = "UTC"`: every stored instant is UTC (`timestamptz` in Postgres).
+- A challenge day is a `DateField` in the crew's IANA time zone (`Crew.timezone`, for example
+  `Europe/Chisinau`), never a datetime at midnight and never a UTC offset.
+- Day boundaries come from `clock.day_bounds_utc()`. A day can be 23 or 25 hours long: Moldova
+  changes clocks on the last Sundays of March and October (25 October 2026 has 25 hours).
+- Guardrails: ruff bans `timezone.now()`, `datetime.now()`, `date.today()` and friends outside
+  `clock.py`, and pytest turns Django's naive-datetime warning into a failure.
+
+## Quality gates (`make check-backend`)
+
+| Check | Rule |
+|---|---|
+| ruff | Lint + format; banned time APIs; Django and bugbear rules |
+| mypy | Whole backend; strict for `services`, `selectors`, `apps.core`, `integrations` |
+| import-linter | The layer contracts above |
+| migrations | `makemigrations --check` must find nothing |
+| pytest + coverage | 90% line and branch coverage of `services.py`, `selectors.py`, `apps/core`, `integrations` (migrations, admin, views of other apps are not counted) |
 
 ## Example: a service and its view
 
@@ -160,4 +206,5 @@ class AcceptInviteView(APIView):
   that computes crew-local days (Moldova switches on the last Sundays of March and October).
 - Service tests (`test_services.py`) cover rules and edge cases. API tests (`test_api.py`) cover
   status codes, permissions, and the response shape.
-- AWS is mocked with moto or replaced by `InMemoryObjectStorage`. Tests never reach real AWS.
+- AWS is replaced by `InMemoryObjectStorage`; tests never reach AWS. The S3 adapter itself is a thin
+  boto3 wrapper, checked against the real dev bucket by the upload smoke test.

@@ -1,5 +1,8 @@
 # Install once: `pipx install pre-commit && pre-commit install`
-# Update pinned versions: `pre-commit autoupdate`
+# (installs both the pre-commit and the commit-msg hooks, see default_install_hook_types).
+# Kept fast on purpose: type checks and tests run in `make check` and CI, not here.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -18,18 +21,39 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
   - repo: local
     hooks:
+      # Uses the project's own ruff version (backend/uv.lock), so results match `make check`.
+      - id: ruff-format
+        name: ruff format (backend)
+        entry: bash -c 'cd backend && uv run --quiet ruff format .'
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$
+      - id: ruff-check
+        name: ruff check (backend)
+        entry: bash -c 'cd backend && uv run --quiet ruff check --fix .'
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$
+
       - id: check-repo
         name: repo consistency (docs links, ASCII, required files)
         entry: python3 tools/check_repo.py
         language: system
         pass_filenames: false
-        files: \.(md|json)$|^tools/
+        files: \.(md|json|py|toml|ya?ml)$|^Makefile$|^tools/
+
+      - id: branch-name
+        name: branch name (<type>/<short-description>)
+        entry: python3 tools/git_rules.py branch
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      - id: commit-message
+        name: commit message (Conventional Commits)
+        entry: python3 tools/git_rules.py commit-msg
+        language: system
+        stages: [commit-msg]

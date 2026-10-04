@@ -27,8 +27,9 @@ src/
 |-- main.tsx
 |-- app/
 |   |-- App.tsx
-|   |-- router.tsx          # lazy routes per feature
-|   |-- providers.tsx       # QueryClient, i18n, motion config
+|   |-- routes.tsx          # route table, lazy screens, /design in development only
+|   |-- providers.tsx       # QueryClient, i18n, MotionConfig, ToastProvider (tests reuse it)
+|   |-- RequireAuth.tsx     # session guard; applies the user's saved language
 |   `-- layout/             # AppShell with bottom TabBar
 |-- api/
 |   |-- client.ts           # createClient<paths>() with CSRF + 401 handling
@@ -36,14 +37,17 @@ src/
 |   |-- csrf.ts
 |   `-- errors.ts           # ApiError { code, message, fields }
 |-- features/
-|   |-- auth/               # login, join by invite
+|   |-- auth/               # session (useMe), login, join by invite
 |   |-- crew/               # members list, invite sheet
-|   `-- home/               # garden
+|   |-- home/               # garden (placeholder: greeting + members)
+|   `-- me/                 # profile, language, logout
 |-- shared/
-|   |-- ui/
-|   |-- motion/             # presets.ts, useReducedMotion.ts
-|   `-- lib/
-|-- pwa/                    # register.ts, InstallPrompt.tsx, IosInstallGuide.tsx, UpdateToast.tsx
+|   |-- ui/                 # the design system's components (docs/design-system.md)
+|   |-- motion/             # presets.ts + the only import point for animation
+|   `-- lib/                # cx, date formatting in the crew's time zone
+|-- design/                 # /design page (development only) and token tests
+|-- test/                   # setup, renderRoutes/renderScreen, ok()/fail(), fixtures
+|-- pwa/                    # platform.ts, installPrompt.ts, usePwaUpdate.ts, InstallCard, IosInstallGuide, UpdateBanner
 |-- i18n/                   # index.ts, ro.json, en.json
 `-- styles/                 # tokens.css, global.css
 ```
@@ -59,44 +63,68 @@ features/crew/
 |   |-- MemberList.tsx
 |   `-- InviteSheet.tsx
 |-- crew.module.css
-`-- index.ts        # export { crewRoutes } - the feature's public API
+`-- index.ts        # export { useCrew, CrewRoute, ... } - the feature's public API
 ```
 
 ## Rules
 
-1. Components never call `fetch` or the client directly; they use hooks from their feature's `api.ts`.
-2. Features import other features only via `index.ts` (ESLint `boundaries` plugin).
+1. Components never call `fetch` or the client directly; they use hooks from their feature's `api.ts`,
+   which call `call(api.GET(...))` from `@/api` (typed by the contract, throws `ApiError`).
+2. Features import other features only via `@/features/<name>` (their `index.ts`). Inside a feature,
+   use relative imports at most one level up (`../api`). ESLint `no-restricted-imports` enforces it.
+   `shared/`, `api/` and `i18n/` never import features or the app shell.
 3. Query keys are arrays starting with the resource: `['crew']`, `['crew', 'members']`.
 4. Mutations that have a predictable result update the cache optimistically and roll back on error.
 5. Every string goes through `t('feature.key')`. Keys are added to `ro.json` and `en.json` together.
-6. Colors, spacing, radii, and durations come from `styles/tokens.css`.
+6. Look and feel follow `docs/design-system.md`: tokens only, `shared/ui` components only,
+   motion presets only. Stylelint and ESLint enforce it.
+7. Show errors with `errorMessage(t, error)` from `@/i18n/errors`: it translates `errors.<code>`
+   and falls back to the API's message. Form fields read `error.field("name")`.
+8. Dates and times are shown in the crew's time zone (`formatDateTime(iso, language, crew.timezone)`).
 
 ## Motion
 
-```ts
-// shared/motion/presets.ts
-export const springs = {
-  snappy: { type: 'spring', stiffness: 520, damping: 34 },  // buttons, toggles
-  bouncy: { type: 'spring', stiffness: 380, damping: 18 },  // celebrations, pop-ins
-  gentle: { type: 'spring', stiffness: 160, damping: 24 },  // sheets, page transitions
-} as const;
-```
+Presets and rules are in `docs/design-system.md`. Import everything animation-related from
+`@/shared/motion`; `useSpring("snappy" | "bouncy" | "gentle")` returns a short fade when the user
+prefers reduced motion. One signature animation per screen; everything else stays quiet.
 
-- Only `transform` and `opacity` are animated.
-- `useReducedMotion()` replaces springs with short fades.
-- One signature animation per screen; everything else stays quiet.
+## Sessions and language
+
+- `useMe()` (from `@/features/auth`) is the session: `null` means logged out. `RequireAuth`
+  redirects to `/login?next=...`.
+- Any 401 from another endpoint clears the session in the cache (`onUnauthorized` in `@/api`).
+- Before login the UI follows the browser language; after login it switches to the account's
+  `preferred_language`. Changing it on the Me screen saves it to the account.
 
 ## PWA
 
-- Manifest: name, short name, theme and background colors, icons 192/512 and maskable, apple-touch-icon.
-- `registerType: 'prompt'`: a new version shows "New version ready - tap to update".
-- Workbox precaches the app shell and Rive files. `/api/*`, `/admin/*`, and any S3 or CloudFront URL
-  are network-only.
-- Android: capture `beforeinstallprompt` and show our install button.
-- iOS Safari, not installed: show the animated "Share -> Add to Home Screen" guide.
+- Configured in `vite.config.ts` (`VitePWA`). The manifest `theme_color` and `background_color`
+  copy the accent and background tokens; change them together with `src/styles/tokens.css`.
+- Icons live in `public/icons/` and are drawn by `scripts/make_icons.py` (placeholder art; rerun
+  it, or replace the PNGs, when the look changes).
+- `registerType: 'prompt'`: `usePwaUpdate` registers the service worker, checks for a new version
+  every hour and when the app comes back to the foreground. `UpdateBanner` then shows
+  "New version ready" with Update / Later. The app never reloads by itself.
+- Workbox precaches the built app shell (JS, CSS, HTML, icons) and serves `index.html` for
+  navigations, so the app opens offline. `/api/*`, `/admin*` and `/static/*` are excluded from the
+  navigation fallback and nothing is cached at runtime: API calls, S3 and CloudFront URLs are
+  network-only. Add `runtimeCaching` only for static assets such as Rive files.
+- Install: `captureInstallPrompt()` runs in `main.tsx` before React so Chrome's
+  `beforeinstallprompt` is never missed. `InstallCard` shows our Install button on Android/desktop
+  Chrome and the "Share -> Add to Home Screen" sheet (`IosInstallGuide`) on iOS Safari. It hides
+  when the app already runs standalone. On Home it can be dismissed for 14 days; Me always shows it.
 - Ask for push permission after the first check-in, never on first load.
+- The server must send `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`
+  so updates are seen (Caddy config).
+- Service worker behavior is checked by `e2e/pwa.spec.ts` against `vite preview` (production build):
+  installability (Chrome DevTools Protocol), offline start, API not served from cache.
+  A real install still needs HTTPS on a phone: `make preview`.
 
 ## Testing
 
-- Vitest + Testing Library. Mock the typed client with a small in-test handler map, not global `fetch`.
-- Playwright for main flows: login -> home, check-in, upload.
+- Vitest + Testing Library (`make check`). Render with `renderRoutes()` / `renderScreen()` from
+  `src/test/render.tsx` (real providers, memory router). Mock the API with
+  `vi.spyOn(api, "GET")` returning `ok(data)` or `fail(status, {code})`, never by mocking `fetch`.
+- Tests query English text (the test setup switches i18n to English).
+- Playwright (`make e2e`) runs main flows against the real backend with the demo crew: login,
+  joining with an invite. Add a step when a main flow changes.

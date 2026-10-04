@@ -1,0 +1,14 @@
+import "@testing-library/jest-dom/vitest";
+
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+
+import { i18n } from "@/i18n";
+
+// Tests read English text; the app defaults to Romanian.
+void i18n.changeLanguage("en");
+
+afterEach(() => {
+  cleanup();
+  document.cookie = "csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+});

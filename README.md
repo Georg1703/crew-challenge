@@ -9,14 +9,20 @@ The first crew is our family. The app is built so any group can use it.
 ## Quick start (local)
 
 Requirements: Docker with Compose, GNU Make, Python 3.11+ (for repo tools), an AWS CLI profile
-named `cc-dev` with access to the dev media bucket.
+named `cc-dev` with access to the dev media bucket (uploads only; the rest works without it).
+For `make check` and `make e2e` on your machine also: uv and Node 22 with pnpm (`corepack enable`).
 
 ```sh
 make help     # list every command
-make setup    # first-time setup
-make dev      # run the app at http://localhost:5173
+make setup    # first-time setup: .env, images, database, demo crew
+make dev      # start in the background: http://localhost:5173 (log in as ana / garden-flame-2026)
+make logs     # follow the output; make stop stops everything
+make tunnel   # HTTPS URL to the dev server for your phone
+make preview  # production build + HTTPS URL: install the app on your phone
 make check    # everything CI runs
 ```
+
+Details and troubleshooting: [docs/architecture/environments.md](docs/architecture/environments.md).
 
 ## How the repo is organized
 
@@ -42,4 +48,5 @@ make check    # everything CI runs
 
 - [Architecture overview and key decisions](docs/architecture/overview.md)
 - [Recipes](docs/recipes/README.md)
+- [Design system](docs/design-system.md)
 - [Glossary](docs/glossary.md)

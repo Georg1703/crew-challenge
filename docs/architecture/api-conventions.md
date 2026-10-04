@@ -12,12 +12,21 @@ The contract between the React app and Django. The machine-readable version is
 
 ## Authentication
 
-1. `GET /api/v1/auth/csrf` sets the `csrftoken` cookie.
-2. `POST /api/v1/auth/login` with `{username, password}` and header `X-CSRFToken` sets `sessionid`.
-3. Every unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) sends `X-CSRFToken`.
+1. `GET /api/v1/auth/csrf` sets the `csrftoken` cookie (and returns the token).
+2. `POST /api/v1/auth/login` with `{username, password}` and header `X-CSRFToken` sets
+   `sessionid` and answers `204`. Then `GET /api/v1/me` loads the user.
+3. Every unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) sends `X-CSRFToken`, logged in or not.
+   Without it the answer is `403 csrf_failed`. Django rotates the token on login, so re-read the
+   `csrftoken` cookie after logging in.
 4. A `401` means the session is gone: the client clears its cache and goes to `/login`.
 
 Cookies: `sessionid` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
+Usernames are case-insensitive (stored in lowercase).
+
+Rate limits per client IP: login 5/minute, joining a crew 10/minute (`429 throttled`).
+
+**Active crew.** A user can belong to several crews. Crew endpoints act in the session's active
+crew (set when joining), falling back to the user's oldest membership.
 
 ## Data shapes
 
@@ -56,12 +65,16 @@ Every error, from any layer, has this shape:
 
 | HTTP | When | Typical `code` |
 |---|---|---|
-| 400 | Input failed validation | `validation_failed` (with `fields`) |
+| 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Logged in but not allowed | `permission_denied`, `not_proposer` |
-| 404 | Not found or not in your crew | `not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `already_checked_in` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `permission_denied` |
+| 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in` |
 | 429 | Rate limited | `throttled` |
+| 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
+
+Unknown `/api/` URLs return `404 not_found` and crashes return `500 server_error` in the same
+shape (Django's own HTML pages are used only outside `/api/`).
 
 `code` values are stable and documented in the endpoint's schema. The frontend translates
 `errors.<code>` from i18n and falls back to `message`.
@@ -74,20 +87,27 @@ Every error, from any layer, has this shape:
 - A member only ever sees data from their own crews. Out-of-crew ids return `404`, not `403`.
 - Write endpoints return the created or updated resource.
 
-## Milestone 1 endpoints
+## Endpoints
+
+`contracts/openapi.yaml` is the full reference. Current endpoints:
 
 ```
-GET    /healthz                          liveness: database and Redis
-GET    /api/v1/auth/csrf
-POST   /api/v1/auth/login
-POST   /api/v1/auth/logout
-GET    /api/v1/me                        user + member + crew
-PATCH  /api/v1/me                        display_name, preferred_language
-GET    /api/v1/crew                      crew + members ordered by rotation
-PATCH  /api/v1/crew/rotation             admin: reorder members
-POST   /api/v1/crew/invites              admin: create invite -> code + link
-GET    /api/v1/invites/{code}            public: crew name, validity
-POST   /api/v1/invites/{code}/accept     public: create user + member, log in
+GET    /api/health                      liveness: database and Redis (not versioned, not in the contract)
+
+GET    /api/v1/auth/csrf                sets the csrftoken cookie
+POST   /api/v1/auth/login               {username, password} -> 204, session cookie
+POST   /api/v1/auth/logout              -> 204
+
+GET    /api/v1/me                       {user, member, crew}; member and crew are null outside a crew
+PATCH  /api/v1/me                       {display_name?, preferred_language?} -> me
+
+GET    /api/v1/crew                     the active crew + members in rotation order
+PATCH  /api/v1/crew/rotation            admin: {member_ids: [...every member, in the new order]}
+POST   /api/v1/crew/invites             admin: -> 201 {code, url, expires_at} (single use, 7 days)
+
+GET    /api/v1/invites/{code}           public: {crew_name, status: valid|expired|used, expires_at}
+POST   /api/v1/invites/{code}/accept    public: {username, password, display_name}
+                                        -> 201 me, logged in, joined at the end of the rotation
 ```
 
 ## Changing the contract

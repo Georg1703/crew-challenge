@@ -9,6 +9,7 @@ Read this file before changing anything. Then read the nested `AGENTS.md` of the
 - How the system is built, and why: `docs/architecture/`
 - Words we use: `docs/glossary.md`
 - How to make common changes: `docs/recipes/`
+- How the UI is built and kept consistent: `docs/design-system.md`
 
 ## How to work in this repo
 1. Read this file, then `backend/AGENTS.md`, `frontend/AGENTS.md` or `infra/AGENTS.md` as needed.
@@ -27,7 +28,7 @@ Read this file before changing anything. Then read the nested `AGENTS.md` of the
 | `frontend/` | React PWA: `src/app/`, `src/api/` (generated client), `src/features/<name>/`, `src/shared/`, `src/pwa/`, `src/i18n/`, `src/styles/` |
 | `contracts/openapi.yaml` | Generated API contract. Never edit by hand. |
 | `infra/` | `aws/` JSON documents for the hand-made AWS setup, `caddy/`, `scripts/` (deploy, backup, host bootstrap) |
-| `docs/` | `architecture/`, `recipes/`, `glossary.md` |
+| `docs/` | `architecture/`, `recipes/`, `design-system.md`, `glossary.md` |
 | `tools/` | Repo helpers: docs checker, seed data, upload smoke test |
 | `.claude/` | Agent permissions and slash commands |
 
@@ -37,14 +38,18 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | Command | Purpose |
 |---|---|
 | `make setup` | First-time setup |
-| `make dev` | Run everything locally |
+| `make install` | Install backend and frontend dependencies and the git hooks |
+| `make dev` / `make stop` / `make ps` | Run everything locally / stop it / show container health |
 | `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
+| `make e2e` | Playwright end-to-end tests against the real backend (needs Postgres and Redis) |
 | `make fmt` | Format all code |
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
 | `make migrate` / `make makemigrations` | Database migrations |
 | `make seed` | Demo crew with known users |
-| `make shell` / `make logs` / `make tunnel` | Django shell / service logs / HTTPS tunnel for phone testing |
+| `make superuser` | Create a Django admin user (interactive) |
+| `make shell` / `make logs` | Django shell / service logs |
+| `make tunnel` / `make preview` | HTTPS URL for a phone: dev server / production build (to install) |
 
 ## Never
 - Create or change AWS resources, SSH into servers, run deploy scripts, or touch production.
@@ -68,7 +73,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Environments
 - **Local:** `compose.yaml`, Django `runserver` + Vite dev server, Postgres and Redis containers,
-  a real S3 dev bucket through the `cc-dev` AWS profile. Tests use moto, never real AWS.
+  a real S3 dev bucket through the `cc-dev` AWS profile. Tests never call AWS.
 - **Production:** one Amazon Lightsail instance running `compose.prod.yaml`: Caddy, gunicorn,
   Celery worker + beat, Redis, Postgres (nightly `pg_dump` to S3). Images from GitHub Container
   Registry; deploys over SSH from GitHub Actions. Media in S3 + CloudFront, transcoding by
@@ -79,7 +84,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 ## Stack
 - **Backend:** Python 3.13, Django 5.2 LTS, DRF, drf-spectacular, PostgreSQL 17, Redis, Celery +
   django-celery-beat, boto3, pywebpush. Tooling: uv, ruff, mypy + django-stubs, pytest-django,
-  factory-boy, time-machine, moto, import-linter.
+  factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
   TanStack Query, openapi-fetch, Zustand, Motion, i18next, @rive-app/react-canvas, canvas-confetti,
   hls.js, Uppy core + @uppy/aws-s3. CSS Modules + tokens in `src/styles/tokens.css`.
@@ -144,11 +149,15 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Lazy-load the Rive runtime and hls.js; code-split routes; first load < 2 s on 4G.
 - Honor `prefers-reduced-motion`. Sounds only after user interaction and off by default.
 - Romanian (default) and English from the start; no hard-coded UI strings.
+- The visual design is a placeholder that will change. Follow `docs/design-system.md`: tokens,
+  `shared/ui` components and motion presets only, so a redesign never touches screens.
 
 ## Testing
 - Backend: pytest + pytest-django against Postgres (never SQLite); time-machine for date logic;
-  moto for S3 and MediaConvert.
-- Frontend: Vitest + Testing Library; Playwright for check-in and upload flows.
+  in-memory fakes instead of AWS (the S3 adapter is checked against the real dev bucket by the
+  upload smoke test, not in unit tests). `make check` enforces 90% coverage of services,
+  selectors, core and integrations.
+- Frontend: Vitest + Testing Library in `make check`; Playwright (`make e2e`) for main flows.
 - Before calling an upload change done: test a multi-GB upload with a network interruption and a resume.
 
 ## Writing style
@@ -156,6 +165,13 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   `->` not arrows, `|--` and `` `-- `` for directory trees. `make check` enforces this.
   Romanian diacritics are fine in UI translation files (`frontend/src/i18n/`).
 
-## Commits and pull requests
-- Small commits, imperative subject line, scope prefix: `backend: add invite service`.
+## Commits, branches and pull requests
+- Branches: `<type>/<short-description>`, e.g. `feat/invite-links`. Never commit to `main`.
+- Commits follow Conventional Commits: `<type>(<scope>): <subject>`, e.g.
+  `feat(backend): add invite service`. Types: feat, fix, refactor, perf, test, docs, build, ci,
+  chore, revert. Scopes (optional): backend, frontend, infra, repo, deps. Lowercase subject, no
+  period, at most 72 characters.
+- A commit message is that one line only: no body, no trailers (no `Co-Authored-By`, no AI or
+  session attribution). Commits are authored by the repo owner's git identity.
+- Both are checked by the git hooks (`make install`) and by CI (`tools/git_rules.py`).
 - One task per pull request. Fill in `.github/pull_request_template.md`.

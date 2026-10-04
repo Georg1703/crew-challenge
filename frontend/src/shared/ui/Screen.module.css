@@ -1,0 +1,50 @@
+.screen {
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + var(--space-6)) var(--space-5)
+    calc(env(safe-area-inset-bottom) + var(--space-6));
+}
+
+.withTabBar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--tabbar-height) + var(--space-6));
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+
+.stackSm,
+.stackMd,
+.stackLg {
+  display: flex;
+  flex-direction: column;
+}
+
+.stackSm {
+  gap: var(--space-2);
+}
+
+.stackMd {
+  gap: var(--space-4);
+}
+
+.stackLg {
+  gap: var(--space-8);
+}

@@ -1,0 +1,14 @@
+.center {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-12);
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.link {
+  color: var(--color-accent);
+  font-weight: var(--weight-medium);
+}

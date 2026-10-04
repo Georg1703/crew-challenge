@@ -1,0 +1,18 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.line {
+  height: var(--space-10);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  animation: pulse var(--duration-slow) var(--ease-out) infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.5;
+  }
+}
