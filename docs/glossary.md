@@ -10,6 +10,9 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Active crew | session `active_crew_id` | The crew a user is acting in when they belong to several. Defaults to their oldest membership. |
 | Role | `Member.role` | `admin` (can invite, reorder rotation) or `member`. |
 | Invite | `Invite` | A one-time code/link that lets a new person join a crew. |
+| Pending invite | `list_pending_invites` | An invite nobody has used and that has not expired. Admins see these and can revoke them. |
+| Revoke | `revoke_invite` | An admin cancels a pending invite; its link stops working at once (the row is deleted). |
+| Join with account | `join_with_account` | Someone who already has an account (from another crew) joins a crew through an invite. |
 | Rotation | `Member.rotation_position` | The fixed order in which members take turns proposing challenges. |
 | Proposer | `Challenge.proposer` | The member whose turn it is to create next month's challenge. |
 | Challenge | `Challenge` | The shared task for one month. Status: `draft` -> `sealed` -> `active` -> `finished`. |

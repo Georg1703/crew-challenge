@@ -50,10 +50,30 @@ class InviteOut(serializers.Serializer):
     expires_at = serializers.DateTimeField()
 
 
+class MemberSummaryOut(serializers.Serializer):
+    display_name = serializers.CharField()
+    avatar_seed = serializers.CharField()
+
+
+class PendingInviteOut(InviteOut):
+    id = serializers.UUIDField()
+    created_by = MemberSummaryOut()
+
+
 class InvitePreviewOut(serializers.Serializer):
     crew_name = serializers.CharField()
     status = serializers.ChoiceField(choices=["valid", "expired", "used"])
     expires_at = serializers.DateTimeField()
+    invited_by = MemberSummaryOut(
+        allow_null=True, help_text="Who created the invite. Only for valid invites."
+    )
+    members = MemberSummaryOut(
+        many=True, help_text="Members in rotation order. Empty unless the invite is valid."
+    )
+
+
+class JoinWithAccountIn(serializers.Serializer):
+    display_name = serializers.CharField(max_length=60)
 
 
 class AcceptInviteIn(serializers.Serializer):

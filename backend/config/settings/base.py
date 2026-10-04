@@ -120,7 +120,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exception_handler.exception_handler",
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
-    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "join": "10/min"},
+    "DEFAULT_THROTTLE_RATES": {"login": "5/min", "join": "10/min", "invite_preview": "30/min"},
     # How many reverse proxies to trust for X-Forwarded-For (Caddy in production = 1).
     "NUM_PROXIES": env.int("TRUSTED_PROXY_COUNT", default=0),
 }

@@ -64,9 +64,27 @@ paths:
                 $ref: '#/components/schemas/CrewDetailOut'
           description: ''
   /api/v1/crew/invites:
+    get:
+      operationId: crew_invites_list
+      description: 'Admin: the crew''s pending invites, and creating a single-use
+        invite valid for 7 days.'
+      tags:
+      - crew
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingInviteOut'
+          description: ''
     post:
       operationId: crew_invites_create
-      description: 'Admin: create a single-use invite link, valid for 7 days.'
+      description: 'Admin: the crew''s pending invites, and creating a single-use
+        invite valid for 7 days.'
       tags:
       - crew
       security:
@@ -78,6 +96,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/InviteOut'
           description: ''
+  /api/v1/crew/invites/{invite_id}:
+    delete:
+      operationId: crew_invites_destroy
+      description: 'Admin: cancel an invite nobody has used yet.'
+      parameters:
+      - in: path
+        name: invite_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - crew
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/crew/rotation:
     patch:
       operationId: crew_rotation_update
@@ -143,6 +179,34 @@ paths:
       security:
       - cookieAuth: []
       - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeOut'
+          description: ''
+  /api/v1/invites/{code}/join:
+    post:
+      operationId: invites_join
+      description: 'Logged in: join the invite''s crew with the account you already
+        have.'
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - invites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinWithAccountInRequest'
+        required: true
+      security:
+      - cookieAuth: []
       responses:
         '201':
           content:
@@ -288,10 +352,31 @@ components:
         expires_at:
           type: string
           format: date-time
+        invited_by:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummaryOut'
+          nullable: true
+          description: Who created the invite. Only for valid invites.
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberSummaryOut'
+          description: Members in rotation order. Empty unless the invite is valid.
       required:
       - crew_name
       - expires_at
+      - invited_by
+      - members
       - status
+    JoinWithAccountInRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 60
+      required:
+      - display_name
     LoginInRequest:
       type: object
       properties:
@@ -344,6 +429,16 @@ components:
       - id
       - role
       - rotation_position
+    MemberSummaryOut:
+      type: object
+      properties:
+        display_name:
+          type: string
+        avatar_seed:
+          type: string
+      required:
+      - avatar_seed
+      - display_name
     PatchedMePatchInRequest:
       type: object
       properties:
@@ -363,6 +458,28 @@ components:
             format: uuid
           maxItems: 100
           minItems: 1
+    PendingInviteOut:
+      type: object
+      properties:
+        code:
+          type: string
+        url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        created_by:
+          $ref: '#/components/schemas/MemberSummaryOut'
+      required:
+      - code
+      - created_by
+      - expires_at
+      - id
+      - url
     PreferredLanguageEnum:
       enum:
       - ro

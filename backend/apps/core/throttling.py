@@ -1,4 +1,4 @@
-"""Rate limits per client IP for sensitive anonymous endpoints (login, joining a crew).
+"""Rate limits per client IP for sensitive anonymous endpoints (login, joins, invite lookups).
 
 Counts live in the shared cache (Redis), so limits hold across gunicorn workers. Behind Caddy,
 the client IP comes from X-Forwarded-For; REST_FRAMEWORK["NUM_PROXIES"] says how many proxies
@@ -23,3 +23,9 @@ class LoginRateThrottle(IPRateThrottle):
 
 class JoinRateThrottle(IPRateThrottle):
     scope = "join"
+
+
+class InvitePreviewRateThrottle(IPRateThrottle):
+    """Looking up invite codes; limits guessing."""
+
+    scope = "invite_preview"

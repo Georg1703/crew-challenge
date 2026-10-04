@@ -229,3 +229,86 @@ def test_get_invite():
     assert selectors.get_invite(code=f" {invite.code}") == invite
     assert selectors.get_invite(code="missing") is None
     assert Invite.objects.for_crew(invite.crew).count() == 1
+
+
+# --- joining with an existing account, pending invites, revoking -------------------------------
+
+
+def test_join_with_account_adds_a_membership_and_uses_up_the_invite():
+    elsewhere = MemberFactory.create()
+    invite = InviteFactory.create()
+    member = services.join_with_account(user=elsewhere.user, code=invite.code, display_name="Eva")
+    invite.refresh_from_db()
+    assert member.crew == invite.crew
+    assert member.user == elsewhere.user
+    assert member.display_name == "Eva"
+    assert invite.used_by == member
+    assert Member.objects.filter(user=elsewhere.user).count() == 2
+
+
+def test_join_with_account_rejects_members_of_that_crew():
+    invite = InviteFactory.create()
+    already = MemberFactory.create(crew=invite.crew)
+    with pytest.raises(services.AlreadyMember):
+        services.join_with_account(user=already.user, code=invite.code, display_name="Again")
+    invite.refresh_from_db()
+    assert invite.used_at is None
+
+
+def test_join_with_account_checks_the_invite():
+    user = UserFactory.create()
+    with pytest.raises(services.InviteNotFound):
+        services.join_with_account(user=user, code="nope", display_name="X")
+    invite = InviteFactory.create()
+    services.join_with_account(user=user, code=invite.code, display_name="X")
+    with pytest.raises(services.InviteUsed):
+        services.join_with_account(user=UserFactory.create(), code=invite.code, display_name="Y")
+
+
+def test_invite_expires_exactly_at_expires_at():
+    with time_machine.travel("2026-11-01 12:00Z", tick=False):
+        invite = InviteFactory.create()
+    with time_machine.travel(invite.expires_at - timedelta(microseconds=1), tick=False):
+        services.check_invite(invite)
+    with (
+        time_machine.travel(invite.expires_at, tick=False),
+        pytest.raises(services.InviteExpired),
+    ):
+        services.check_invite(invite)
+
+
+def test_pending_invites_are_unused_unexpired_and_from_this_crew():
+    admin = AdminFactory.create()
+    with time_machine.travel("2026-11-01 12:00Z", tick=False):
+        old = services.create_invite(by=admin)
+    with time_machine.travel("2026-11-06 12:00Z", tick=False):
+        fresh = services.create_invite(by=admin)
+        used = services.create_invite(by=admin)
+        services.accept_invite(code=used.code, username="u1x", password=STRONG, display_name="U")
+        InviteFactory.create()  # another crew
+        assert old in selectors.list_pending_invites(crew=admin.crew)
+    with time_machine.travel("2026-11-09 12:00Z", tick=False):
+        assert selectors.list_pending_invites(crew=admin.crew) == [fresh]
+
+
+def test_admin_revokes_an_unused_invite():
+    admin = AdminFactory.create()
+    invite = services.create_invite(by=admin)
+    services.revoke_invite(by=admin, invite_id=invite.id)
+    assert not Invite.objects.filter(pk=invite.pk).exists()
+    with pytest.raises(services.InviteNotFound):
+        services.accept_invite(
+            code=invite.code, username="late1", password=STRONG, display_name="L"
+        )
+
+
+def test_revoking_needs_an_admin_of_the_same_crew_and_an_unused_invite():
+    admin = AdminFactory.create()
+    invite = services.create_invite(by=admin)
+    with pytest.raises(services.NotCrewAdmin):
+        services.revoke_invite(by=MemberFactory.create(crew=admin.crew), invite_id=invite.id)
+    with pytest.raises(services.InviteNotFound):
+        services.revoke_invite(by=AdminFactory.create(), invite_id=invite.id)
+    services.accept_invite(code=invite.code, username="used1", password=STRONG, display_name="U")
+    with pytest.raises(services.InviteUsed):
+        services.revoke_invite(by=admin, invite_id=invite.id)

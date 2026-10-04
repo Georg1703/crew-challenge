@@ -79,11 +79,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** @description Admin: the crew's pending invites, and creating a single-use invite valid for 7 days. */
+        get: operations["crew_invites_list"];
         put?: never;
-        /** @description Admin: create a single-use invite link, valid for 7 days. */
+        /** @description Admin: the crew's pending invites, and creating a single-use invite valid for 7 days. */
         post: operations["crew_invites_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/crew/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Admin: cancel an invite nobody has used yet. */
+        delete: operations["crew_invites_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -134,6 +152,23 @@ export interface paths {
         put?: never;
         /** @description Public: create an account from an invite, join the crew, and log in. */
         post: operations["invites_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invites/{code}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Logged in: join the invite's crew with the account you already have. */
+        post: operations["invites_join"];
         delete?: never;
         options?: never;
         head?: never;
@@ -202,6 +237,13 @@ export interface components {
             status: components["schemas"]["StatusEnum"];
             /** Format: date-time */
             expires_at: string;
+            /** @description Who created the invite. Only for valid invites. */
+            invited_by: components["schemas"]["MemberSummaryOut"] | null;
+            /** @description Members in rotation order. Empty unless the invite is valid. */
+            members: components["schemas"]["MemberSummaryOut"][];
+        };
+        JoinWithAccountInRequest: {
+            display_name: string;
         };
         LoginInRequest: {
             username: string;
@@ -220,12 +262,26 @@ export interface components {
             rotation_position: number;
             avatar_seed: string;
         };
+        MemberSummaryOut: {
+            display_name: string;
+            avatar_seed: string;
+        };
         PatchedMePatchInRequest: {
             display_name?: string;
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
         };
         PatchedRotationInRequest: {
             member_ids?: string[];
+        };
+        PendingInviteOut: {
+            code: string;
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: uuid */
+            id: string;
+            created_by: components["schemas"]["MemberSummaryOut"];
         };
         /**
          * @description * `ro` - Romana
@@ -333,6 +389,25 @@ export interface operations {
             };
         };
     };
+    crew_invites_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingInviteOut"][];
+                };
+            };
+        };
+    };
     crew_invites_create: {
         parameters: {
             query?: never;
@@ -349,6 +424,26 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InviteOut"];
                 };
+            };
+        };
+    };
+    crew_invites_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -408,6 +503,31 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AcceptInviteInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    invites_join: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinWithAccountInRequest"];
             };
         };
         responses: {

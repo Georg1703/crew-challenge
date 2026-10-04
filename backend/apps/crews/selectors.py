@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from apps.accounts.models import User
+from apps.core import clock
 
 from .models import Crew, Invite, Member
 
@@ -29,7 +30,17 @@ def list_members(*, crew: Crew) -> list[Member]:
 
 
 def get_invite(*, code: str) -> Invite | None:
-    return Invite.objects.select_related("crew").filter(code=code.strip()).first()
+    return Invite.objects.select_related("crew", "created_by").filter(code=code.strip()).first()
+
+
+def list_pending_invites(*, crew: Crew) -> list[Invite]:
+    """Invites of the crew that nobody has used and that have not expired, newest first."""
+    return list(
+        Invite.objects.for_crew(crew)
+        .select_related("created_by")
+        .filter(used_at__isnull=True, expires_at__gt=clock.now())
+        .order_by("-created_at")
+    )
 
 
 def next_in_rotation(*, crew: Crew, after: Member | None) -> Member:

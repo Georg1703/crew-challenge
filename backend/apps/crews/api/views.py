@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth import login
@@ -12,7 +13,7 @@ from rest_framework.views import APIView
 from apps.accounts import services as accounts
 from apps.accounts.models import User
 from apps.core.errors import Conflict, ValidationFailed
-from apps.core.throttling import JoinRateThrottle
+from apps.core.throttling import InvitePreviewRateThrottle, JoinRateThrottle
 from apps.crews import selectors, services
 from apps.crews.models import Invite, Member
 
@@ -23,9 +24,11 @@ from .serializers import (
     CrewOut,
     InviteOut,
     InvitePreviewOut,
+    JoinWithAccountIn,
     MemberOut,
     MeOut,
     MePatchIn,
+    PendingInviteOut,
     RotationIn,
 )
 
@@ -98,24 +101,48 @@ def _invite_url(invite: Invite) -> str:
     return f"{settings.APP_PUBLIC_URL.rstrip('/')}/join/{invite.code}"
 
 
-class InviteCreateView(APIView):
-    """Admin: create a single-use invite link, valid for 7 days."""
+def _invite_body(invite: Invite) -> dict[str, Any]:
+    return {"code": invite.code, "url": _invite_url(invite), "expires_at": invite.expires_at}
+
+
+class InvitesView(APIView):
+    """Admin: the crew's pending invites, and creating a single-use invite valid for 7 days."""
 
     permission_classes = [IsCrewMember]
+
+    @extend_schema(responses=PendingInviteOut(many=True), operation_id="crew_invites_list")
+    def get(self, request: Request) -> Response:
+        member = request.member  # type: ignore[attr-defined]
+        services.require_admin(member)
+        invites = selectors.list_pending_invites(crew=member.crew)
+        body = [
+            {**_invite_body(invite), "id": invite.id, "created_by": invite.created_by}
+            for invite in invites
+        ]
+        return Response(PendingInviteOut(body, many=True).data)
 
     @extend_schema(request=None, responses={201: InviteOut}, operation_id="crew_invites_create")
     def post(self, request: Request) -> Response:
         invite = services.create_invite(by=request.member)  # type: ignore[attr-defined]
-        body = InviteOut(
-            {"code": invite.code, "url": _invite_url(invite), "expires_at": invite.expires_at}
-        )
-        return Response(body.data, status=status.HTTP_201_CREATED)
+        return Response(InviteOut(_invite_body(invite)).data, status=status.HTTP_201_CREATED)
+
+
+class InviteDetailView(APIView):
+    """Admin: cancel an invite nobody has used yet."""
+
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=None, responses={204: None}, operation_id="crew_invites_destroy")
+    def delete(self, request: Request, invite_id: UUID) -> Response:
+        services.revoke_invite(by=request.member, invite_id=invite_id)  # type: ignore[attr-defined]
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InvitePreviewView(APIView):
     """Public: what the join page shows before the person signs up."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [InvitePreviewRateThrottle]
 
     @extend_schema(responses=InvitePreviewOut, operation_id="invites_retrieve")
     def get(self, request: Request, code: str) -> Response:
@@ -129,12 +156,16 @@ class InvitePreviewView(APIView):
             invite_status = "used"
         except services.InviteExpired:
             invite_status = "expired"
+        valid = invite_status == "valid"
         return Response(
             InvitePreviewOut(
                 {
                     "crew_name": invite.crew.name,
                     "status": invite_status,
                     "expires_at": invite.expires_at,
+                    # Who is in the crew only shows while the link can still be used.
+                    "invited_by": invite.created_by if valid else None,
+                    "members": selectors.list_members(crew=invite.crew) if valid else [],
                 }
             ).data
         )
@@ -156,3 +187,19 @@ class AcceptInviteView(APIView):
         login(request, member.user, backend="django.contrib.auth.backends.ModelBackend")
         request.session[ACTIVE_CREW_SESSION_KEY] = str(member.crew_id)
         return Response(me_payload(member.user, member), status=status.HTTP_201_CREATED)
+
+
+class JoinWithAccountView(APIView):
+    """Logged in: join the invite's crew with the account you already have."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [JoinRateThrottle]
+
+    @extend_schema(request=JoinWithAccountIn, responses={201: MeOut}, operation_id="invites_join")
+    def post(self, request: Request, code: str) -> Response:
+        data = JoinWithAccountIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = current_user(request)
+        member = services.join_with_account(user=user, code=code, **data.validated_data)
+        request.session[ACTIVE_CREW_SESSION_KEY] = str(member.crew_id)
+        return Response(me_payload(user, member), status=status.HTTP_201_CREATED)

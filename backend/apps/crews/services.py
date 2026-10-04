@@ -47,6 +47,11 @@ class InviteUsed(Conflict):
     message = "This invite link has already been used. Ask for a new one."
 
 
+class AlreadyMember(Conflict):
+    code = "already_member"
+    message = "You are already in this crew."
+
+
 class DisplayNameTaken(ValidationFailed):
     code = "display_name_taken"
     message = "Someone in this crew already uses this name."
@@ -79,7 +84,7 @@ def create_crew_with_admin(
 
 def create_invite(*, by: Member, ttl: timedelta = INVITE_TTL) -> Invite:
     """An admin creates a single-use invite link for their crew."""
-    _require_admin(by)
+    require_admin(by)
     for _ in range(5):
         try:
             with transaction.atomic():
@@ -105,18 +110,51 @@ def check_invite(invite: Invite) -> None:
 @transaction.atomic
 def accept_invite(*, code: str, username: str, password: str, display_name: str) -> Member:
     """A new person joins a crew: creates their login and membership, and uses up the invite."""
+    invite = _claim_invite(code)
+    user = accounts.create_user(username=username, password=password)
+    member = _add_member(crew=invite.crew, user=user, display_name=display_name)
+    _use_invite(invite, member)
+    return member
+
+
+@transaction.atomic
+def join_with_account(*, user: User, code: str, display_name: str) -> Member:
+    """Someone who already has an account (in another crew) joins this crew with it."""
+    invite = _claim_invite(code)
+    if Member.objects.for_crew(invite.crew).filter(user=user).exists():
+        raise AlreadyMember()
+    member = _add_member(crew=invite.crew, user=user, display_name=display_name)
+    _use_invite(invite, member)
+    return member
+
+
+@transaction.atomic
+def revoke_invite(*, by: Member, invite_id: UUID) -> None:
+    """An admin cancels an invite nobody has used yet. Its link stops working at once."""
+    require_admin(by)
+    invite = Invite.objects.select_for_update().for_crew(by.crew).filter(pk=invite_id).first()
+    if invite is None:
+        raise InviteNotFound()
+    if invite.used_at is not None:
+        raise InviteUsed()
+    invite.delete()
+
+
+def _claim_invite(code: str) -> Invite:
+    """Lock a usable invite for this transaction, so two people cannot use the same link."""
     invite = (
         Invite.objects.select_for_update().select_related("crew").filter(code=code.strip()).first()
     )
     if invite is None:
         raise InviteNotFound()
     check_invite(invite)
-    user = accounts.create_user(username=username, password=password)
-    member = _add_member(crew=invite.crew, user=user, display_name=display_name)
+    return invite
+
+
+def _use_invite(invite: Invite, member: Member) -> None:
     invite.used_by = member
     invite.used_at = clock.now()
     invite.save(update_fields=["used_by", "used_at", "updated_at"])
-    return member
 
 
 # --- rotation --------------------------------------------------------------------------------
@@ -125,7 +163,7 @@ def accept_invite(*, code: str, username: str, password: str, display_name: str)
 @transaction.atomic
 def reorder_rotation(*, by: Member, member_ids: Sequence[UUID]) -> list[Member]:
     """An admin sets the proposer order. `member_ids` must list every member exactly once."""
-    _require_admin(by)
+    require_admin(by)
     members = {m.id: m for m in Member.objects.select_for_update().for_crew(by.crew)}
     if len(member_ids) != len(set(member_ids)) or set(member_ids) != set(members):
         raise ValidationFailed(
@@ -179,7 +217,8 @@ def _clean_display_name(display_name: str, *, crew: Crew, exclude: Member | None
     return name
 
 
-def _require_admin(member: Member) -> None:
+def require_admin(member: Member) -> None:
+    """Raise unless the member is an admin. Views call it for admin-only reads."""
     if not member.is_admin:
         raise NotCrewAdmin()
 
