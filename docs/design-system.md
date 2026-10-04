@@ -120,6 +120,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `TextArea` | A labelled multi-line field (rules, notes); same states as `TextField` |
 | `Toggle` | An on/off setting with a label and an optional explanation |
 | `StepProgress` | Where you are in a multi-step form (segments) |
+| `IconPicker` | Pick one icon from a small set (a challenge's icon) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation; the shared icon set (Lucide shapes, stroke 1.75) |
 

@@ -14,6 +14,7 @@ import {
   Card,
   ChipGroup,
   Icon,
+  IconPicker,
   IconTile,
   List,
   ListRow,
@@ -60,6 +61,7 @@ export function DesignRoute() {
   const [days, setDays] = useState<number[]>([0, 2, 4]);
   const [times, setTimes] = useState(3);
   const [proof, setProof] = useState(true);
+  const [icon, setIcon] = useState("dumbbell");
   const toast = useToast();
 
   return (
@@ -366,6 +368,14 @@ export function DesignRoute() {
           decreaseLabel="Fewer"
           increaseLabel="More"
           suffix="times"
+        />
+        <IconPicker
+          label="Icon"
+          value={icon}
+          onChange={setIcon}
+          options={(["dumbbell", "activity", "book", "droplet", "cookie", "phone"] as const).map(
+            (name) => ({ value: name, icon: name, name }),
+          )}
         />
         <TextArea label="Rules" hint="What counts and what does not." />
         <Toggle

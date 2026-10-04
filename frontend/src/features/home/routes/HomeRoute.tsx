@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
+import { TodayChallenges } from "@/features/challenges";
 import { MemberList, useCrew } from "@/features/crew";
 import { InstallCard } from "@/pwa";
-import { Card, Screen, Skeleton } from "@/shared/ui";
+import { Screen, Skeleton } from "@/shared/ui";
 
 import styles from "../home.module.css";
 
@@ -25,10 +26,7 @@ export function HomeRoute() {
   return (
     <Screen title={t("home.greeting", { name: member.display_name })}>
       <InstallCard dismissible />
-      <Card>
-        <h2 className={styles.cardTitle}>{t("home.noChallengeTitle")}</h2>
-        <p className={styles.muted}>{t("home.noChallengeBody")}</p>
-      </Card>
+      <TodayChallenges isAdmin={member.role === "admin"} today={new Date()} />
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>{me.data?.crew?.name ?? t("home.membersTitle")}</h2>
         {crew.data ? (

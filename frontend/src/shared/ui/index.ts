@@ -5,6 +5,7 @@ export { Button, type ButtonProps } from "./Button";
 export { Card } from "./Card";
 export { ChipGroup } from "./ChipGroup";
 export { Icon, type IconName } from "./Icon";
+export { IconPicker } from "./IconPicker";
 export { IconTile, List, ListRow } from "./ListRow";
 export { OptionList, type Option } from "./OptionList";
 export { QrCode } from "./QrCode";

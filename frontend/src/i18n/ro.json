@@ -7,7 +7,8 @@
     "saved": "Salvat",
     "close": "Închide",
     "copied": "Link copiat",
-    "somethingWrong": "Ceva nu a mers."
+    "somethingWrong": "Ceva nu a mers.",
+    "cancel": "Renunță"
   },
   "nav": {
     "label": "Navigare principală",
@@ -95,7 +96,9 @@
     "crewsTitle": "Echipele mele",
     "crewAs": "Ca {{name}}",
     "crewCurrent": "Acum",
-    "crewSwitched": "Ai trecut în {{crew}}"
+    "crewSwitched": "Ai trecut în {{crew}}",
+    "moreLabel": "Mai mult",
+    "challengesHint": "Propuneri, voturi și provocările echipei"
   },
   "languages": {
     "ro": "Română",
@@ -123,7 +126,16 @@
     "not_authenticated": "Intră din nou în cont.",
     "not_found": "Nu am găsit ce căutai.",
     "already_member": "Ești deja în echipa asta.",
-    "crew_not_found": "Nu ești în această echipă."
+    "crew_not_found": "Nu ești în această echipă.",
+    "round_closed": "Runda e închisă: provocarea a fost deja aleasă.",
+    "round_not_found": "Runda nu există.",
+    "challenge_not_found": "Provocarea nu există sau a fost retrasă.",
+    "not_your_proposal": "Doar cine a propus-o o poate modifica.",
+    "challenge_started": "Provocarea a început deja.",
+    "challenge_finished": "Provocarea s-a terminat.",
+    "period_over": "Luna s-a terminat. Alege o provocare pentru luna următoare.",
+    "not_chosen_yet": "Doar o provocare aleasă are participanți.",
+    "conflict": "Nu se poate acum."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -150,5 +162,251 @@
     "dayTitle": "Ziua se închide la miezul nopții",
     "dayBody": "După ora echipei: {{timezone}}.",
     "start": "Începe"
+  },
+  "challenges": {
+    "title": "Provocări",
+    "propose": "Propune o provocare",
+    "forMonth": "Pentru {{month}}",
+    "roundEmpty": "Încă nu a propus nimeni nimic pentru {{month}}. Fii primul.",
+    "proposedBy": "Propusă de {{name}}, {{date}}",
+    "someone": "cineva",
+    "votes": "Voturi: {{n}}",
+    "vote": "Votează",
+    "voted": "Votul tău",
+    "choose": "Alege-o",
+    "chooseTitle": "Alegi „{{title}}” pentru {{month}}?",
+    "chooseBody": "Toată echipa participă de pe {{date}}. Cine nu vrea se poate retrage până atunci. Poți schimba alegerea până începe.",
+    "chooseConfirm": "Alege provocarea",
+    "chosenToast": "Provocarea pentru {{month}} e aleasă",
+    "dates": "{{start}} - {{end}}",
+    "until": "Până pe {{date}}",
+    "open": "Vezi provocarea",
+    "sections": {
+      "active": "Active acum",
+      "upcoming": "Urmează",
+      "finished": "Terminate"
+    },
+    "state": {
+      "proposed": "Propunere",
+      "notChosen": "Nealeasă"
+    },
+    "phase": {
+      "upcoming": "Urmează",
+      "active": "Activă",
+      "finished": "Terminată"
+    },
+    "facts": {
+      "name": "Nume",
+      "often": "Cât de des",
+      "record": "Ce notezi",
+      "target": "Ținta",
+      "proof": "Dovada",
+      "period": "Perioada",
+      "proposed": "Propusă"
+    },
+    "participantsTitle": "Participă",
+    "leftOn": "A ieșit pe {{date}}",
+    "optOut": "Nu particip",
+    "optIn": "Particip",
+    "leave": "Ies din provocare",
+    "edit": "Modifică propunerea",
+    "withdraw": "Retrage propunerea",
+    "withdrawTitle": "Retragi propunerea?",
+    "withdrawBody": "Dispare din listă împreună cu voturile ei.",
+    "withdrawConfirm": "Retrage propunerea",
+    "withdrawn": "Propunere retrasă",
+    "repropose": "Propune-o din nou",
+    "reproposed": "Propusă din nou",
+    "published": "Propunere publicată",
+    "saved": "Propunere salvată",
+    "proposingFor": "Propunere pentru {{month}}",
+    "editingFor": "Modifici propunerea pentru {{month}}",
+    "stepLabel": "Pasul {{n}} din {{total}}",
+    "back": "Înapoi",
+    "next": "Continuă",
+    "publish": "Publică propunerea",
+    "save": "Salvează modificările",
+    "reviewNote": "Echipa o vede imediat și poate vota. Adminul alege provocarea lunii.",
+    "editResetsVotes": "Voturile de până acum se resetează.",
+    "steps": {
+      "what": {
+        "title": "Ce provocare propui?"
+      },
+      "often": {
+        "title": "Cât de des?"
+      },
+      "record": {
+        "title": "Ce notezi la bifă?"
+      },
+      "proof": {
+        "title": "Ce dovadă cerem?"
+      },
+      "review": {
+        "title": "Verifică"
+      }
+    },
+    "fields": {
+      "title": "Numele provocării",
+      "titleHint": "Scurt și clar, de exemplu „50 de flotări pe zi”.",
+      "icon": "Iconița",
+      "rules": "Regulile, pe scurt",
+      "rulesHint": "Ce contează și ce nu. Opțional.",
+      "frequency": "Cât de des",
+      "weekdays": "Zilele",
+      "times": "De câte ori",
+      "fewer": "Mai puțin",
+      "more": "Mai mult",
+      "measure": "La fiecare bifă",
+      "unit": "Unitatea",
+      "unitHint": "De exemplu km, pagini, minute.",
+      "target": "Ținta",
+      "targetValue": "Cât ({{unit}})",
+      "proof": "Dovada",
+      "proofRequired": "Dovada e obligatorie",
+      "proofRequiredHint": "Fără ea bifa nu contează."
+    },
+    "options": {
+      "frequency": {
+        "daily": {
+          "title": "În fiecare zi",
+          "description": "O bifă pe zi, toată luna"
+        },
+        "weekdays": {
+          "title": "În zilele alese",
+          "description": "De exemplu luni - vineri"
+        },
+        "times_per_week": {
+          "title": "De câteva ori pe săptămână",
+          "description": "În orice zile, de un număr de ori"
+        },
+        "times_per_period": {
+          "title": "De câteva ori pe lună",
+          "description": "De un număr de ori până la final"
+        },
+        "once": {
+          "title": "O singură dată",
+          "description": "Un obiectiv, până la final"
+        }
+      },
+      "measure": {
+        "check": {
+          "title": "Doar bifă",
+          "description": "Am făcut, atât"
+        },
+        "quantity": {
+          "title": "Un număr",
+          "description": "Kilometri, pagini, minute, flotări"
+        },
+        "abstain": {
+          "title": "M-am abținut",
+          "description": "Pentru „fără zahăr”, „fără telefon”"
+        }
+      },
+      "target": {
+        "none": "Fără țintă",
+        "per_check_in": "La fiecare bifă",
+        "per_week": "Pe săptămână",
+        "per_period": "Pe toată luna"
+      },
+      "proof": {
+        "none": {
+          "title": "Fără dovadă",
+          "description": "Pe cuvânt"
+        },
+        "photo": {
+          "title": "Poză",
+          "description": "Rapid, pentru aproape orice"
+        },
+        "video": {
+          "title": "Video",
+          "description": "Pentru mișcare: flotări, exerciții"
+        },
+        "photo_or_video": {
+          "title": "Poză sau video",
+          "description": "Fiecare alege"
+        }
+      }
+    },
+    "describe": {
+      "daily": "În fiecare zi",
+      "weekdays": "În zilele: {{days}}",
+      "oncePerWeek": "O dată pe săptămână",
+      "timesPerWeek": "De {{n}} ori pe săptămână",
+      "oncePerPeriod": "O dată în lună",
+      "timesPerPeriod": "De {{n}} ori în lună",
+      "once": "O dată, până la final",
+      "check": "Doar bifă",
+      "quantity": "Un număr ({{unit}})",
+      "abstain": "Te abții",
+      "target": {
+        "per_check_in": "Cel puțin {{value}} {{unit}} la fiecare bifă",
+        "per_week": "{{value}} {{unit}} pe săptămână",
+        "per_period": "{{value}} {{unit}} în toată luna"
+      },
+      "proof": {
+        "none": "Fără dovadă",
+        "photo": "Poză",
+        "video": "Video",
+        "photo_or_video": "Poză sau video"
+      },
+      "proofRequired": "{{kind}}, obligatorie",
+      "proofOptional": "{{kind}}, opțională"
+    },
+    "icons": {
+      "dumbbell": "Sală",
+      "running": "Alergare",
+      "book": "Citit",
+      "water": "Apă",
+      "sugar": "Dulciuri",
+      "phone": "Telefon",
+      "sleep": "Somn",
+      "walk": "Drumeție",
+      "meditate": "Liniște",
+      "food": "Mâncare",
+      "money": "Bani",
+      "star": "Altceva"
+    },
+    "days": {
+      "short": {
+        "0": "L",
+        "1": "M",
+        "2": "M",
+        "3": "J",
+        "4": "V",
+        "5": "S",
+        "6": "D"
+      },
+      "abbr": {
+        "0": "lun",
+        "1": "mar",
+        "2": "mie",
+        "3": "joi",
+        "4": "vin",
+        "5": "sâm",
+        "6": "dum"
+      },
+      "long": {
+        "0": "luni",
+        "1": "marți",
+        "2": "miercuri",
+        "3": "joi",
+        "4": "vineri",
+        "5": "sâmbătă",
+        "6": "duminică"
+      }
+    },
+    "errors": {
+      "title": "Dă-i un nume provocării.",
+      "weekdays": "Alege cel puțin o zi.",
+      "unit": "Scrie unitatea, de exemplu km.",
+      "targetValue": "Scrie un număr mai mare ca zero."
+    },
+    "today": {
+      "roundTitle": "Provocarea pentru {{month}}",
+      "chooseTitle": "Alege provocarea pentru {{month}}",
+      "none": "Încă nicio propunere. Propune ce faceți în {{month}}.",
+      "some": "Propuneri: {{n}}. Votează-ți preferata.",
+      "see": "Vezi propunerile"
+    }
   }
 }

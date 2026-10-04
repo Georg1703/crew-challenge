@@ -7,7 +7,8 @@
     "saved": "Saved",
     "close": "Close",
     "copied": "Link copied",
-    "somethingWrong": "Something went wrong."
+    "somethingWrong": "Something went wrong.",
+    "cancel": "Cancel"
   },
   "nav": {
     "label": "Main navigation",
@@ -95,7 +96,9 @@
     "crewsTitle": "My crews",
     "crewAs": "As {{name}}",
     "crewCurrent": "Current",
-    "crewSwitched": "Switched to {{crew}}"
+    "crewSwitched": "Switched to {{crew}}",
+    "moreLabel": "More",
+    "challengesHint": "Proposals, votes and the crew's challenges"
   },
   "languages": {
     "ro": "Română",
@@ -123,7 +126,16 @@
     "not_authenticated": "Please log in again.",
     "not_found": "We couldn't find that.",
     "already_member": "You're already in this crew.",
-    "crew_not_found": "You're not in this crew."
+    "crew_not_found": "You're not in this crew.",
+    "round_closed": "This round is closed: the challenge has already been chosen.",
+    "round_not_found": "This round doesn't exist.",
+    "challenge_not_found": "This challenge doesn't exist or was withdrawn.",
+    "not_your_proposal": "Only the person who proposed it can change it.",
+    "challenge_started": "The challenge has already started.",
+    "challenge_finished": "The challenge has finished.",
+    "period_over": "This month is over. Choose a challenge for the next one.",
+    "not_chosen_yet": "Only a chosen challenge has participants.",
+    "conflict": "That can't be done right now."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -150,5 +162,251 @@
     "dayTitle": "The day closes at midnight",
     "dayBody": "In the crew's time zone: {{timezone}}.",
     "start": "Start"
+  },
+  "challenges": {
+    "title": "Challenges",
+    "propose": "Propose a challenge",
+    "forMonth": "For {{month}}",
+    "roundEmpty": "Nobody has proposed anything for {{month}} yet. Be the first.",
+    "proposedBy": "Proposed by {{name}}, {{date}}",
+    "someone": "someone",
+    "votes": "Votes: {{n}}",
+    "vote": "Vote",
+    "voted": "Your vote",
+    "choose": "Choose it",
+    "chooseTitle": "Choose “{{title}}” for {{month}}?",
+    "chooseBody": "The whole crew takes part from {{date}}. Anyone can opt out until then. You can change the choice until it starts.",
+    "chooseConfirm": "Choose the challenge",
+    "chosenToast": "The challenge for {{month}} is chosen",
+    "dates": "{{start}} - {{end}}",
+    "until": "Until {{date}}",
+    "open": "See the challenge",
+    "sections": {
+      "active": "Active now",
+      "upcoming": "Coming up",
+      "finished": "Finished"
+    },
+    "state": {
+      "proposed": "Proposal",
+      "notChosen": "Not chosen"
+    },
+    "phase": {
+      "upcoming": "Coming up",
+      "active": "Active",
+      "finished": "Finished"
+    },
+    "facts": {
+      "name": "Name",
+      "often": "How often",
+      "record": "What you record",
+      "target": "Target",
+      "proof": "Proof",
+      "period": "Period",
+      "proposed": "Proposed"
+    },
+    "participantsTitle": "Taking part",
+    "leftOn": "Left on {{date}}",
+    "optOut": "I'm not taking part",
+    "optIn": "I'm taking part",
+    "leave": "Leave the challenge",
+    "edit": "Edit the proposal",
+    "withdraw": "Withdraw the proposal",
+    "withdrawTitle": "Withdraw the proposal?",
+    "withdrawBody": "It disappears from the list together with its votes.",
+    "withdrawConfirm": "Withdraw the proposal",
+    "withdrawn": "Proposal withdrawn",
+    "repropose": "Propose it again",
+    "reproposed": "Proposed again",
+    "published": "Proposal published",
+    "saved": "Proposal saved",
+    "proposingFor": "Proposal for {{month}}",
+    "editingFor": "Editing your proposal for {{month}}",
+    "stepLabel": "Step {{n}} of {{total}}",
+    "back": "Back",
+    "next": "Continue",
+    "publish": "Publish the proposal",
+    "save": "Save the changes",
+    "reviewNote": "The crew sees it right away and can vote. An admin chooses the month's challenge.",
+    "editResetsVotes": "The votes so far are reset.",
+    "steps": {
+      "what": {
+        "title": "What do you propose?"
+      },
+      "often": {
+        "title": "How often?"
+      },
+      "record": {
+        "title": "What do you record?"
+      },
+      "proof": {
+        "title": "What proof?"
+      },
+      "review": {
+        "title": "Check it"
+      }
+    },
+    "fields": {
+      "title": "Name of the challenge",
+      "titleHint": "Short and clear, for example “50 push-ups a day”.",
+      "icon": "Icon",
+      "rules": "The rules, in short",
+      "rulesHint": "What counts and what doesn't. Optional.",
+      "frequency": "How often",
+      "weekdays": "Days",
+      "times": "How many times",
+      "fewer": "Fewer",
+      "more": "More",
+      "measure": "Each check-in",
+      "unit": "Unit",
+      "unitHint": "For example km, pages, minutes.",
+      "target": "Target",
+      "targetValue": "How much ({{unit}})",
+      "proof": "Proof",
+      "proofRequired": "Proof is required",
+      "proofRequiredHint": "Without it the check-in doesn't count."
+    },
+    "options": {
+      "frequency": {
+        "daily": {
+          "title": "Every day",
+          "description": "One check-in a day, all month"
+        },
+        "weekdays": {
+          "title": "On chosen days",
+          "description": "For example Monday to Friday"
+        },
+        "times_per_week": {
+          "title": "A few times a week",
+          "description": "Any days, a number of times"
+        },
+        "times_per_period": {
+          "title": "A few times a month",
+          "description": "A number of times by the end"
+        },
+        "once": {
+          "title": "Once",
+          "description": "One goal, by the end"
+        }
+      },
+      "measure": {
+        "check": {
+          "title": "Just a check-in",
+          "description": "Done, that's all"
+        },
+        "quantity": {
+          "title": "A number",
+          "description": "Kilometres, pages, minutes, push-ups"
+        },
+        "abstain": {
+          "title": "I held back",
+          "description": "For “no sugar”, “no phone”"
+        }
+      },
+      "target": {
+        "none": "No target",
+        "per_check_in": "Each check-in",
+        "per_week": "Per week",
+        "per_period": "For the whole month"
+      },
+      "proof": {
+        "none": {
+          "title": "No proof",
+          "description": "On your word"
+        },
+        "photo": {
+          "title": "Photo",
+          "description": "Quick, works for almost anything"
+        },
+        "video": {
+          "title": "Video",
+          "description": "For movement: push-ups, workouts"
+        },
+        "photo_or_video": {
+          "title": "Photo or video",
+          "description": "Everyone picks"
+        }
+      }
+    },
+    "describe": {
+      "daily": "Every day",
+      "weekdays": "On {{days}}",
+      "oncePerWeek": "Once a week",
+      "timesPerWeek": "{{n}} times a week",
+      "oncePerPeriod": "Once in the month",
+      "timesPerPeriod": "{{n}} times in the month",
+      "once": "Once, by the end",
+      "check": "Just a check-in",
+      "quantity": "A number ({{unit}})",
+      "abstain": "Holding back",
+      "target": {
+        "per_check_in": "At least {{value}} {{unit}} each check-in",
+        "per_week": "{{value}} {{unit}} a week",
+        "per_period": "{{value}} {{unit}} in the month"
+      },
+      "proof": {
+        "none": "No proof",
+        "photo": "Photo",
+        "video": "Video",
+        "photo_or_video": "Photo or video"
+      },
+      "proofRequired": "{{kind}}, required",
+      "proofOptional": "{{kind}}, optional"
+    },
+    "icons": {
+      "dumbbell": "Gym",
+      "running": "Running",
+      "book": "Reading",
+      "water": "Water",
+      "sugar": "Sweets",
+      "phone": "Phone",
+      "sleep": "Sleep",
+      "walk": "Hiking",
+      "meditate": "Calm",
+      "food": "Food",
+      "money": "Money",
+      "star": "Something else"
+    },
+    "days": {
+      "short": {
+        "0": "M",
+        "1": "T",
+        "2": "W",
+        "3": "T",
+        "4": "F",
+        "5": "S",
+        "6": "S"
+      },
+      "abbr": {
+        "0": "Mon",
+        "1": "Tue",
+        "2": "Wed",
+        "3": "Thu",
+        "4": "Fri",
+        "5": "Sat",
+        "6": "Sun"
+      },
+      "long": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
+      }
+    },
+    "errors": {
+      "title": "Give the challenge a name.",
+      "weekdays": "Choose at least one day.",
+      "unit": "Write the unit, for example km.",
+      "targetValue": "Write a number above zero."
+    },
+    "today": {
+      "roundTitle": "The challenge for {{month}}",
+      "chooseTitle": "Choose the challenge for {{month}}",
+      "none": "No proposals yet. Propose what you do in {{month}}.",
+      "some": "Proposals: {{n}}. Vote for your favourite.",
+      "see": "See the proposals"
+    }
   }
 }

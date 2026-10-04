@@ -102,6 +102,19 @@ function MeScreen() {
           </form>
         </Card>
       )}
+      <List label={t("me.moreLabel")}>
+        <ListRow
+          to="/challenges"
+          leading={
+            <IconTile>
+              <Icon name="flag" size={20} />
+            </IconTile>
+          }
+          title={t("challenges.title")}
+          subtitle={t("me.challengesHint")}
+          trailing={<Icon name="chevronRight" size={20} />}
+        />
+      </List>
       {crews.length > 1 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t("me.crewsTitle")}</h2>
