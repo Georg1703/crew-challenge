@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * End-to-end tests against the real backend: `make e2e`.
- * Starts Django (migrated, with the demo crew) and the Vite dev server unless they already run.
+ * Starts Django (migrated, with the demo crew), the Vite dev server and a production preview
+ * (for the PWA checks) unless they already run.
  * Needs Postgres and Redis (the compose services, or your own on localhost).
  */
 const backendEnv = {
@@ -21,7 +22,15 @@ export default defineConfig({
     trace: "retain-on-failure",
     locale: "en-US",
   },
-  projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],
+  projects: [
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: /pwa\.spec\.ts/ },
+    {
+      // Installability, service worker and offline start need the production build.
+      name: "pwa",
+      testMatch: /pwa\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" },
+    },
+  ],
   webServer: [
     {
       command:
@@ -30,6 +39,13 @@ export default defineConfig({
       cwd: "../backend",
       url: "http://127.0.0.1:8000/api/health",
       env: backendEnv,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: "pnpm build && pnpm preview",
+      url: "http://localhost:4173",
+      env: { VITE_API_PROXY_TARGET: "http://127.0.0.1:8000" },
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
