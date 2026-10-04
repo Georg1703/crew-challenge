@@ -94,6 +94,11 @@ makemigrations: ## Create migrations (optional: make makemigrations app=crews)
 	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
 	$(UV) python manage.py makemigrations $(app) --settings=config.settings.test
 
+.PHONY: superuser
+superuser: ## Create a Django admin user (asks for username, email, password); admin at /admin
+	$(call require,compose.yaml,Local environment)
+	$(COMPOSE) run --rm backend python manage.py createsuperuser
+
 .PHONY: seed
 seed: ## Load the demo crew (known users and passwords, local only)
 	$(call require,compose.yaml,Local environment)

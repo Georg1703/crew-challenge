@@ -47,6 +47,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
 | `make migrate` / `make makemigrations` | Database migrations |
 | `make seed` | Demo crew with known users |
+| `make superuser` | Create a Django admin user (interactive) |
 | `make shell` / `make logs` / `make tunnel` | Django shell / service logs / HTTPS tunnel for phone testing |
 
 ## Never
