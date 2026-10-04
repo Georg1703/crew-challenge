@@ -1,0 +1,158 @@
+# Local development. First time: `make setup`; then every day: `make dev`.
+# App: http://localhost:5173 (Vite, proxies /api, /admin and /static to Django).
+#
+# Code is mounted into the containers, so Django and Vite reload on save. Restart the worker
+# after changing a Celery task: `docker compose restart worker`.
+#
+# Host names: inside this network the containers reach each other by service name (db, redis,
+# backend). `.env` holds the localhost addresses used by tools on your machine (make check,
+# make e2e); the `environment:` blocks below override them for the containers.
+# Production uses compose.prod.yaml with the same backend image (target "prod").
+
+name: crew-challenges
+
+x-backend: &backend
+  build:
+    context: ./backend
+    target: dev
+  image: crew-challenges-backend:dev
+  env_file:
+    - path: .env
+      required: false # make setup creates it from .env.example
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.local
+    DATABASE_URL: postgres://${POSTGRES_USER:-crew}:${POSTGRES_PASSWORD:-crew-local-password}@db:5432/${POSTGRES_DB:-crew_challenges}
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    CELERY_RESULT_BACKEND: redis://redis:6379/2
+    CACHE_URL: redis://redis:6379/3
+  volumes:
+    - ./backend:/app
+    # Your AWS CLI profiles (AWS_PROFILE in .env picks the dev one). Read-only.
+    - ${HOME}/.aws:/root/.aws:ro
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crew_challenges}
+      POSTGRES_USER: ${POSTGRES_USER:-crew}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crew-local-password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432" # make check / make e2e from your machine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-off: applies migrations, then exits. Everything that uses the database waits for it.
+  migrate:
+    <<: *backend
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *backend
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "--loglevel", "info", "--concurrency", "2"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping --destination celery@$$HOSTNAME --timeout 5"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  beat:
+    <<: *backend
+    # Schedules live in the database (django-celery-beat). No pid file in the mounted code folder.
+    command: ["celery", "-A", "config", "beat", "--loglevel", "info", "--pidfile="]
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    image: crew-challenges-frontend:dev
+    # The install is a no-op unless pnpm-lock.yaml changed since the volume was filled.
+    command: ["sh", "-c", "pnpm install --frozen-lockfile --prefer-offline && exec pnpm dev"]
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      # Linux packages for the container; keeps your machine's node_modules out of it.
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:5173/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # `make tunnel`: temporary public HTTPS URL for testing on a phone (prints a *.trycloudflare.com URL).
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://frontend:5173"]
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  frontend_node_modules:

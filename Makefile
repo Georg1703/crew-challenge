@@ -44,22 +44,26 @@ setup: ## First-time setup: .env, images, migrations, seed data
 	$(call require,compose.yaml,Local environment)
 	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 	$(COMPOSE) build
-	$(COMPOSE) up -d db redis
-	$(COMPOSE) run --rm backend python manage.py migrate
+	$(COMPOSE) run --rm migrate
 	$(COMPOSE) run --rm backend python manage.py seed_demo
-	@echo "OK: setup done - run: make dev"
+	@echo "OK: setup done - run: make dev, then open http://localhost:5173"
 
 ##@ Running locally
 
 .PHONY: dev
-dev: ## Run everything locally (app at http://localhost:5173)
+dev: ## Run everything locally (app at http://localhost:5173); Ctrl+C stops it
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) up
+	$(COMPOSE) up --build
 
 .PHONY: stop
-stop: ## Stop local containers
+stop: ## Stop local containers (data is kept)
 	$(call require,compose.yaml,Local environment)
 	$(COMPOSE) down
+
+.PHONY: ps
+ps: ## Show local containers and their health
+	$(call require,compose.yaml,Local environment)
+	$(COMPOSE) ps
 
 .PHONY: logs
 logs: ## Follow logs of all services (or: make logs s=backend)
@@ -72,16 +76,16 @@ shell: ## Django shell inside the backend container
 	$(COMPOSE) exec backend python manage.py shell
 
 .PHONY: tunnel
-tunnel: ## Public HTTPS tunnel to the local app, for testing on a phone
+tunnel: ## Public HTTPS URL to the local app, for testing on a phone (run make dev first)
 	$(call require,compose.yaml,Local environment)
-	docker run --rm -it cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://host.docker.internal:5173
+	$(COMPOSE) --profile tunnel run --rm tunnel
 
 ##@ Database
 
 .PHONY: migrate
-migrate: ## Apply database migrations
+migrate: ## Apply database migrations (make dev also does this on start)
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) run --rm backend python manage.py migrate
+	$(COMPOSE) run --rm migrate
 
 .PHONY: makemigrations
 makemigrations: ## Create migrations (optional: make makemigrations app=crews)
@@ -104,13 +108,23 @@ install: ## Install backend and frontend dependencies and the git hooks
 		|| echo "SKIP: pre-commit not found; install it with 'pipx install pre-commit', then run make install"
 
 .PHONY: check
-check: check-repo check-backend check-frontend check-contract ## Everything CI runs; must pass before a task is done
+check: check-repo check-compose check-backend check-frontend check-contract ## Everything CI runs; must pass before a task is done
 	@echo "OK: make check passed"
 
 .PHONY: check-repo
 check-repo: ## Repo-level checks: docs links, referenced paths, ASCII, required files
 	@out=$$($(PYTHON) -m unittest discover -s tools/tests 2>&1) || { echo "$$out"; echo "ERROR: tool tests failed"; exit 1; }; echo "OK: tool tests passed"
 	@$(PYTHON) tools/check_repo.py
+
+.PHONY: check-compose
+check-compose: ## Validate compose.yaml (skipped when Docker is not installed)
+ifeq ($(HAS_COMPOSE),)
+	$(call skip,compose check)
+else
+	@if command -v docker >/dev/null; then \
+		$(COMPOSE) --profile tunnel config --quiet && echo "OK: compose.yaml is valid"; \
+	else echo "SKIP: compose check: docker not installed"; fi
+endif
 
 .PHONY: check-backend
 check-backend: ## Backend: format, lint, types, layers, migrations, tests + coverage
