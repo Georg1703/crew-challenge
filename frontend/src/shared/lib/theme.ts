@@ -22,6 +22,13 @@ export function applyTheme(theme: Theme): void {
   const root = document.documentElement;
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
+  // Say the same in the color-scheme meta, so the browser never darkens a forced light page.
+  const scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+  if (scheme) {
+    scheme.dataset.content ??= scheme.content;
+    scheme.content =
+      theme === "light" ? "only light" : theme === "dark" ? "dark" : scheme.dataset.content;
+  }
   // The browser bar follows the page: one theme-color per scheme, or the forced background.
   const bg = getComputedStyle(root).getPropertyValue("--color-bg").trim();
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {

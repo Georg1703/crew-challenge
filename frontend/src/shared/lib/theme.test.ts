@@ -25,6 +25,17 @@ describe("theme", () => {
     expect(storedTheme()).toBe("system");
   });
 
+  it("stops the browser darkening a page forced to light", () => {
+    document.head.innerHTML = '<meta name="color-scheme" content="light dark" />';
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+    setTheme("light");
+    expect(meta?.content).toBe("only light");
+    setTheme("dark");
+    expect(meta?.content).toBe("dark");
+    setTheme("system");
+    expect(meta?.content).toBe("light dark");
+  });
+
   it("gives the browser bar back its own colors when following the phone", () => {
     document.head.innerHTML = '<meta name="theme-color" content="#fbfaf6" />';
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');

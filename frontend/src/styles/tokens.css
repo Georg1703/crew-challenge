@@ -219,6 +219,8 @@
   color-scheme: dark;
 }
 
+/* "only light": a forced light theme must also stop the browser darkening the page on its own
+   (Chrome on Android, "dark theme for sites"); plain "light" still allows that. */
 :root[data-theme="light"] {
-  color-scheme: light;
+  color-scheme: only light;
 }
