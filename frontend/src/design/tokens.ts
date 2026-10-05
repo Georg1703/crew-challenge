@@ -50,4 +50,5 @@ export const sizeTokens = [
   "avatar-md",
   "avatar-lg",
   "tabbar-height",
+  "day-bar-height",
 ] as const;

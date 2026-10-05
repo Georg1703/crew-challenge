@@ -107,3 +107,8 @@
   border-radius: var(--radius-md);
   transform: translateZ(0);
 }
+
+.bars {
+  display: grid;
+  gap: var(--space-2);
+}

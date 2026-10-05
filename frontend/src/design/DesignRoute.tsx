@@ -14,6 +14,9 @@ import {
   Card,
   CheckList,
   ChipGroup,
+  DayBar,
+  DayBars,
+  DayBarsAxis,
   DayGrid,
   DayMark,
   type DayState,
@@ -486,6 +489,29 @@ export function DesignRoute() {
             }),
           }))}
         />
+        <div className={styles.bars}>
+          <DayBarsAxis days={Array.from({ length: 30 }, (_, i) => i + 1)} todayIndex={9} />
+          {["ddddmddddd", "dmdddddddt"].map((row, r) => (
+            <DayBars
+              key={r}
+              label={r ? "Bogdan" : "Ana"}
+              states={Array.from({ length: 30 }, (_, i): DayState => {
+                const mark = row[i];
+                if (mark === "d") return "done";
+                if (mark === "m") return "missed";
+                if (mark === "t") return "todo";
+                return "future";
+              })}
+            />
+          ))}
+        </div>
+        <div className={styles.row}>
+          {(
+            ["done", "partial", "todo", "missed", "not_due", "future", "outside"] as DayState[]
+          ).map((state) => (
+            <DayBar key={state} state={state} label={state} />
+          ))}
+        </div>
       </Section>
 
       <Section title="Segmented control">

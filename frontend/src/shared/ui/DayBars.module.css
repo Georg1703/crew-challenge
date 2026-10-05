@@ -1,0 +1,73 @@
+.bars,
+.axis {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-hair);
+}
+
+.bars {
+  align-items: end;
+  height: var(--day-bar-height);
+}
+
+.slot {
+  display: inline-flex;
+  align-items: flex-end;
+  width: var(--space-2);
+  height: var(--day-bar-height);
+}
+
+.bar {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-xs);
+}
+
+.done {
+  background: var(--color-success);
+}
+
+.partial {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.todo,
+.open {
+  border: 2px solid var(--color-accent);
+}
+
+.missed {
+  height: var(--space-2);
+  background: var(--color-danger);
+}
+
+.notDue {
+  height: var(--space-hair);
+  background: var(--color-border);
+}
+
+.future {
+  background: var(--color-surface-sunken);
+}
+
+.outside {
+  background: transparent;
+}
+
+.number {
+  overflow: visible;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-caption);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.today {
+  color: var(--color-accent);
+  font-weight: var(--weight-bold);
+}
