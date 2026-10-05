@@ -91,6 +91,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges/{challenge_id}/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every participant's month, one state per day. */
+        get: operations["challenges_board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Check in for today (numbers add up). Returns the challenge as on today's card. */
+        post: operations["challenges_check_in"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins/{day}/last": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Undo today's last entry (`day` is today, YYYY-MM-DD). */
+        delete: operations["challenges_undo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/{challenge_id}/invitees": {
         parameters: {
             query?: never;
@@ -317,6 +368,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My challenges today with their state, and the crew's progress. */
+        get: operations["today_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -336,6 +404,16 @@ export interface components {
         ActiveCrewInRequest: {
             /** Format: uuid */
             crew_id: string;
+        };
+        BoardOut: {
+            days: string[];
+            rows: components["schemas"]["BoardRowOut"][];
+        };
+        BoardRowOut: {
+            member: components["schemas"]["PersonOut"];
+            /** @description One per day. */
+            states: components["schemas"]["DayStateEnum"][];
+            streak: number | null;
         };
         ChallengeDetailOut: {
             /** Format: uuid */
@@ -457,6 +535,23 @@ export interface components {
          * @enum {string}
          */
         ChallengeStateEnum: "proposed" | "chosen";
+        CheckInInRequest: {
+            /**
+             * Format: date
+             * @description Today in the crew's time zone; any other day is refused.
+             */
+            day: string;
+            /**
+             * Format: decimal
+             * @description For challenges that record a number: how much to add.
+             */
+            amount?: string | null;
+        };
+        CrewDayOut: {
+            member: components["schemas"]["PersonOut"];
+            done: number;
+            needed: number;
+        };
         CrewDetailOut: {
             /** Format: uuid */
             id: string;
@@ -474,6 +569,23 @@ export interface components {
         CsrfOut: {
             csrf_token: string;
         };
+        DayOut: {
+            /** Format: date */
+            day: string;
+            state: components["schemas"]["DayStateEnum"];
+        };
+        /**
+         * @description * `done` - done
+         *     * `partial` - partial
+         *     * `todo` - todo
+         *     * `open` - open
+         *     * `missed` - missed
+         *     * `not_due` - not_due
+         *     * `future` - future
+         *     * `outside` - outside
+         * @enum {string}
+         */
+        DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
         /**
          * @description * `daily` - Every day
          *     * `weekdays` - Chosen days of the week
@@ -530,6 +642,12 @@ export interface components {
         JoinWithAccountInRequest: {
             display_name: string;
         };
+        /**
+         * @description * `days` - days
+         *     * `amount` - amount
+         * @enum {string}
+         */
+        KindEnum: "days" | "amount";
         LoginInRequest: {
             username: string;
             password: string;
@@ -623,6 +741,13 @@ export interface components {
          * @enum {string}
          */
         PreferredLanguageEnum: "ro" | "en";
+        ProgressOut: {
+            kind: components["schemas"]["KindEnum"];
+            /** Format: double */
+            done: number;
+            /** Format: double */
+            goal: number;
+        };
         /**
          * @description * `none` - No proof
          *     * `photo` - Photo
@@ -654,6 +779,61 @@ export interface components {
          * @enum {string}
          */
         TargetScopeEnum: "none" | "per_check_in" | "per_week" | "per_period";
+        /** @description One of my challenges today: what to show on its card and in the ring. */
+        TodayChallengeOut: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            /** Format: date */
+            end_date: string;
+            /**
+             * @description Today's state.
+             *
+             *     * `done` - done
+             *     * `partial` - partial
+             *     * `todo` - todo
+             *     * `open` - open
+             *     * `missed` - missed
+             *     * `not_due` - not_due
+             *     * `future` - future
+             *     * `outside` - outside
+             */
+            state: components["schemas"]["DayStateEnum"];
+            /**
+             * Format: double
+             * @description Today's total (numbers only).
+             */
+            total: number | null;
+            streak: number | null;
+            /** @description Monday to Sunday of this week. */
+            week: components["schemas"]["DayOut"][];
+            /** @description Toward the week's or the period's goal. */
+            progress: components["schemas"]["ProgressOut"] | null;
+            /** @description Today's ring segment: full, empty, or none (null). */
+            settled: boolean | null;
+        };
+        TodayOut: {
+            /** Format: date */
+            day: string;
+            /**
+             * Format: date-time
+             * @description When today ends (crew-local midnight).
+             */
+            deadline: string;
+            challenges: components["schemas"]["TodayChallengeOut"][];
+            /** @description Everyone with something today, in join order. */
+            crew: components["schemas"]["CrewDayOut"][];
+        };
         UserOut: {
             /** Format: uuid */
             id: string;
@@ -825,6 +1005,76 @@ export interface operations {
             header?: never;
             path: {
                 challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_board: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; default this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardOut"];
+                };
+            };
+        };
+    };
+    challenges_check_in: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_undo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
             };
             cookie?: never;
         };
@@ -1219,6 +1469,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoolOut"];
+                };
+            };
+        };
+    };
+    today_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayOut"];
                 };
             };
         };

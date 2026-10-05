@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.crews",
     "apps.challenges",
+    "apps.checkins",
 ]
 
 MIDDLEWARE = [
@@ -135,6 +136,7 @@ SPECTACULAR_SETTINGS = {
     # Several models have a "state" field; give each enum its own name in the contract.
     "ENUM_NAME_OVERRIDES": {
         "ChallengeStateEnum": "apps.challenges.models.Challenge.State",
+        "DayStateEnum": "apps.checkins.api.serializers.DAY_STATES",
     },
 }
 

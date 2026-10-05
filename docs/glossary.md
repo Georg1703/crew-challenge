@@ -21,12 +21,15 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Invitee | `Invitee` | Someone the creator selected for a challenge (the whole crew by default, the creator always). Only invitees and admins see the challenge; only invitees vote and take part. Not "participant" (that is `Participation`, once scheduled) and not `Invite` (joining a crew). |
 | Participation | `Participation` | A member taking part in a scheduled challenge: every invitee when it is scheduled; they can opt out before the start or leave after. |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
-| Check-in | `CheckIn` (not "Checkin") | A member's completion of one challenge day. Status: `uploading`, `done`, `missed`, `excused`. |
+| Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `uploading` and `excused`. A missed day has no row: it is derived. |
+| Entry | `CheckInEntry` | One "+N" of a check-in; a day's entries add up. Undo removes the last one. |
+| Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
+| Due day | `days.is_due` | A day a daily or chosen-weekday challenge asks for. Challenges asked a number of times per week or period have no due days, only a quota. |
 | Proof | `Proof` | What backs a check-in or a served punishment: `video`, `audio`, `photo`, or `text`. |
 | Upload | `MultipartUpload` | The S3 multipart upload that carries a proof's original file. |
 | Rendition | `hls_key`, `poster_key` | Processed versions of a video for playback (HLS 720p/360p + poster image). |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for an `uploading` check-in to finish. |
-| Streak | `current_streak`, `best_streak` | Consecutive days with a `done` check-in, across challenges. |
+| Streak | `days.streak` | Per challenge: due days in a row without a miss (daily, weekdays) or weeks in a row with the quota met (times a week). Today never breaks it. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |
 | Garden | - | Home screen showing every member's tree. After v1. |
 | Tree stage | `tree_stage` | Derived from done days this challenge: `seed` 0, `sprout` 1-3, `sapling` 4-9, `bloom` 10-19, `fruit` 20+. After v1. |

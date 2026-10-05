@@ -167,7 +167,7 @@ forbidden_modules = ["boto3", "botocore", "pywebpush"]
 name = "Core does not depend on domain apps"
 type = "forbidden"
 source_modules = ["apps.core"]
-forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges"]
+forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.checkins"]
 ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
 
 [[tool.importlinter.contracts]]
@@ -181,6 +181,12 @@ name = "Crews and accounts do not depend on challenges (challenges builds on cre
 type = "forbidden"
 source_modules = ["apps.crews", "apps.accounts"]
 forbidden_modules = ["apps.challenges"]
+
+[[tool.importlinter.contracts]]
+name = "Check-ins build on challenges: nothing below depends on them"
+type = "forbidden"
+source_modules = ["apps.challenges", "apps.crews", "apps.accounts"]
+forbidden_modules = ["apps.checkins"]
 
 [[tool.importlinter.contracts]]
 name = "Integrations do not depend on domain apps"

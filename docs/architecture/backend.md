@@ -21,7 +21,8 @@ backend/
 |   |-- core/               # shared building blocks, no domain logic
 |   |-- accounts/           # User, login/logout/me
 |   |-- crews/              # Crew, Member, Invite, switching crews
-|   `-- challenges/         # Challenge (soft deleted), Invitee, Vote, Participation
+|   |-- challenges/         # Challenge (soft deleted), Invitee, Vote, Participation
+|   `-- checkins/           # CheckIn, CheckInEntry; days.py: due days, day states, streaks
 |-- integrations/
 |   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
 |-- tests/

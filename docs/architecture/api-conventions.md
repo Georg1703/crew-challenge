@@ -68,9 +68,9 @@ Every error, from any layer, has this shape:
 |---|---|---|
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `permission_denied` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `not_taking_part`, `permission_denied` |
 | 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started`, `day_closed`, `not_due_today`, `nothing_to_undo` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -121,6 +121,11 @@ PUT    /api/v1/challenges/{id}/vote     invitees: vote for a proposal; DELETE ta
 PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
                                         move before the start; DELETE puts it back in the pool
 PUT    /api/v1/challenges/{id}/participation   take part again (before the start); DELETE opts out
+
+GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
+POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today -> today's card
+DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's last entry -> today's card
+GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
 ```
 
 ## Changing the contract

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from uuid import UUID
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 
 from apps.core import clock
 from apps.crews.models import Member
@@ -131,4 +131,23 @@ def participants(*, challenge: Challenge) -> list[Participation]:
         Participation.objects.filter(challenge=challenge)
         .select_related("member")
         .order_by("joined_on", "member__created_at")
+    )
+
+
+def participations_on(*, viewer: Member, day: date) -> list[Participation]:
+    """Who takes part in what on `day`, in the viewer's crew, for challenges the viewer can see.
+
+    Includes people who left that very day (`ended_on == day`); in join order, then by title.
+    """
+    return list(
+        Participation.objects.filter(
+            challenge__in=visible(member=viewer),
+            challenge__state=Challenge.State.CHOSEN,
+            challenge__start_date__lte=day,
+            challenge__end_date__gte=day,
+            joined_on__lte=day,
+        )
+        .filter(Q(ended_on__isnull=True) | Q(ended_on__gte=day))
+        .select_related("challenge", "member")
+        .order_by("member__created_at", "member_id", "challenge__title", "challenge_id")
     )

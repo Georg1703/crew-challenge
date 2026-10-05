@@ -157,6 +157,85 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges/{challenge_id}/board:
+    get:
+      operationId: challenges_board
+      description: Every participant's month, one state per day.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: YYYY-MM; default this month.
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/check-ins:
+    post:
+      operationId: challenges_check_in
+      description: Check in for today (numbers add up). Returns the challenge as on
+        today's card.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayChallengeOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/check-ins/{day}/last:
+    delete:
+      operationId: challenges_undo
+      description: Undo today's last entry (`day` is today, YYYY-MM-DD).
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/challenges/{challenge_id}/invitees:
     put:
       operationId: challenges_invitees
@@ -528,6 +607,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/PoolOut'
           description: ''
+  /api/v1/today:
+    get:
+      operationId: today_retrieve
+      description: My challenges today with their state, and the crew's progress.
+      tags:
+      - today
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayOut'
+          description: ''
 components:
   schemas:
     AcceptInviteInRequest:
@@ -566,6 +660,38 @@ components:
           format: uuid
       required:
       - crew_id
+    BoardOut:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardRowOut'
+      required:
+      - days
+      - rows
+    BoardRowOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayStateEnum'
+          description: One per day.
+        streak:
+          type: integer
+          nullable: true
+      required:
+      - member
+      - states
+      - streak
     ChallengeDetailOut:
       type: object
       properties:
@@ -909,6 +1035,34 @@ components:
       description: |-
         * `proposed` - Proposed
         * `chosen` - Chosen
+    CheckInInRequest:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+          description: Today in the crew's time zone; any other day is refused.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: 'For challenges that record a number: how much to add.'
+      required:
+      - day
+    CrewDayOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        done:
+          type: integer
+        needed:
+          type: integer
+      required:
+      - done
+      - member
+      - needed
     CrewDetailOut:
       type: object
       properties:
@@ -950,6 +1104,37 @@ components:
           type: string
       required:
       - csrf_token
+    DayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        state:
+          $ref: '#/components/schemas/DayStateEnum'
+      required:
+      - day
+      - state
+    DayStateEnum:
+      enum:
+      - done
+      - partial
+      - todo
+      - open
+      - missed
+      - not_due
+      - future
+      - outside
+      type: string
+      description: |-
+        * `done` - done
+        * `partial` - partial
+        * `todo` - todo
+        * `open` - open
+        * `missed` - missed
+        * `not_due` - not_due
+        * `future` - future
+        * `outside` - outside
     FrequencyEnum:
       enum:
       - daily
@@ -1064,6 +1249,14 @@ components:
           maxLength: 40
       required:
       - display_name
+    KindEnum:
+      enum:
+      - days
+      - amount
+      type: string
+      description: |-
+        * `days` - days
+        * `amount` - amount
     LoginInRequest:
       type: object
       properties:
@@ -1268,6 +1461,21 @@ components:
       description: |-
         * `ro` - Romana
         * `en` - English
+    ProgressOut:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        done:
+          type: number
+          format: double
+        goal:
+          type: number
+          format: double
+      required:
+      - done
+      - goal
+      - kind
     ProofKindEnum:
       enum:
       - none
@@ -1314,6 +1522,119 @@ components:
         * `per_check_in` - Each check-in
         * `per_week` - Each week
         * `per_period` - The whole period
+    TodayChallengeOut:
+      type: object
+      description: 'One of my challenges today: what to show on its card and in the
+        ring.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        end_date:
+          type: string
+          format: date
+        state:
+          allOf:
+          - $ref: '#/components/schemas/DayStateEnum'
+          description: |-
+            Today's state.
+
+            * `done` - done
+            * `partial` - partial
+            * `todo` - todo
+            * `open` - open
+            * `missed` - missed
+            * `not_due` - not_due
+            * `future` - future
+            * `outside` - outside
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: Today's total (numbers only).
+        streak:
+          type: integer
+          nullable: true
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayOut'
+          description: Monday to Sunday of this week.
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/ProgressOut'
+          nullable: true
+          description: Toward the week's or the period's goal.
+        settled:
+          type: boolean
+          nullable: true
+          description: 'Today''s ring segment: full, empty, or none (null).'
+      required:
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - progress
+      - proof_kind
+      - proof_required
+      - settled
+      - state
+      - streak
+      - target_scope
+      - target_value
+      - times
+      - title
+      - total
+      - unit
+      - week
+    TodayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        deadline:
+          type: string
+          format: date-time
+          description: When today ends (crew-local midnight).
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodayChallengeOut'
+        crew:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrewDayOut'
+          description: Everyone with something today, in join order.
+      required:
+      - challenges
+      - crew
+      - day
+      - deadline
     UserOut:
       type: object
       properties:
