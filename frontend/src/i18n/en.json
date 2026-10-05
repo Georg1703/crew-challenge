@@ -504,6 +504,13 @@
     "amountLabel": "How many {{unit}}",
     "amountAdd": "Add",
     "amountError": "Write a number above zero.",
-    "fraction": "{{done}}/{{total}}"
+    "fraction": "{{done}}/{{total}}",
+    "board": {
+      "label": "The crew's month, {{month}}",
+      "cell": "{{name}}, {{day}}: {{state}}",
+      "nameStreak": "{{name}} · {{n}}",
+      "previous": "Previous month",
+      "next": "Next month"
+    }
   }
 }

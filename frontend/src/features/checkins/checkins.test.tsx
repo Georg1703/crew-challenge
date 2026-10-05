@@ -7,7 +7,7 @@ import { HoldButton } from "@/shared/ui";
 import { ana, bogdan, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
-import { TodayCheckIns } from ".";
+import { ChallengeBoard, TodayCheckIns } from ".";
 import type { Today, TodayChallenge } from "./api";
 
 const person = (member: typeof ana) => ({
@@ -216,5 +216,53 @@ describe("hold button", () => {
     expect(confirm).toHaveBeenCalledTimes(1);
     fireEvent.click(button, { detail: 1 }); // the click that follows a hold does nothing more
     expect(confirm).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("month board", () => {
+  const states = (done: number): TodayChallenge["state"][] =>
+    Array.from({ length: 30 }, (_, i) => (i < done ? "done" : i === done ? "missed" : "future"));
+
+  it("shows everyone's month with streaks and moves between months", async () => {
+    const get = vi.spyOn(api, "GET").mockImplementation(((
+      _path: string,
+      options: { params: { query: { month: string } } },
+    ) =>
+      ok({
+        days: Array.from(
+          { length: 30 },
+          (_, i) => `${options.params.query.month}-${String(i + 1).padStart(2, "0")}`,
+        ),
+        rows: [
+          { member: person(ana), states: states(9), streak: 9 },
+          { member: person(bogdan), states: states(3), streak: 0 },
+        ],
+      })) as never);
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-10T09:00:00Z") });
+    renderRoutes([
+      {
+        path: "/",
+        element: (
+          <ChallengeBoard
+            challengeId="walk"
+            startDate="2026-11-01"
+            endDate="2026-12-31"
+            timeZone="Europe/Chisinau"
+          />
+        ),
+      },
+    ]);
+
+    expect(await screen.findByRole("heading", { name: "November 2026" })).toBeInTheDocument();
+    const grid = await screen.findByRole("table", { name: "The crew's month, November 2026" });
+    expect(within(grid).getAllByText("Ana · 9")).toHaveLength(2); // once per half of the month
+    expect(within(grid).getByRole("img", { name: "Bogdan, 4: missed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous month" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next month" }));
+    expect(await screen.findByRole("heading", { name: "December 2026" })).toBeInTheDocument();
+    expect(get).toHaveBeenLastCalledWith("/api/v1/challenges/{challenge_id}/board", {
+      params: { path: { challenge_id: "walk" }, query: { month: "2026-12" } },
+    });
   });
 });

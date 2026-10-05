@@ -32,8 +32,7 @@
 
 .cells {
   display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
   gap: var(--space-hair);
 }
 
@@ -41,10 +40,19 @@
   display: flex;
 }
 
-.dayNumber {
+.dayNumber,
+.todayNumber {
   color: var(--color-text-muted);
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
-  text-align: left;
-  white-space: nowrap;
+  text-align: center;
+}
+
+.todayNumber {
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+.grid > .row:nth-child(n + 2):has(.dayNumber, .todayNumber) {
+  margin-top: var(--space-2);
 }

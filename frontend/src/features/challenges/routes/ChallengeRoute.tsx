@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 
 import { useMe } from "@/features/auth";
+import { ChallengeBoard } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
 import { formatDate, formatDay, monthAndYear } from "@/shared/lib/format";
 import {
@@ -245,6 +246,18 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
           )}
         </section>
       )}
+
+      {challenge.state === "chosen" &&
+        challenge.phase !== "upcoming" &&
+        challenge.start_date &&
+        challenge.end_date && (
+          <ChallengeBoard
+            challengeId={challenge.id}
+            startDate={challenge.start_date}
+            endDate={challenge.end_date}
+            timeZone={timeZone}
+          />
+        )}
 
       {challenge.state === "chosen" && (
         <section className={styles.section}>

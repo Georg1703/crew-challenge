@@ -504,6 +504,13 @@
     "amountLabel": "Câte {{unit}}",
     "amountAdd": "Adaugă",
     "amountError": "Scrie un număr mai mare ca zero.",
-    "fraction": "{{done}}/{{total}}"
+    "fraction": "{{done}}/{{total}}",
+    "board": {
+      "label": "Luna echipei, {{month}}",
+      "cell": "{{name}}, {{day}}: {{state}}",
+      "nameStreak": "{{name}} · {{n}}",
+      "previous": "Luna dinainte",
+      "next": "Luna următoare"
+    }
   }
 }
