@@ -12,7 +12,7 @@ class MemberInline(admin.TabularInline):
 
 @admin.register(Crew)
 class CrewAdmin(admin.ModelAdmin):
-    list_display = ("name", "timezone", "created_at")
+    list_display = ("name", "timezone", "max_proposals", "created_at")
     search_fields = ("name",)
     inlines = [MemberInline]
 

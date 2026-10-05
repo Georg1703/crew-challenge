@@ -26,6 +26,7 @@ def test_create_crew_makes_the_creator_its_first_admin():
     assert member.crew.timezone == "Europe/Chisinau"
     assert member.is_admin
     assert member.avatar_seed
+    assert member.crew.max_proposals == 50
 
 
 @pytest.mark.parametrize(
@@ -362,3 +363,11 @@ def test_switching_to_a_crew_you_are_not_in_fails():
     member = MemberFactory.create()
     with pytest.raises(services.CrewNotFound):
         services.switch_crew(user=member.user, crew_id=CrewFactory.create().id)
+
+
+@pytest.mark.parametrize("limit", [0, 201])
+def test_crew_proposal_limit_stays_between_1_and_200(limit):
+    crew = CrewFactory.create()
+    crew.max_proposals = limit
+    with pytest.raises(IntegrityError), transaction.atomic():
+        crew.save()

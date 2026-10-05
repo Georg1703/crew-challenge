@@ -38,9 +38,19 @@ class Crew(TimeStampedModel):
         validators=[validate_timezone],
         help_text="IANA time zone, for example Europe/Chisinau. Challenge days follow it.",
     )
+    max_proposals = models.PositiveSmallIntegerField(
+        default=50,
+        help_text="How many proposals the pool can hold (1-200).",
+    )
 
     class Meta:
         ordering = ("name",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(max_proposals__gte=1, max_proposals__lte=200),
+                name="crew_max_proposals_range",
+            )
+        ]
 
     def __str__(self) -> str:
         return self.name
