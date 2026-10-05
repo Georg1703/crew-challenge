@@ -12,15 +12,17 @@ The contract between the React app and Django. The machine-readable version is
 
 ## Authentication
 
-1. `GET /api/v1/auth/csrf` sets the `csrftoken` cookie (and returns the token).
+1. `GET /api/v1/auth/csrf` sets the `crew_csrftoken` cookie (and returns the token).
 2. `POST /api/v1/auth/login` with `{username, password}` and header `X-CSRFToken` sets
-   `sessionid` and answers `204`. Then `GET /api/v1/me` loads the user.
+   `crew_session` and answers `204`. Then `GET /api/v1/me` loads the user.
 3. Every unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) sends `X-CSRFToken`, logged in or not.
    Without it the answer is `403 csrf_failed`. Django rotates the token on login, so re-read the
-   `csrftoken` cookie after logging in.
+   `crew_csrftoken` cookie after logging in.
 4. A `401` means the session is gone: the client clears its cache and goes to `/login`.
 
-Cookies: `sessionid` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
+Cookies: `crew_session` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
+Both cookies have names of their own, not Django's defaults: cookies are shared by every port of
+a host, so another Django app on localhost would otherwise overwrite them and log people out.
 Usernames are case-insensitive (stored in lowercase).
 
 Rate limits per client IP: login 5/minute, joining a crew 10/minute, looking up an invite
@@ -96,7 +98,7 @@ shape (Django's own HTML pages are used only outside `/api/`).
 ```
 GET    /api/health                      liveness: database and Redis (not versioned, not in the contract)
 
-GET    /api/v1/auth/csrf                sets the csrftoken cookie
+GET    /api/v1/auth/csrf                sets the crew_csrftoken cookie
 POST   /api/v1/auth/login               {username, password} -> 204, session cookie
 POST   /api/v1/auth/logout              -> 204
 

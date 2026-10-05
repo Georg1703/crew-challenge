@@ -1,6 +1,6 @@
 /** CSRF token handling for Django's session auth. See docs/architecture/api-conventions.md. */
 
-const COOKIE = "csrftoken";
+const COOKIE = "crew_csrftoken"; // CSRF_COOKIE_NAME in backend settings
 
 export function readCsrfCookie(): string | null {
   const match = document.cookie.split("; ").find((part) => part.startsWith(`${COOKIE}=`));
@@ -9,7 +9,7 @@ export function readCsrfCookie(): string | null {
 
 let pending: Promise<void> | null = null;
 
-/** Make sure the csrftoken cookie exists (fetches /api/v1/auth/csrf once if needed). */
+/** Make sure the crew_csrftoken cookie exists (fetches /api/v1/auth/csrf once if needed). */
 export async function ensureCsrfCookie(): Promise<string> {
   const existing = readCsrfCookie();
   if (existing) return existing;

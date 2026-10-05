@@ -19,7 +19,7 @@ describe("api client", () => {
       "fetch",
       vi.fn(async (input: Request | string) => {
         if (typeof input === "string") {
-          document.cookie = "csrftoken=abc123; path=/";
+          document.cookie = "crew_csrftoken=abc123; path=/";
           return respond(200, { csrf_token: "abc123" });
         }
         seen.push(input);
@@ -46,7 +46,7 @@ describe("api client", () => {
   });
 
   it("turns error responses into ApiError with code and fields", async () => {
-    document.cookie = "csrftoken=t; path=/";
+    document.cookie = "crew_csrftoken=t; path=/";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>

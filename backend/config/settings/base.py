@@ -94,6 +94,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Our own cookie names: browsers share cookies across every port of a host, so another Django
+# app on localhost (or the same domain) would overwrite the default "sessionid" / "csrftoken"
+# and log people out of this one.
+SESSION_COOKIE_NAME = "crew_session"
+CSRF_COOKIE_NAME = "crew_csrftoken"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 365  # one year: people stay logged in on their phones
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

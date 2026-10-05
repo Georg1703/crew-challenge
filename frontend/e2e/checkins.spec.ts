@@ -25,7 +25,8 @@ async function uncheck(page: Page, title: string): Promise<boolean> {
   };
   const challenge = today.challenges.find((c) => c.title === title);
   if (!challenge || challenge.state !== "done") return false;
-  const csrf = (await page.context().cookies()).find((c) => c.name === "csrftoken")?.value ?? "";
+  const csrf =
+    (await page.context().cookies()).find((c) => c.name === "crew_csrftoken")?.value ?? "";
   await page.request.delete(`/api/v1/challenges/${challenge.id}/check-ins/${today.day}/last`, {
     headers: { "X-CSRFToken": csrf, Referer: page.url() },
   });

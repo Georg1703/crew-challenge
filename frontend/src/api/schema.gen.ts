@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description GET /api/v1/auth/csrf - sets the csrftoken cookie; call it before the first POST. */
+        /** @description GET /api/v1/auth/csrf - sets the crew_csrftoken cookie; call it before the first POST. */
         get: operations["auth_csrf"];
         put?: never;
         post?: never;
