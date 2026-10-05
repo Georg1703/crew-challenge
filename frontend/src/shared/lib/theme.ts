@@ -5,7 +5,8 @@
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
-const STORAGE_KEY = "theme";
+const STORAGE_KEY = "theme"; // index.html reads it too, before the first paint
+const SCHEMES: Record<Theme, string> = { system: "light dark", light: "only light", dark: "dark" };
 
 export function storedTheme(): Theme {
   try {
@@ -24,11 +25,7 @@ export function applyTheme(theme: Theme): void {
   else root.dataset.theme = theme;
   // Say the same in the color-scheme meta, so the browser never darkens a forced light page.
   const scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
-  if (scheme) {
-    scheme.dataset.content ??= scheme.content;
-    scheme.content =
-      theme === "light" ? "only light" : theme === "dark" ? "dark" : scheme.dataset.content;
-  }
+  if (scheme) scheme.content = SCHEMES[theme];
   // The browser bar follows the page: one theme-color per scheme, or the forced background.
   const bg = getComputedStyle(root).getPropertyValue("--color-bg").trim();
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
