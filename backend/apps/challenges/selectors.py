@@ -10,7 +10,7 @@ from uuid import UUID
 from apps.core import clock
 from apps.crews.models import Crew, Member
 
-from .models import Challenge, Participation, Round, Vote
+from .models import Challenge, Participation, Vote
 
 PHASES = ("upcoming", "active", "finished")
 
@@ -36,63 +36,62 @@ class Tally:
 
 
 @dataclass
-class RoundView:
-    round: Round
+class Pool:
+    """The crew's proposals (newest first) with their votes, and how full the pool is."""
+
     proposals: list[Challenge]
     tallies: dict[UUID, Tally]
-    my_vote: UUID | None
+    size: int
+    limit: int
 
 
-def round_view(*, round_: Round, member: Member) -> RoundView:
-    """A round with its proposals (oldest first), the votes for each, and the member's vote."""
-    proposals = list(
-        Challenge.objects.filter(round=round_)
-        .select_related("created_by")
+def tallies(*, challenges: list[Challenge]) -> dict[UUID, Tally]:
+    """Votes for each of the given challenges, voters in the order they voted."""
+    result: dict[UUID, Tally] = defaultdict(Tally)
+    votes = (
+        Vote.objects.filter(challenge__in=challenges)
+        .select_related("member")
         .order_by("created_at", "id")
     )
-    tallies: dict[UUID, Tally] = defaultdict(Tally)
-    my_vote = None
-    votes = Vote.objects.filter(round=round_).select_related("member").order_by("created_at")
     for vote in votes:
-        tally = tallies[vote.challenge_id]
+        tally = result[vote.challenge_id]
         tally.count += 1
         tally.voters.append(vote.member)
-        if vote.member_id == member.pk:
-            my_vote = vote.challenge_id
-    return RoundView(round=round_, proposals=proposals, tallies=dict(tallies), my_vote=my_vote)
+    return dict(result)
 
 
-def get_round(*, crew: Crew, round_id: UUID) -> Round | None:
-    return Round.objects.for_crew(crew).select_related("chosen_by").filter(pk=round_id).first()
-
-
-def list_closed_rounds(*, crew: Crew) -> list[Round]:
-    """Rounds where a challenge was chosen, newest period first."""
-    return list(
-        Round.objects.for_crew(crew)
-        .filter(state=Round.State.CLOSED)
-        .select_related("chosen", "chosen_by")
-        .order_by("-period_start")
+def pool(*, crew: Crew) -> Pool:
+    proposals = list(
+        Challenge.objects.for_crew(crew)
+        .filter(state=Challenge.State.PROPOSED)
+        .select_related("created_by")
+        .order_by("-created_at", "-id")
+    )
+    return Pool(
+        proposals=proposals,
+        tallies=tallies(challenges=proposals),
+        size=len(proposals),
+        limit=crew.max_proposals,
     )
 
 
 def get_challenge(*, crew: Crew, challenge_id: UUID) -> Challenge | None:
     return (
         Challenge.objects.for_crew(crew)
-        .select_related("created_by", "round")
+        .select_related("created_by", "chosen_by")
         .filter(pk=challenge_id)
         .first()
     )
 
 
 def list_chosen(*, crew: Crew, phases: tuple[str, ...] = PHASES) -> list[Challenge]:
-    """Chosen challenges in the given phases, by start date (newest first for finished)."""
+    """Scheduled challenges in the given phases, by start date, then title."""
     today = clock.crew_today(crew)
     chosen = (
         Challenge.objects.for_crew(crew)
         .filter(state=Challenge.State.CHOSEN)
-        .select_related("created_by", "round")
-        .order_by("start_date", "created_at")
+        .select_related("created_by", "chosen_by")
+        .order_by("start_date", "title", "created_at")
     )
     return [c for c in chosen if phase(c, today) in phases]
 

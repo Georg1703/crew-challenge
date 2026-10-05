@@ -5,7 +5,7 @@ import pytest
 import time_machine
 
 from apps.challenges import selectors, services
-from apps.challenges.models import Challenge, Participation, Round, Vote
+from apps.challenges.models import Challenge, Participation, Vote
 from apps.core.errors import PermissionDenied, ValidationFailed
 from apps.crews import services as crews
 from tests.factories import AdminFactory, InviteFactory, MemberFactory
@@ -31,6 +31,7 @@ NO_SUGAR = {
 }
 
 OCT = time_machine.travel("2026-10-10 12:00Z", tick=False)
+LATER = time_machine.travel("2026-10-10 12:05Z", tick=False)
 
 
 @pytest.fixture
@@ -41,42 +42,6 @@ def crew():
         bogdan = MemberFactory.create(crew=admin.crew, display_name="Bogdan")
         cristina = MemberFactory.create(crew=admin.crew, display_name="Cristina")
         yield admin, bogdan, cristina
-
-
-# --- rounds ------------------------------------------------------------------------------------
-
-
-def test_the_open_round_is_next_month_and_created_once(crew):
-    admin, *_ = crew
-    first = services.open_round(crew=admin.crew)
-    assert (first.period_start, first.period_end) == (date(2026, 11, 1), date(2026, 11, 30))
-    assert first.period_kind == "month"
-    assert first.selection == "admin"
-    assert services.open_round(crew=admin.crew) == first
-    assert Round.objects.count() == 1
-
-
-def test_the_round_follows_the_crew_time_zone(crew):
-    admin, *_ = crew
-    # 31 Oct 22:30 UTC is already 1 November in Chisinau (UTC+2 in winter).
-    with time_machine.travel("2026-10-31 22:30Z", tick=False):
-        assert services.open_round(crew=admin.crew).period_start == date(2026, 12, 1)
-
-
-def test_a_round_nobody_chose_stays_open_into_its_month(crew):
-    admin, *_ = crew
-    november = services.open_round(crew=admin.crew)
-    with time_machine.travel("2026-11-03 12:00Z", tick=False):
-        assert services.open_round(crew=admin.crew) == november
-
-
-def test_after_choosing_people_propose_for_the_month_after(crew):
-    admin, bogdan, _ = crew
-    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    services.choose_challenge(by=admin, challenge_id=proposal.pk)
-    assert services.open_round(crew=admin.crew).period_start == date(2026, 12, 1)
-    later = services.propose_challenge(by=bogdan, shape=NO_SUGAR)
-    assert later.round.period_start == date(2026, 12, 1)
 
 
 # --- the shape -------------------------------------------------------------------------------
@@ -123,20 +88,69 @@ def test_bad_shapes_name_the_field(change, field):
     assert field in error.value.fields
 
 
-# --- proposals ---------------------------------------------------------------------------------
+# --- the pool ----------------------------------------------------------------------------------
 
 
-def test_any_member_proposes(crew):
+def november(by):
+    return {"by": by, "period_kind": "month", "period_start": date(2026, 11, 1)}
+
+
+def test_any_member_proposes_into_the_pool(crew):
     _, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     assert proposal.created_by == bogdan
     assert proposal.state == "proposed"
-    assert proposal.round.period_start == date(2026, 11, 1)
+    assert (proposal.period_kind, proposal.period_start, proposal.start_date) == ("", None, None)
     assert (proposal.measure, proposal.unit, proposal.target_value) == (
         "quantity",
         "push-ups",
         Decimal("50"),
     )
+
+
+def test_the_pool_is_newest_first_with_its_size_and_limit(crew):
+    admin, bogdan, cristina = crew
+    first = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    with LATER:
+        second = services.propose_challenge(by=cristina, shape=NO_SUGAR)
+    pool = selectors.pool(crew=admin.crew)
+    assert pool.proposals == [second, first]
+    assert (pool.size, pool.limit) == (2, 50)
+
+
+def test_a_full_pool_refuses_new_proposals_until_a_place_frees_up(crew):
+    admin, bogdan, cristina = crew
+    admin.crew.max_proposals = 2
+    admin.crew.save()
+    first = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    second = services.propose_challenge(by=cristina, shape=NO_SUGAR)
+    with pytest.raises(services.PoolFull):
+        services.propose_challenge(by=bogdan, shape=PUSHUPS)
+
+    services.withdraw_proposal(by=bogdan, challenge_id=first.pk)  # soft-deleted ones don't count
+    third = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.schedule_challenge(
+        challenge_id=second.pk, **november(admin)
+    )  # scheduled ones don't count
+    services.propose_challenge(by=cristina, shape=NO_SUGAR)
+
+    # Putting one back is allowed even when the pool is full: it was there before.
+    services.unschedule_challenge(by=admin, challenge_id=second.pk)
+    assert selectors.pool(crew=admin.crew).size == 3
+    with pytest.raises(services.PoolFull):
+        services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    assert third.state == "proposed"
+
+
+def test_lowering_the_limit_keeps_every_proposal(crew):
+    admin, bogdan, _ = crew
+    services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.propose_challenge(by=bogdan, shape=NO_SUGAR)
+    admin.crew.max_proposals = 1
+    admin.crew.save()
+    assert selectors.pool(crew=admin.crew).size == 2
+    with pytest.raises(services.PoolFull):
+        services.propose_challenge(by=bogdan, shape=PUSHUPS)
 
 
 def test_editing_resets_the_votes_and_only_the_creator_may(crew):
@@ -167,6 +181,7 @@ def test_withdrawing_is_a_soft_delete_by_the_creator_or_an_admin(crew):
     assert not Challenge.objects.filter(pk=proposal.pk).exists()
     assert Challenge.all_objects.get(pk=proposal.pk).deleted_at is not None
     assert not Vote.objects.exists()
+    assert selectors.pool(crew=admin.crew).proposals == []
 
     by_admin = services.propose_challenge(by=cristina, shape=NO_SUGAR)
     services.withdraw_proposal(by=admin, challenge_id=by_admin.pk)
@@ -174,20 +189,18 @@ def test_withdrawing_is_a_soft_delete_by_the_creator_or_an_admin(crew):
         services.withdraw_proposal(by=admin, challenge_id=by_admin.pk)
 
 
-def test_nothing_changes_once_the_round_is_closed(crew):
+def test_a_scheduled_challenge_cannot_be_edited_withdrawn_or_voted_on(crew):
     admin, bogdan, _ = crew
     chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    other = services.propose_challenge(by=bogdan, shape=NO_SUGAR)
-    services.choose_challenge(by=admin, challenge_id=chosen.pk)
-    for challenge in (chosen, other):
-        with pytest.raises(services.RoundClosed):
-            services.edit_proposal(by=bogdan, challenge_id=challenge.pk, shape=PUSHUPS)
-        with pytest.raises(services.RoundClosed):
-            services.withdraw_proposal(by=bogdan, challenge_id=challenge.pk)
-        with pytest.raises(services.RoundClosed):
-            services.cast_vote(by=bogdan, challenge_id=challenge.pk)
-    with pytest.raises(services.RoundClosed):
-        services.clear_vote(by=bogdan, round_id=chosen.round_id)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+    for action in (
+        lambda: services.edit_proposal(by=bogdan, challenge_id=chosen.pk, shape=PUSHUPS),
+        lambda: services.withdraw_proposal(by=bogdan, challenge_id=chosen.pk),
+        lambda: services.cast_vote(by=bogdan, challenge_id=chosen.pk),
+        lambda: services.clear_vote(by=bogdan, challenge_id=chosen.pk),
+    ):
+        with pytest.raises(services.NotAProposal):
+            action()
 
 
 def test_other_crews_cannot_see_or_touch_a_proposal(crew):
@@ -196,33 +209,39 @@ def test_other_crews_cannot_see_or_touch_a_proposal(crew):
     stranger = AdminFactory.create()
     for action in (
         lambda: services.cast_vote(by=stranger, challenge_id=proposal.pk),
+        lambda: services.clear_vote(by=stranger, challenge_id=proposal.pk),
         lambda: services.edit_proposal(by=stranger, challenge_id=proposal.pk, shape=PUSHUPS),
         lambda: services.withdraw_proposal(by=stranger, challenge_id=proposal.pk),
-        lambda: services.choose_challenge(by=stranger, challenge_id=proposal.pk),
+        lambda: services.schedule_challenge(challenge_id=proposal.pk, **november(stranger)),
+        lambda: services.unschedule_challenge(by=stranger, challenge_id=proposal.pk),
     ):
         with pytest.raises(services.ChallengeNotFound):
             action()
     assert selectors.get_challenge(crew=stranger.crew, challenge_id=proposal.pk) is None
+    assert selectors.pool(crew=stranger.crew).proposals == []
 
 
 # --- votes -------------------------------------------------------------------------------------
 
 
-def test_one_vote_per_member_that_can_change(crew):
+def test_members_vote_for_as_many_proposals_as_they_like_once_each(crew):
     admin, bogdan, cristina = crew
     first = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     second = services.propose_challenge(by=cristina, shape=NO_SUGAR)
     services.cast_vote(by=bogdan, challenge_id=first.pk)  # your own proposal is fine
-    services.cast_vote(by=cristina, challenge_id=first.pk)
-    services.cast_vote(by=cristina, challenge_id=second.pk)
-    view = selectors.round_view(round_=first.round, member=cristina)
-    assert view.my_vote == second.pk
-    assert view.tallies[first.pk].count == 1
-    assert [m.display_name for m in view.tallies[first.pk].voters] == ["Bogdan"]
-    assert view.tallies[second.pk].count == 1
+    with LATER:
+        services.cast_vote(by=cristina, challenge_id=first.pk)
+        services.cast_vote(by=cristina, challenge_id=second.pk)
+        services.cast_vote(by=cristina, challenge_id=second.pk)  # twice counts once
 
-    services.clear_vote(by=cristina, round_id=first.round_id)
-    assert selectors.round_view(round_=first.round, member=cristina).my_vote is None
+    tallies = selectors.tallies(challenges=[first, second])
+    assert [m.display_name for m in tallies[first.pk].voters] == ["Bogdan", "Cristina"]
+    assert tallies[second.pk].count == 1
+
+    services.clear_vote(by=cristina, challenge_id=first.pk)
+    services.clear_vote(by=cristina, challenge_id=first.pk)  # nothing to clear is fine
+    assert selectors.tallies(challenges=[first])[first.pk].count == 1
+    assert selectors.tallies(challenges=[]) == {}
 
 
 def test_votes_for_withdrawn_proposals_are_refused(crew):
@@ -233,32 +252,37 @@ def test_votes_for_withdrawn_proposals_are_refused(crew):
         services.cast_vote(by=cristina, challenge_id=proposal.pk)
 
 
-# --- choosing --------------------------------------------------------------------------------
+# --- scheduling ------------------------------------------------------------------------------
 
 
-def test_only_admins_choose(crew):
-    _, bogdan, _ = crew
+def test_only_admins_schedule(crew):
+    admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     with pytest.raises(PermissionDenied):
-        services.choose_challenge(by=bogdan, challenge_id=proposal.pk)
+        services.schedule_challenge(challenge_id=proposal.pk, **november(bogdan))
+    services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    with pytest.raises(PermissionDenied):
+        services.unschedule_challenge(by=bogdan, challenge_id=proposal.pk)
 
 
-def test_choosing_before_the_month_runs_the_whole_month_for_the_whole_crew(crew):
+def test_scheduling_before_the_month_runs_the_whole_month_for_the_whole_crew(crew):
     admin, bogdan, cristina = crew
     chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     other = services.propose_challenge(by=cristina, shape=NO_SUGAR)
-    services.cast_vote(by=bogdan, challenge_id=other.pk)  # votes guide, the admin decides
-    round_ = services.choose_challenge(by=admin, challenge_id=chosen.pk)
+    services.cast_vote(by=bogdan, challenge_id=chosen.pk)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
 
     chosen.refresh_from_db()
     other.refresh_from_db()
-    assert (round_.state, round_.chosen, round_.chosen_by) == ("closed", chosen, admin)
-    assert (chosen.state, chosen.start_date, chosen.end_date) == (
-        "chosen",
+    assert (chosen.state, chosen.period_kind, chosen.chosen_by) == ("chosen", "month", admin)
+    assert chosen.chosen_at is not None
+    assert (chosen.period_start, chosen.start_date, chosen.end_date) == (
+        date(2026, 11, 1),
         date(2026, 11, 1),
         date(2026, 11, 30),
     )
-    assert other.state == "not_chosen"
+    assert other.state == "proposed"  # the rest stay in the pool
+    assert selectors.tallies(challenges=[chosen])[chosen.pk].count == 1  # votes stay as history
     assert sorted(p.member.display_name for p in selectors.participants(challenge=chosen)) == [
         "Ana",
         "Bogdan",
@@ -270,52 +294,148 @@ def test_choosing_before_the_month_runs_the_whole_month_for_the_whole_crew(crew)
     assert selectors.phase(other, date(2026, 11, 1)) is None
 
 
-def test_choosing_the_same_challenge_twice_changes_nothing(crew):
-    admin, bogdan, _ = crew
-    chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    services.choose_challenge(by=admin, challenge_id=chosen.pk)
-    services.choose_challenge(by=admin, challenge_id=chosen.pk)
-    assert Participation.objects.filter(challenge=chosen).count() == 3
-
-
-def test_admins_can_change_the_choice_until_the_start(crew):
+def test_several_challenges_can_run_in_the_same_month(crew):
     admin, bogdan, cristina = crew
     first = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     second = services.propose_challenge(by=cristina, shape=NO_SUGAR)
-    services.choose_challenge(by=admin, challenge_id=first.pk)
-    services.stop_taking_part(by=cristina, challenge_id=first.pk)
-
-    round_ = services.choose_challenge(by=admin, challenge_id=second.pk)
-    first.refresh_from_db()
-    assert round_.chosen == second
-    assert (first.state, first.start_date) == ("not_chosen", None)
-    assert not Participation.objects.filter(challenge=first).exists()
-    assert Participation.objects.filter(challenge=second).count() == 3  # opt-outs start over
-
-    with (
-        time_machine.travel("2026-11-01 08:00Z", tick=False),
-        pytest.raises(services.ChallengeStarted),
-    ):
-        services.choose_challenge(by=admin, challenge_id=first.pk)
+    services.schedule_challenge(challenge_id=first.pk, **november(admin))
+    services.schedule_challenge(challenge_id=second.pk, **november(admin))
+    upcoming = selectors.list_chosen(crew=admin.crew, phases=("upcoming",))
+    assert upcoming == [first, second]  # same start: by title
+    assert Participation.objects.count() == 6
 
 
-def test_choosing_late_starts_tomorrow_and_ends_with_the_month(crew):
+def test_scheduling_the_same_period_twice_changes_nothing(crew):
+    admin, bogdan, _ = crew
+    chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+    services.stop_taking_part(by=bogdan, challenge_id=chosen.pk)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+    assert Participation.objects.filter(challenge=chosen).count() == 2  # the opt-out stays
+
+
+def test_moving_before_the_start_resets_opt_outs_and_is_locked_after(crew):
+    admin, bogdan, cristina = crew
+    chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+    services.stop_taking_part(by=cristina, challenge_id=chosen.pk)
+
+    services.schedule_challenge(
+        by=admin, challenge_id=chosen.pk, period_kind="month", period_start=date(2027, 1, 1)
+    )
+    chosen.refresh_from_db()
+    assert (chosen.start_date, chosen.end_date) == (date(2027, 1, 1), date(2027, 1, 31))
+    assert {p.joined_on for p in Participation.objects.filter(challenge=chosen)} == {
+        date(2027, 1, 1)
+    }
+    assert Participation.objects.filter(challenge=chosen).count() == 3
+
+    with time_machine.travel("2027-01-01 08:00Z", tick=False):
+        with pytest.raises(services.ChallengeStarted):
+            services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+        with pytest.raises(services.ChallengeStarted):
+            services.unschedule_challenge(by=admin, challenge_id=chosen.pk)
+
+
+def test_putting_back_in_the_pool_reopens_votes_and_removes_participants(crew):
+    admin, bogdan, cristina = crew
+    chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.cast_vote(by=cristina, challenge_id=chosen.pk)
+    services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
+
+    back = services.unschedule_challenge(by=admin, challenge_id=chosen.pk)
+    assert (back.state, back.period_kind, back.period_start, back.start_date) == (
+        "proposed",
+        "",
+        None,
+        None,
+    )
+    assert (back.end_date, back.chosen_by, back.chosen_at) == (None, None, None)
+    assert not Participation.objects.filter(challenge=chosen).exists()
+    assert selectors.tallies(challenges=[chosen])[chosen.pk].count == 1
+    services.cast_vote(by=admin, challenge_id=chosen.pk)  # voting is open again
+    assert services.unschedule_challenge(by=admin, challenge_id=chosen.pk) == back  # no-op
+
+
+def test_scheduling_late_starts_tomorrow_and_ends_with_the_month(crew):
     admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     with time_machine.travel("2026-11-10 12:00Z", tick=False):
-        services.choose_challenge(by=admin, challenge_id=proposal.pk)
+        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
     proposal.refresh_from_db()
+    assert proposal.period_start == date(2026, 11, 1)
     assert (proposal.start_date, proposal.end_date) == (date(2026, 11, 11), date(2026, 11, 30))
     assert {p.joined_on for p in Participation.objects.filter(challenge=proposal)} == {
         date(2026, 11, 11)
     }
 
 
-def test_choosing_on_the_last_day_is_too_late(crew):
+def test_scheduling_on_the_last_day_or_for_a_past_month_is_too_late(crew):
     admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     with time_machine.travel("2026-11-30 12:00Z", tick=False), pytest.raises(services.PeriodOver):
-        services.choose_challenge(by=admin, challenge_id=proposal.pk)
+        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    with pytest.raises(services.PeriodOver):
+        services.schedule_challenge(
+            by=admin, challenge_id=proposal.pk, period_kind="month", period_start=date(2026, 9, 1)
+        )
+
+
+def test_the_last_day_follows_the_crew_time_zone(crew):
+    admin, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    # 30 Oct 22:30 UTC is 31 October in Chisinau (UTC+2 after the DST switch on 25 October):
+    # the last day of October, so October is over.
+    with time_machine.travel("2026-10-30 22:30Z", tick=False):
+        with pytest.raises(services.PeriodOver):
+            services.schedule_challenge(
+                by=admin,
+                challenge_id=proposal.pk,
+                period_kind="month",
+                period_start=date(2026, 10, 1),
+            )
+        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    proposal.refresh_from_db()
+    assert proposal.start_date == date(2026, 11, 1)
+
+
+@pytest.mark.parametrize(
+    ("period_kind", "period_start", "error"),
+    [
+        ("week", date(2026, 11, 2), services.PeriodKindNotAvailable),
+        ("month", date(2026, 11, 2), ValidationFailed),
+        ("month", date(2027, 11, 1), services.PeriodTooFar),
+    ],
+)
+def test_bad_periods_are_refused(crew, period_kind, period_start, error):
+    admin, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    with pytest.raises(error):
+        services.schedule_challenge(
+            by=admin, challenge_id=proposal.pk, period_kind=period_kind, period_start=period_start
+        )
+
+
+def test_twelve_months_ahead_is_the_limit(crew):
+    admin, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    services.schedule_challenge(
+        by=admin, challenge_id=proposal.pk, period_kind="month", period_start=date(2027, 10, 1)
+    )
+
+
+def test_a_late_start_with_too_few_days_for_the_times_is_refused(crew):
+    admin, bogdan, _ = crew
+    proposal = services.propose_challenge(
+        by=bogdan, shape={"title": "Swim", "frequency": "times_per_period", "times": 10}
+    )
+    with (
+        time_machine.travel("2026-11-25 12:00Z", tick=False),
+        pytest.raises(services.TooFewDays),
+    ):
+        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    with time_machine.travel("2026-11-19 12:00Z", tick=False):  # 20 Nov - 30 Nov: 11 days
+        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
 
 
 # --- taking part ---------------------------------------------------------------------------
@@ -325,7 +445,8 @@ def test_choosing_on_the_last_day_is_too_late(crew):
 def chosen(crew):
     admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    services.choose_challenge(by=admin, challenge_id=proposal.pk)
+    services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    proposal.refresh_from_db()
     return proposal
 
 
@@ -383,24 +504,6 @@ def test_new_members_join_upcoming_and_running_challenges(crew, chosen):
     assert not Participation.objects.filter(challenge=chosen, member=late).exists()
 
 
-# --- proposing again -----------------------------------------------------------------------
-
-
-def test_a_challenge_not_chosen_can_be_proposed_again(crew):
-    admin, bogdan, cristina = crew
-    chosen = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    lost = services.propose_challenge(by=cristina, shape=NO_SUGAR)
-    services.choose_challenge(by=admin, challenge_id=chosen.pk)
-
-    copy = services.repropose(by=admin, challenge_id=lost.pk)
-    assert copy.pk != lost.pk
-    assert copy.round.period_start == date(2026, 12, 1)
-    assert (copy.title, copy.weekdays, copy.created_by) == (lost.title, lost.weekdays, admin)
-    assert copy.state == "proposed"
-    with pytest.raises(Exception, match="not chosen"):
-        services.repropose(by=admin, challenge_id=copy.pk)
-
-
 # --- lists -----------------------------------------------------------------------------------
 
 
@@ -410,7 +513,14 @@ def test_lists_by_phase(crew, chosen):
         assert selectors.list_chosen(crew=admin.crew, phases=("active",)) == [chosen]
         assert selectors.list_chosen(crew=admin.crew, phases=("upcoming",)) == []
     assert selectors.list_chosen(crew=admin.crew) == [chosen]
-    assert [r.chosen for r in selectors.list_closed_rounds(crew=admin.crew)] == [chosen]
+    assert selectors.pool(crew=admin.crew).proposals == []
+
+
+def test_periods_add_months_across_years():
+    from apps.challenges import periods
+
+    assert periods.add_months(date(2026, 11, 1), 2) == date(2027, 1, 1)
+    assert periods.add_months(date(2026, 1, 1), 12) == date(2027, 1, 1)
 
 
 def test_factories_build_a_proposal():
@@ -418,5 +528,5 @@ def test_factories_build_a_proposal():
 
     proposal = ChallengeFactory.create()
     assert proposal.created_by is not None
-    assert proposal.round.crew == proposal.crew == proposal.created_by.crew
+    assert proposal.crew == proposal.created_by.crew
     assert proposal.state == "proposed"

@@ -1,7 +1,7 @@
-"""Challenges: proposals for a period, the crew's votes, the admin's choice, who takes part.
+"""Challenges: the crew's pool of proposals, votes, the admin's schedule, who takes part.
 
 Business rules live in services.py; this module holds data and database-level invariants.
-Nothing here assumes a month: rounds and challenges carry explicit dates and a period kind.
+Nothing here assumes a month: a scheduled challenge carries its period kind and explicit dates.
 """
 
 from __future__ import annotations
@@ -33,52 +33,15 @@ class PeriodKind(models.TextChoices):
     CUSTOM = "custom", "Custom"
 
 
-class Round(CrewScopedModel):
-    """Choosing the challenge for one period: members propose and vote, an admin chooses."""
-
-    class State(models.TextChoices):
-        OPEN = "open", "Open"
-        CLOSED = "closed", "Closed"
-
-    class Selection(models.TextChoices):
-        ADMIN = "admin", "An admin chooses"
-
-    period_kind = models.CharField(max_length=10, choices=PeriodKind.choices)
-    period_start = models.DateField(help_text="First day of the period, in the crew's time zone.")
-    period_end = models.DateField(help_text="Last day of the period, in the crew's time zone.")
-    selection = models.CharField(max_length=10, choices=Selection.choices, default=Selection.ADMIN)
-    state = models.CharField(max_length=10, choices=State.choices, default=State.OPEN)
-    chosen = models.ForeignKey(
-        "Challenge", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
-    )
-    chosen_by = models.ForeignKey(
-        Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
-    )
-    chosen_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        ordering = ("period_start",)
-        constraints = [
-            models.UniqueConstraint(
-                fields=["crew", "period_kind", "period_start"], name="round_unique_period"
-            ),
-            models.CheckConstraint(
-                condition=models.Q(period_end__gte=models.F("period_start")),
-                name="round_period_not_reversed",
-            ),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.crew} {self.period_kind} {self.period_start}"
-
-
 class Challenge(CrewScopedSoftDeleteModel):
-    """A proposal for a round; one per round becomes the chosen challenge."""
+    """A proposal in the crew's pool until an admin schedules it for a period (then `chosen`).
+
+    Several challenges can run in the same period.
+    """
 
     class State(models.TextChoices):
         PROPOSED = "proposed", "Proposed"
         CHOSEN = "chosen", "Chosen"
-        NOT_CHOSEN = "not_chosen", "Not chosen"
 
     class Measure(models.TextChoices):
         CHECK = "check", "Just check in"
@@ -104,7 +67,6 @@ class Challenge(CrewScopedSoftDeleteModel):
         VIDEO = "video", "Video"
         PHOTO_OR_VIDEO = "photo_or_video", "Photo or video"
 
-    round = models.ForeignKey(Round, on_delete=models.CASCADE, related_name="proposals")
     created_by = models.ForeignKey(
         Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="proposals"
     )
@@ -125,20 +87,44 @@ class Challenge(CrewScopedSoftDeleteModel):
     proof_kind = models.CharField(max_length=20, choices=ProofKind.choices, default=ProofKind.NONE)
     proof_required = models.BooleanField(default=False)
     state = models.CharField(max_length=12, choices=State.choices, default=State.PROPOSED)
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
+    period_kind = models.CharField(max_length=10, choices=PeriodKind.choices, blank=True)
+    period_start = models.DateField(
+        null=True, blank=True, help_text="First day of the period (the 1st for a month)."
+    )
+    start_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="First day that counts (after period_start when chosen late).",
+    )
+    end_date = models.DateField(null=True, blank=True, help_text="Last day of the period.")
+    chosen_by = models.ForeignKey(
+        Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    chosen_at = models.DateTimeField(null=True, blank=True)
     revision = models.PositiveIntegerField(
         default=1, help_text="Goes up with every edit; votes are reset on each edit."
     )
 
     class Meta(CrewScopedSoftDeleteModel.Meta):
         ordering = ("created_at",)
+        indexes = [models.Index(fields=["crew", "state", "start_date"])]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(state="proposed")
-                | models.Q(state="not_chosen")
-                | models.Q(start_date__isnull=False, end_date__isnull=False),
-                name="challenge_chosen_has_dates",
+                condition=models.Q(
+                    state="proposed",
+                    period_kind="",
+                    period_start__isnull=True,
+                    start_date__isnull=True,
+                    end_date__isnull=True,
+                )
+                | models.Q(
+                    state="chosen",
+                    period_start__isnull=False,
+                    start_date__gte=models.F("period_start"),
+                    end_date__gte=models.F("start_date"),
+                )
+                & ~models.Q(period_kind=""),
+                name="challenge_period_matches_state",
             ),
         ]
 
@@ -147,15 +133,16 @@ class Challenge(CrewScopedSoftDeleteModel):
 
 
 class Vote(CrewScopedModel):
-    """A member's pick in a round. One per member per round; changeable while the round is open."""
+    """A member likes a proposal. A member votes for as many proposals as they want, once each."""
 
-    round = models.ForeignKey(Round, on_delete=models.CASCADE, related_name="votes")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="votes")
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="votes")
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["round", "member"], name="vote_one_per_member")
+            models.UniqueConstraint(
+                fields=["challenge", "member"], name="vote_one_per_member_and_challenge"
+            )
         ]
 
     def __str__(self) -> str:

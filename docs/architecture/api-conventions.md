@@ -70,7 +70,7 @@ Every error, from any layer, has this shape:
 | 401 | Not logged in | `not_authenticated` |
 | 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `permission_denied` |
 | 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -109,16 +109,15 @@ GET    /api/v1/invites/{code}           public: {crew_name, status: valid|expire
 POST   /api/v1/invites/{code}/accept    public: {username, password, display_name}
                                         -> 201 me, logged in, a member of the crew
 
-GET    /api/v1/rounds/current           the open round: period, proposals with votes, my_vote
-GET    /api/v1/rounds/{id}              any round of the crew (closed ones show the choice)
-PUT    /api/v1/rounds/{id}/vote         {challenge_id}: vote (replaces your vote); DELETE clears it
-PUT    /api/v1/rounds/{id}/choice       admin: {challenge_id}: choose, or change before the start
-GET    /api/v1/challenges?phase=...     chosen challenges: upcoming, active, finished
-POST   /api/v1/challenges               propose into the open round -> 201
+GET    /api/v1/proposals                the pool: proposals (newest first) with votes, size, limit
+GET    /api/v1/challenges?phase=...     scheduled challenges: upcoming, active, finished
+POST   /api/v1/challenges               propose into the pool -> 201 (409 pool_full)
 GET    /api/v1/challenges/{id}          one challenge with participants
 PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
 DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
-POST   /api/v1/challenges/{id}/repropose   copy a not-chosen challenge into the open round
+PUT    /api/v1/challenges/{id}/vote     vote for a proposal; DELETE takes the vote back
+PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
+                                        move before the start; DELETE puts it back in the pool
 PUT    /api/v1/challenges/{id}/participation   take part again (before the start); DELETE opts out
 ```
 

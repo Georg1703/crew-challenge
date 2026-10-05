@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.challenges.models import ICONS, Challenge, PeriodKind, Round
+from apps.challenges.models import ICONS, Challenge, PeriodKind
 from apps.challenges.selectors import PHASES
 
 
@@ -41,7 +41,6 @@ class ChallengeIn(serializers.Serializer):
 
 class ChallengeOut(serializers.Serializer):
     id = serializers.UUIDField()
-    round_id = serializers.UUIDField()
     title = serializers.CharField()
     rules = serializers.CharField()
     icon = serializers.ChoiceField(choices=ICONS)
@@ -58,32 +57,25 @@ class ChallengeOut(serializers.Serializer):
     proof_required = serializers.BooleanField()
     state = serializers.ChoiceField(choices=Challenge.State.choices)
     phase = serializers.ChoiceField(choices=PHASES, allow_null=True)
+    period_kind = serializers.ChoiceField(choices=PeriodKind.choices, allow_null=True)
+    period_start = serializers.DateField(allow_null=True)
     start_date = serializers.DateField(allow_null=True)
     end_date = serializers.DateField(allow_null=True)
+    chosen_by = PersonOut(allow_null=True)
+    chosen_at = serializers.DateTimeField(allow_null=True)
     created_by = PersonOut(allow_null=True)
     created_at = serializers.DateTimeField()
     revision = serializers.IntegerField()
-
-
-class ProposalOut(ChallengeOut):
     vote_count = serializers.IntegerField()
     voters = PersonOut(many=True)
+    my_vote = serializers.BooleanField(help_text="The current member voted for it.")
     mine = serializers.BooleanField(help_text="Proposed by the current member.")
 
 
-class RoundOut(serializers.Serializer):
-    id = serializers.UUIDField()
-    period_kind = serializers.ChoiceField(choices=PeriodKind.choices)
-    period_start = serializers.DateField()
-    period_end = serializers.DateField()
-    state = serializers.ChoiceField(choices=Round.State.choices)
-    selection = serializers.ChoiceField(choices=Round.Selection.choices)
-    chosen_id = serializers.UUIDField(allow_null=True)
-    chosen_by = PersonOut(allow_null=True)
-    chosen_at = serializers.DateTimeField(allow_null=True)
-    proposals = ProposalOut(many=True, help_text="Oldest first.")
-    my_vote = serializers.UUIDField(allow_null=True, help_text="The proposal you voted for.")
-    votes_cast = serializers.IntegerField()
+class PoolOut(serializers.Serializer):
+    proposals = ChallengeOut(many=True, help_text="Newest first.")
+    size = serializers.IntegerField(help_text="Proposals in the pool.")
+    limit = serializers.IntegerField(help_text="How many the pool can hold (Crew.max_proposals).")
 
 
 class ParticipantOut(serializers.Serializer):
@@ -97,5 +89,6 @@ class ChallengeDetailOut(ChallengeOut):
     taking_part = serializers.BooleanField(help_text="The current member counts in it today.")
 
 
-class ChallengeRefIn(serializers.Serializer):
-    challenge_id = serializers.UUIDField()
+class ScheduleIn(serializers.Serializer):
+    period_kind = serializers.ChoiceField(choices=PeriodKind.choices)
+    period_start = serializers.DateField(help_text="First day of the period (the 1st for a month).")

@@ -1,7 +1,7 @@
 """factory-boy factories, one module per app. Import from here in tests."""
 
 from .accounts import DEFAULT_PASSWORD, UserFactory
-from .challenges import ChallengeFactory, RoundFactory
+from .challenges import ChallengeFactory
 from .crews import AdminFactory, CrewFactory, InviteFactory, MemberFactory
 
 __all__ = [
@@ -11,6 +11,5 @@ __all__ = [
     "CrewFactory",
     "InviteFactory",
     "MemberFactory",
-    "RoundFactory",
     "UserFactory",
 ]

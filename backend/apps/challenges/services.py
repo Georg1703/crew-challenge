@@ -1,14 +1,15 @@
-"""Challenge rules: proposing, editing, voting, the admin's choice, taking part.
+"""Challenge rules: the proposal pool, votes, the admin's schedule, taking part.
 
 Every write goes through here. Functions are keyword-only and raise DomainError subclasses.
-A round is locked (`select_for_update`) in every write that depends on its state, so a vote can
-never land on an edited proposal or a closed round.
+A challenge row is locked (`select_for_update`) in every write that depends on its state, so a
+vote never lands on a challenge being edited or scheduled. Proposing locks the crew row, so two
+people cannot take the pool's last place.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from uuid import UUID
@@ -22,7 +23,7 @@ from apps.crews.models import Crew, Member
 from apps.crews.services import require_admin
 
 from . import periods
-from .models import ICONS, Challenge, Participation, PeriodKind, Round, Vote
+from .models import ICONS, Challenge, Participation, PeriodKind, Vote
 
 TITLE_MAX = 60
 RULES_MAX = 500
@@ -33,14 +34,14 @@ TIMES_MAX = {
 }
 
 
-class RoundClosed(Conflict):
-    code = "round_closed"
-    message = "This round is closed: a challenge has already been chosen."
+class PoolFull(Conflict):
+    code = "pool_full"
+    message = "The list of proposals is full. Withdraw one or wait until one is chosen."
 
 
-class RoundNotFound(NotFound):
-    code = "round_not_found"
-    message = "This round does not exist."
+class NotAProposal(Conflict):
+    code = "not_a_proposal"
+    message = "This challenge has already been chosen, so it cannot be changed or voted on."
 
 
 class ChallengeNotFound(NotFound):
@@ -65,7 +66,22 @@ class ChallengeFinished(Conflict):
 
 class PeriodOver(Conflict):
     code = "period_over"
-    message = "This period is over. Choose a challenge for the next one."
+    message = "This period is over. Choose a later one."
+
+
+class PeriodTooFar(ValidationFailed):
+    code = "period_too_far"
+    message = "Choose a period at most 12 months ahead."
+
+
+class PeriodKindNotAvailable(ValidationFailed):
+    code = "period_kind_not_available"
+    message = "Only months can be chosen for now."
+
+
+class TooFewDays(Conflict):
+    code = "too_few_days"
+    message = "The challenge asks for more times than the days it would run."
 
 
 class NotChosenYet(Conflict):
@@ -179,59 +195,31 @@ def _apply(challenge: Challenge, shape: Shape) -> None:
         setattr(challenge, field, value)
 
 
-# --- rounds ------------------------------------------------------------------------------------
+# --- the pool ----------------------------------------------------------------------------------
 
 
-@transaction.atomic
-def open_round(*, crew: Crew) -> Round:
-    """The round people propose and vote in now.
-
-    This month's round while nobody has chosen yet (an admin can still choose late), otherwise
-    the first month after it whose round is still open. Created on first use.
-    """
-    today = clock.crew_today(crew)
-    start, end = periods.month_of(today)
-    current = (
-        Round.objects.for_crew(crew)
-        .filter(period_kind=PeriodKind.MONTH, period_start=start)
-        .first()
-    )
-    if current is not None and current.state == Round.State.OPEN:
-        return current
-    while True:
-        start, end = periods.next_month_of(start)
-        round_, _ = Round.objects.get_or_create(
-            crew=crew,
-            period_kind=PeriodKind.MONTH,
-            period_start=start,
-            defaults={"period_end": end},
-        )
-        if round_.state == Round.State.OPEN:
-            return round_
+def _lock(crew: Crew, challenge_id: UUID) -> Challenge:
+    rows = Challenge.objects.for_crew(crew).select_for_update()
+    challenge = rows.filter(pk=challenge_id).first()
+    if challenge is None:
+        raise ChallengeNotFound()
+    return challenge
 
 
-def _lock_round(round_id: UUID, crew: Crew) -> Round:
-    round_ = Round.objects.select_for_update().for_crew(crew).filter(pk=round_id).first()
-    if round_ is None:
-        raise RoundNotFound()
-    return round_
-
-
-def _require_open(round_: Round) -> None:
-    if round_.state != Round.State.OPEN:
-        raise RoundClosed()
-
-
-# --- proposals ---------------------------------------------------------------------------------
+def _require_proposed(challenge: Challenge) -> None:
+    if challenge.state != Challenge.State.PROPOSED:
+        raise NotAProposal()
 
 
 @transaction.atomic
 def propose_challenge(*, by: Member, shape: dict[str, Any]) -> Challenge:
-    """Any member proposes a challenge for the open round."""
+    """Any member adds a proposal to the crew's pool, while the pool has room."""
     cleaned = clean_shape(shape)
-    round_ = _lock_round(open_round(crew=by.crew).pk, by.crew)
-    _require_open(round_)
-    challenge = Challenge(crew=by.crew, round=round_, created_by=by)
+    crew = Crew.objects.select_for_update().get(pk=by.crew_id)
+    in_pool = Challenge.objects.for_crew(crew).filter(state=Challenge.State.PROPOSED).count()
+    if in_pool >= crew.max_proposals:
+        raise PoolFull()
+    challenge = Challenge(crew=crew, created_by=by)
     _apply(challenge, cleaned)
     challenge.save()
     return challenge
@@ -239,11 +227,9 @@ def propose_challenge(*, by: Member, shape: dict[str, Any]) -> Challenge:
 
 @transaction.atomic
 def edit_proposal(*, by: Member, challenge_id: UUID, shape: dict[str, Any]) -> Challenge:
-    """The creator changes their proposal while the round is open. Its votes are reset."""
+    """The creator changes their proposal while it is in the pool. Its votes are reset."""
     cleaned = clean_shape(shape)
-    challenge = _get_challenge(by.crew, challenge_id)
-    _lock_round(challenge.round_id, by.crew)
-    challenge.refresh_from_db()
+    challenge = _lock(by.crew, challenge_id)
     if challenge.created_by_id != by.pk:
         raise NotYourProposal()
     _require_proposed(challenge)
@@ -256,30 +242,13 @@ def edit_proposal(*, by: Member, challenge_id: UUID, shape: dict[str, Any]) -> C
 
 @transaction.atomic
 def withdraw_proposal(*, by: Member, challenge_id: UUID) -> None:
-    """The creator (or an admin) removes a proposal while the round is open. Soft delete."""
-    challenge = _get_challenge(by.crew, challenge_id)
-    _lock_round(challenge.round_id, by.crew)
-    challenge.refresh_from_db()
+    """The creator (or an admin) takes a proposal out of the pool. Soft delete."""
+    challenge = _lock(by.crew, challenge_id)
     if challenge.created_by_id != by.pk and not by.is_admin:
         raise NotYourProposal()
     _require_proposed(challenge)
     Vote.objects.filter(challenge=challenge).delete()
     challenge.delete()
-
-
-@transaction.atomic
-def repropose(*, by: Member, challenge_id: UUID) -> Challenge:
-    """Copy a challenge that was not chosen into the open round, proposed by `by`."""
-    source = _get_challenge(by.crew, challenge_id)
-    if source.state != Challenge.State.NOT_CHOSEN:
-        raise Conflict(message="Only a challenge that was not chosen can be proposed again.")
-    round_ = _lock_round(open_round(crew=by.crew).pk, by.crew)
-    _require_open(round_)
-    copy = Challenge(crew=by.crew, round=round_, created_by=by)
-    for field in Shape.__dataclass_fields__:
-        setattr(copy, field, getattr(source, field))
-    copy.save()
-    return copy
 
 
 def _get_challenge(crew: Crew, challenge_id: UUID) -> Challenge:
@@ -289,83 +258,108 @@ def _get_challenge(crew: Crew, challenge_id: UUID) -> Challenge:
     return challenge
 
 
-def _require_proposed(challenge: Challenge) -> None:
-    if challenge.state != Challenge.State.PROPOSED or challenge.round.state != Round.State.OPEN:
-        raise RoundClosed()
-
-
 # --- votes -------------------------------------------------------------------------------------
 
 
 @transaction.atomic
 def cast_vote(*, by: Member, challenge_id: UUID) -> Vote:
-    """Vote for a proposal in its round. Replaces your earlier vote in that round."""
-    challenge = _get_challenge(by.crew, challenge_id)
-    round_ = _lock_round(challenge.round_id, by.crew)
-    _require_open(round_)
-    if not Challenge.objects.filter(pk=challenge.pk, state=Challenge.State.PROPOSED).exists():
-        raise ChallengeNotFound()
-    vote, _ = Vote.objects.update_or_create(
-        round=round_, member=by, defaults={"challenge": challenge, "crew": by.crew}
-    )
+    """Vote for a proposal. A member can vote for any number of proposals, once each."""
+    challenge = _lock(by.crew, challenge_id)
+    _require_proposed(challenge)
+    vote, _ = Vote.objects.get_or_create(challenge=challenge, member=by, defaults={"crew": by.crew})
     return vote
 
 
 @transaction.atomic
-def clear_vote(*, by: Member, round_id: UUID) -> None:
-    round_ = _lock_round(round_id, by.crew)
-    _require_open(round_)
-    Vote.objects.filter(round=round_, member=by).delete()
+def clear_vote(*, by: Member, challenge_id: UUID) -> None:
+    """Take your vote back. Nothing happens if you had not voted."""
+    challenge = _lock(by.crew, challenge_id)
+    _require_proposed(challenge)
+    Vote.objects.filter(challenge=challenge, member=by).delete()
 
 
-# --- the admin's choice ------------------------------------------------------------------------
+# --- the admin's schedule ----------------------------------------------------------------------
+
+MONTHS_AHEAD = 12
+
+
+def _days_needed(challenge: Challenge) -> int:
+    if challenge.frequency == Challenge.Frequency.TIMES_PER_PERIOD and challenge.times:
+        return challenge.times
+    return 1
 
 
 @transaction.atomic
-def choose_challenge(*, by: Member, challenge_id: UUID) -> Round:
-    """An admin chooses the round's challenge, or changes the choice before it starts.
+def schedule_challenge(
+    *, by: Member, challenge_id: UUID, period_kind: str, period_start: date
+) -> Challenge:
+    """An admin takes a proposal out of the pool and schedules it for a period.
 
-    Chosen before the period: it runs the whole period. Chosen late (the period has begun): it
-    starts tomorrow. The whole crew takes part. Choosing the same challenge again changes nothing.
+    Also moves a scheduled challenge that has not started. Chosen before the period: it runs the
+    whole period. Chosen late (the period has begun): it starts tomorrow. The whole crew takes
+    part (when moved, everyone takes part again). Scheduling for the same period changes nothing.
     """
     require_admin(by)
-    challenge = _get_challenge(by.crew, challenge_id)
-    round_ = _lock_round(challenge.round_id, by.crew)
-    challenge.refresh_from_db()
+    if period_kind != PeriodKind.MONTH:
+        raise PeriodKindNotAvailable(fields={"period_kind": [PeriodKindNotAvailable.message]})
+    if period_start.day != 1:
+        raise ValidationFailed(fields={"period_start": ["A month starts on its first day."]})
+    challenge = _lock(by.crew, challenge_id)
     today = clock.crew_today(by.crew)
+    first, last = periods.month_of(period_start)
 
-    if round_.chosen_id == challenge.pk:
-        return round_
-    previous = round_.chosen
-    if previous is not None and previous.start_date and today >= previous.start_date:
-        raise ChallengeStarted()
-    if challenge.state == Challenge.State.PROPOSED and round_.state == Round.State.CLOSED:
-        raise RoundClosed()
+    if challenge.state == Challenge.State.CHOSEN:
+        assert challenge.start_date is not None
+        if challenge.period_kind == period_kind and challenge.period_start == first:
+            return challenge
+        if today >= challenge.start_date:
+            raise ChallengeStarted()
 
-    start = round_.period_start if today < round_.period_start else today + timedelta(days=1)
-    if start > round_.period_end:
+    start = first if today < first else today + timedelta(days=1)
+    if start > last:
         raise PeriodOver()
-
-    proposals = Challenge.objects.filter(round=round_).exclude(pk=challenge.pk)
-    proposals.update(state=Challenge.State.NOT_CHOSEN, start_date=None, end_date=None)
-    if previous is not None:
-        Participation.objects.filter(challenge=previous).delete()
+    if first > periods.add_months(periods.month_of(today)[0], MONTHS_AHEAD):
+        raise PeriodTooFar(fields={"period_start": [PeriodTooFar.message]})
+    if (last - start).days + 1 < _days_needed(challenge):
+        raise TooFewDays()
 
     challenge.state = Challenge.State.CHOSEN
+    challenge.period_kind = period_kind
+    challenge.period_start = first
     challenge.start_date = start
-    challenge.end_date = round_.period_end
-    challenge.save(update_fields=["state", "start_date", "end_date", "updated_at"])
+    challenge.end_date = last
+    challenge.chosen_by = by
+    challenge.chosen_at = clock.now()
+    challenge.save()
+    Participation.objects.filter(challenge=challenge).delete()
     Participation.objects.bulk_create(
         Participation(crew=by.crew, challenge=challenge, member=member, joined_on=start)
         for member in crews.list_members(crew=by.crew)
     )
+    return challenge
 
-    round_.state = Round.State.CLOSED
-    round_.chosen = challenge
-    round_.chosen_by = by
-    round_.chosen_at = clock.now()
-    round_.save(update_fields=["state", "chosen", "chosen_by", "chosen_at", "updated_at"])
-    return round_
+
+@transaction.atomic
+def unschedule_challenge(*, by: Member, challenge_id: UUID) -> Challenge:
+    """An admin puts a scheduled challenge back in the pool before it starts.
+
+    Allowed when the pool is full: the proposal was there before. Its old votes count again.
+    """
+    require_admin(by)
+    challenge = _lock(by.crew, challenge_id)
+    if challenge.state != Challenge.State.CHOSEN:
+        return challenge
+    assert challenge.start_date is not None
+    if clock.crew_today(by.crew) >= challenge.start_date:
+        raise ChallengeStarted()
+    Participation.objects.filter(challenge=challenge).delete()
+    challenge.state = Challenge.State.PROPOSED
+    challenge.period_kind = ""
+    challenge.period_start = challenge.start_date = challenge.end_date = None
+    challenge.chosen_by = None
+    challenge.chosen_at = None
+    challenge.save()
+    return challenge
 
 
 # --- taking part -------------------------------------------------------------------------------

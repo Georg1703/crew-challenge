@@ -13,11 +13,11 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Revoke | `revoke_invite` | An admin cancels a pending invite; its link stops working at once (the row is deleted). |
 | Join with account | `join_with_account` | Someone who already has an account (from another crew) joins a crew through an invite. |
 | Active crew | `active_crew_id` (session), `Member.last_active_at` | The crew a user in several crews acts in. Chosen in Me; the most recent choice opens after the next login. |
-| Round | `Round` | Choosing the challenge for one period (v1: next month). Open while members propose and vote; closed once an admin chooses. |
-| Proposal | `Challenge` with `state=proposed` | A challenge a member suggests for the open round. Visible only to the crew, with who proposed it and when. |
-| Vote | `Vote` | A member's pick among the round's proposals; one per member per round, changeable while the round is open. |
-| Choose | `choose_challenge` | An admin picks which proposal becomes the period's challenge (votes guide, they do not decide). |
-| Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` or `not_chosen`. Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
+| Pool | `selectors.pool`, `Crew.max_proposals` | The crew's proposals waiting to be scheduled. Holds at most `max_proposals` (default 50). |
+| Proposal | `Challenge` with `state=proposed` | A challenge in the pool. Visible only to the crew, with who proposed it and when. |
+| Vote | `Vote` | A member likes a proposal: one vote per member per proposal, for as many proposals as they want. |
+| Schedule | `schedule_challenge` | An admin takes a proposal out of the pool and sets its period (v1: a month). Votes guide, they do not decide. Several challenges can share a period. |
+| Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` (and back, before the start). Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
 | Participation | `Participation` | A member taking part in a chosen challenge. The whole crew by default; members can opt out before the start or leave after. |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
 | Check-in | `CheckIn` (not "Checkin") | A member's completion of one challenge day. Status: `uploading`, `done`, `missed`, `excused`. |

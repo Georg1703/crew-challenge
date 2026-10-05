@@ -3,16 +3,14 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("rounds/current", views.CurrentRoundView.as_view(), name="round-current"),
-    path("rounds/<uuid:round_id>", views.RoundView.as_view(), name="round"),
-    path("rounds/<uuid:round_id>/vote", views.RoundVoteView.as_view(), name="round-vote"),
-    path("rounds/<uuid:round_id>/choice", views.RoundChoiceView.as_view(), name="round-choice"),
+    path("proposals", views.PoolView.as_view(), name="proposals"),
     path("challenges", views.ChallengesView.as_view(), name="challenges"),
     path("challenges/<uuid:challenge_id>", views.ChallengeView.as_view(), name="challenge"),
+    path("challenges/<uuid:challenge_id>/vote", views.VoteView.as_view(), name="challenge-vote"),
     path(
-        "challenges/<uuid:challenge_id>/repropose",
-        views.ReproposeView.as_view(),
-        name="challenge-repropose",
+        "challenges/<uuid:challenge_id>/schedule",
+        views.ScheduleView.as_view(),
+        name="challenge-schedule",
     ),
     path(
         "challenges/<uuid:challenge_id>/participation",
