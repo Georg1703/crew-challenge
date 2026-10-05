@@ -6,7 +6,7 @@ import { api } from "@/api";
 import { ana, bogdan, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
-import { ChallengeRoute, ChallengesRoute, ProposeRoute, TodayChallenges } from ".";
+import { ActiveChallenges, ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
 import type { Challenge, ChallengeDetail, Pool } from "./api";
 import { monthOptions } from "./months";
 
@@ -362,13 +362,37 @@ describe("one challenge", () => {
 });
 
 describe("today", () => {
-  const today = (member: typeof ana, now: string, chosen: Challenge[] = []) => {
+  it("shows only the challenges running now", async () => {
+    mockGets(bogdan, {
+      chosen: [scheduled({ phase: "active", title: "Walk", end_date: "2026-10-31" })],
+    });
+    renderRoutes([{ path: "/", element: <ActiveChallenges /> }]);
+
+    expect(await screen.findByRole("heading", { name: "Walk" })).toBeInTheDocument();
+    expect(screen.getByText("Until October 31")).toBeInTheDocument();
+    expect(api.GET).toHaveBeenCalledWith("/api/v1/challenges", {
+      params: { query: { phase: "active" } },
+    });
+    expect(api.GET).not.toHaveBeenCalledWith("/api/v1/proposals");
+  });
+
+  it("says where to find proposals when nothing is running", async () => {
+    mockGets(bogdan);
+    renderRoutes([{ path: "/", element: <ActiveChallenges /> }]);
+
+    expect(await screen.findByRole("heading", { name: "No challenge yet" })).toBeInTheDocument();
+    expect(screen.getByText("Proposals and votes are in the Crew tab.")).toBeInTheDocument();
+  });
+});
+
+describe("proposals card", () => {
+  const card = (member: typeof ana, now: string, chosen: Challenge[] = []) => {
     mockGets(member, { chosen });
     renderRoutes([
       {
         path: "/",
         element: (
-          <TodayChallenges
+          <ProposalsCard
             isAdmin={member.role === "admin"}
             timeZone="Europe/Chisinau"
             now={new Date(now)}
@@ -379,7 +403,7 @@ describe("today", () => {
   };
 
   it("invites people to vote on the proposals", async () => {
-    today(bogdan, "2026-10-26T09:00:00Z");
+    card(bogdan, "2026-10-26T09:00:00Z");
     expect(
       await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
     ).toBeInTheDocument();
@@ -387,14 +411,14 @@ describe("today", () => {
   });
 
   it("reminds admins from the 25th when next month has no challenge", async () => {
-    today(ana, "2026-10-26T09:00:00Z");
+    card(ana, "2026-10-26T09:00:00Z");
     expect(
       await screen.findByRole("heading", { name: "No challenge for November yet" }),
     ).toBeInTheDocument();
   });
 
   it("does not remind admins when next month has a challenge", async () => {
-    today(ana, "2026-10-26T09:00:00Z", [scheduled()]);
+    card(ana, "2026-10-26T09:00:00Z", [scheduled()]);
     expect(
       await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
     ).toBeInTheDocument();

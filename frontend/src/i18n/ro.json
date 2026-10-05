@@ -56,8 +56,7 @@
   "home": {
     "greeting": "Bună, {{name}}",
     "noChallengeTitle": "Încă nu e nicio provocare",
-    "noChallengeBody": "Când cineva din echipă publică una, o vezi aici.",
-    "membersTitle": "Echipa",
+    "noChallengeBody": "Propunerile și voturile sunt în Echipa.",
     "noCrewTitle": "Încă nu ești într-o echipă",
     "noCrewBody": "Cere cuiva din echipă un link de invitație."
   },

@@ -20,11 +20,23 @@ function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = []) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
     if (path === "/api/v1/me") return ok(me);
     if (path === "/api/v1/crew/invites") return ok(pending);
+    if (path === "/api/v1/proposals") return ok({ proposals: [], size: 0, limit: 50 });
+    if (path === "/api/v1/challenges") return ok([]);
     return ok(crewDetail);
   }) as never);
 }
 
 describe("crew screen", () => {
+  it("starts with the proposals for the next challenges", async () => {
+    mockGets(meAs(bogdan));
+    renderScreen(<CrewRoute />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Propose a challenge" })).toBeInTheDocument();
+  });
+
   it("lists members in join order and marks you", async () => {
     mockGets(meAs(bogdan));
     renderScreen(<CrewRoute />);

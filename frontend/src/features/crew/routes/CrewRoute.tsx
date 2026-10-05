@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
+import { ProposalsCard } from "@/features/challenges";
 import { errorMessage } from "@/i18n/errors";
 import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
 
@@ -10,7 +11,7 @@ import { InviteSheet } from "../components/InviteSheet";
 import { MemberList } from "../components/MemberList";
 import { PendingInvites } from "../components/PendingInvites";
 
-/** Crew: the members; admins also invite people and see the invites they sent. */
+/** Crew: the proposals for the next challenges, the members; admins also invite people. */
 export function CrewRoute() {
   const { t } = useTranslation();
   const me = useMe();
@@ -34,6 +35,7 @@ export function CrewRoute() {
       )}
       {crew.data && (
         <>
+          <ProposalsCard isAdmin={isAdmin} timeZone={crew.data.timezone} />
           <MemberList members={crew.data.members} meId={me.data?.member?.id} />
           {isAdmin && (
             <>

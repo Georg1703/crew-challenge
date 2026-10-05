@@ -56,8 +56,7 @@
   "home": {
     "greeting": "Hi, {{name}}",
     "noChallengeTitle": "No challenge yet",
-    "noChallengeBody": "When someone in the crew publishes one, you see it here.",
-    "membersTitle": "Crew",
+    "noChallengeBody": "Proposals and votes are in the Crew tab.",
     "noCrewTitle": "You're not in a crew yet",
     "noCrewBody": "Ask someone in a crew for an invite link."
   },
