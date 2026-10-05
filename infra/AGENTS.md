@@ -20,6 +20,8 @@ Production runs on one Amazon Lightsail instance with Docker Compose. AWS resour
 ```
 infra/
 |-- aws/      # JSON pasted into the AWS console; one file per policy or bucket setting
+|   |-- dev/  # dev-only documents (shared ones sit in aws/ itself; see aws/README.md)
+|   `-- prod/ # production-only documents
 |-- caddy/    # Caddyfile: HTTPS, SPA fallback, /api + /admin proxy, cache headers
 `-- scripts/  # bootstrap-host.sh, deploy.sh, backup-db.sh, restore-db.sh
 ```
