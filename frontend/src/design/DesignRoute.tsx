@@ -509,6 +509,12 @@ export function DesignRoute() {
               { to: "/crew", label: "Crew", icon: "users" },
               { to: "/me", label: "Me", icon: "user" },
             ]}
+            action={{
+              label: "Check in",
+              icon: "check",
+              count: 2,
+              onClick: () => toast("The check-in sheet opens", "info"),
+            }}
           />
         </div>
       </Section>

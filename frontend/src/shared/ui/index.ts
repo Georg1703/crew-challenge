@@ -23,7 +23,7 @@ export { Spinner } from "./Spinner";
 export { StatusPill, type StatusTone } from "./StatusPill";
 export { StepProgress } from "./StepProgress";
 export { Stepper } from "./Stepper";
-export { TabBar, type Tab } from "./TabBar";
+export { TabBar, type Tab, type TabAction } from "./TabBar";
 export { TextArea } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
 export { WeekStrip } from "./WeekStrip";

@@ -3,11 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-import { HoldButton } from "@/shared/ui";
+import { HoldButton, TabBar } from "@/shared/ui";
 import { ana, bogdan, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
-import { ChallengeBoard, TodayCheckIns } from ".";
+import { ChallengeBoard, CheckInSheet, TodayCheckIns, useCheckInAction } from ".";
 import type { Today, TodayChallenge } from "./api";
 
 const person = (member: typeof ana) => ({
@@ -266,3 +266,45 @@ describe("month board", () => {
     });
   });
 });
+
+describe("raised check-in button", () => {
+  it("shows what is left and opens the check-in sheet", async () => {
+    mockToday(
+      today([walk, read, { ...walk, id: "gym", title: "Gym", state: "done", settled: true }]),
+    );
+    renderRoutes([
+      {
+        path: "/",
+        element: <Shell />,
+      },
+    ]);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Check in (2)" }));
+    const sheet = await screen.findByRole("dialog", { name: "What do you check in?" });
+    expect(within(sheet).getByRole("heading", { name: "Walk" })).toBeInTheDocument();
+    expect(within(sheet).getByRole("heading", { name: "Read" })).toBeInTheDocument();
+    expect(within(sheet).queryByRole("heading", { name: "Gym" })).not.toBeInTheDocument();
+  });
+
+  it("is hidden when nothing runs today", async () => {
+    mockToday(today([]));
+    renderRoutes([{ path: "/", element: <Shell /> }]);
+    expect(await screen.findByRole("navigation", { name: "Preview" })).toBeInTheDocument();
+    await waitFor(() => expect(api.GET).toHaveBeenCalledWith("/api/v1/today"));
+    expect(screen.queryByRole("button", { name: /Check in/ })).not.toBeInTheDocument();
+  });
+});
+
+function Shell() {
+  const checkIn = useCheckInAction(true);
+  return (
+    <>
+      <TabBar
+        label="Preview"
+        tabs={[{ to: "/", label: "Today", icon: "sun", end: true }]}
+        action={checkIn.action}
+      />
+      {checkIn.open && <CheckInSheet onClose={checkIn.close} />}
+    </>
+  );
+}

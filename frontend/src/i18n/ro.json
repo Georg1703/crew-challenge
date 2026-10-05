@@ -511,6 +511,8 @@
       "nameStreak": "{{name}} · {{n}}",
       "previous": "Luna dinainte",
       "next": "Luna următoare"
-    }
+    },
+    "sheetTitle": "Ce bifezi acum?",
+    "tabLabel": "Bifează"
   }
 }

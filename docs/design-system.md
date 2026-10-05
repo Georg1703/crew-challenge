@@ -131,7 +131,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday |
 | `DayGrid` | A month at a glance: one row per person, one small square per day |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
-| `TabBar`, `Icon` | Main navigation; the shared icon set (Lucide shapes, stroke 1.75) |
+| `TabBar`, `Icon` | Main navigation, with an optional raised action (check in) and its count; the shared icon set (Lucide shapes, stroke 1.75) |
 
 Rules:
 - A feature needs something new? Add or extend a component in `shared/ui` (with all its states),
@@ -161,7 +161,7 @@ Rules:
 ## Layout
 
 Phone first, 390px reference, content column up to `--content-max-width`. The tab bar has Today,
-Crew and Me in v1 (the raised check-in button and News come with their features). Use `Screen`
+Crew, the raised check-in button and Me in v1 (News, after it, will put the button in the center). Use `Screen`
 for safe areas and `100dvh`.
 
 ## Not in this version

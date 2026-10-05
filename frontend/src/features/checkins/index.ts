@@ -1,3 +1,5 @@
 export { checkinsKey, useBoard, useToday } from "./api";
 export { ChallengeBoard } from "./components/ChallengeBoard";
+export { CheckInSheet } from "./components/CheckInSheet";
 export { TodayCheckIns } from "./components/TodayCheckIns";
+export { useCheckInAction } from "./useCheckInAction";

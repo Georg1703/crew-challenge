@@ -511,6 +511,8 @@
       "nameStreak": "{{name}} · {{n}}",
       "previous": "Previous month",
       "next": "Next month"
-    }
+    },
+    "sheetTitle": "What do you check in?",
+    "tabLabel": "Check in"
   }
 }
