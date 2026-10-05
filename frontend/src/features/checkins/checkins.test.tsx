@@ -221,7 +221,7 @@ describe("month board", () => {
   const states = (done: number): TodayChallenge["state"][] =>
     Array.from({ length: 30 }, (_, i) => (i < done ? "done" : i === done ? "missed" : "future"));
 
-  it("shows everyone's month with streaks and moves between months", async () => {
+  it("shows where the challenge is, the crew's totals and a row of bars per person", async () => {
     const get = vi.spyOn(api, "GET").mockImplementation(((
       _path: string,
       options: { params: { query: { month: string } } },
@@ -232,8 +232,12 @@ describe("month board", () => {
           (_, i) => `${options.params.query.month}-${String(i + 1).padStart(2, "0")}`,
         ),
         rows: [
-          { member: person(ana), states: states(9), streak: 9 },
           { member: person(bogdan), states: states(3), streak: 0 },
+          {
+            member: person(ana),
+            states: [...states(9).slice(0, 9), "todo", ...states(9).slice(10)],
+            streak: 9,
+          },
         ],
       })) as never);
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-10T09:00:00Z") });
@@ -246,19 +250,32 @@ describe("month board", () => {
             startDate="2026-11-01"
             endDate="2026-12-31"
             timeZone="Europe/Chisinau"
+            meId={bogdan.id}
+            fixedDays
           />
         ),
       },
     ]);
 
-    expect(await screen.findByRole("heading", { name: "November 2026" })).toBeInTheDocument();
-    const grid = await screen.findByRole("table", { name: "The crew's month, November 2026" });
-    expect(within(grid).getAllByText("Ana · 9")).toHaveLength(2); // once per half of the month
-    expect(within(grid).getByRole("img", { name: "Bogdan, 4: missed" })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: "Ana: 9 done, 0 missed" })).toBeInTheDocument();
+    expect(screen.getByText("Day 10 of 61")).toBeInTheDocument();
+    expect(screen.getByText("Days left: 52")).toBeInTheDocument();
+    const total = screen.getByText("days done by the crew").parentElement as HTMLElement;
+    expect(within(total).getByText("12")).toBeInTheDocument();
+    const left = screen.getByText("left today").parentElement as HTMLElement;
+    expect(within(left).getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("streak: 9, not yet today")).toBeInTheDocument();
+    expect(screen.getByText("9/9")).toBeInTheDocument();
+    expect(screen.getByText("3/4")).toBeInTheDocument();
+    const names = screen.getAllByRole("img", { name: /done, \d+ missed$/ });
+    expect(names.map((n) => n.getAttribute("aria-label"))).toEqual([
+      "Ana: 9 done, 0 missed",
+      "Bogdan: 3 done, 1 missed",
+    ]); // most days done first
     expect(screen.getByRole("button", { name: "Previous month" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Next month" }));
-    expect(await screen.findByRole("heading", { name: "December 2026" })).toBeInTheDocument();
+    expect(await screen.findByText("December 2026")).toBeInTheDocument();
     expect(get).toHaveBeenLastCalledWith("/api/v1/challenges/{challenge_id}/board", {
       params: { path: { challenge_id: "walk" }, query: { month: "2026-12" } },
     });

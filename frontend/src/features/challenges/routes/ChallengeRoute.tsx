@@ -256,6 +256,13 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
             startDate={challenge.start_date}
             endDate={challenge.end_date}
             timeZone={timeZone}
+            meId={member?.id}
+            fixedDays={challenge.frequency === "daily" || challenge.frequency === "weekdays"}
+            leftOn={Object.fromEntries(
+              challenge.participants.flatMap((p) =>
+                p.ended_on ? [[p.member.id, p.ended_on]] : [],
+              ),
+            )}
           />
         )}
 

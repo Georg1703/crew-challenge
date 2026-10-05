@@ -6,7 +6,6 @@ export { Card } from "./Card";
 export { CheckList, type CheckOption } from "./CheckList";
 export { ChipGroup } from "./ChipGroup";
 export { DayBar, DayBars, DayBarsAxis } from "./DayBars";
-export { DayGrid } from "./DayGrid";
 export { DayMark, type DayState } from "./DayMark";
 export { HoldButton } from "./HoldButton";
 export { Icon, type IconName } from "./Icon";

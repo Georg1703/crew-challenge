@@ -17,7 +17,6 @@ import {
   DayBar,
   DayBars,
   DayBarsAxis,
-  DayGrid,
   DayMark,
   type DayState,
   HoldButton,
@@ -472,23 +471,6 @@ export function DesignRoute() {
             <DayMark key={state} state={state} label={state} />
           ))}
         </div>
-        <DayGrid
-          label="November"
-          days={Array.from({ length: 30 }, (_, i) => i + 1)}
-          todayIndex={9}
-          dayName={(name, day, state) => `${name}, ${day}: ${state}`}
-          rows={[
-            { key: "a", name: "Ana", leading: <Avatar name="Ana" seed="a1b2c3d4" size="sm" /> },
-            { key: "b", name: "Bogdan", leading: <Avatar name="Bogdan" seed="e5f6" size="sm" /> },
-          ].map((row, r) => ({
-            ...row,
-            states: Array.from({ length: 30 }, (_, i): DayState => {
-              if (i > 9) return "future";
-              if (i === 9) return r ? "todo" : "done";
-              return (i + r) % 5 === 3 ? "missed" : "done";
-            }),
-          }))}
-        />
         <div className={styles.bars}>
           <DayBarsAxis days={Array.from({ length: 30 }, (_, i) => i + 1)} todayIndex={9} />
           {["ddddmddddd", "dmdddddddt"].map((row, r) => (

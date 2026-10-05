@@ -506,9 +506,27 @@
     "amountError": "Scrie un număr mai mare ca zero.",
     "fraction": "{{done}}/{{total}}",
     "board": {
-      "label": "Luna echipei, {{month}}",
-      "cell": "{{name}}, {{day}}: {{state}}",
-      "nameStreak": "{{name}} · {{n}}",
+      "whereLabel": "Unde e provocarea",
+      "dayOf": "Ziua {{day}} din {{total}}",
+      "daysLeft": "Zile rămase: {{n}}",
+      "ended": "S-a încheiat pe {{date}}",
+      "stats": {
+        "done": "zile bifate de echipă",
+        "missed": "zile ratate",
+        "today": "de bifat azi"
+      },
+      "title": "Cum merge fiecare",
+      "streak": "seria: {{n}}",
+      "notYet": "azi încă nu",
+      "left": "a ieșit pe {{date}}",
+      "doneDays": "{{n}} bifate",
+      "rowLabel": "{{name}}: {{done}} bifate, {{missed}} ratate",
+      "legend": {
+        "done": "bifat",
+        "missed": "ratat",
+        "todo": "azi, de bifat",
+        "future": "urmează"
+      },
       "previous": "Luna dinainte",
       "next": "Luna următoare"
     },

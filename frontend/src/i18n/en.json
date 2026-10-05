@@ -506,9 +506,27 @@
     "amountError": "Write a number above zero.",
     "fraction": "{{done}}/{{total}}",
     "board": {
-      "label": "The crew's month, {{month}}",
-      "cell": "{{name}}, {{day}}: {{state}}",
-      "nameStreak": "{{name}} · {{n}}",
+      "whereLabel": "Where the challenge is",
+      "dayOf": "Day {{day}} of {{total}}",
+      "daysLeft": "Days left: {{n}}",
+      "ended": "Ended on {{date}}",
+      "stats": {
+        "done": "days done by the crew",
+        "missed": "days missed",
+        "today": "left today"
+      },
+      "title": "How everyone is doing",
+      "streak": "streak: {{n}}",
+      "notYet": "not yet today",
+      "left": "left on {{date}}",
+      "doneDays": "{{n}} done",
+      "rowLabel": "{{name}}: {{done}} done, {{missed}} missed",
+      "legend": {
+        "done": "done",
+        "missed": "missed",
+        "todo": "today, to do",
+        "future": "coming up"
+      },
       "previous": "Previous month",
       "next": "Next month"
     },
