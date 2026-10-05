@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from .models import Challenge, Participation, Vote
+from .models import Challenge, Invitee, Participation, Vote
 
 
 @admin.register(Challenge)
@@ -25,6 +25,12 @@ class ChallengeAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
         return Challenge.all_objects.all()  # deleted proposals too
+
+
+@admin.register(Invitee)
+class InviteeAdmin(admin.ModelAdmin):
+    list_display = ("challenge", "member", "created_at")
+    list_filter = ("crew",)
 
 
 @admin.register(Vote)

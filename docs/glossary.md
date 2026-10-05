@@ -18,7 +18,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Vote | `Vote` | A member likes a proposal: one vote per member per proposal, for as many proposals as they want. |
 | Schedule | `schedule_challenge` | An admin takes a proposal out of the pool and sets its period (v1: a month). Votes guide, they do not decide. Several challenges can share a period. |
 | Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` (and back, before the start). Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
-| Participation | `Participation` | A member taking part in a chosen challenge. The whole crew by default; members can opt out before the start or leave after. |
+| Invitee | `Invitee` | Someone the creator selected for a challenge (the whole crew by default, the creator always). Only invitees and admins see the challenge; only invitees vote and take part. Not "participant" (that is `Participation`, once scheduled) and not `Invite` (joining a crew). |
+| Participation | `Participation` | A member taking part in a scheduled challenge: every invitee when it is scheduled; they can opt out before the start or leave after. |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
 | Check-in | `CheckIn` (not "Checkin") | A member's completion of one challenge day. Status: `uploading`, `done`, `missed`, `excused`. |
 | Proof | `Proof` | What backs a check-in or a served punishment: `video`, `audio`, `photo`, or `text`. |

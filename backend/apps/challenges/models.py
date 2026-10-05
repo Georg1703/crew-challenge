@@ -171,3 +171,18 @@ class Participation(CrewScopedModel):
 
     def __str__(self) -> str:
         return f"{self.member} in {self.challenge}"
+
+
+class Invitee(CrewScopedModel):
+    """Someone the creator selected for a challenge. Only invitees (and admins) can see it."""
+
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="invitees")
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="invited_to")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["challenge", "member"], name="invitee_once_per_member")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.member} invited to {self.challenge}"

@@ -37,6 +37,20 @@ class ChallengeIn(serializers.Serializer):
         choices=Challenge.ProofKind.choices, default=Challenge.ProofKind.NONE
     )
     proof_required = serializers.BooleanField(default=False)
+    invitee_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Who takes part (the creator is always in). Create: default the whole crew. "
+        "Edit: leave out to keep the list.",
+    )
+
+
+class InviteesIn(serializers.Serializer):
+    invitee_ids = serializers.ListField(
+        child=serializers.UUIDField(), help_text="Who takes part; the creator is always in."
+    )
 
 
 class ChallengeOut(serializers.Serializer):
@@ -69,6 +83,8 @@ class ChallengeOut(serializers.Serializer):
     vote_count = serializers.IntegerField()
     voters = PersonOut(many=True)
     my_vote = serializers.BooleanField(help_text="The current member voted for it.")
+    invitees = PersonOut(many=True, help_text="Who takes part, in the order they joined the crew.")
+    invited = serializers.BooleanField(help_text="The current member is one of the invitees.")
     mine = serializers.BooleanField(help_text="Proposed by the current member.")
 
 

@@ -13,7 +13,14 @@ from apps.core import clock
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 
-from .serializers import ChallengeDetailOut, ChallengeIn, ChallengeOut, PoolOut, ScheduleIn
+from .serializers import (
+    ChallengeDetailOut,
+    ChallengeIn,
+    ChallengeOut,
+    InviteesIn,
+    PoolOut,
+    ScheduleIn,
+)
 
 
 def _person(member: Member | None) -> dict[str, Any] | None:
@@ -23,12 +30,17 @@ def _person(member: Member | None) -> dict[str, Any] | None:
 
 
 def challenge_data(
-    challenge: Challenge, member: Member, tally: selectors.Tally | None = None
+    challenge: Challenge,
+    member: Member,
+    tally: selectors.Tally | None = None,
+    invited: list[Member] | None = None,
 ) -> dict[str, Any]:
-    """One challenge for `member`. Pass `tally` when it was loaded for a whole list."""
+    """One challenge for `member`. Pass `tally` and `invited` when loaded for a whole list."""
     today = clock.crew_today(challenge.crew)
     if tally is None:
         tally = selectors.tallies(challenges=[challenge]).get(challenge.pk, selectors.Tally())
+    if invited is None:
+        invited = selectors.invitees(challenges=[challenge]).get(challenge.pk, [])
     return {
         "id": challenge.pk,
         "title": challenge.title,
@@ -58,12 +70,18 @@ def challenge_data(
         "voters": [_person(voter) for voter in tally.voters],
         "my_vote": any(voter.pk == member.pk for voter in tally.voters),
         "mine": challenge.created_by_id == member.pk,
+        "invitees": [_person(person) for person in invited],
+        "invited": any(person.pk == member.pk for person in invited),
     }
 
 
 def challenges_data(challenges: list[Challenge], member: Member) -> list[dict[str, Any]]:
     tallies = selectors.tallies(challenges=challenges)
-    return [challenge_data(c, member, tallies.get(c.pk, selectors.Tally())) for c in challenges]
+    invited = selectors.invitees(challenges=challenges)
+    return [
+        challenge_data(c, member, tallies.get(c.pk, selectors.Tally()), invited.get(c.pk, []))
+        for c in challenges
+    ]
 
 
 def detail_data(challenge: Challenge, member: Member) -> dict[str, Any]:
@@ -93,7 +111,7 @@ class PoolView(APIView):
     def get(self, request: Request) -> Response:
         """The crew's pool of proposals, newest first, with votes and how full it is."""
         member = _member(request)
-        pool = selectors.pool(crew=member.crew)
+        pool = selectors.pool(member=member)
         return Response(
             PoolOut(
                 {
@@ -125,7 +143,7 @@ class ChallengesView(APIView):
         wanted = tuple(
             p for p in request.query_params.get("phase", "").split(",") if p in selectors.PHASES
         )
-        chosen = selectors.list_chosen(crew=member.crew, phases=wanted or selectors.PHASES)
+        chosen = selectors.list_chosen(member=member, phases=wanted or selectors.PHASES)
         return Response(ChallengeOut(challenges_data(chosen, member), many=True).data)
 
     @extend_schema(
@@ -136,7 +154,9 @@ class ChallengesView(APIView):
         member = _member(request)
         data = ChallengeIn(data=request.data)
         data.is_valid(raise_exception=True)
-        challenge = services.propose_challenge(by=member, shape=data.validated_data)
+        shape = dict(data.validated_data)
+        invitee_ids = shape.pop("invitee_ids")
+        challenge = services.propose_challenge(by=member, shape=shape, invitee_ids=invitee_ids)
         return Response(
             ChallengeOut(challenge_data(challenge, member)).data, status=status.HTTP_201_CREATED
         )
@@ -146,7 +166,7 @@ class ChallengeView(APIView):
     permission_classes = [IsCrewMember]
 
     def _get(self, request: Request, challenge_id: UUID) -> Challenge:
-        challenge = selectors.get_challenge(crew=_member(request).crew, challenge_id=challenge_id)
+        challenge = selectors.get_challenge(member=_member(request), challenge_id=challenge_id)
         if challenge is None:
             raise services.ChallengeNotFound()
         return challenge
@@ -161,8 +181,10 @@ class ChallengeView(APIView):
         member = _member(request)
         data = ChallengeIn(data=request.data)
         data.is_valid(raise_exception=True)
+        shape = dict(data.validated_data)
+        invitee_ids = shape.pop("invitee_ids")
         challenge = services.edit_proposal(
-            by=member, challenge_id=challenge_id, shape=data.validated_data
+            by=member, challenge_id=challenge_id, shape=shape, invitee_ids=invitee_ids
         )
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -173,12 +195,27 @@ class ChallengeView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class InviteesView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=InviteesIn, responses=ChallengeOut, operation_id="challenges_invitees")
+    def put(self, request: Request, challenge_id: UUID) -> Response:
+        """The creator changes who takes part while the challenge is a proposal."""
+        member = _member(request)
+        data = InviteesIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        challenge = services.set_invitees(
+            by=member, challenge_id=challenge_id, invitee_ids=data.validated_data["invitee_ids"]
+        )
+        return Response(ChallengeOut(challenge_data(challenge, member)).data)
+
+
 class VoteView(APIView):
     permission_classes = [IsCrewMember]
 
     def _challenge(self, request: Request, challenge_id: UUID) -> Response:
         member = _member(request)
-        challenge = selectors.get_challenge(crew=member.crew, challenge_id=challenge_id)
+        challenge = selectors.get_challenge(member=member, challenge_id=challenge_id)
         assert challenge is not None
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -200,7 +237,7 @@ class ScheduleView(APIView):
 
     def _detail(self, request: Request, challenge_id: UUID) -> Response:
         member = _member(request)
-        challenge = selectors.get_challenge(crew=member.crew, challenge_id=challenge_id)
+        challenge = selectors.get_challenge(member=member, challenge_id=challenge_id)
         assert challenge is not None
         return Response(detail_data(challenge, member))
 
@@ -228,7 +265,7 @@ class ParticipationView(APIView):
 
     def _detail(self, request: Request, challenge_id: UUID) -> Response:
         member = _member(request)
-        challenge = selectors.get_challenge(crew=member.crew, challenge_id=challenge_id)
+        challenge = selectors.get_challenge(member=member, challenge_id=challenge_id)
         assert challenge is not None
         return Response(detail_data(challenge, member))
 

@@ -118,10 +118,13 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   votes (one vote per member per proposal, for as many as they like) and a crew admin schedules
   proposals for periods (v1: months). A period can have several challenges. Votes guide the admin;
   they do not decide.
-- Challenges are visible only inside their crew and show who proposed them and when. A proposal can
-  be edited by its creator while it is in the pool (every edit resets its votes); once scheduled,
-  nothing can be edited. Before the start an admin can move it or put it back in the pool. The
-  whole crew takes part by default; members can opt out before the start.
+- A challenge shows who proposed it and when. Its creator chooses who takes part (the invitees;
+  the whole crew by default, the creator always) and can change the list until it is scheduled.
+  Only invitees and crew admins see a challenge; only invitees vote and take part. People who join
+  the crew later are not added. A proposal can be edited by its creator while it is in the pool
+  (editing the challenge resets its votes; removing someone deletes only their vote); once
+  scheduled, nothing can be edited. Before the start an admin can move it or put it back in the
+  pool, and invitees can opt out.
 - Plan and details: `docs/plans/monthly-challenges.md`.
 - A check-in is created the moment proof upload *starts* (status `uploading`). It counts for the
   day if the upload completes within 24 h after that day's midnight deadline.

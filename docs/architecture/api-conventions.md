@@ -68,7 +68,7 @@ Every error, from any layer, has this shape:
 |---|---|---|
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `permission_denied` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `permission_denied` |
 | 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
 | 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started` |
 | 429 | Rate limited | `throttled` |
@@ -86,6 +86,7 @@ shape (Django's own HTML pages are used only outside `/api/`).
 - Resource names are plural nouns (`/invites`); actions on a resource are sub-paths
   (`/invites/{code}/accept`).
 - A member only ever sees data from their own crews. Out-of-crew ids return `404`, not `403`.
+  The same holds for a challenge the member is not invited to (admins see every challenge).
 - Write endpoints return the created or updated resource.
 
 ## Endpoints
@@ -111,11 +112,12 @@ POST   /api/v1/invites/{code}/accept    public: {username, password, display_nam
 
 GET    /api/v1/proposals                the pool: proposals (newest first) with votes, size, limit
 GET    /api/v1/challenges?phase=...     scheduled challenges: upcoming, active, finished
-POST   /api/v1/challenges               propose into the pool -> 201 (409 pool_full)
+POST   /api/v1/challenges               propose into the pool, {invitee_ids?} -> 201 (409 pool_full)
 GET    /api/v1/challenges/{id}          one challenge with participants
 PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
 DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
-PUT    /api/v1/challenges/{id}/vote     vote for a proposal; DELETE takes the vote back
+PUT    /api/v1/challenges/{id}/invitees   creator: {invitee_ids} who takes part (while proposed)
+PUT    /api/v1/challenges/{id}/vote     invitees: vote for a proposal; DELETE takes the vote back
 PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
                                         move before the start; DELETE puts it back in the pool
 PUT    /api/v1/challenges/{id}/participation   take part again (before the start); DELETE opts out

@@ -1,4 +1,8 @@
-"""Challenge reads. Views and other apps read challenge data through these functions."""
+"""Challenge reads. Views and other apps read challenge data through these functions.
+
+A member only ever gets the challenges they can see: the ones they are invited to, or every one
+in the crew for an admin (`visible`).
+"""
 
 from __future__ import annotations
 
@@ -7,10 +11,12 @@ from dataclasses import dataclass, field
 from datetime import date
 from uuid import UUID
 
-from apps.core import clock
-from apps.crews.models import Crew, Member
+from django.db.models import QuerySet
 
-from .models import Challenge, Participation, Vote
+from apps.core import clock
+from apps.crews.models import Member
+
+from .models import Challenge, Invitee, Participation, Vote
 
 PHASES = ("upcoming", "active", "finished")
 
@@ -60,35 +66,58 @@ def tallies(*, challenges: list[Challenge]) -> dict[UUID, Tally]:
     return dict(result)
 
 
-def pool(*, crew: Crew) -> Pool:
+def visible(*, member: Member) -> QuerySet[Challenge]:
+    """The crew's challenges this member can see: invited to, or all of them for an admin."""
+    rows = Challenge.objects.for_crew(member.crew)
+    if member.is_admin:
+        return rows
+    return rows.filter(invitees__member=member)
+
+
+def pool(*, member: Member) -> Pool:
+    """The proposals the member can see; `size` counts the whole crew's pool (the limit does)."""
     proposals = list(
-        Challenge.objects.for_crew(crew)
+        visible(member=member)
         .filter(state=Challenge.State.PROPOSED)
         .select_related("created_by")
         .order_by("-created_at", "-id")
     )
+    size = Challenge.objects.for_crew(member.crew).filter(state=Challenge.State.PROPOSED).count()
     return Pool(
         proposals=proposals,
         tallies=tallies(challenges=proposals),
-        size=len(proposals),
-        limit=crew.max_proposals,
+        size=size,
+        limit=member.crew.max_proposals,
     )
 
 
-def get_challenge(*, crew: Crew, challenge_id: UUID) -> Challenge | None:
+def invitees(*, challenges: list[Challenge]) -> dict[UUID, list[Member]]:
+    """Who is invited to each challenge, in the order they joined the crew."""
+    result: dict[UUID, list[Member]] = defaultdict(list)
+    rows = (
+        Invitee.objects.filter(challenge__in=challenges)
+        .select_related("member")
+        .order_by("member__created_at", "member_id")
+    )
+    for row in rows:
+        result[row.challenge_id].append(row.member)
+    return dict(result)
+
+
+def get_challenge(*, member: Member, challenge_id: UUID) -> Challenge | None:
     return (
-        Challenge.objects.for_crew(crew)
+        visible(member=member)
         .select_related("created_by", "chosen_by")
         .filter(pk=challenge_id)
         .first()
     )
 
 
-def list_chosen(*, crew: Crew, phases: tuple[str, ...] = PHASES) -> list[Challenge]:
-    """Scheduled challenges in the given phases, by start date, then title."""
-    today = clock.crew_today(crew)
+def list_chosen(*, member: Member, phases: tuple[str, ...] = PHASES) -> list[Challenge]:
+    """Scheduled challenges the member can see, in the given phases, by start date, then title."""
+    today = clock.crew_today(member.crew)
     chosen = (
-        Challenge.objects.for_crew(crew)
+        visible(member=member)
         .filter(state=Challenge.State.CHOSEN)
         .select_related("created_by", "chosen_by")
         .order_by("start_date", "title", "created_at")

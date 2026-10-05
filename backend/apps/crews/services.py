@@ -22,7 +22,6 @@ from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 
 from .models import Crew, Invite, Member
-from .signals import member_joined
 
 INVITE_TTL = timedelta(days=7)
 INVITE_CODE_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # no 0/o, 1/l/i: easy to read aloud
@@ -219,7 +218,6 @@ def _add_member(
             avatar_seed=secrets.token_hex(4),
             last_active_at=clock.now(),
         )
-    member_joined.send(sender=Member, member=member)
     return member
 
 

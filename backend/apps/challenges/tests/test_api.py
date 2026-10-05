@@ -208,3 +208,54 @@ def test_other_crews_get_404(browser, people):
 
 def test_needs_a_crew(auth_client):
     assert auth_client.get("/api/v1/proposals").status_code == 403
+
+
+def test_propose_for_some_people_and_change_the_list(browser, people):
+    admin, member = people
+    other = MemberFactory.create(crew=admin.crew, display_name="Cristina")
+    client = as_member(browser, member)
+    created = client.post(
+        "/api/v1/challenges", {**SHAPE, "invitee_ids": [str(other.pk)]}, format="json"
+    ).json()
+    # Same join time under frozen time, so compare without order.
+    assert sorted(p["display_name"] for p in created["invitees"]) == ["Bogdan", "Cristina"]
+    assert created["invited"] is True
+
+    url = f"/api/v1/challenges/{created['id']}/invitees"
+    changed = client.put(url, {"invitee_ids": [str(admin.pk)]}, format="json")
+    assert changed.status_code == 200
+    assert sorted(p["display_name"] for p in changed.json()["invitees"]) == ["Ana", "Bogdan"]
+
+    hidden = as_member(browser, other)
+    assert hidden.get(f"/api/v1/challenges/{created['id']}").status_code == 404
+    assert hidden.get("/api/v1/proposals").json()["proposals"] == []
+    refused = hidden.put(url, {"invitee_ids": []}, format="json")
+    assert refused.status_code == 404
+
+
+def test_the_whole_crew_is_invited_when_the_list_is_left_out(browser, people):
+    _, member = people
+    body = as_member(browser, member).post("/api/v1/challenges", SHAPE, format="json").json()
+    assert sorted(p["display_name"] for p in body["invitees"]) == ["Ana", "Bogdan"]
+
+
+def test_an_admin_who_is_not_invited_sees_it_but_cannot_vote(browser, people):
+    admin, member = people
+    proposal = services.propose_challenge(by=member, shape=SHAPE, invitee_ids=[])
+    client = as_member(browser, admin)
+    body = client.get(f"/api/v1/challenges/{proposal.pk}").json()
+    assert body["invited"] is False
+    vote = client.put(f"/api/v1/challenges/{proposal.pk}/vote")
+    assert vote.status_code == 403
+    assert vote.json()["error"]["code"] == "not_invited"
+
+
+def test_strangers_cannot_be_invited(browser, people):
+    _, member = people
+    response = as_member(browser, member).post(
+        "/api/v1/challenges",
+        {**SHAPE, "invitee_ids": [str(AdminFactory.create().pk)]},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "invitee_ids" in response.json()["error"]["fields"]
