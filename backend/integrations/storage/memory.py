@@ -46,7 +46,12 @@ class InMemoryObjectStorage(ObjectStorage):
         self.uploads: dict[str, _PendingUpload] = {}
         self.objects: dict[str, _StoredObject] = {}
 
-    # --- test helper -------------------------------------------------------------------------
+    # --- test helpers ------------------------------------------------------------------------
+    def put_object(self, *, key: str, data: bytes, content_type: str) -> str:
+        """Store a whole file as the browser would via its presigned PUT URL; returns the ETag."""
+        self.objects[key] = _StoredObject(data=data, content_type=content_type, etag=_etag(data))
+        return self.objects[key].etag
+
     def upload_part(self, *, key: str, upload_id: str, part_number: int, data: bytes) -> str:
         """Store one part as the browser would via its presigned URL; returns the ETag."""
         validate_part_number(part_number)
@@ -55,6 +60,11 @@ class InMemoryObjectStorage(ObjectStorage):
         return _etag(data)
 
     # --- ObjectStorage -----------------------------------------------------------------------
+    def presign_put(
+        self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
+    ) -> str:
+        return f"memory://{self.bucket}/{key}?contentType={content_type}&expires={expires_in}"
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         upload_id = uuid.uuid4().hex
         self.uploads[upload_id] = _PendingUpload(key=key, content_type=content_type)
@@ -109,6 +119,9 @@ class InMemoryObjectStorage(ObjectStorage):
 
     def head(self, *, key: str) -> ObjectInfo | None:
         return self._info(key) if key in self.objects else None
+
+    def delete(self, *, key: str) -> None:
+        self.objects.pop(key, None)
 
     # --- internals ---------------------------------------------------------------------------
     def _pending(self, key: str, upload_id: str) -> _PendingUpload:

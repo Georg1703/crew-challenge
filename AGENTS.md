@@ -50,6 +50,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
 | `make e2e` | Playwright end-to-end tests against the real backend (needs Postgres and Redis) |
+| `make upload-smoke` | Upload test files to the dev S3 bucket like the browser, check, delete (needs `AWS_PROFILE`) |
 | `make fmt` | Format all code |
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
 | `make migrate` / `make makemigrations` | Database migrations |

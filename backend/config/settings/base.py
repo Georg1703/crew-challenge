@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.crews",
     "apps.challenges",
     "apps.checkins",
+    "apps.media",
 ]
 
 MIDDLEWARE = [

@@ -46,6 +46,17 @@ class S3ObjectStorage(ObjectStorage):
         self.bucket = bucket
         self.client = client
 
+    def presign_put(
+        self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
+    ) -> str:
+        # ContentType is signed: the browser must send the same Content-Type header.
+        return self.client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         with _translate_errors():
             response = self.client.create_multipart_upload(
@@ -129,6 +140,10 @@ class S3ObjectStorage(ObjectStorage):
             content_type=response.get("ContentType"),
             etag=response.get("ETag"),
         )
+
+    def delete(self, *, key: str) -> None:
+        with _translate_errors():
+            self.client.delete_object(Bucket=self.bucket, Key=key)  # S3 answers 204 when missing
 
 
 def _error_code(exc: ClientError) -> str:

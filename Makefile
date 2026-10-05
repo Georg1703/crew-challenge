@@ -183,6 +183,11 @@ e2e: ## End-to-end tests (Playwright) against the real backend; needs Postgres a
 	$(call require,$(FRONTEND_DIR)/package.json,Frontend)
 	$(PNPM) exec playwright test
 
+.PHONY: upload-smoke
+upload-smoke: ## Upload test files to the dev S3 bucket like the browser, check, delete (needs AWS_PROFILE)
+	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
+	$(UV) python manage.py upload_smoke --settings=config.settings.local
+
 .PHONY: test
 test: ## Run all tests
 ifneq ($(HAS_BACKEND),)

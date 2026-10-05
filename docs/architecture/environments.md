@@ -79,7 +79,8 @@ so invite links never point at a developer machine.
 ## Why a real S3 dev bucket
 
 Browser multipart uploads depend on CORS, the `ETag` header, and presigned URL details. Emulators
-differ exactly there. A dev bucket costs cents per month.
+differ exactly there. A dev bucket costs cents per month. `make upload-smoke` uploads through the
+real adapter like the browser does and checks those details; the bucket setup is in `infra/aws/`.
 
 ## Production host
 

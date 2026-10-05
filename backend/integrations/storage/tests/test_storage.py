@@ -85,6 +85,20 @@ def test_head_of_missing_object_is_none(storage):
     assert storage.head(key="originals/missing.mp4") is None
 
 
+def test_single_put_round_trip_and_delete(storage):
+    key = "originals/crew-1/photo.jpg"
+    assert "contentType=image/jpeg" in storage.presign_put(key=key, content_type="image/jpeg")
+    storage.put_object(key=key, data=b"jpeg", content_type="image/jpeg")
+
+    info = storage.head(key=key)
+    assert info is not None
+    assert (info.size, info.content_type) == (4, "image/jpeg")
+
+    storage.delete(key=key)
+    storage.delete(key=key)  # safe twice
+    assert storage.head(key=key) is None
+
+
 def test_presign_requires_a_known_upload_and_a_valid_part_number(storage):
     with pytest.raises(UploadNotFound):
         storage.presign_part(key=KEY, upload_id="nope", part_number=1)

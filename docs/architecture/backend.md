@@ -22,9 +22,10 @@ backend/
 |   |-- accounts/           # User, login/logout/me
 |   |-- crews/              # Crew, Member, Invite, switching crews
 |   |-- challenges/         # Challenge (soft deleted), Participant, Vote
-|   `-- checkins/           # CheckIn, CheckInEntry; days.py: due days, day states, streaks
+|   |-- checkins/           # CheckIn, CheckInEntry; days.py: due days, day states, streaks
+|   `-- media/              # Upload: files sent straight to S3 (one PUT or multipart); knows no challenges
 |-- integrations/
-|   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
+|   `-- storage/            # ObjectStorage ABC (presigned PUT, multipart, head, delete), S3, in-memory, factory
 |-- tests/
 |   `-- factories/          # factory-boy factories, one module per app
 `-- conftest.py             # fixtures for every test: api_client, user, auth_client, object_storage
@@ -89,6 +90,7 @@ name = "Only integrations talk to external SDKs"
 type = "forbidden"
 source_modules = ["apps"]
 forbidden_modules = ["boto3", "botocore", "pywebpush"]
+allow_indirect_imports = true  # apps reach them only through integrations/* adapters
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on domain apps"

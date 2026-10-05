@@ -25,7 +25,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
 | Due day | `days.is_due` | A day a daily or chosen-weekday challenge asks for. Challenges asked a number of times per week or period have no due days, only a quota. |
 | Proof | `Proof` | What backs a check-in or a served punishment: `video`, `audio`, `photo`, or `text`. |
-| Upload | `MultipartUpload` | The S3 multipart upload that carries a proof's original file. |
+| Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `hls_key`, `poster_key` | Processed versions of a video for playback (HLS 720p/360p + poster image). |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for an `uploading` check-in to finish. |
 | Streak | `days.streak` | Per challenge: due days in a row without a miss (daily, weekdays) or weeks in a row with the quota met (times a week). Today never breaks it. |

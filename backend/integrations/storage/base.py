@@ -46,7 +46,13 @@ class ObjectInfo:
 
 
 class ObjectStorage(ABC):
-    """Multipart upload operations on one bucket."""
+    """Upload operations on one bucket: one PUT for small files, multipart for big ones."""
+
+    @abstractmethod
+    def presign_put(
+        self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
+    ) -> str:
+        """Return a URL the browser can PUT a whole file to, sending this Content-Type."""
 
     @abstractmethod
     def create_multipart(self, *, key: str, content_type: str) -> str:
@@ -80,6 +86,10 @@ class ObjectStorage(ABC):
     @abstractmethod
     def head(self, *, key: str) -> ObjectInfo | None:
         """Metadata of a stored object, or None when it does not exist."""
+
+    @abstractmethod
+    def delete(self, *, key: str) -> None:
+        """Remove an object. Safe to call when it does not exist."""
 
 
 def validate_part_number(part_number: int) -> None:
