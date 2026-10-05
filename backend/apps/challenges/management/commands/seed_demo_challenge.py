@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.challenges import periods
-from apps.challenges.models import Challenge, Invitee, Participation
+from apps.challenges.models import Challenge, Participant
 from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Crew
@@ -52,8 +52,5 @@ class Command(BaseCommand):
             chosen_at=clock.now() - timedelta(days=1),
         )
         for member in members:
-            Invitee.objects.create(crew=crew, challenge=challenge, member=member)
-            Participation.objects.create(
-                crew=crew, challenge=challenge, member=member, joined_on=first
-            )
+            Participant.objects.create(crew=crew, challenge=challenge, member=member)
         self.stdout.write(self.style.SUCCESS(f"Created {TITLE} ({first} - {last})."))

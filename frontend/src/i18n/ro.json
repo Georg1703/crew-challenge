@@ -146,11 +146,11 @@
     "period_too_far": "Alege o lună cel mult cu un an înainte.",
     "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
     "period_kind_not_available": "Deocamdată se pot alege doar luni.",
-    "not_invited": "Doar cei care participă pot face asta.",
     "day_closed": "Ziua s-a încheiat. Poți bifa doar pentru azi.",
     "not_taking_part": "Nu participi azi la provocarea asta.",
     "not_due_today": "Provocarea asta nu cere nimic azi.",
-    "nothing_to_undo": "Nu e nimic de anulat azi."
+    "nothing_to_undo": "Nu e nimic de anulat azi.",
+    "not_a_participant": "Doar cei care participă pot face asta."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -219,7 +219,6 @@
     "participantsTitle": "Participă",
     "leftOn": "A ieșit pe {{date}}",
     "optOut": "Nu particip",
-    "optIn": "Particip",
     "leave": "Ies din provocare",
     "edit": "Modifică propunerea",
     "withdraw": "Retrage propunerea",
@@ -463,7 +462,13 @@
     },
     "factsLabel": "Ce cere provocarea",
     "periodLine": "Pentru {{period}}",
-    "checkIn": "Bifează azi"
+    "checkIn": "Bifează azi",
+    "optOutTitle": "Nu participi?",
+    "optOutBody": "Provocarea dispare din lista ta și nu mai poți reveni în ea.",
+    "optedOut": "Nu mai participi",
+    "leaveTitle": "Ieși din provocare?",
+    "leaveBody": "Provocarea dispare din lista ta și nu mai poți reveni. Zilele bifate până azi rămân pe tabla echipei.",
+    "left": "Ai ieșit din provocare"
   },
   "checkins": {
     "today": "azi",

@@ -9,7 +9,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from apps.challenges import selectors as challenges
-from apps.challenges.models import Challenge, Participation
+from apps.challenges.models import Challenge, Participant
 from apps.core import clock
 from apps.crews.models import Member
 
@@ -62,9 +62,9 @@ class Today:
     crew: list[CrewDay] = field(default_factory=list)
 
 
-def _card(participation: Participation, record: days.Record, today: date) -> Card:
-    challenge = participation.challenge
-    part = days.span(challenge, participation.joined_on, participation.ended_on)
+def _card(participant: Participant, record: days.Record, today: date) -> Card:
+    challenge = participant.challenge
+    part = days.span(challenge, participant.left_on)
     monday, _ = days.week_of(today)
     week = [monday + timedelta(days=n) for n in range(7)]
     return Card(
@@ -82,22 +82,22 @@ def today(*, member: Member) -> Today:
     """The member's challenges today and the crew's progress (on challenges the member sees)."""
     day = clock.crew_today(member.crew)
     _, deadline = clock.day_bounds_utc(day, member.crew.timezone)
-    everyone = challenges.participations_on(viewer=member, day=day)
+    everyone = challenges.participants_on(viewer=member, day=day)
     loaded = records(
         challenge_ids=list({p.challenge_id for p in everyone}),
         member_ids=list({p.member_id for p in everyone}),
     )
     result = Today(day=day, deadline=deadline)
     crew: dict[UUID, CrewDay] = {}
-    for participation in everyone:
-        record = loaded.get((participation.challenge_id, participation.member_id), days.Record())
-        card = _card(participation, record, day)
-        if participation.member_id == member.pk:
+    for participant in everyone:
+        record = loaded.get((participant.challenge_id, participant.member_id), days.Record())
+        card = _card(participant, record, day)
+        if participant.member_id == member.pk:
             result.cards.append(card)
         if card.settled is None:
             continue
         row = crew.setdefault(
-            participation.member_id, CrewDay(member=participation.member, done=0, needed=0)
+            participant.member_id, CrewDay(member=participant.member, done=0, needed=0)
         )
         row.needed += 1
         row.done += int(card.settled)
@@ -108,12 +108,12 @@ def today(*, member: Member) -> Today:
 def card(*, member: Member, challenge_id: UUID) -> Card | None:
     """One challenge on the member's day (after a check-in), or None if not taking part today."""
     day = clock.crew_today(member.crew)
-    for participation in challenges.participations_on(viewer=member, day=day):
-        if participation.challenge_id == challenge_id and participation.member_id == member.pk:
+    for participant in challenges.participants_on(viewer=member, day=day):
+        if participant.challenge_id == challenge_id and participant.member_id == member.pk:
             record = records(challenge_ids=[challenge_id], member_ids=[member.pk]).get(
                 (challenge_id, member.pk), days.Record()
             )
-            return _card(participation, record, day)
+            return _card(participant, record, day)
     return None
 
 
@@ -139,15 +139,15 @@ def board(*, member: Member, challenge_id: UUID, month: date) -> Board | None:
     next_month = (first + timedelta(days=32)).replace(day=1)
     month_days = [first + timedelta(days=n) for n in range((next_month - first).days)]
     today = clock.crew_today(member.crew)
-    people = challenges.participants(challenge=challenge)
+    people = challenges.participants(challenges=[challenge]).get(challenge.pk, [])
     loaded = records(challenge_ids=[challenge.pk], member_ids=[p.member_id for p in people])
     rows = []
-    for participation in people:
-        record = loaded.get((challenge.pk, participation.member_id), days.Record())
-        part = days.span(challenge, participation.joined_on, participation.ended_on)
+    for participant in people:
+        record = loaded.get((challenge.pk, participant.member_id), days.Record())
+        part = days.span(challenge, participant.left_on)
         rows.append(
             BoardRow(
-                member=participation.member,
+                member=participant.member,
                 states=[days.state(challenge, part, record, d, today) for d in month_days],
                 streak=days.streak(challenge, part, record, today),
             )

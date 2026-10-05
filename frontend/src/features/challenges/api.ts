@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, call, type components } from "@/api";
 
 export type Challenge = components["schemas"]["ChallengeOut"];
-export type ChallengeDetail = components["schemas"]["ChallengeDetailOut"];
 export type ChallengeInput = components["schemas"]["ChallengeInRequest"];
 export type Pool = components["schemas"]["PoolOut"];
 export type Phase = components["schemas"]["PhaseEnum"];
@@ -76,14 +75,14 @@ export function useWithdrawChallenge() {
 }
 
 /** The creator changes who takes part while the challenge is a proposal. */
-export function useSetInvitees(id: string) {
+export function useSetParticipants(id: string) {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (inviteeIds: string[]) =>
+    mutationFn: (participantIds: string[]) =>
       call(
-        api.PUT("/api/v1/challenges/{challenge_id}/invitees", {
+        api.PUT("/api/v1/challenges/{challenge_id}/participants", {
           ...path(id),
-          body: { invitee_ids: inviteeIds },
+          body: { participant_ids: participantIds },
         }),
       ),
     onSuccess: invalidate,
@@ -151,16 +150,17 @@ export function useUnschedule(id: string) {
   });
 }
 
-export function useParticipation(id: string) {
+/**
+ * Opt out before the start or leave a running challenge. Either way it is gone for the member
+ * afterwards, so every list (and today's check-ins) is fetched again.
+ */
+export function useLeave(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (takePart: boolean) =>
-      takePart
-        ? call(api.PUT("/api/v1/challenges/{challenge_id}/participation", path(id)))
-        : call(api.DELETE("/api/v1/challenges/{challenge_id}/participation", path(id))),
-    onSuccess: (detail) => {
-      queryClient.setQueryData(challengeKey(id), detail);
-      void queryClient.invalidateQueries({ queryKey: challengesKey });
+    mutationFn: () => call(api.DELETE("/api/v1/challenges/{challenge_id}/participation", path(id))),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: challengeKey(id) });
+      void queryClient.invalidateQueries();
     },
   });
 }

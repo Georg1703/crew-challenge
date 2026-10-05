@@ -114,15 +114,16 @@ POST   /api/v1/invites/{code}/accept    public: {username, password, display_nam
 
 GET    /api/v1/proposals                the pool: proposals (newest first) with votes, size, limit
 GET    /api/v1/challenges?phase=...     scheduled challenges: upcoming, active, finished
-POST   /api/v1/challenges               propose into the pool, {invitee_ids?} -> 201 (409 pool_full)
+POST   /api/v1/challenges               propose into the pool, {participant_ids?} -> 201 (409 pool_full)
 GET    /api/v1/challenges/{id}          one challenge with participants
 PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
 DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
-PUT    /api/v1/challenges/{id}/invitees   creator: {invitee_ids} who takes part (while proposed)
-PUT    /api/v1/challenges/{id}/vote     invitees: vote for a proposal; DELETE takes the vote back
+PUT    /api/v1/challenges/{id}/participants   creator: {participant_ids} (while proposed)
+PUT    /api/v1/challenges/{id}/vote     participants: vote for a proposal; DELETE takes it back
 PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
                                         move before the start; DELETE puts it back in the pool
-PUT    /api/v1/challenges/{id}/participation   take part again (before the start); DELETE opts out
+DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or leave -> 204;
+                                        either way the challenge is gone for the member
 
 GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
 POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today -> today's card

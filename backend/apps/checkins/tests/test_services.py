@@ -41,9 +41,9 @@ def crew():
         yield admin, bogdan, cristina
 
 
-def november(admin, by, shape, invitee_ids=None):
+def november(admin, by, shape, participant_ids=None):
     """A challenge proposed by `by` and scheduled for November."""
-    challenge = challenges.propose_challenge(by=by, shape=shape, invitee_ids=invitee_ids)
+    challenge = challenges.propose_challenge(by=by, shape=shape, participant_ids=participant_ids)
     challenges.schedule_challenge(
         by=admin, challenge_id=challenge.pk, period_kind="month", period_start=date(2026, 11, 1)
     )
@@ -92,21 +92,28 @@ def test_only_today_counts_in_the_crew_time_zone(crew):
 
 def test_only_participants_check_in_and_only_on_due_days(crew):
     admin, bogdan, cristina = crew
-    walk = november(admin, bogdan, WALK, invitee_ids=[cristina.pk])
+    walk = november(admin, bogdan, WALK, participant_ids=[cristina.pk])
     gym = november(admin, bogdan, MONDAYS)
     stranger = MemberFactory.create()
     with at("2026-11-10 08:00Z"):
         with pytest.raises(services.ChallengeNotFound):
             services.check_in(by=stranger, challenge_id=walk.pk, day=TUE)
         with pytest.raises(services.NotTakingPart):
-            services.check_in(by=admin, challenge_id=walk.pk, day=TUE)  # sees it, not invited
+            services.check_in(
+                by=admin, challenge_id=walk.pk, day=TUE
+            )  # sees it, does not take part
         with pytest.raises(services.NotDueToday):
             services.check_in(by=bogdan, challenge_id=gym.pk, day=TUE)
     with at("2026-11-12 08:00Z"):
-        challenges.stop_taking_part(by=cristina, challenge_id=walk.pk)  # leaves on Thursday
         services.check_in(by=cristina, challenge_id=walk.pk, day=date(2026, 11, 12))
-    with at("2026-11-13 08:00Z"), pytest.raises(services.NotTakingPart):
-        services.check_in(by=cristina, challenge_id=walk.pk, day=date(2026, 11, 13))
+        challenges.stop_taking_part(by=cristina, challenge_id=walk.pk)  # leaves on Thursday
+        with pytest.raises(services.ChallengeNotFound):  # gone for her at once
+            services.check_in(by=cristina, challenge_id=walk.pk, day=date(2026, 11, 12))
+    with at("2026-11-13 08:00Z"):
+        board = selectors.board(member=bogdan, challenge_id=walk.pk, month=date(2026, 11, 1))
+        assert board is not None
+        row = next(r for r in board.rows if r.member == cristina)
+        assert row.states[11:13] == ["done", "outside"]  # her Thursday counts, then she is out
 
 
 def test_a_challenge_that_has_not_started_has_no_check_ins(crew):
@@ -138,7 +145,7 @@ def test_today_has_my_cards_and_the_crew(crew):
     walk = november(admin, bogdan, WALK)
     read = november(admin, bogdan, READ)
     november(admin, bogdan, MONDAYS)  # not due on a Tuesday: no ring segment
-    secret = november(admin, cristina, WALK, invitee_ids=[])  # only Cristina sees it
+    secret = november(admin, cristina, WALK, participant_ids=[])  # only Cristina sees it
     with at("2026-11-09 08:00Z"):
         services.check_in(by=bogdan, challenge_id=walk.pk, day=date(2026, 11, 9))
     with at("2026-11-10 08:00Z"):

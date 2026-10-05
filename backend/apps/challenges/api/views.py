@@ -8,19 +8,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.challenges import selectors, services
-from apps.challenges.models import Challenge
+from apps.challenges.models import Challenge, Participant
 from apps.core import clock
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 
-from .serializers import (
-    ChallengeDetailOut,
-    ChallengeIn,
-    ChallengeOut,
-    InviteesIn,
-    PoolOut,
-    ScheduleIn,
-)
+from .serializers import ChallengeIn, ChallengeOut, ParticipantsIn, PoolOut, ScheduleIn
 
 
 def _person(member: Member | None) -> dict[str, Any] | None:
@@ -33,14 +26,14 @@ def challenge_data(
     challenge: Challenge,
     member: Member,
     tally: selectors.Tally | None = None,
-    invited: list[Member] | None = None,
+    people: list[Participant] | None = None,
 ) -> dict[str, Any]:
-    """One challenge for `member`. Pass `tally` and `invited` when loaded for a whole list."""
+    """One challenge for `member`. Pass `tally` and `people` when loaded for a whole list."""
     today = clock.crew_today(challenge.crew)
     if tally is None:
         tally = selectors.tallies(challenges=[challenge]).get(challenge.pk, selectors.Tally())
-    if invited is None:
-        invited = selectors.invitees(challenges=[challenge]).get(challenge.pk, [])
+    if people is None:
+        people = selectors.participants(challenges=[challenge]).get(challenge.pk, [])
     return {
         "id": challenge.pk,
         "title": challenge.title,
@@ -70,34 +63,18 @@ def challenge_data(
         "voters": [_person(voter) for voter in tally.voters],
         "my_vote": any(voter.pk == member.pk for voter in tally.voters),
         "mine": challenge.created_by_id == member.pk,
-        "invitees": [_person(person) for person in invited],
-        "invited": any(person.pk == member.pk for person in invited),
+        "participants": [{"member": _person(p.member), "left_on": p.left_on} for p in people],
+        "taking_part": any(p.member_id == member.pk and p.left_on is None for p in people),
     }
 
 
 def challenges_data(challenges: list[Challenge], member: Member) -> list[dict[str, Any]]:
     tallies = selectors.tallies(challenges=challenges)
-    invited = selectors.invitees(challenges=challenges)
+    people = selectors.participants(challenges=challenges)
     return [
-        challenge_data(c, member, tallies.get(c.pk, selectors.Tally()), invited.get(c.pk, []))
+        challenge_data(c, member, tallies.get(c.pk, selectors.Tally()), people.get(c.pk, []))
         for c in challenges
     ]
-
-
-def detail_data(challenge: Challenge, member: Member) -> dict[str, Any]:
-    today = clock.crew_today(challenge.crew)
-    people = selectors.participants(challenge=challenge)
-    mine = next((p for p in people if p.member_id == member.pk), None)
-    return ChallengeDetailOut(
-        {
-            **challenge_data(challenge, member),
-            "participants": [
-                {"member": _person(p.member), "joined_on": p.joined_on, "ended_on": p.ended_on}
-                for p in people
-            ],
-            "taking_part": mine is not None and (mine.ended_on is None or mine.ended_on >= today),
-        }
-    ).data
 
 
 def _member(request: Request) -> Member:
@@ -155,8 +132,10 @@ class ChallengesView(APIView):
         data = ChallengeIn(data=request.data)
         data.is_valid(raise_exception=True)
         shape = dict(data.validated_data)
-        invitee_ids = shape.pop("invitee_ids")
-        challenge = services.propose_challenge(by=member, shape=shape, invitee_ids=invitee_ids)
+        participant_ids = shape.pop("participant_ids")
+        challenge = services.propose_challenge(
+            by=member, shape=shape, participant_ids=participant_ids
+        )
         return Response(
             ChallengeOut(challenge_data(challenge, member)).data, status=status.HTTP_201_CREATED
         )
@@ -171,9 +150,10 @@ class ChallengeView(APIView):
             raise services.ChallengeNotFound()
         return challenge
 
-    @extend_schema(responses=ChallengeDetailOut, operation_id="challenges_retrieve")
+    @extend_schema(responses=ChallengeOut, operation_id="challenges_retrieve")
     def get(self, request: Request, challenge_id: UUID) -> Response:
-        return Response(detail_data(self._get(request, challenge_id), _member(request)))
+        member = _member(request)
+        return Response(ChallengeOut(challenge_data(self._get(request, challenge_id), member)).data)
 
     @extend_schema(request=ChallengeIn, responses=ChallengeOut, operation_id="challenges_update")
     def put(self, request: Request, challenge_id: UUID) -> Response:
@@ -182,9 +162,9 @@ class ChallengeView(APIView):
         data = ChallengeIn(data=request.data)
         data.is_valid(raise_exception=True)
         shape = dict(data.validated_data)
-        invitee_ids = shape.pop("invitee_ids")
+        participant_ids = shape.pop("participant_ids")
         challenge = services.edit_proposal(
-            by=member, challenge_id=challenge_id, shape=shape, invitee_ids=invitee_ids
+            by=member, challenge_id=challenge_id, shape=shape, participant_ids=participant_ids
         )
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -195,17 +175,21 @@ class ChallengeView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class InviteesView(APIView):
+class ParticipantsView(APIView):
     permission_classes = [IsCrewMember]
 
-    @extend_schema(request=InviteesIn, responses=ChallengeOut, operation_id="challenges_invitees")
+    @extend_schema(
+        request=ParticipantsIn, responses=ChallengeOut, operation_id="challenges_participants"
+    )
     def put(self, request: Request, challenge_id: UUID) -> Response:
         """The creator changes who takes part while the challenge is a proposal."""
         member = _member(request)
-        data = InviteesIn(data=request.data)
+        data = ParticipantsIn(data=request.data)
         data.is_valid(raise_exception=True)
-        challenge = services.set_invitees(
-            by=member, challenge_id=challenge_id, invitee_ids=data.validated_data["invitee_ids"]
+        challenge = services.set_participants(
+            by=member,
+            challenge_id=challenge_id,
+            participant_ids=data.validated_data["participant_ids"],
         )
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -239,11 +223,9 @@ class ScheduleView(APIView):
         member = _member(request)
         challenge = selectors.get_challenge(member=member, challenge_id=challenge_id)
         assert challenge is not None
-        return Response(detail_data(challenge, member))
+        return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
-    @extend_schema(
-        request=ScheduleIn, responses=ChallengeDetailOut, operation_id="challenges_schedule"
-    )
+    @extend_schema(request=ScheduleIn, responses=ChallengeOut, operation_id="challenges_schedule")
     def put(self, request: Request, challenge_id: UUID) -> Response:
         """Admin: schedule a proposal for a period, or move it before it starts."""
         data = ScheduleIn(data=request.data)
@@ -253,7 +235,7 @@ class ScheduleView(APIView):
         )
         return self._detail(request, challenge_id)
 
-    @extend_schema(request=None, responses=ChallengeDetailOut, operation_id="challenges_unschedule")
+    @extend_schema(request=None, responses=ChallengeOut, operation_id="challenges_unschedule")
     def delete(self, request: Request, challenge_id: UUID) -> Response:
         """Admin: put a scheduled challenge back in the pool before it starts."""
         services.unschedule_challenge(by=_member(request), challenge_id=challenge_id)
@@ -263,20 +245,11 @@ class ScheduleView(APIView):
 class ParticipationView(APIView):
     permission_classes = [IsCrewMember]
 
-    def _detail(self, request: Request, challenge_id: UUID) -> Response:
-        member = _member(request)
-        challenge = selectors.get_challenge(member=member, challenge_id=challenge_id)
-        assert challenge is not None
-        return Response(detail_data(challenge, member))
-
-    @extend_schema(request=None, responses=ChallengeDetailOut, operation_id="challenges_take_part")
-    def put(self, request: Request, challenge_id: UUID) -> Response:
-        """Take part again (before the start)."""
-        services.take_part(by=_member(request), challenge_id=challenge_id)
-        return self._detail(request, challenge_id)
-
-    @extend_schema(request=None, responses=ChallengeDetailOut, operation_id="challenges_opt_out")
+    @extend_schema(request=None, responses={204: None}, operation_id="challenges_leave")
     def delete(self, request: Request, challenge_id: UUID) -> Response:
-        """Opt out before the start, or leave a running challenge from tomorrow."""
+        """Opt out before the start, or leave a running challenge (today still counts).
+
+        Either way the challenge is gone for the member afterwards (an admin still sees it).
+        """
         services.stop_taking_part(by=_member(request), challenge_id=challenge_id)
-        return self._detail(request, challenge_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)

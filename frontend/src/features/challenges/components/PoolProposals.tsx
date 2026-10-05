@@ -43,7 +43,7 @@ export function PoolProposals({
               <span className={styles.cardTitle}>{proposal.title}</span>
               <span className={styles.meta}>{summaryLine(t, proposal, i18n.language)}</span>
               <span className={styles.meta}>
-                {t("challenges.who.cardCount", { n: proposal.invitees.length })}
+                {t("challenges.who.cardCount", { n: proposal.participants.length })}
               </span>
               <span className={styles.meta}>
                 {t("challenges.proposedBy", {
@@ -74,7 +74,7 @@ export function PoolProposals({
                   {t("challenges.choose")}
                 </Button>
               )}
-              {proposal.invited && (
+              {proposal.taking_part && (
                 <Button
                   variant={proposal.my_vote ? "primary" : "secondary"}
                   icon={proposal.my_vote ? <Icon name="check" size={20} /> : undefined}

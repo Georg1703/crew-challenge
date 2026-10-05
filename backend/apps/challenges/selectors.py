@@ -1,7 +1,7 @@
 """Challenge reads. Views and other apps read challenge data through these functions.
 
-A member only ever gets the challenges they can see: the ones they are invited to, or every one
-in the crew for an admin (`visible`).
+A member only ever gets the challenges they can see: the ones they take part in (and have not
+left), or every one in the crew for an admin (`visible`).
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from django.db.models import Q, QuerySet
 from apps.core import clock
 from apps.crews.models import Member
 
-from .models import Challenge, Invitee, Participation, Vote
+from .models import Challenge, Participant, Vote
 
 PHASES = ("upcoming", "active", "finished")
 
@@ -67,11 +67,11 @@ def tallies(*, challenges: list[Challenge]) -> dict[UUID, Tally]:
 
 
 def visible(*, member: Member) -> QuerySet[Challenge]:
-    """The crew's challenges this member can see: invited to, or all of them for an admin."""
+    """The crew's challenges this member can see: taking part (not left), or all for an admin."""
     rows = Challenge.objects.for_crew(member.crew)
     if member.is_admin:
         return rows
-    return rows.filter(invitees__member=member)
+    return rows.filter(participants__member=member, participants__left_on__isnull=True)
 
 
 def pool(*, member: Member) -> Pool:
@@ -91,16 +91,16 @@ def pool(*, member: Member) -> Pool:
     )
 
 
-def invitees(*, challenges: list[Challenge]) -> dict[UUID, list[Member]]:
-    """Who is invited to each challenge, in the order they joined the crew."""
-    result: dict[UUID, list[Member]] = defaultdict(list)
+def participants(*, challenges: list[Challenge]) -> dict[UUID, list[Participant]]:
+    """Who takes part in each challenge (people who left too), in the order they joined the crew."""
+    result: dict[UUID, list[Participant]] = defaultdict(list)
     rows = (
-        Invitee.objects.filter(challenge__in=challenges)
+        Participant.objects.filter(challenge__in=challenges)
         .select_related("member")
         .order_by("member__created_at", "member_id")
     )
     for row in rows:
-        result[row.challenge_id].append(row.member)
+        result[row.challenge_id].append(row)
     return dict(result)
 
 
@@ -125,29 +125,19 @@ def list_chosen(*, member: Member, phases: tuple[str, ...] = PHASES) -> list[Cha
     return [c for c in chosen if phase(c, today) in phases]
 
 
-def participants(*, challenge: Challenge) -> list[Participation]:
-    """Who takes part (including people who left early, with `ended_on`), in join order."""
-    return list(
-        Participation.objects.filter(challenge=challenge)
-        .select_related("member")
-        .order_by("joined_on", "member__created_at")
-    )
-
-
-def participations_on(*, viewer: Member, day: date) -> list[Participation]:
+def participants_on(*, viewer: Member, day: date) -> list[Participant]:
     """Who takes part in what on `day`, in the viewer's crew, for challenges the viewer can see.
 
-    Includes people who left that very day (`ended_on == day`); in join order, then by title.
+    Includes people who left that very day (`left_on == day`); in join order, then by title.
     """
     return list(
-        Participation.objects.filter(
+        Participant.objects.filter(
             challenge__in=visible(member=viewer),
             challenge__state=Challenge.State.CHOSEN,
             challenge__start_date__lte=day,
             challenge__end_date__gte=day,
-            joined_on__lte=day,
         )
-        .filter(Q(ended_on__isnull=True) | Q(ended_on__gte=day))
+        .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
         .select_related("challenge", "member")
         .order_by("member__created_at", "member_id", "challenge__title", "challenge_id")
     )

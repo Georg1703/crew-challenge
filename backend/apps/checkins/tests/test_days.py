@@ -35,10 +35,10 @@ def record(done=(), partial=(), amounts=None) -> days.Record:
     )
 
 
-def test_span_follows_joining_and_leaving():
+def test_span_runs_until_someone_leaves():
     c = challenge()
-    assert days.span(c, date(2026, 10, 20), None) == NOV
-    assert days.span(c, d(10), d(20)) == days.Span(d(10), d(20))
+    assert days.span(c, None) == NOV
+    assert days.span(c, d(20)) == days.Span(d(1), d(20))
     assert NOV.days(date(2026, 10, 30), d(2)) == [d(1), d(2)]
     assert NOV.days(d(5), d(4)) == []
 

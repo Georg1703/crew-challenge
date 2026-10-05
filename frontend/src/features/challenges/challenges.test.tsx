@@ -7,7 +7,7 @@ import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
-import type { Challenge, ChallengeDetail, Pool } from "./api";
+import type { Challenge, Pool } from "./api";
 import { monthOptions } from "./months";
 
 const person = (member: typeof ana) => ({
@@ -45,8 +45,11 @@ const pushUps: Challenge = {
   voters: [person(bogdan)],
   my_vote: false,
   mine: false,
-  invitees: [person(ana), person(bogdan)],
-  invited: true,
+  participants: [
+    { member: person(ana), left_on: null },
+    { member: person(bogdan), left_on: null },
+  ],
+  taking_part: true,
 };
 
 const reading: Challenge = { ...pushUps, id: "c2", title: "Read", vote_count: 3, voters: [] };
@@ -66,10 +69,8 @@ const scheduled = (overrides: Partial<Challenge> = {}): Challenge => ({
   ...overrides,
 });
 
-const detail = (overrides: Partial<ChallengeDetail> = {}): ChallengeDetail => ({
+const detail = (overrides: Partial<Challenge> = {}): Challenge => ({
   ...pushUps,
-  participants: [],
-  taking_part: false,
   ...overrides,
 });
 
@@ -82,7 +83,7 @@ function mockGets(
   {
     proposals = pool as Value<Pool>,
     chosen = [] as Value<Challenge[]>,
-    one = detail() as Value<ChallengeDetail>,
+    one = detail() as Value<Challenge>,
   } = {},
 ) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
@@ -305,7 +306,7 @@ describe("proposing", () => {
         target_value: null,
         proof_kind: "photo",
         proof_required: false,
-        invitee_ids: [bogdan.id],
+        participant_ids: [bogdan.id],
       },
     });
   });
@@ -330,7 +331,7 @@ describe("one challenge", () => {
     let one = detail({ mine: true });
     mockGets(bogdan, { one: () => one });
     const put = vi.spyOn(api, "PUT").mockImplementation((() => {
-      one = detail({ mine: true, invitees: [person(bogdan)] });
+      one = detail({ mine: true, participants: [{ member: person(bogdan), left_on: null }] });
       return ok(one);
     }) as never);
     renderRoutes(routes, { at: "/challenges/c1" });
@@ -343,9 +344,9 @@ describe("one challenge", () => {
     await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Participants saved")).toBeInTheDocument();
-    expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/invitees", {
+    expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participants", {
       params: { path: { challenge_id: "c1" } },
-      body: { invitee_ids: [bogdan.id] },
+      body: { participant_ids: [bogdan.id] },
     });
     await waitFor(() =>
       expect(
@@ -354,8 +355,13 @@ describe("one challenge", () => {
     );
   });
 
-  it("shows an admin who is not invited the proposal without a vote", async () => {
-    mockGets(ana, { one: detail({ invitees: [person(bogdan)], invited: false }) });
+  it("shows an admin who does not take part the proposal without a vote", async () => {
+    mockGets(ana, {
+      one: detail({
+        participants: [{ member: person(bogdan), left_on: null }],
+        taking_part: false,
+      }),
+    });
     renderRoutes(routes, { at: "/challenges/c1" });
 
     expect(
@@ -409,7 +415,7 @@ describe("one challenge", () => {
       phase: "active",
       measure: "check",
       taking_part: true,
-      participants: [{ member: person(bogdan), joined_on: "2026-11-01", ended_on: null }],
+      participants: [{ member: person(bogdan), left_on: null }],
     });
     const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
     const todayCard = {
@@ -475,28 +481,28 @@ describe("one challenge", () => {
     vi.useRealTimers();
   });
 
-  it("lets a member opt out of a scheduled challenge before it starts", async () => {
-    const chosen = detail({
-      ...scheduled(),
-      taking_part: true,
-      participants: [{ member: person(bogdan), joined_on: "2026-11-01", ended_on: null }],
+  it("lets a member opt out of a scheduled challenge before it starts, after confirming", async () => {
+    mockGets(bogdan, {
+      one: detail({
+        ...scheduled(),
+        taking_part: true,
+        participants: [{ member: person(bogdan), left_on: null }],
+      }),
     });
-    const optedOut = { ...chosen, taking_part: false, participants: [] };
-    let one = chosen;
-    mockGets(bogdan, { one: () => one });
-    const del = vi.spyOn(api, "DELETE").mockImplementation((() => {
-      one = optedOut;
-      return ok(optedOut);
-    }) as never);
+    const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);
     renderRoutes(routes, { at: "/challenges/c1" });
 
     await userEvent.click(await screen.findByRole("button", { name: "I'm not taking part" }));
+    const sheet = await screen.findByRole("dialog", { name: "Not taking part?" });
+    expect(del).not.toHaveBeenCalled();
+    await userEvent.click(within(sheet).getByRole("button", { name: "I'm not taking part" }));
 
-    expect(await screen.findByRole("button", { name: "I'm taking part" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Back to proposals" })).not.toBeInTheDocument();
+    expect(await screen.findByText("You're no longer taking part")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Challenges" })).toBeInTheDocument();
     expect(del).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participation", {
       params: { path: { challenge_id: "c1" } },
     });
+    expect(screen.queryByRole("button", { name: "I'm taking part" })).not.toBeInTheDocument();
   });
 });
 

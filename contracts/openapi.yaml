@@ -110,7 +110,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChallengeDetailOut'
+                $ref: '#/components/schemas/ChallengeOut'
           description: ''
     put:
       operationId: challenges_update
@@ -236,9 +236,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/challenges/{challenge_id}/invitees:
+  /api/v1/challenges/{challenge_id}/participants:
     put:
-      operationId: challenges_invitees
+      operationId: challenges_participants
       description: The creator changes who takes part while the challenge is a proposal.
       parameters:
       - in: path
@@ -253,7 +253,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InviteesInRequest'
+              $ref: '#/components/schemas/ParticipantsInRequest'
         required: true
       security:
       - cookieAuth: []
@@ -265,30 +265,12 @@ paths:
                 $ref: '#/components/schemas/ChallengeOut'
           description: ''
   /api/v1/challenges/{challenge_id}/participation:
-    put:
-      operationId: challenges_take_part
-      description: Take part again (before the start).
-      parameters:
-      - in: path
-        name: challenge_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - challenges
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChallengeDetailOut'
-          description: ''
     delete:
-      operationId: challenges_opt_out
-      description: Opt out before the start, or leave a running challenge from tomorrow.
+      operationId: challenges_leave
+      description: |-
+        Opt out before the start, or leave a running challenge (today still counts).
+
+        Either way the challenge is gone for the member afterwards (an admin still sees it).
       parameters:
       - in: path
         name: challenge_id
@@ -330,7 +312,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChallengeDetailOut'
+                $ref: '#/components/schemas/ChallengeOut'
           description: ''
     delete:
       operationId: challenges_unschedule
@@ -692,146 +674,6 @@ components:
       - member
       - states
       - streak
-    ChallengeDetailOut:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        rules:
-          type: string
-        icon:
-          $ref: '#/components/schemas/IconEnum'
-        measure:
-          $ref: '#/components/schemas/MeasureEnum'
-        unit:
-          type: string
-        frequency:
-          $ref: '#/components/schemas/FrequencyEnum'
-        weekdays:
-          type: array
-          items:
-            type: integer
-        times:
-          type: integer
-          nullable: true
-        target_scope:
-          $ref: '#/components/schemas/TargetScopeEnum'
-        target_value:
-          type: number
-          format: double
-          maximum: 100000000
-          minimum: -100000000
-          exclusiveMaximum: true
-          exclusiveMinimum: true
-          nullable: true
-        proof_kind:
-          $ref: '#/components/schemas/ProofKindEnum'
-        proof_required:
-          type: boolean
-        state:
-          $ref: '#/components/schemas/ChallengeStateEnum'
-        phase:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/PhaseEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        period_kind:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/PeriodKindEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        period_start:
-          type: string
-          format: date
-          nullable: true
-        start_date:
-          type: string
-          format: date
-          nullable: true
-        end_date:
-          type: string
-          format: date
-          nullable: true
-        chosen_by:
-          allOf:
-          - $ref: '#/components/schemas/PersonOut'
-          nullable: true
-        chosen_at:
-          type: string
-          format: date-time
-          nullable: true
-        created_by:
-          allOf:
-          - $ref: '#/components/schemas/PersonOut'
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        revision:
-          type: integer
-        vote_count:
-          type: integer
-        voters:
-          type: array
-          items:
-            $ref: '#/components/schemas/PersonOut'
-        my_vote:
-          type: boolean
-          description: The current member voted for it.
-        invitees:
-          type: array
-          items:
-            $ref: '#/components/schemas/PersonOut'
-          description: Who takes part, in the order they joined the crew.
-        invited:
-          type: boolean
-          description: The current member is one of the invitees.
-        mine:
-          type: boolean
-          description: Proposed by the current member.
-        participants:
-          type: array
-          items:
-            $ref: '#/components/schemas/ParticipantOut'
-        taking_part:
-          type: boolean
-          description: The current member counts in it today.
-      required:
-      - chosen_at
-      - chosen_by
-      - created_at
-      - created_by
-      - end_date
-      - frequency
-      - icon
-      - id
-      - invited
-      - invitees
-      - measure
-      - mine
-      - my_vote
-      - participants
-      - period_kind
-      - period_start
-      - phase
-      - proof_kind
-      - proof_required
-      - revision
-      - rules
-      - start_date
-      - state
-      - taking_part
-      - target_scope
-      - target_value
-      - times
-      - title
-      - unit
-      - vote_count
-      - voters
-      - weekdays
     ChallengeInRequest:
       type: object
       description: The creator's choices. Combinations are checked in services.clean_shape.
@@ -884,7 +726,7 @@ components:
         proof_required:
           type: boolean
           default: false
-        invitee_ids:
+        participant_ids:
           type: array
           items:
             type: string
@@ -985,14 +827,15 @@ components:
         my_vote:
           type: boolean
           description: The current member voted for it.
-        invitees:
+        participants:
           type: array
           items:
-            $ref: '#/components/schemas/PersonOut'
-          description: Who takes part, in the order they joined the crew.
-        invited:
+            $ref: '#/components/schemas/ParticipantOut'
+          description: Who takes part (and who left), in the order they joined the
+            crew.
+        taking_part:
           type: boolean
-          description: The current member is one of the invitees.
+          description: The current member is a participant and has not left.
         mine:
           type: boolean
           description: Proposed by the current member.
@@ -1005,11 +848,10 @@ components:
       - frequency
       - icon
       - id
-      - invited
-      - invitees
       - measure
       - mine
       - my_vote
+      - participants
       - period_kind
       - period_start
       - phase
@@ -1019,6 +861,7 @@ components:
       - rules
       - start_date
       - state
+      - taking_part
       - target_scope
       - target_value
       - times
@@ -1229,17 +1072,6 @@ components:
       - invited_by
       - members
       - status
-    InviteesInRequest:
-      type: object
-      properties:
-        invitee_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
-          description: Who takes part; the creator is always in.
-      required:
-      - invitee_ids
     JoinWithAccountInRequest:
       type: object
       properties:
@@ -1357,17 +1189,25 @@ components:
       properties:
         member:
           $ref: '#/components/schemas/PersonOut'
-        joined_on:
-          type: string
-          format: date
-        ended_on:
+        left_on:
           type: string
           format: date
           nullable: true
+          description: Last day that counted, when they left during the challenge.
       required:
-      - ended_on
-      - joined_on
+      - left_on
       - member
+    ParticipantsInRequest:
+      type: object
+      properties:
+        participant_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who takes part; the creator is always in.
+      required:
+      - participant_ids
     PatchedMePatchInRequest:
       type: object
       properties:

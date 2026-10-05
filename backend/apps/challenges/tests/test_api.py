@@ -146,7 +146,7 @@ def test_admin_schedules_and_everyone_sees_it(browser, people):
     )
     assert body["chosen_by"]["display_name"] == "Ana"
     assert body["taking_part"] is True
-    assert [p["member"]["display_name"] for p in body["participants"]] == ["Ana", "Bogdan"]
+    assert names(body) == ["Ana", "Bogdan"]
 
     assert [c["id"] for c in browser.get("/api/v1/challenges?phase=upcoming").json()] == [
         str(proposal.pk)
@@ -160,7 +160,8 @@ def test_admin_schedules_and_everyone_sees_it(browser, people):
 
     back = browser.delete(url)
     assert back.status_code == 200
-    assert (back.json()["state"], back.json()["participants"]) == ("proposed", [])
+    assert back.json()["state"] == "proposed"
+    assert names(back.json()) == ["Ana", "Bogdan"]  # who takes part stays as it was
 
 
 @pytest.mark.parametrize(
@@ -183,16 +184,17 @@ def test_bad_periods_answer_with_a_code(browser, people, payload, status, code):
     assert response.json()["error"]["code"] == code
 
 
-def test_opt_out_and_back_in(browser, people):
+def test_opting_out_removes_the_challenge_for_the_member(browser, people):
     admin, member = people
     proposal = services.propose_challenge(by=member, shape=SHAPE)
     schedule(admin, proposal)
     client = as_member(browser, member)
-    out = client.delete(f"/api/v1/challenges/{proposal.pk}/participation").json()
-    assert out["taking_part"] is False
-    assert [p["member"]["display_name"] for p in out["participants"]] == ["Ana"]
-    back = client.put(f"/api/v1/challenges/{proposal.pk}/participation").json()
-    assert back["taking_part"] is True
+    url = f"/api/v1/challenges/{proposal.pk}"
+    assert client.get(url).json()["taking_part"] is True
+    assert client.delete(f"{url}/participation").status_code == 204
+    assert client.get(url).status_code == 404
+    left = as_member(browser, admin).get(url).json()
+    assert [p["member"]["display_name"] for p in left["participants"]] == ["Ana"]
 
 
 def test_other_crews_get_404(browser, people):
@@ -215,47 +217,52 @@ def test_propose_for_some_people_and_change_the_list(browser, people):
     other = MemberFactory.create(crew=admin.crew, display_name="Cristina")
     client = as_member(browser, member)
     created = client.post(
-        "/api/v1/challenges", {**SHAPE, "invitee_ids": [str(other.pk)]}, format="json"
+        "/api/v1/challenges", {**SHAPE, "participant_ids": [str(other.pk)]}, format="json"
     ).json()
     # Same join time under frozen time, so compare without order.
-    assert sorted(p["display_name"] for p in created["invitees"]) == ["Bogdan", "Cristina"]
-    assert created["invited"] is True
+    assert names(created) == ["Bogdan", "Cristina"]
+    assert created["taking_part"] is True
+    assert created["participants"][0]["left_on"] is None
 
-    url = f"/api/v1/challenges/{created['id']}/invitees"
-    changed = client.put(url, {"invitee_ids": [str(admin.pk)]}, format="json")
+    url = f"/api/v1/challenges/{created['id']}/participants"
+    changed = client.put(url, {"participant_ids": [str(admin.pk)]}, format="json")
     assert changed.status_code == 200
-    assert sorted(p["display_name"] for p in changed.json()["invitees"]) == ["Ana", "Bogdan"]
+    assert names(changed.json()) == ["Ana", "Bogdan"]
 
     hidden = as_member(browser, other)
     assert hidden.get(f"/api/v1/challenges/{created['id']}").status_code == 404
     assert hidden.get("/api/v1/proposals").json()["proposals"] == []
-    refused = hidden.put(url, {"invitee_ids": []}, format="json")
+    refused = hidden.put(url, {"participant_ids": []}, format="json")
     assert refused.status_code == 404
 
 
-def test_the_whole_crew_is_invited_when_the_list_is_left_out(browser, people):
+def names(body):
+    return sorted(p["member"]["display_name"] for p in body["participants"])
+
+
+def test_the_whole_crew_takes_part_when_the_list_is_left_out(browser, people):
     _, member = people
     body = as_member(browser, member).post("/api/v1/challenges", SHAPE, format="json").json()
-    assert sorted(p["display_name"] for p in body["invitees"]) == ["Ana", "Bogdan"]
+    assert names(body) == ["Ana", "Bogdan"]
 
 
-def test_an_admin_who_is_not_invited_sees_it_but_cannot_vote(browser, people):
+def test_an_admin_who_does_not_take_part_sees_it_but_cannot_vote(browser, people):
     admin, member = people
-    proposal = services.propose_challenge(by=member, shape=SHAPE, invitee_ids=[])
+    proposal = services.propose_challenge(by=member, shape=SHAPE, participant_ids=[])
     client = as_member(browser, admin)
     body = client.get(f"/api/v1/challenges/{proposal.pk}").json()
-    assert body["invited"] is False
+    assert body["taking_part"] is False
     vote = client.put(f"/api/v1/challenges/{proposal.pk}/vote")
     assert vote.status_code == 403
-    assert vote.json()["error"]["code"] == "not_invited"
+    assert vote.json()["error"]["code"] == "not_a_participant"
 
 
-def test_strangers_cannot_be_invited(browser, people):
+def test_strangers_cannot_take_part(browser, people):
     _, member = people
     response = as_member(browser, member).post(
         "/api/v1/challenges",
-        {**SHAPE, "invitee_ids": [str(AdminFactory.create().pk)]},
+        {**SHAPE, "participant_ids": [str(AdminFactory.create().pk)]},
         format="json",
     )
     assert response.status_code == 400
-    assert "invitee_ids" in response.json()["error"]["fields"]
+    assert "participant_ids" in response.json()["error"]["fields"]

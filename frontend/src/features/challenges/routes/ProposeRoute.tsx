@@ -26,7 +26,7 @@ import {
 
 import { useChallenge, useEditChallenge, useProposeChallenge, type ChallengeInput } from "../api";
 import styles from "../challenges.module.css";
-import { InviteePicker } from "../components/InviteePicker";
+import { ParticipantPicker } from "../components/ParticipantPicker";
 import {
   CHALLENGE_ICONS,
   WEEKDAYS,
@@ -37,11 +37,11 @@ import {
   weekdayShort,
 } from "../describe";
 
-type Draft = Required<Omit<ChallengeInput, "target_value" | "times" | "invitee_ids">> & {
+type Draft = Required<Omit<ChallengeInput, "target_value" | "times" | "participant_ids">> & {
   times: number;
   target_value: string;
   /** null: nobody changed the list yet, so the whole crew takes part. */
-  invitee_ids: string[] | null;
+  participant_ids: string[] | null;
 };
 
 const EMPTY: Draft = {
@@ -57,7 +57,7 @@ const EMPTY: Draft = {
   target_value: "",
   proof_kind: "none",
   proof_required: false,
-  invitee_ids: null,
+  participant_ids: null,
 };
 
 const STEPS = ["what", "who", "often", "record", "proof", "review"] as const;
@@ -68,7 +68,7 @@ const FIELD_STEP: Record<string, Step> = {
   title: "what",
   rules: "what",
   icon: "what",
-  invitee_ids: "who",
+  participant_ids: "who",
   frequency: "often",
   weekdays: "often",
   times: "often",
@@ -96,7 +96,7 @@ function toInput(draft: Draft): ChallengeInput {
     target_value: target === "none" ? null : draft.target_value.replace(",", "."),
     proof_kind: draft.proof_kind,
     proof_required: draft.proof_kind !== "none" && draft.proof_required,
-    ...(draft.invitee_ids ? { invitee_ids: draft.invitee_ids } : {}),
+    ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
   };
 }
 
@@ -140,7 +140,7 @@ function EditProposal({ id }: { id: string }) {
         target_value: c.target_value == null ? "" : String(c.target_value),
         proof_kind: c.proof_kind,
         proof_required: c.proof_required,
-        invitee_ids: c.invitees.map((person) => person.id),
+        participant_ids: c.participants.map((p) => p.member.id),
       }}
     />
   );
@@ -252,12 +252,12 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
 
           {step === "who" &&
             (crew.data ? (
-              <InviteePicker
+              <ParticipantPicker
                 people={people}
                 creatorId={creatorId}
-                values={draft.invitee_ids ?? people.map((person) => person.id)}
-                onChange={(ids) => set("invitee_ids", ids)}
-                error={fieldError("invitee_ids")}
+                values={draft.participant_ids ?? people.map((person) => person.id)}
+                onChange={(ids) => set("participant_ids", ids)}
+                error={fieldError("participant_ids")}
               />
             ) : (
               <Skeleton lines={4} />
@@ -425,7 +425,7 @@ function Review({
   };
   const facts: [string, string][] = [
     [t("challenges.facts.name"), draft.title.trim()],
-    [t("challenges.facts.who"), whoSummary(draft.invitee_ids, people)],
+    [t("challenges.facts.who"), whoSummary(draft.participant_ids, people)],
     [t("challenges.facts.often"), describeFrequency(t, shape)],
     [t("challenges.facts.record"), describeMeasure(t, shape)],
     ...(target ? [[t("challenges.facts.target"), target] as [string, string]] : []),

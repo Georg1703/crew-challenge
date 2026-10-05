@@ -6,24 +6,24 @@ import { useCrew } from "@/features/crew";
 import { errorMessage } from "@/i18n/errors";
 import { Banner, Button, Sheet, Skeleton, useToast } from "@/shared/ui";
 
-import { useSetInvitees, type Challenge } from "../api";
+import { useSetParticipants, type Challenge } from "../api";
 import styles from "../challenges.module.css";
-import { InviteePicker } from "./InviteePicker";
+import { ParticipantPicker } from "./ParticipantPicker";
 
 /** The creator changes who takes part while the challenge is a proposal. */
-export function InviteesSheet({
+export function ParticipantsSheet({
   challenge,
   onClose,
 }: {
-  challenge: Pick<Challenge, "id" | "invitees">;
+  challenge: Pick<Challenge, "id" | "participants">;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
   const me = useMe();
   const crew = useCrew();
-  const save = useSetInvitees(challenge.id);
-  const [values, setValues] = useState(challenge.invitees.map((person) => person.id));
+  const save = useSetParticipants(challenge.id);
+  const [values, setValues] = useState(challenge.participants.map((p) => p.member.id));
 
   const confirm = () =>
     save.mutate(values, {
@@ -36,7 +36,7 @@ export function InviteesSheet({
   return (
     <Sheet open onClose={onClose} title={t("challenges.who.edit")} closeLabel={t("common.close")}>
       {crew.data ? (
-        <InviteePicker
+        <ParticipantPicker
           people={crew.data.members}
           creatorId={me.data?.member?.id}
           values={values}

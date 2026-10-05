@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Sum
 
 from apps.challenges import selectors as challenges
-from apps.challenges.models import Challenge, Participation
+from apps.challenges.models import Challenge, Participant
 from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Member
@@ -50,16 +50,16 @@ class NothingToUndo(Conflict):
     message = "There is nothing to undo for today."
 
 
-def _participation(by: Member, challenge_id: UUID, day: date) -> Participation:
-    """The member's participation that covers today, or the matching error."""
+def _participant(by: Member, challenge_id: UUID, day: date) -> Participant:
+    """The member's participant row that covers today, or the matching error."""
     if day != clock.crew_today(by.crew):
         raise DayClosed()
     challenge = challenges.get_challenge(member=by, challenge_id=challenge_id)
     if challenge is None:
         raise ChallengeNotFound()
-    for participation in challenges.participations_on(viewer=by, day=day):
-        if participation.challenge_id == challenge.pk and participation.member_id == by.pk:
-            return participation
+    for participant in challenges.participants_on(viewer=by, day=day):
+        if participant.challenge_id == challenge.pk and participant.member_id == by.pk:
+            return participant
     raise NotTakingPart()
 
 
@@ -89,8 +89,8 @@ def check_in(
     *, by: Member, challenge_id: UUID, day: date, amount: Decimal | None = None
 ) -> CheckIn:
     """Record today's check-in. Numbers add up during the day; a plain check-in counts once."""
-    participation = _participation(by, challenge_id, day)
-    challenge = participation.challenge
+    participant = _participant(by, challenge_id, day)
+    challenge = participant.challenge
     if days.is_fixed(challenge) and not days.is_due(challenge, day):
         raise NotDueToday()
     value = _clean_amount(challenge, amount)
@@ -111,10 +111,10 @@ def check_in(
 @transaction.atomic
 def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
     """Remove today's last entry; the check-in goes with the last one (then None)."""
-    participation = _participation(by, challenge_id, day)
+    participant = _participant(by, challenge_id, day)
     row = (
         CheckIn.objects.select_for_update()
-        .filter(challenge=participation.challenge, member=by, day=day)
+        .filter(challenge=participant.challenge, member=by, day=day)
         .first()
     )
     if row is None:

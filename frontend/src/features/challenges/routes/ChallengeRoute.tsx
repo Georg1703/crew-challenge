@@ -22,17 +22,17 @@ import {
 
 import {
   useChallenge,
-  useParticipation,
+  useLeave,
   useUnschedule,
   useVote,
   useWithdrawChallenge,
-  type ChallengeDetail,
+  type Challenge,
 } from "../api";
 import styles from "../challenges.module.css";
 import { describeFrequency, describeMeasure, describeProof, describeTarget } from "../describe";
 import { ChallengeIcon } from "../components/ChallengeIcon";
 import { PhasePill } from "../components/PhasePill";
-import { InviteesSheet } from "../components/InviteesSheet";
+import { ParticipantsSheet } from "../components/ParticipantsSheet";
 import { ScheduleSheet } from "../components/ScheduleSheet";
 
 /** One challenge: what it asks, how the crew is doing, who takes part and who proposed it. */
@@ -58,18 +58,19 @@ export function ChallengeRoute() {
   return <ChallengeScreen challenge={challenge.data} />;
 }
 
-function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
+function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
   const me = useMe();
   const member = me.data?.member;
   const timeZone = me.data?.crew?.timezone ?? "UTC";
-  const participation = useParticipation(challenge.id);
+  const leave = useLeave(challenge.id);
   const withdraw = useWithdrawChallenge();
   const unschedule = useUnschedule(challenge.id);
   const vote = useVote();
   const [withdrawing, setWithdrawing] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -116,9 +117,13 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
     myToday !== undefined &&
     (myToday.settled === false || myToday.state === "partial");
 
-  const toggleParticipation = () =>
-    participation.mutate(!challenge.taking_part, {
-      onError: (error) => toast(errorMessage(t, error), "error"),
+  const started = challenge.phase === "active";
+  const leaveNow = () =>
+    leave.mutate(undefined, {
+      onSuccess: () => {
+        toast(started ? t("challenges.left") : t("challenges.optedOut"), "success");
+        navigate("/challenges", { replace: true });
+      },
     });
 
   return (
@@ -143,7 +148,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
 
       {proposal && (
         <div className={styles.actions}>
-          {challenge.invited && (
+          {challenge.taking_part && (
             <Button
               variant={challenge.my_vote ? "primary" : "secondary"}
               size="lg"
@@ -221,7 +226,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t("challenges.who.title")}</h2>
           <List label={t("challenges.who.title")}>
-            {challenge.invitees.map((person) => (
+            {challenge.participants.map(({ member: person }) => (
               <ListRow
                 key={person.id}
                 leading={<Avatar name={person.display_name} seed={person.avatar_seed} />}
@@ -234,7 +239,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
               />
             ))}
           </List>
-          {!challenge.invited && <p className={styles.meta}>{t("challenges.who.adminOnly")}</p>}
+          {!challenge.taking_part && <p className={styles.meta}>{t("challenges.who.adminOnly")}</p>}
           {mine && (
             <Button
               variant="secondary"
@@ -258,7 +263,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
           meId={member?.id}
           fixedDays={challenge.frequency === "daily" || challenge.frequency === "weekdays"}
           leftOn={Object.fromEntries(
-            challenge.participants.flatMap((p) => (p.ended_on ? [[p.member.id, p.ended_on]] : [])),
+            challenge.participants.flatMap((p) => (p.left_on ? [[p.member.id, p.left_on]] : [])),
           )}
         />
       )}
@@ -288,20 +293,9 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
               <ParticipantList challenge={challenge} meId={member?.id} />
             </>
           )}
-          {challenge.phase !== "finished" && challenge.invited && (
-            <Button
-              variant={challenge.taking_part ? "danger" : "primary"}
-              size="lg"
-              fullWidth
-              loading={participation.isPending}
-              disabled={!challenge.taking_part && challenge.phase === "active"}
-              onClick={toggleParticipation}
-            >
-              {challenge.taking_part
-                ? challenge.phase === "active"
-                  ? t("challenges.leave")
-                  : t("challenges.optOut")
-                : t("challenges.optIn")}
+          {challenge.phase !== "finished" && challenge.taking_part && (
+            <Button variant="danger" size="lg" fullWidth onClick={() => setLeaving(true)}>
+              {started ? t("challenges.leave") : t("challenges.optOut")}
             </Button>
           )}
         </section>
@@ -311,7 +305,27 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
         <CheckInSheet challengeId={challenge.id} onClose={() => setCheckingIn(false)} />
       )}
 
-      {inviting && <InviteesSheet challenge={challenge} onClose={() => setInviting(false)} />}
+      {inviting && <ParticipantsSheet challenge={challenge} onClose={() => setInviting(false)} />}
+
+      <Sheet
+        open={leaving}
+        onClose={() => setLeaving(false)}
+        title={started ? t("challenges.leaveTitle") : t("challenges.optOutTitle")}
+        closeLabel={t("common.close")}
+      >
+        <p className={styles.muted}>
+          {started ? t("challenges.leaveBody") : t("challenges.optOutBody")}
+        </p>
+        {leave.error && <Banner tone="danger" title={errorMessage(t, leave.error)} />}
+        <div className={styles.actions}>
+          <Button variant="danger" size="lg" fullWidth loading={leave.isPending} onClick={leaveNow}>
+            {started ? t("challenges.leave") : t("challenges.optOut")}
+          </Button>
+          <Button variant="secondary" size="lg" fullWidth onClick={() => setLeaving(false)}>
+            {t("common.cancel")}
+          </Button>
+        </div>
+      </Sheet>
 
       {scheduling && (
         <ScheduleSheet
@@ -357,7 +371,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
 }
 
 /** Who takes part in a scheduled challenge that has not started (the board shows them after). */
-function ParticipantList({ challenge, meId }: { challenge: ChallengeDetail; meId?: string }) {
+function ParticipantList({ challenge, meId }: { challenge: Challenge; meId?: string }) {
   const { t, i18n } = useTranslation();
   return (
     <List label={t("challenges.participantsTitle")}>
@@ -367,8 +381,8 @@ function ParticipantList({ challenge, meId }: { challenge: ChallengeDetail; meId
           leading={<Avatar name={p.member.display_name} seed={p.member.avatar_seed} />}
           title={p.member.display_name}
           subtitle={
-            p.ended_on
-              ? t("challenges.leftOn", { date: formatDay(p.ended_on, i18n.language) })
+            p.left_on
+              ? t("challenges.leftOn", { date: formatDay(p.left_on, i18n.language) })
               : undefined
           }
           trailing={

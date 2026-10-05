@@ -142,7 +142,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/challenges/{challenge_id}/invitees": {
+    "/api/v1/challenges/{challenge_id}/participants": {
         parameters: {
             query?: never;
             header?: never;
@@ -151,7 +151,7 @@ export interface paths {
         };
         get?: never;
         /** @description The creator changes who takes part while the challenge is a proposal. */
-        put: operations["challenges_invitees"];
+        put: operations["challenges_participants"];
         post?: never;
         delete?: never;
         options?: never;
@@ -167,11 +167,14 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Take part again (before the start). */
-        put: operations["challenges_take_part"];
+        put?: never;
         post?: never;
-        /** @description Opt out before the start, or leave a running challenge from tomorrow. */
-        delete: operations["challenges_opt_out"];
+        /**
+         * @description Opt out before the start, or leave a running challenge (today still counts).
+         *
+         *     Either way the challenge is gone for the member afterwards (an admin still sees it).
+         */
+        delete: operations["challenges_leave"];
         options?: never;
         head?: never;
         patch?: never;
@@ -415,52 +418,6 @@ export interface components {
             states: components["schemas"]["DayStateEnum"][];
             streak: number | null;
         };
-        ChallengeDetailOut: {
-            /** Format: uuid */
-            id: string;
-            title: string;
-            rules: string;
-            icon: components["schemas"]["IconEnum"];
-            measure: components["schemas"]["MeasureEnum"];
-            unit: string;
-            frequency: components["schemas"]["FrequencyEnum"];
-            weekdays: number[];
-            times: number | null;
-            target_scope: components["schemas"]["TargetScopeEnum"];
-            /** Format: double */
-            target_value: number | null;
-            proof_kind: components["schemas"]["ProofKindEnum"];
-            proof_required: boolean;
-            state: components["schemas"]["ChallengeStateEnum"];
-            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
-            period_kind: (components["schemas"]["PeriodKindEnum"] | components["schemas"]["NullEnum"]) | null;
-            /** Format: date */
-            period_start: string | null;
-            /** Format: date */
-            start_date: string | null;
-            /** Format: date */
-            end_date: string | null;
-            chosen_by: components["schemas"]["PersonOut"] | null;
-            /** Format: date-time */
-            chosen_at: string | null;
-            created_by: components["schemas"]["PersonOut"] | null;
-            /** Format: date-time */
-            created_at: string;
-            revision: number;
-            vote_count: number;
-            voters: components["schemas"]["PersonOut"][];
-            /** @description The current member voted for it. */
-            my_vote: boolean;
-            /** @description Who takes part, in the order they joined the crew. */
-            invitees: components["schemas"]["PersonOut"][];
-            /** @description The current member is one of the invitees. */
-            invited: boolean;
-            /** @description Proposed by the current member. */
-            mine: boolean;
-            participants: components["schemas"]["ParticipantOut"][];
-            /** @description The current member counts in it today. */
-            taking_part: boolean;
-        };
         /** @description The creator's choices. Combinations are checked in services.clean_shape. */
         ChallengeInRequest: {
             title: string;
@@ -484,7 +441,7 @@ export interface components {
             /** @default false */
             proof_required: boolean;
             /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
-            invitee_ids?: string[] | null;
+            participant_ids?: string[] | null;
         };
         ChallengeOut: {
             /** Format: uuid */
@@ -522,10 +479,10 @@ export interface components {
             voters: components["schemas"]["PersonOut"][];
             /** @description The current member voted for it. */
             my_vote: boolean;
-            /** @description Who takes part, in the order they joined the crew. */
-            invitees: components["schemas"]["PersonOut"][];
-            /** @description The current member is one of the invitees. */
-            invited: boolean;
+            /** @description Who takes part (and who left), in the order they joined the crew. */
+            participants: components["schemas"]["ParticipantOut"][];
+            /** @description The current member is a participant and has not left. */
+            taking_part: boolean;
             /** @description Proposed by the current member. */
             mine: boolean;
         };
@@ -635,10 +592,6 @@ export interface components {
              */
             crew_id: string | null;
         };
-        InviteesInRequest: {
-            /** @description Who takes part; the creator is always in. */
-            invitee_ids: string[];
-        };
         JoinWithAccountInRequest: {
             display_name: string;
         };
@@ -688,10 +641,15 @@ export interface components {
         NullEnum: null;
         ParticipantOut: {
             member: components["schemas"]["PersonOut"];
-            /** Format: date */
-            joined_on: string;
-            /** Format: date */
-            ended_on: string | null;
+            /**
+             * Format: date
+             * @description Last day that counted, when they left during the challenge.
+             */
+            left_on: string | null;
+        };
+        ParticipantsInRequest: {
+            /** @description Who takes part; the creator is always in. */
+            participant_ids: string[];
         };
         PatchedMePatchInRequest: {
             display_name?: string;
@@ -969,7 +927,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChallengeDetailOut"];
+                    "application/json": components["schemas"]["ChallengeOut"];
                 };
             };
         };
@@ -1089,7 +1047,7 @@ export interface operations {
             };
         };
     };
-    challenges_invitees: {
+    challenges_participants: {
         parameters: {
             query?: never;
             header?: never;
@@ -1100,7 +1058,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["InviteesInRequest"];
+                "application/json": components["schemas"]["ParticipantsInRequest"];
             };
         };
         responses: {
@@ -1114,28 +1072,7 @@ export interface operations {
             };
         };
     };
-    challenges_take_part: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                challenge_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChallengeDetailOut"];
-                };
-            };
-        };
-    };
-    challenges_opt_out: {
+    challenges_leave: {
         parameters: {
             query?: never;
             header?: never;
@@ -1175,7 +1112,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChallengeDetailOut"];
+                    "application/json": components["schemas"]["ChallengeOut"];
                 };
             };
         };

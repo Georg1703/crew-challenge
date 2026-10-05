@@ -146,11 +146,11 @@
     "period_too_far": "Choose a month at most a year ahead.",
     "too_few_days": "Too few days are left this month for how many times the challenge asks.",
     "period_kind_not_available": "Only months can be chosen for now.",
-    "not_invited": "Only the people taking part can do this.",
     "day_closed": "That day has ended. You can only check in for today.",
     "not_taking_part": "You're not taking part in this challenge today.",
     "not_due_today": "This challenge asks for nothing today.",
-    "nothing_to_undo": "There's nothing to undo today."
+    "nothing_to_undo": "There's nothing to undo today.",
+    "not_a_participant": "Only the people taking part can do this."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -219,7 +219,6 @@
     "participantsTitle": "Taking part",
     "leftOn": "Left on {{date}}",
     "optOut": "I'm not taking part",
-    "optIn": "I'm taking part",
     "leave": "Leave the challenge",
     "edit": "Edit the proposal",
     "withdraw": "Withdraw the proposal",
@@ -463,7 +462,13 @@
     },
     "factsLabel": "What the challenge asks",
     "periodLine": "For {{period}}",
-    "checkIn": "Check in today"
+    "checkIn": "Check in today",
+    "optOutTitle": "Not taking part?",
+    "optOutBody": "The challenge leaves your list and you cannot come back to it.",
+    "optedOut": "You're no longer taking part",
+    "leaveTitle": "Leave the challenge?",
+    "leaveBody": "The challenge leaves your list and you cannot come back. The days you did so far stay on the crew's board.",
+    "left": "You left the challenge"
   },
   "checkins": {
     "today": "today",

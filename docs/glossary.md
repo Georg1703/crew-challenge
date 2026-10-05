@@ -18,8 +18,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Vote | `Vote` | A member likes a proposal: one vote per member per proposal, for as many proposals as they want. |
 | Schedule | `schedule_challenge` | An admin takes a proposal out of the pool and sets its period (v1: a month). Votes guide, they do not decide. Several challenges can share a period. |
 | Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` (and back, before the start). Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
-| Invitee | `Invitee` | Someone the creator selected for a challenge (the whole crew by default, the creator always). Only invitees and admins see the challenge; only invitees vote and take part. Not "participant" (that is `Participation`, once scheduled) and not `Invite` (joining a crew). |
-| Participation | `Participation` | A member taking part in a scheduled challenge: every invitee when it is scheduled; they can opt out before the start or leave after. |
+| Participant | `Participant` | A member who takes part in a challenge, chosen by its creator when proposing (the whole crew by default, the creator always). Sees it, votes on it while it is a proposal, checks in once it runs. Opting out before the start removes the row; leaving during it sets `left_on`. Not `Invite` (joining a crew). |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
 | Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `uploading` and `excused`. A missed day has no row: it is derived. |
 | Entry | `CheckInEntry` | One "+N" of a check-in; a day's entries add up. Undo removes the last one. |

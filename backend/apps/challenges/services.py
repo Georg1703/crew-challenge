@@ -1,7 +1,7 @@
-"""Challenge rules: the proposal pool, who is invited, votes, the admin's schedule, taking part.
+"""Challenge rules: the proposal pool, who takes part, votes, the admin's schedule, leaving.
 
-Only a challenge's invitees and the crew's admins can see it; to anyone else it does not exist
-(`ChallengeNotFound`), like another crew's challenge.
+Only a challenge's participants (who have not left) and the crew's admins can see it; to anyone
+else it does not exist (`ChallengeNotFound`), like another crew's challenge.
 
 Every write goes through here. Functions are keyword-only and raise DomainError subclasses.
 A challenge row is locked (`select_for_update`) in every write that depends on its state, so a
@@ -26,7 +26,7 @@ from apps.crews.models import Crew, Member
 from apps.crews.services import require_admin
 
 from . import periods
-from .models import ICONS, Challenge, Invitee, Participation, PeriodKind, Vote
+from .models import ICONS, Challenge, Participant, PeriodKind, Vote
 
 TITLE_MAX = 60
 RULES_MAX = 500
@@ -87,8 +87,8 @@ class TooFewDays(Conflict):
     message = "The challenge asks for more times than the days it would run."
 
 
-class NotInvited(PermissionDenied):
-    code = "not_invited"
+class NotAParticipant(PermissionDenied):
+    code = "not_a_participant"
     message = "Only the people taking part can do this."
 
 
@@ -206,15 +206,18 @@ def _apply(challenge: Challenge, shape: Shape) -> None:
 # --- the pool ----------------------------------------------------------------------------------
 
 
-def _invited(challenge: Challenge, member: Member) -> bool:
-    return Invitee.objects.filter(challenge=challenge, member=member).exists()
+def _takes_part(challenge: Challenge, member: Member) -> bool:
+    """`member` is one of the challenge's participants and has not left it."""
+    return Participant.objects.filter(
+        challenge=challenge, member=member, left_on__isnull=True
+    ).exists()
 
 
 def _lock(by: Member, challenge_id: UUID) -> Challenge:
-    """The challenge, locked, if `by` can see it (an invitee or an admin)."""
+    """The challenge, locked, if `by` can see it (a participant or an admin)."""
     rows = Challenge.objects.for_crew(by.crew).select_for_update()
     challenge = rows.filter(pk=challenge_id).first()
-    if challenge is None or not (by.is_admin or _invited(challenge, by)):
+    if challenge is None or not (by.is_admin or _takes_part(challenge, by)):
         raise ChallengeNotFound()
     return challenge
 
@@ -231,42 +234,43 @@ def _crew_member_ids(crew: Crew, member_ids: list[UUID] | None) -> set[UUID]:
         return everyone
     chosen = set(member_ids)
     if not chosen <= everyone:
-        raise ValidationFailed(fields={"invitee_ids": ["Choose people from your crew."]})
+        raise ValidationFailed(fields={"participant_ids": ["Choose people from your crew."]})
     return chosen
 
 
-def _set_invitees(challenge: Challenge, by: Member, member_ids: set[UUID]) -> None:
-    """Make `member_ids` (plus the creator) the invitees; removed people lose their vote."""
+def _set_participants(challenge: Challenge, by: Member, member_ids: set[UUID]) -> None:
+    """Make `member_ids` (plus the creator) the participants; removed people lose their vote."""
     if challenge.created_by_id:
         member_ids = member_ids | {challenge.created_by_id}
-    current = set(Invitee.objects.filter(challenge=challenge).values_list("member_id", flat=True))
+    rows = Participant.objects.filter(challenge=challenge)
+    current = set(rows.values_list("member_id", flat=True))
     removed = current - member_ids
-    Invitee.objects.filter(challenge=challenge, member_id__in=removed).delete()
+    rows.filter(member_id__in=removed).delete()
     Vote.objects.filter(challenge=challenge, member_id__in=removed).delete()
-    Invitee.objects.bulk_create(
-        Invitee(crew=by.crew, challenge=challenge, member_id=member_id)
+    Participant.objects.bulk_create(
+        Participant(crew=by.crew, challenge=challenge, member_id=member_id)
         for member_id in member_ids - current
     )
 
 
 @transaction.atomic
 def propose_challenge(
-    *, by: Member, shape: dict[str, Any], invitee_ids: list[UUID] | None = None
+    *, by: Member, shape: dict[str, Any], participant_ids: list[UUID] | None = None
 ) -> Challenge:
     """Any member adds a proposal to the crew's pool, while the pool has room.
 
-    `invitee_ids` are who takes part (None: the whole crew); the creator is always one of them.
+    `participant_ids` are who takes part (None: the whole crew); the creator is always one of them.
     """
     cleaned = clean_shape(shape)
     crew = Crew.objects.select_for_update().get(pk=by.crew_id)
-    chosen = _crew_member_ids(crew, invitee_ids)
+    chosen = _crew_member_ids(crew, participant_ids)
     in_pool = Challenge.objects.for_crew(crew).filter(state=Challenge.State.PROPOSED).count()
     if in_pool >= crew.max_proposals:
         raise PoolFull()
     challenge = Challenge(crew=crew, created_by=by)
     _apply(challenge, cleaned)
     challenge.save()
-    _set_invitees(challenge, by, chosen)
+    _set_participants(challenge, by, chosen)
     return challenge
 
 
@@ -276,12 +280,12 @@ def edit_proposal(
     by: Member,
     challenge_id: UUID,
     shape: dict[str, Any],
-    invitee_ids: list[UUID] | None = None,
+    participant_ids: list[UUID] | None = None,
 ) -> Challenge:
     """The creator changes their proposal while it is in the pool.
 
     Changing the challenge itself resets every vote; changing only who takes part keeps the votes
-    of the people who stay. `invitee_ids=None` keeps the invitees as they are.
+    of the people who stay. `participant_ids=None` keeps the participants as they are.
     """
     cleaned = clean_shape(shape)
     challenge = _lock(by, challenge_id)
@@ -293,19 +297,19 @@ def edit_proposal(
         challenge.revision += 1
         challenge.save()
         Vote.objects.filter(challenge=challenge).delete()
-    if invitee_ids is not None:
-        _set_invitees(challenge, by, _crew_member_ids(by.crew, invitee_ids))
+    if participant_ids is not None:
+        _set_participants(challenge, by, _crew_member_ids(by.crew, participant_ids))
     return challenge
 
 
 @transaction.atomic
-def set_invitees(*, by: Member, challenge_id: UUID, invitee_ids: list[UUID]) -> Challenge:
+def set_participants(*, by: Member, challenge_id: UUID, participant_ids: list[UUID]) -> Challenge:
     """The creator changes who takes part while the challenge is a proposal."""
     challenge = _lock(by, challenge_id)
     if challenge.created_by_id != by.pk:
         raise NotYourProposal()
     _require_proposed(challenge)
-    _set_invitees(challenge, by, _crew_member_ids(by.crew, invitee_ids))
+    _set_participants(challenge, by, _crew_member_ids(by.crew, participant_ids))
     return challenge
 
 
@@ -327,12 +331,12 @@ def withdraw_proposal(*, by: Member, challenge_id: UUID) -> None:
 def cast_vote(*, by: Member, challenge_id: UUID) -> Vote:
     """Vote for a proposal. A member can vote for any number of proposals, once each.
 
-    Only invitees vote; an admin who is not invited sees the proposal but has no vote.
+    Only participants vote; an admin who is not one sees the proposal but has no vote.
     """
     challenge = _lock(by, challenge_id)
     _require_proposed(challenge)
-    if not _invited(challenge, by):
-        raise NotInvited()
+    if not _takes_part(challenge, by):
+        raise NotAParticipant()
     vote, _ = Vote.objects.get_or_create(challenge=challenge, member=by, defaults={"crew": by.crew})
     return vote
 
@@ -363,8 +367,8 @@ def schedule_challenge(
     """An admin takes a proposal out of the pool and schedules it for a period.
 
     Also moves a scheduled challenge that has not started. Chosen before the period: it runs the
-    whole period. Chosen late (the period has begun): it starts tomorrow. Every invitee takes
-    part (when moved, every invitee takes part again). Scheduling for the same period changes
+    whole period. Chosen late (the period has begun): it starts tomorrow. The participants stay as
+    they are (people who opted out stay out when it moves). Scheduling for the same period changes
     nothing.
     """
     require_admin(by)
@@ -399,13 +403,6 @@ def schedule_challenge(
     challenge.chosen_by = by
     challenge.chosen_at = clock.now()
     challenge.save()
-    Participation.objects.filter(challenge=challenge).delete()
-    Participation.objects.bulk_create(
-        Participation(
-            crew=by.crew, challenge=challenge, member_id=invitee.member_id, joined_on=start
-        )
-        for invitee in Invitee.objects.filter(challenge=challenge)
-    )
     return challenge
 
 
@@ -422,7 +419,6 @@ def unschedule_challenge(*, by: Member, challenge_id: UUID) -> Challenge:
     assert challenge.start_date is not None
     if clock.crew_today(by.crew) >= challenge.start_date:
         raise ChallengeStarted()
-    Participation.objects.filter(challenge=challenge).delete()
     challenge.state = Challenge.State.PROPOSED
     challenge.period_kind = ""
     challenge.period_start = challenge.start_date = challenge.end_date = None
@@ -435,47 +431,26 @@ def unschedule_challenge(*, by: Member, challenge_id: UUID) -> Challenge:
 # --- taking part -------------------------------------------------------------------------------
 
 
-def _get_chosen(by: Member, challenge_id: UUID) -> Challenge:
-    """A scheduled challenge `by` is invited to (participants are invitees only)."""
-    challenge = Challenge.objects.for_crew(by.crew).filter(pk=challenge_id).first()
-    if challenge is None or not (by.is_admin or _invited(challenge, by)):
-        raise ChallengeNotFound()
-    if challenge.state != Challenge.State.CHOSEN:
-        raise NotChosenYet()
-    if not _invited(challenge, by):
-        raise NotInvited()
-    return challenge
-
-
-@transaction.atomic
-def take_part(*, by: Member, challenge_id: UUID) -> Participation:
-    """Opt back in before the challenge starts."""
-    challenge = _get_chosen(by, challenge_id)
-    assert challenge.start_date is not None
-    if clock.crew_today(by.crew) >= challenge.start_date:
-        raise ChallengeStarted()
-    participation, _ = Participation.objects.get_or_create(
-        challenge=challenge,
-        member=by,
-        defaults={"crew": by.crew, "joined_on": challenge.start_date},
-    )
-    return participation
-
-
 @transaction.atomic
 def stop_taking_part(*, by: Member, challenge_id: UUID) -> None:
-    """Opt out before the start, or leave a running challenge (today is the last day counted)."""
-    challenge = _get_chosen(by, challenge_id)
-    assert challenge.start_date is not None
-    assert challenge.end_date is not None
+    """Opt out before the start (the row goes) or leave a running challenge (today is the last
+    day counted). Either way the member stops seeing it; the board keeps a leaver's days.
+    """
+    rows = Challenge.objects.for_crew(by.crew).select_for_update()
+    found = rows.filter(pk=challenge_id).first()
+    if found is None or not _takes_part(found, by):
+        raise ChallengeNotFound()
+    if found.state != Challenge.State.CHOSEN:
+        raise NotChosenYet()
+    assert found.start_date is not None
+    assert found.end_date is not None
     today = clock.crew_today(by.crew)
-    if today > challenge.end_date:
+    if today > found.end_date:
         raise ChallengeFinished()
-    participation = Participation.objects.filter(challenge=challenge, member=by).first()
-    if participation is None:
-        return
-    if today < challenge.start_date:
-        participation.delete()
-    elif participation.ended_on is None:
-        participation.ended_on = today
-        participation.save(update_fields=["ended_on", "updated_at"])
+    row = Participant.objects.get(challenge=found, member=by)
+    if today < found.start_date:
+        row.delete()
+        Vote.objects.filter(challenge=found, member=by).delete()
+    else:
+        row.left_on = today
+        row.save(update_fields=["left_on", "updated_at"])

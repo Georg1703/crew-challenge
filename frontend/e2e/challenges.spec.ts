@@ -105,10 +105,14 @@ test("members propose and vote, edits reset votes, an admin schedules two for on
   await bogdan.goto(walkUrl);
   await expect(bogdan.getByText("Urmează")).toBeVisible();
   await expect(bogdan.getByRole("button", { name: "Modifică propunerea" })).toHaveCount(0);
+  // Opting out asks first, then the challenge is gone for him (the admin still sees it).
   await bogdan.getByRole("button", { name: "Nu particip" }).click();
-  await expect(bogdan.getByRole("button", { name: "Particip" })).toBeVisible();
-  await bogdan.getByRole("button", { name: "Particip" }).click();
-  await expect(bogdan.getByRole("button", { name: "Nu particip" })).toBeVisible();
+  const optOut = bogdan.getByRole("dialog", { name: "Nu participi?" });
+  await optOut.getByRole("button", { name: "Nu particip" }).click();
+  await expect(bogdan).toHaveURL(/\/challenges$/);
+  await expect(bogdan.getByRole("link", { name: edited })).toHaveCount(0);
+  await bogdan.goto(walkUrl);
+  await expect(bogdan.getByText("Provocarea nu există sau a fost retrasă.")).toBeVisible();
 
   // The admin puts one back in the pool, then withdraws it (keeps the demo pool small).
   await ana.goto(readUrl);

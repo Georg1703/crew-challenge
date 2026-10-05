@@ -2,7 +2,7 @@
 
 No database and no clock here: callers pass crew-local dates (`clock.crew_today`) and the
 check-ins they loaded. Nothing in this module assumes a month: a challenge runs from its
-`start_date` to its `end_date`, and a participant from `joined_on` to `ended_on`.
+`start_date` to its `end_date`, and a participant until the day they left (`left_on`).
 """
 
 from __future__ import annotations
@@ -42,11 +42,12 @@ class Span:
         return [lo + timedelta(days=n) for n in range((hi - lo).days + 1)] if lo <= hi else []
 
 
-def span(challenge: Challenge, joined_on: date, ended_on: date | None) -> Span:
+def span(challenge: Challenge, left_on: date | None) -> Span:
+    """The days that count for one participant: the whole challenge, up to the day they left."""
     assert challenge.start_date is not None
     assert challenge.end_date is not None
-    last = min(challenge.end_date, ended_on) if ended_on else challenge.end_date
-    return Span(first=max(challenge.start_date, joined_on), last=last)
+    last = min(challenge.end_date, left_on) if left_on else challenge.end_date
+    return Span(first=challenge.start_date, last=last)
 
 
 @dataclass

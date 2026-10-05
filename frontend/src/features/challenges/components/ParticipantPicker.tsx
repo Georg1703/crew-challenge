@@ -7,7 +7,7 @@ import styles from "../challenges.module.css";
 type Person = { id: string; display_name: string; avatar_seed: string };
 
 /** Who takes part: the crew as a checklist; the creator is always in. */
-export function InviteePicker({
+export function ParticipantPicker({
   people,
   creatorId,
   values,

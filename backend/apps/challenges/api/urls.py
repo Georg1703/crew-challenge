@@ -7,9 +7,9 @@ urlpatterns = [
     path("challenges", views.ChallengesView.as_view(), name="challenges"),
     path("challenges/<uuid:challenge_id>", views.ChallengeView.as_view(), name="challenge"),
     path(
-        "challenges/<uuid:challenge_id>/invitees",
-        views.InviteesView.as_view(),
-        name="challenge-invitees",
+        "challenges/<uuid:challenge_id>/participants",
+        views.ParticipantsView.as_view(),
+        name="challenge-participants",
     ),
     path("challenges/<uuid:challenge_id>/vote", views.VoteView.as_view(), name="challenge-vote"),
     path(

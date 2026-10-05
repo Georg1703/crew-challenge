@@ -37,7 +37,7 @@ class ChallengeIn(serializers.Serializer):
         choices=Challenge.ProofKind.choices, default=Challenge.ProofKind.NONE
     )
     proof_required = serializers.BooleanField(default=False)
-    invitee_ids = serializers.ListField(
+    participant_ids = serializers.ListField(
         child=serializers.UUIDField(),
         required=False,
         allow_null=True,
@@ -47,9 +47,16 @@ class ChallengeIn(serializers.Serializer):
     )
 
 
-class InviteesIn(serializers.Serializer):
-    invitee_ids = serializers.ListField(
+class ParticipantsIn(serializers.Serializer):
+    participant_ids = serializers.ListField(
         child=serializers.UUIDField(), help_text="Who takes part; the creator is always in."
+    )
+
+
+class ParticipantOut(serializers.Serializer):
+    member = PersonOut()
+    left_on = serializers.DateField(
+        allow_null=True, help_text="Last day that counted, when they left during the challenge."
     )
 
 
@@ -83,8 +90,12 @@ class ChallengeOut(serializers.Serializer):
     vote_count = serializers.IntegerField()
     voters = PersonOut(many=True)
     my_vote = serializers.BooleanField(help_text="The current member voted for it.")
-    invitees = PersonOut(many=True, help_text="Who takes part, in the order they joined the crew.")
-    invited = serializers.BooleanField(help_text="The current member is one of the invitees.")
+    participants = ParticipantOut(
+        many=True, help_text="Who takes part (and who left), in the order they joined the crew."
+    )
+    taking_part = serializers.BooleanField(
+        help_text="The current member is a participant and has not left."
+    )
     mine = serializers.BooleanField(help_text="Proposed by the current member.")
 
 
@@ -92,17 +103,6 @@ class PoolOut(serializers.Serializer):
     proposals = ChallengeOut(many=True, help_text="Newest first.")
     size = serializers.IntegerField(help_text="Proposals in the pool.")
     limit = serializers.IntegerField(help_text="How many the pool can hold (Crew.max_proposals).")
-
-
-class ParticipantOut(serializers.Serializer):
-    member = PersonOut()
-    joined_on = serializers.DateField()
-    ended_on = serializers.DateField(allow_null=True)
-
-
-class ChallengeDetailOut(ChallengeOut):
-    participants = ParticipantOut(many=True)
-    taking_part = serializers.BooleanField(help_text="The current member counts in it today.")
 
 
 class ScheduleIn(serializers.Serializer):

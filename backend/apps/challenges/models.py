@@ -149,40 +149,24 @@ class Vote(CrewScopedModel):
         return f"{self.member} -> {self.challenge}"
 
 
-class Participation(CrewScopedModel):
-    """A member taking part in a chosen challenge."""
+class Participant(CrewScopedModel):
+    """A member the creator selected for a challenge: they see it, vote on it and, once it is
+    scheduled, take part in it. Opting out before the start deletes the row; leaving during the
+    challenge sets `left_on` (they stop seeing it; the board keeps their days).
+    """
 
-    challenge = models.ForeignKey(
-        Challenge, on_delete=models.CASCADE, related_name="participations"
-    )
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="participants")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="participations")
-    joined_on = models.DateField(help_text="First day that counts for this member.")
-    ended_on = models.DateField(
-        null=True, blank=True, help_text="Last day that counts, when the member left early."
+    left_on = models.DateField(
+        null=True, blank=True, help_text="Last day that counts, when the member left during it."
     )
 
     class Meta:
-        ordering = ("joined_on", "created_at")
         constraints = [
             models.UniqueConstraint(
-                fields=["challenge", "member"], name="participation_one_per_member"
+                fields=["challenge", "member"], name="participant_one_per_member"
             )
         ]
 
     def __str__(self) -> str:
         return f"{self.member} in {self.challenge}"
-
-
-class Invitee(CrewScopedModel):
-    """Someone the creator selected for a challenge. Only invitees (and admins) can see it."""
-
-    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="invitees")
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="invited_to")
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["challenge", "member"], name="invitee_once_per_member")
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.member} invited to {self.challenge}"
