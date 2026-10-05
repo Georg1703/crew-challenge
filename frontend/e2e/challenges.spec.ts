@@ -30,7 +30,14 @@ function card(page: Page, title: string) {
 
 /** Go through the wizard steps after the first one and press the final button. */
 async function finishWizard(page: Page, finalButton: string) {
-  for (const heading of ["Cât de des?", "Ce notezi la bifă?", "Ce dovadă cerem?", "Verifică"]) {
+  const steps = [
+    "Cine participă?",
+    "Cât de des?",
+    "Ce notezi la bifă?",
+    "Ce dovadă cerem?",
+    "Verifică",
+  ];
+  for (const heading of steps) {
     await page.getByRole("button", { name: "Continuă" }).click();
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   }
@@ -112,4 +119,49 @@ test("members propose and vote, edits reset votes, an admin schedules two for on
   await ana.getByRole("dialog").getByRole("button", { name: "Retrage propunerea" }).click();
   await expect(ana).toHaveURL(/\/challenges$/);
   await expect(ana.getByRole("link", { name: read })).toHaveCount(0);
+});
+
+test("only the people the creator chose see a challenge, and the creator can change that", async ({
+  browser,
+}) => {
+  const title = unique("Doar noi");
+  const bogdan = await logIn(browser, "bogdan");
+  await bogdan.goto("/challenges/new");
+  await bogdan.getByLabel("Numele provocării").fill(title);
+  await bogdan.getByRole("button", { name: "Continuă" }).click();
+  await expect(bogdan.getByRole("checkbox", { name: /^Bogdan/ })).toBeDisabled();
+  await bogdan.getByRole("checkbox", { name: /^Dan/ }).uncheck({ force: true });
+  await expect(bogdan.getByText(/Participă \d+ din \d+/)).toBeVisible();
+  for (let step = 0; step < 4; step += 1) {
+    await bogdan.getByRole("button", { name: "Continuă" }).click();
+  }
+  await bogdan.getByRole("button", { name: "Publică propunerea" }).click();
+  await expect(bogdan).toHaveURL(/\/challenges\/[0-9a-f-]{36}$/);
+  const url = bogdan.url();
+  const people = bogdan.getByRole("list", { name: "Cine participă" });
+  await expect(people.getByText("Dan", { exact: true })).toHaveCount(0);
+
+  const dan = await logIn(browser, "dan");
+  await dan.goto("/challenges");
+  await expect(dan.getByRole("heading", { name: "Propuneri" })).toBeVisible();
+  await expect(dan.getByRole("link", { name: title })).toHaveCount(0);
+  await dan.goto(url);
+  await expect(dan.getByText("Provocarea nu există sau a fost retrasă.")).toBeVisible();
+
+  await bogdan.getByRole("button", { name: "Modifică participanții" }).click();
+  const sheet = bogdan.getByRole("dialog");
+  await sheet.getByText("Dan", { exact: true }).click();
+  await expect(sheet.getByRole("checkbox", { name: /^Dan/ })).toBeChecked();
+  await sheet.getByRole("button", { name: "Salvează" }).click();
+  await expect(bogdan.getByText("Participanții au fost salvați")).toBeVisible();
+  await expect(people.getByText("Dan", { exact: true })).toBeVisible();
+
+  await dan.goto(url);
+  await expect(dan.getByRole("heading", { name: title })).toBeVisible();
+  await expect(dan.getByRole("button", { name: "Votează" })).toBeVisible();
+
+  // Leave the demo pool as it was.
+  await bogdan.getByRole("button", { name: "Retrage propunerea" }).click();
+  await bogdan.getByRole("dialog").getByRole("button", { name: "Retrage propunerea" }).click();
+  await expect(bogdan).toHaveURL(/\/challenges$/);
 });
