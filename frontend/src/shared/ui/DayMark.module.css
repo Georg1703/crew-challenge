@@ -1,0 +1,70 @@
+.mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--color-text-inverse);
+}
+
+.md {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+.sm {
+  width: 100%;
+  border-radius: var(--radius-xs);
+  aspect-ratio: 1;
+}
+
+.done {
+  background: var(--color-success);
+}
+
+.partial {
+  border: 2px solid var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.todo,
+.open {
+  border: 2px solid var(--color-accent);
+}
+
+.missed {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.sm.missed {
+  border: 1px solid var(--color-danger);
+}
+
+.sm.partial,
+.sm.todo,
+.sm.open,
+.sm.future {
+  border-width: 1px;
+}
+
+.notDue {
+  background: var(--color-surface-sunken);
+  transform: scale(0.45);
+}
+
+.sm.notDue {
+  transform: none;
+}
+
+.future {
+  border: 2px solid var(--color-border);
+}
+
+.outside {
+  background: transparent;
+}
+
+.current {
+  box-shadow: var(--ring-current);
+}

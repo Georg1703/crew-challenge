@@ -1,0 +1,61 @@
+.button {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--button-height);
+  padding: 0 var(--space-5);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-pressed);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.holding {
+  transform: scale(0.98);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  opacity: 0.35; /* the label stays readable over the fill in both themes */
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.content {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.done {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  cursor: default;
+}

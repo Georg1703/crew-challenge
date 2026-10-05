@@ -85,13 +85,16 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 
 - Radius: `--radius-md` 12px for buttons and inputs (about 23% of a 52px button),
   `--radius-lg` 16px for cards and lists, `--radius-xl` 24px for sheet tops, `--radius-sm` 8px for
-  small cells and thumbnails, `--radius-full` for avatars and pills. No other values (enforced).
+  small cells and thumbnails, `--radius-xs` 2px only for the squares of a month grid,
+  `--radius-full` for avatars and pills. No other values (enforced).
 - Space: 4px grid, `--space-1` .. `--space-12`. Screen gutter `--space-5`, sections `--space-6`
-  apart, card padding `--space-4` (enforced for margin, padding and gap).
+  apart, card padding `--space-4` (enforced for margin, padding and gap). `--space-hair` (2px) only
+  between the squares of a month grid.
 - Depth: `--shadow-card` on cards and lists, `--shadow-sheet` on sheets, toasts and floating
   banners. Nothing else casts a shadow. Dark cards rely on their border.
 - Sizes: `--tap-min` 44px (every control), `--button-height` 52px, `--button-height-sm` 44px,
-  `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px.
+  `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px,
+  `--progress-ring-size` 168px (the day ring). `--ring-current` marks today in a strip or grid.
 
 ## Components (`frontend/src/shared/ui`)
 
@@ -122,6 +125,11 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `Toggle` | An on/off setting with a label and an optional explanation |
 | `StepProgress` | Where you are in a multi-step form (segments) |
 | `IconPicker` | Pick one icon from a small set (a challenge's icon) |
+| `HoldButton` | Press and hold (0.6 s) to confirm a check-in; letting go cancels; keyboard confirms at once |
+| `ProgressRing` | Today's ring: one segment per thing to do, full / half / empty; closes with the center popping to "done" |
+| `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
+| `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday |
+| `DayGrid` | A month at a glance: one row per person, one small square per day |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation; the shared icon set (Lucide shapes, stroke 1.75) |
 

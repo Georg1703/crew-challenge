@@ -14,12 +14,19 @@ import {
   Card,
   CheckList,
   ChipGroup,
+  DayGrid,
+  DayMark,
+  type DayState,
+  HoldButton,
   Icon,
   IconPicker,
   IconTile,
   List,
   ListRow,
   OptionList,
+  ProgressBar,
+  ProgressRing,
+  type RingSegment,
   QrCode,
   Segmented,
   Sheet,
@@ -33,6 +40,7 @@ import {
   TextArea,
   TextField,
   Toggle,
+  WeekStrip,
   useToast,
 } from "@/shared/ui";
 
@@ -64,6 +72,8 @@ export function DesignRoute() {
   const [times, setTimes] = useState(3);
   const [proof, setProof] = useState(true);
   const [icon, setIcon] = useState("dumbbell");
+  const [ring, setRing] = useState<RingSegment[]>(["full", "partial", "empty"]);
+  const [pages, setPages] = useState(12);
   const toast = useToast();
 
   return (
@@ -409,6 +419,72 @@ export function DesignRoute() {
           description="Without it the check-in does not count."
           checked={proof}
           onChange={setProof}
+        />
+      </Section>
+
+      <Section title="Check-in">
+        <ProgressRing
+          segments={ring}
+          label="Today's ring"
+          done={<span className={styles.muted}>Day done</span>}
+        >
+          <span className={styles.muted}>
+            {ring.filter((r) => r === "full").length} of {ring.length}
+          </span>
+        </ProgressRing>
+        <HoldButton
+          label="Hold to check in"
+          doneLabel="Checked in"
+          done={ring.every((r) => r === "full")}
+          onConfirm={() =>
+            setRing((current) => {
+              const next = current.findIndex((r) => r !== "full");
+              return current.map((r, i) => (i === next ? "full" : r));
+            })
+          }
+        />
+        <Button variant="ghost" onClick={() => setRing(["full", "partial", "empty"])}>
+          Reset the ring
+        </Button>
+        <ProgressBar value={pages} max={20} label={`${pages} of 20 pages`} />
+        <Button variant="secondary" onClick={() => setPages((p) => (p >= 20 ? 0 : p + 5))}>
+          Add 5 pages
+        </Button>
+        <WeekStrip
+          label="This week"
+          days={(
+            ["done", "missed", "done", "partial", "todo", "future", "not_due"] as DayState[]
+          ).map((state, i) => ({
+            key: String(i),
+            letter: "MTWTFSS"[i] ?? "",
+            name: `Day ${i + 1}: ${state}`,
+            state,
+            today: i === 4,
+          }))}
+        />
+        <div className={styles.row}>
+          {(
+            ["done", "partial", "todo", "missed", "not_due", "future", "outside"] as DayState[]
+          ).map((state) => (
+            <DayMark key={state} state={state} label={state} />
+          ))}
+        </div>
+        <DayGrid
+          label="November"
+          days={Array.from({ length: 30 }, (_, i) => i + 1)}
+          todayIndex={9}
+          dayName={(name, day, state) => `${name}, ${day}: ${state}`}
+          rows={[
+            { key: "a", name: "Ana", leading: <Avatar name="Ana" seed="a1b2c3d4" size="sm" /> },
+            { key: "b", name: "Bogdan", leading: <Avatar name="Bogdan" seed="e5f6" size="sm" /> },
+          ].map((row, r) => ({
+            ...row,
+            states: Array.from({ length: 30 }, (_, i): DayState => {
+              if (i > 9) return "future";
+              if (i === 9) return r ? "todo" : "done";
+              return (i + r) % 5 === 3 ? "missed" : "done";
+            }),
+          }))}
         />
       </Section>
 
