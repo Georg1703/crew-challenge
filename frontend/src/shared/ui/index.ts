@@ -3,6 +3,7 @@ export { Avatar, AvatarStack, avatarColor, initials } from "./Avatar";
 export { Banner } from "./Banner";
 export { Button, type ButtonProps } from "./Button";
 export { Card } from "./Card";
+export { CheckList, type CheckOption } from "./CheckList";
 export { ChipGroup } from "./ChipGroup";
 export { Icon, type IconName } from "./Icon";
 export { IconPicker } from "./IconPicker";

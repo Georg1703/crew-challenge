@@ -116,6 +116,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `Segmented` | A small set of exclusive options (language, theme) |
 | `OptionList` | One choice among a few that each need a line of explanation (how often, what proof) |
 | `ChipGroup` | Several short choices that combine (days of the week, quick ideas) |
+| `CheckList` | Pick several rows, each with an optional avatar and a line of detail (who takes part); a row can be locked |
 | `Stepper` | A small whole number with minus and plus (times a week) |
 | `TextArea` | A labelled multi-line field (rules, notes); same states as `TextField` |
 | `Toggle` | An on/off setting with a label and an optional explanation |

@@ -12,6 +12,7 @@ import {
   Banner,
   Button,
   Card,
+  CheckList,
   ChipGroup,
   Icon,
   IconPicker,
@@ -58,6 +59,7 @@ export function DesignRoute() {
   const [bannerOpen, setBannerOpen] = useState(false);
   const [segment, setSegment] = useState("ro");
   const [often, setOften] = useState("daily");
+  const [people, setPeople] = useState(["ana", "bogdan"]);
   const [days, setDays] = useState<number[]>([0, 2, 4]);
   const [times, setTimes] = useState(3);
   const [proof, setProof] = useState(true);
@@ -347,6 +349,30 @@ export function DesignRoute() {
               description: "For example Monday to Friday",
             },
             { value: "times", title: "A number of times a week", description: "Any days you like" },
+          ]}
+        />
+        <CheckList
+          label="Who takes part"
+          values={people}
+          onChange={setPeople}
+          options={[
+            {
+              value: "ana",
+              title: "Ana",
+              description: "Proposed it",
+              leading: <Avatar name="Ana" seed="a1b2c3d4" size="sm" />,
+              disabled: true,
+            },
+            {
+              value: "bogdan",
+              title: "Bogdan",
+              leading: <Avatar name="Bogdan" seed="e5f6" size="sm" />,
+            },
+            {
+              value: "cristina",
+              title: "Cristina",
+              leading: <Avatar name="Cristina" seed="c9" size="sm" />,
+            },
           ]}
         />
         <ChipGroup
