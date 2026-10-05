@@ -24,7 +24,7 @@ function byMonth(challenges: Challenge[]): [string, Challenge[]][] {
   return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
 
-/** Challenges: running and coming up, the crew's pool of proposals, then the finished ones. */
+/** Challenges: running ones, the propose button, coming up, the pool, then the finished ones. */
 export function ChallengesRoute() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -42,6 +42,17 @@ export function ChallengesRoute() {
 
   return (
     <Screen title={t("challenges.title")}>
+      {(pool.isPending || chosen.isPending) && <Skeleton lines={4} />}
+      {pool.error && <Banner tone="danger" title={errorMessage(t, pool.error)} />}
+      {chosen.error && <Banner tone="danger" title={errorMessage(t, chosen.error)} />}
+
+      {inPhase("active").length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("challenges.sections.active")}</h2>
+          <ChallengeRows challenges={inPhase("active")} label={t("challenges.sections.active")} />
+        </section>
+      )}
+
       <Button
         size="lg"
         fullWidth
@@ -53,17 +64,6 @@ export function ChallengesRoute() {
       </Button>
       {full && pool.data && (
         <p className={styles.meta}>{t("challenges.poolFull", { limit: pool.data.limit })}</p>
-      )}
-
-      {(pool.isPending || chosen.isPending) && <Skeleton lines={4} />}
-      {pool.error && <Banner tone="danger" title={errorMessage(t, pool.error)} />}
-      {chosen.error && <Banner tone="danger" title={errorMessage(t, chosen.error)} />}
-
-      {inPhase("active").length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t("challenges.sections.active")}</h2>
-          <ChallengeRows challenges={inPhase("active")} label={t("challenges.sections.active")} />
-        </section>
       )}
 
       {inPhase("upcoming").length > 0 && (

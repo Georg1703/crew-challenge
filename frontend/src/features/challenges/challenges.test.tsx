@@ -150,6 +150,21 @@ describe("challenges list", () => {
     expect(screen.getByRole("button", { name: "Propose a challenge" })).toBeDisabled();
   });
 
+  it("puts the propose button under the running challenges", async () => {
+    mockGets(bogdan, {
+      chosen: [scheduled({ id: "c5", title: "Walk", phase: "active" }), scheduled()],
+    });
+    renderRoutes(routes, { at: "/challenges" });
+
+    const active = await screen.findByRole("heading", { name: "Active now" });
+    const button = screen.getByRole("button", { name: "Propose a challenge" });
+    const upcoming = screen.getByRole("heading", { name: "Coming up" });
+    expect(active.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      button.compareDocumentPosition(upcoming) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("groups upcoming challenges by month", async () => {
     mockGets(bogdan, {
       chosen: [
