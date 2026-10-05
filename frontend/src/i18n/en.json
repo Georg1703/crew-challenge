@@ -99,11 +99,17 @@
     "crewCurrent": "Current",
     "crewSwitched": "Switched to {{crew}}",
     "moreLabel": "More",
-    "challengesHint": "Proposals, votes and the crew's challenges"
+    "challengesHint": "Proposals, votes and the crew's challenges",
+    "theme": "Theme"
   },
   "languages": {
     "ro": "Română",
     "en": "English"
+  },
+  "themes": {
+    "system": "Like the phone",
+    "light": "Light",
+    "dark": "Dark"
   },
   "notFound": {
     "title": "This page doesn't exist",

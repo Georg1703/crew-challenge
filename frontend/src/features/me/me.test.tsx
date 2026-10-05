@@ -22,6 +22,22 @@ describe("me screen", () => {
     await i18n.changeLanguage("en");
   });
 
+  it("switches to the dark theme on this device and back to the phone's", async () => {
+    vi.spyOn(api, "GET").mockImplementation((() => ok(meAs(ana))) as never);
+    const patch = vi.spyOn(api, "PATCH");
+    renderRoutes([{ path: "/", element: <MeRoute /> }]);
+
+    expect(await screen.findByLabelText("Like the phone")).toBeChecked();
+    await userEvent.click(screen.getByLabelText("Dark"));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(localStorage.getItem("theme")).toBe("dark");
+
+    await userEvent.click(screen.getByLabelText("Like the phone"));
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(localStorage.getItem("theme")).toBeNull();
+    expect(patch).not.toHaveBeenCalled();
+  });
+
   it("logs out and goes to the login page", async () => {
     vi.spyOn(api, "GET").mockImplementation((() => ok(meAs(ana))) as never);
     vi.spyOn(api, "POST").mockImplementation((() => ok(undefined, 204)) as never);

@@ -55,13 +55,7 @@ import {
   spaceTokens,
   textTokens,
 } from "./tokens";
-
-type Theme = "system" | "light" | "dark";
-
-function applyTheme(theme: Theme) {
-  if (theme === "system") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = theme;
-}
+import { applyTheme, type Theme } from "@/shared/lib/theme";
 
 export function DesignRoute() {
   const [theme, setTheme] = useState<Theme>("system");

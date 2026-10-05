@@ -99,11 +99,17 @@
     "crewCurrent": "Acum",
     "crewSwitched": "Ai trecut în {{crew}}",
     "moreLabel": "Mai mult",
-    "challengesHint": "Propuneri, voturi și provocările echipei"
+    "challengesHint": "Propuneri, voturi și provocările echipei",
+    "theme": "Tema"
   },
   "languages": {
     "ro": "Română",
     "en": "English"
+  },
+  "themes": {
+    "system": "Ca telefonul",
+    "light": "Luminoasă",
+    "dark": "Întunecată"
   },
   "notFound": {
     "title": "Pagina nu există",
