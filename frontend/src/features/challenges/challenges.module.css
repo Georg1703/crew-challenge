@@ -106,6 +106,27 @@
   gap: var(--space-3);
 }
 
+.factPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footnotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  list-style: none;
+}
+
 .wizardTop {
   display: flex;
   flex-direction: column;

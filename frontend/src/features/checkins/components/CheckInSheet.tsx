@@ -6,11 +6,21 @@ import { useToday } from "../api";
 import styles from "../checkins.module.css";
 import { CheckInCard } from "./CheckInCard";
 
-/** From the raised tab button: what is still left today, ready to check in. */
-export function CheckInSheet({ onClose }: { onClose: () => void }) {
+/** What is still left today, ready to check in: everything (the raised tab button) or one challenge. */
+export function CheckInSheet({
+  onClose,
+  challengeId,
+}: {
+  onClose: () => void;
+  challengeId?: string;
+}) {
   const { t } = useTranslation();
   const today = useToday();
-  const left = today.data?.challenges.filter((c) => c.settled === false || c.state === "partial");
+  const left = today.data?.challenges.filter(
+    (c) =>
+      (c.settled === false || c.state === "partial") &&
+      (challengeId === undefined || c.id === challengeId),
+  );
 
   return (
     <Sheet open onClose={onClose} title={t("checkins.sheetTitle")} closeLabel={t("common.close")}>

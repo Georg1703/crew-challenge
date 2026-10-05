@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 
 import { useMe } from "@/features/auth";
-import { ChallengeBoard } from "@/features/checkins";
+import { ChallengeBoard, CheckInSheet, useToday } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
 import { formatDate, formatDay, monthAndYear } from "@/shared/lib/format";
 import {
@@ -35,7 +35,7 @@ import { PhasePill } from "../components/PhasePill";
 import { InviteesSheet } from "../components/InviteesSheet";
 import { ScheduleSheet } from "../components/ScheduleSheet";
 
-/** One challenge: its rules in plain words, who proposed it, and who takes part. */
+/** One challenge: what it asks, how the crew is doing, who takes part and who proposed it. */
 export function ChallengeRoute() {
   const { t } = useTranslation();
   const { id = "" } = useParams();
@@ -72,6 +72,8 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
   const [withdrawing, setWithdrawing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const today = useToday({ enabled: challenge.phase === "active" && challenge.taking_part });
 
   const mine = challenge.mine;
   const isAdmin = member?.role === "admin";
@@ -79,44 +81,40 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
   const notStarted = challenge.phase === "upcoming";
   const target = describeTarget(t, challenge, i18n.language);
 
-  const facts: [string, string][] = [
-    [t("challenges.facts.often"), describeFrequency(t, challenge)],
-    [t("challenges.facts.record"), describeMeasure(t, challenge)],
-    ...(target ? [[t("challenges.facts.target"), target] as [string, string]] : []),
-    [t("challenges.facts.proof"), describeProof(t, challenge)],
-    ...(challenge.period_start && challenge.start_date
-      ? [
-          [
-            t("challenges.facts.period"),
-            challenge.start_date === challenge.period_start
-              ? monthAndYear(challenge.period_start, i18n.language)
-              : t("challenges.periodFrom", {
-                  month: monthAndYear(challenge.period_start, i18n.language),
-                  date: formatDay(challenge.start_date, i18n.language),
-                }),
-          ] as [string, string],
-        ]
-      : []),
-    [
-      t("challenges.facts.proposed"),
-      t("challenges.proposedBy", {
-        name: challenge.created_by?.display_name ?? t("challenges.someone"),
-        date: formatDate(challenge.created_at, i18n.language, timeZone),
-      }),
-    ],
-    ...(challenge.chosen_by && challenge.chosen_at
-      ? [
-          [
-            t("challenges.facts.chosen"),
-            t("challenges.chosenBy", {
-              name: challenge.chosen_by.display_name,
-              date: formatDate(challenge.chosen_at, i18n.language, timeZone),
-            }),
-          ] as [string, string],
-        ]
-      : []),
-    [t("challenges.facts.votes"), t("challenges.votes", { n: challenge.vote_count })],
+  const facts = [
+    describeFrequency(t, challenge),
+    describeMeasure(t, challenge),
+    describeProof(t, challenge),
   ];
+  const period =
+    challenge.period_start && challenge.start_date
+      ? challenge.start_date === challenge.period_start
+        ? monthAndYear(challenge.period_start, i18n.language)
+        : t("challenges.periodFrom", {
+            month: monthAndYear(challenge.period_start, i18n.language),
+            date: formatDay(challenge.start_date, i18n.language),
+          })
+      : null;
+  const footnotes = [
+    period && t("challenges.periodLine", { period }),
+    t("challenges.proposedBy", {
+      name: challenge.created_by?.display_name ?? t("challenges.someone"),
+      date: formatDate(challenge.created_at, i18n.language, timeZone),
+    }),
+    challenge.chosen_by &&
+      challenge.chosen_at &&
+      t("challenges.chosenBy", {
+        name: challenge.chosen_by.display_name,
+        date: formatDate(challenge.chosen_at, i18n.language, timeZone),
+      }),
+    proposal && t("challenges.votes", { n: challenge.vote_count }),
+  ].filter((line): line is string => Boolean(line));
+  const running = challenge.state === "chosen" && challenge.phase !== "upcoming";
+  const myToday = today.data?.challenges.find((c) => c.id === challenge.id);
+  const canCheckIn =
+    challenge.phase === "active" &&
+    myToday !== undefined &&
+    (myToday.settled === false || myToday.state === "partial");
 
   const toggleParticipation = () =>
     participation.mutate(!challenge.taking_part, {
@@ -127,17 +125,21 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
     <Screen title={challenge.title}>
       <div className={styles.header}>
         <ChallengeIcon icon={challenge.icon} />
-        <PhasePill challenge={challenge} />
+        <ul className={styles.factPills} aria-label={t("challenges.factsLabel")}>
+          {challenge.phase !== "active" && (
+            <li>
+              <PhasePill challenge={challenge} />
+            </li>
+          )}
+          {facts.map((fact) => (
+            <li key={fact}>
+              <StatusPill>{fact}</StatusPill>
+            </li>
+          ))}
+        </ul>
       </div>
+      {target && <p className={styles.muted}>{target}</p>}
       {challenge.rules && <p>{challenge.rules}</p>}
-      <dl className={styles.facts}>
-        {facts.map(([label, value]) => (
-          <div key={label} className={styles.factRow}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
 
       {proposal && (
         <div className={styles.actions}>
@@ -247,47 +249,45 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
         </section>
       )}
 
-      {challenge.state === "chosen" &&
-        challenge.phase !== "upcoming" &&
-        challenge.start_date &&
-        challenge.end_date && (
-          <ChallengeBoard
-            challengeId={challenge.id}
-            startDate={challenge.start_date}
-            endDate={challenge.end_date}
-            timeZone={timeZone}
-            meId={member?.id}
-            fixedDays={challenge.frequency === "daily" || challenge.frequency === "weekdays"}
-            leftOn={Object.fromEntries(
-              challenge.participants.flatMap((p) =>
-                p.ended_on ? [[p.member.id, p.ended_on]] : [],
-              ),
-            )}
-          />
-        )}
+      {running && challenge.start_date && challenge.end_date && (
+        <ChallengeBoard
+          challengeId={challenge.id}
+          startDate={challenge.start_date}
+          endDate={challenge.end_date}
+          timeZone={timeZone}
+          meId={member?.id}
+          fixedDays={challenge.frequency === "daily" || challenge.frequency === "weekdays"}
+          leftOn={Object.fromEntries(
+            challenge.participants.flatMap((p) => (p.ended_on ? [[p.member.id, p.ended_on]] : [])),
+          )}
+        />
+      )}
+
+      {canCheckIn && (
+        <Button
+          size="lg"
+          fullWidth
+          icon={<Icon name="check" size={20} />}
+          onClick={() => setCheckingIn(true)}
+        >
+          {t("challenges.checkIn")}
+        </Button>
+      )}
+
+      <ul className={styles.footnotes}>
+        {footnotes.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
 
       {challenge.state === "chosen" && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t("challenges.participantsTitle")}</h2>
-          <List label={t("challenges.participantsTitle")}>
-            {challenge.participants.map((p) => (
-              <ListRow
-                key={p.member.id}
-                leading={<Avatar name={p.member.display_name} seed={p.member.avatar_seed} />}
-                title={p.member.display_name}
-                subtitle={
-                  p.ended_on
-                    ? t("challenges.leftOn", { date: formatDay(p.ended_on, i18n.language) })
-                    : undefined
-                }
-                trailing={
-                  p.member.id === member?.id ? (
-                    <StatusPill tone="accent">{t("crew.you")}</StatusPill>
-                  ) : undefined
-                }
-              />
-            ))}
-          </List>
+          {!running && (
+            <>
+              <h2 className={styles.sectionTitle}>{t("challenges.participantsTitle")}</h2>
+              <ParticipantList challenge={challenge} meId={member?.id} />
+            </>
+          )}
           {challenge.phase !== "finished" && challenge.invited && (
             <Button
               variant={challenge.taking_part ? "danger" : "primary"}
@@ -305,6 +305,10 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
             </Button>
           )}
         </section>
+      )}
+
+      {checkingIn && (
+        <CheckInSheet challengeId={challenge.id} onClose={() => setCheckingIn(false)} />
       )}
 
       {inviting && <InviteesSheet challenge={challenge} onClose={() => setInviting(false)} />}
@@ -349,5 +353,31 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
         </div>
       </Sheet>
     </Screen>
+  );
+}
+
+/** Who takes part in a scheduled challenge that has not started (the board shows them after). */
+function ParticipantList({ challenge, meId }: { challenge: ChallengeDetail; meId?: string }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <List label={t("challenges.participantsTitle")}>
+      {challenge.participants.map((p) => (
+        <ListRow
+          key={p.member.id}
+          leading={<Avatar name={p.member.display_name} seed={p.member.avatar_seed} />}
+          title={p.member.display_name}
+          subtitle={
+            p.ended_on
+              ? t("challenges.leftOn", { date: formatDay(p.ended_on, i18n.language) })
+              : undefined
+          }
+          trailing={
+            p.member.id === meId ? (
+              <StatusPill tone="accent">{t("crew.you")}</StatusPill>
+            ) : undefined
+          }
+        />
+      ))}
+    </List>
   );
 }

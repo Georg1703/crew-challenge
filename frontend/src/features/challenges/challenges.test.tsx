@@ -388,7 +388,7 @@ describe("one challenge", () => {
     }) as never);
     renderRoutes(routes, { at: "/challenges/c1" });
 
-    expect(await screen.findByText("November 2026")).toBeInTheDocument();
+    expect(await screen.findByText("For November 2026")).toBeInTheDocument();
     expect(screen.getByText(/Chosen by Ana/)).toBeInTheDocument();
     expect(
       await screen.findByRole("button", { name: "Move to another month" }),
@@ -400,6 +400,79 @@ describe("one challenge", () => {
       params: { path: { challenge_id: "c1" } },
     });
     expect(await screen.findByRole("button", { name: "Vote" })).toBeInTheDocument();
+  });
+
+  it("shows a running challenge's month and checks in from it", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-10T09:00:00Z") });
+    const running = detail({
+      ...scheduled(),
+      phase: "active",
+      measure: "check",
+      taking_part: true,
+      participants: [{ member: person(bogdan), joined_on: "2026-11-01", ended_on: null }],
+    });
+    const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
+    const todayCard = {
+      id: "c1",
+      title: "50 push-ups",
+      icon: "dumbbell",
+      measure: "check",
+      unit: "",
+      frequency: "daily",
+      times: null,
+      target_scope: "none",
+      target_value: null,
+      proof_kind: "none",
+      proof_required: false,
+      end_date: "2026-11-30",
+      state: "todo",
+      total: null,
+      streak: 9,
+      week: [],
+      progress: null,
+      settled: false,
+    };
+    vi.spyOn(api, "GET").mockImplementation(((path: string) => {
+      if (path === "/api/v1/me") return ok(meAs(bogdan));
+      if (path === "/api/v1/challenges/{challenge_id}") return ok(running);
+      if (path === "/api/v1/challenges/{challenge_id}/board") {
+        return ok({
+          days,
+          rows: [
+            {
+              member: person(bogdan),
+              states: days.map((_, i) => (i < 9 ? "done" : i === 9 ? "todo" : "future")),
+              streak: 9,
+            },
+          ],
+        });
+      }
+      if (path === "/api/v1/today") {
+        return ok({
+          day: "2026-11-10",
+          deadline: "2026-11-10T22:00:00Z",
+          challenges: [todayCard],
+          crew: [],
+        });
+      }
+      return fail(404, { code: "not_found" });
+    }) as never);
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    expect(await screen.findByText("Day 10 of 30")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "What the challenge asks" })).toHaveTextContent(
+      "Every day",
+    );
+    expect(
+      await screen.findByRole("img", { name: "Bogdan: 9 done, 0 missed" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Taking part" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Votes/)).not.toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Check in today" }));
+    const sheet = await screen.findByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "50 push-ups" })).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it("lets a member opt out of a scheduled challenge before it starts", async () => {

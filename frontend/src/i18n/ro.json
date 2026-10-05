@@ -454,7 +454,10 @@
       "note": "Cine e scos nu mai vede provocarea și își pierde votul.",
       "adminOnly": "O vezi pentru că ești admin; nu participi.",
       "short": "{{n}} din {{total}}"
-    }
+    },
+    "factsLabel": "Ce cere provocarea",
+    "periodLine": "Pentru {{period}}",
+    "checkIn": "Bifează azi"
   },
   "checkins": {
     "today": "azi",

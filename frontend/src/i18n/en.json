@@ -454,7 +454,10 @@
       "note": "People you remove no longer see the challenge and lose their vote.",
       "adminOnly": "You see it because you are an admin; you don't take part.",
       "short": "{{n}} of {{total}}"
-    }
+    },
+    "factsLabel": "What the challenge asks",
+    "periodLine": "For {{period}}",
+    "checkIn": "Check in today"
   },
   "checkins": {
     "today": "today",
