@@ -6,27 +6,23 @@ import { Banner, Card, Skeleton } from "@/shared/ui";
 import { useToday } from "../api";
 import styles from "../checkins.module.css";
 import { CheckInCard } from "./CheckInCard";
-import { CrewToday } from "./CrewToday";
 import { DayRing } from "./DayRing";
 
-/** Today: the day ring, a card per challenge to check in, and the crew's day. */
-export function TodayCheckIns({ meId }: { meId?: string }) {
+/** Today: the day ring and a card per challenge to check in. The crew's day is on Echipa. */
+export function TodayCheckIns() {
   const { t } = useTranslation();
   const today = useToday();
 
   if (today.isPending) return <Skeleton lines={4} />;
   if (today.error) return <Banner tone="danger" title={errorMessage(t, today.error)} />;
 
-  const { challenges, crew, day } = today.data;
+  const { challenges, day } = today.data;
   if (challenges.length === 0) {
     return (
-      <div className={styles.stack}>
-        <Card>
-          <h2 className={styles.cardTitle}>{t("home.noChallengeTitle")}</h2>
-          <p className={styles.muted}>{t("home.noChallengeBody")}</p>
-        </Card>
-        <CrewToday crew={crew} meId={meId} />
-      </div>
+      <Card>
+        <h2 className={styles.cardTitle}>{t("home.noChallengeTitle")}</h2>
+        <p className={styles.muted}>{t("home.noChallengeBody")}</p>
+      </Card>
     );
   }
   return (
@@ -35,7 +31,6 @@ export function TodayCheckIns({ meId }: { meId?: string }) {
       {challenges.map((card) => (
         <CheckInCard key={card.id} card={card} day={day} />
       ))}
-      <CrewToday crew={crew} meId={meId} />
     </div>
   );
 }

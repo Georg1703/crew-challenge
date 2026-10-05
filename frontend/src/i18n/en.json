@@ -66,6 +66,8 @@
     "you": "you",
     "admin": "Admin",
     "member": "Member",
+    "todayRow": "{{name}}: {{done}} of {{needed}} today",
+    "todaySubtitle": "{{role}} · {{done}} of {{needed}} today",
     "invite": "Invite someone",
     "inviteTitle": "Invite someone",
     "inviteBody": "Send the link or show the code. They pick a name and a password and join the crew right away.",
@@ -498,8 +500,6 @@
       "outside": "not taking part"
     },
     "proofLater": "You'll be able to add the proof here soon.",
-    "crewTitle": "The crew today",
-    "crewRow": "{{name}}: {{done}} of {{needed}}",
     "amountTitle": "How much?",
     "amountLabel": "How many {{unit}}",
     "amountAdd": "Add",

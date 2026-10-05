@@ -24,7 +24,7 @@ export function HomeRoute() {
   return (
     <Screen title={t("home.greeting", { name: member.display_name })}>
       <InstallCard dismissible />
-      <TodayCheckIns meId={member.id} />
+      <TodayCheckIns />
     </Screen>
   );
 }

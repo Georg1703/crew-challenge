@@ -16,9 +16,23 @@ const invite = {
   created_by: { display_name: "Ana", avatar_seed: "a1b2c3d4" },
 };
 
-function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = []) {
+const person = (m: typeof ana) => ({
+  id: m.id,
+  display_name: m.display_name,
+  avatar_seed: m.avatar_seed,
+});
+
+function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = [], crewToday: unknown[] = []) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
     if (path === "/api/v1/me") return ok(me);
+    if (path === "/api/v1/today") {
+      return ok({
+        day: "2026-11-10",
+        deadline: "2026-11-10T22:00:00Z",
+        challenges: [],
+        crew: crewToday,
+      });
+    }
     if (path === "/api/v1/crew/invites") return ok(pending);
     if (path === "/api/v1/proposals") return ok({ proposals: [], size: 0, limit: 50 });
     if (path === "/api/v1/challenges") return ok([]);
@@ -49,6 +63,22 @@ describe("crew screen", () => {
     ]);
     expect(within(rows[0] as HTMLElement).getByText("Admin")).toBeInTheDocument();
     expect(within(rows[1] as HTMLElement).getByText("you")).toBeInTheDocument();
+  });
+
+  it("shows each member's day on their row", async () => {
+    mockGets(
+      meAs(bogdan),
+      [],
+      [
+        { member: person(ana), done: 2, needed: 2 },
+        { member: person(bogdan), done: 0, needed: 1 },
+      ],
+    );
+    renderScreen(<CrewRoute />);
+
+    expect(await screen.findByRole("img", { name: "Ana: 2 of 2 today" })).toBeInTheDocument();
+    expect(screen.getByText("Admin · 2 of 2 today")).toBeInTheDocument();
+    expect(screen.getByText("Member · 0 of 1 today")).toBeInTheDocument();
   });
 
   it("only admins see the invite button and the invites they sent", async () => {

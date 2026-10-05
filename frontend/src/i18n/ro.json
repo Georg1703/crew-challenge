@@ -66,6 +66,8 @@
     "you": "tu",
     "admin": "Admin",
     "member": "Membru",
+    "todayRow": "{{name}}: azi {{done}} din {{needed}}",
+    "todaySubtitle": "{{role}} · azi {{done}} din {{needed}}",
     "invite": "Invită pe cineva",
     "inviteTitle": "Invită pe cineva",
     "inviteBody": "Trimite linkul sau arată codul. Persoana își alege numele și parola și intră direct în echipă.",
@@ -498,8 +500,6 @@
       "outside": "nu participi"
     },
     "proofLater": "Dovada o vei putea adăuga aici în curând.",
-    "crewTitle": "Echipa azi",
-    "crewRow": "{{name}}: {{done}} din {{needed}}",
     "amountTitle": "Cât adaugi?",
     "amountLabel": "Câte {{unit}}",
     "amountAdd": "Adaugă",

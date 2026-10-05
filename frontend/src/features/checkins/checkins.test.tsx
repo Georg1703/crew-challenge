@@ -81,12 +81,12 @@ function mockToday(data: Today | (() => Today)) {
   }) as never);
 }
 
-const show = () => renderRoutes([{ path: "/", element: <TodayCheckIns meId={bogdan.id} /> }]);
+const show = () => renderRoutes([{ path: "/", element: <TodayCheckIns /> }]);
 
 afterEach(() => vi.useRealTimers());
 
 describe("today", () => {
-  it("shows the day ring, a card per challenge and the crew", async () => {
+  it("shows the day ring and a card per challenge, not the crew (that is on Echipa)", async () => {
     mockToday(today([walk, read]));
     show();
 
@@ -96,9 +96,7 @@ describe("today", () => {
     expect(screen.getByText("12 / 20 pages")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "12 / 20 pages" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Monday: done" })).toHaveLength(2);
-    expect(screen.getByRole("heading", { name: "The crew today" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Ana: 2 of 2" })).toBeInTheDocument();
-    expect(screen.getByText("you")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /^Ana:/ })).not.toBeInTheDocument();
   });
 
   it("checks in at once and offers undo", async () => {
