@@ -1,31 +1,43 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
-import { formatDay, monthName } from "@/shared/lib/format";
+import { formatDay, monthName, todayIn } from "@/shared/lib/format";
 import { Button, Card, Skeleton } from "@/shared/ui";
 
-import { useChosenChallenges, useCurrentRound } from "../api";
+import { useChosenChallenges, usePool } from "../api";
 import styles from "../challenges.module.css";
 import { summaryLine } from "../describe";
+import { monthStart } from "../months";
 import { ChallengeRows } from "./ChallengeRows";
 
-/** Day of the month from which admins are reminded to choose next month's challenge. */
+/** Day of the month from which admins are reminded when next month has no challenge yet. */
 const CHOOSE_REMINDER_DAY = 25;
 
-/** Today: the running and upcoming challenges, and next month's round (propose, vote, choose). */
-export function TodayChallenges({ isAdmin, today }: { isAdmin: boolean; today: Date }) {
+/** Today: the running challenges, the upcoming ones, and the pool (propose, vote, choose). */
+export function TodayChallenges({
+  isAdmin,
+  timeZone,
+  now = new Date(),
+}: {
+  isAdmin: boolean;
+  timeZone: string;
+  now?: Date;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const round = useCurrentRound();
+  const pool = usePool();
   const chosen = useChosenChallenges(["active", "upcoming"]);
 
-  if (round.isPending || chosen.isPending) return <Skeleton lines={3} />;
+  if (pool.isPending || chosen.isPending) return <Skeleton lines={3} />;
 
   const active = chosen.data?.filter((c) => c.phase === "active") ?? [];
   const upcoming = chosen.data?.filter((c) => c.phase === "upcoming") ?? [];
-  const month = round.data ? monthName(round.data.period_start, i18n.language) : "";
-  const proposals = round.data?.proposals.length ?? 0;
-  const remindAdmin = isAdmin && proposals > 0 && today.getDate() >= CHOOSE_REMINDER_DAY;
+  const today = todayIn(timeZone, now);
+  const nextMonth = monthStart(today, 1);
+  const nextMonthEmpty = !upcoming.some((c) => c.period_start === nextMonth);
+  const remindAdmin =
+    isAdmin && nextMonthEmpty && Number(today.slice(8, 10)) >= CHOOSE_REMINDER_DAY;
+  const proposals = pool.data?.size ?? 0;
 
   return (
     <>
@@ -52,17 +64,19 @@ export function TodayChallenges({ isAdmin, today }: { isAdmin: boolean; today: D
       {upcoming.length > 0 && (
         <ChallengeRows challenges={upcoming} label={t("challenges.sections.upcoming")} />
       )}
-      {round.data && (
+      {pool.data && (
         <Card tone="accent">
           <h2 className={styles.cardTitle}>
             {remindAdmin
-              ? t("challenges.today.chooseTitle", { month })
-              : t("challenges.today.roundTitle", { month })}
+              ? t("challenges.today.chooseTitle", { month: monthName(nextMonth, i18n.language) })
+              : t("challenges.today.poolTitle")}
           </h2>
           <p className={styles.muted}>
             {proposals === 0
-              ? t("challenges.today.none", { month })
-              : t("challenges.today.some", { n: proposals })}
+              ? t("challenges.today.none")
+              : proposals === 1
+                ? t("challenges.today.one")
+                : t("challenges.today.some", { n: proposals })}
           </p>
           <Button onClick={() => navigate(proposals ? "/challenges" : "/challenges/new")}>
             {proposals ? t("challenges.today.see") : t("challenges.propose")}

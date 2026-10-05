@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router";
 
 import { isApiError } from "@/api";
 import { errorMessage } from "@/i18n/errors";
-import { monthName } from "@/shared/lib/format";
 import {
   Banner,
   Button,
@@ -22,13 +21,7 @@ import {
   useToast,
 } from "@/shared/ui";
 
-import {
-  useChallenge,
-  useCurrentRound,
-  useEditChallenge,
-  useProposeChallenge,
-  type ChallengeInput,
-} from "../api";
+import { useChallenge, useEditChallenge, useProposeChallenge, type ChallengeInput } from "../api";
 import styles from "../challenges.module.css";
 import {
   CHALLENGE_ICONS,
@@ -144,10 +137,9 @@ function EditProposal({ id }: { id: string }) {
 }
 
 function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: string }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
-  const round = useCurrentRound();
   const propose = useProposeChallenge();
   const edit = useEditChallenge(editingId ?? "");
   const save = editingId ? edit : propose;
@@ -160,7 +152,6 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const fieldError = (name: string) => localErrors[name] ?? apiError?.field(name);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
-  const month = round.data ? monthName(round.data.period_start, i18n.language) : "";
 
   /** The checks a person needs before moving on; the server checks everything again. */
   const check = (current: Step): Record<string, string> => {
@@ -207,9 +198,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
           label={t("challenges.stepLabel", { n: index + 1, total: STEPS.length })}
         />
         <p className={styles.meta}>
-          {editingId
-            ? t("challenges.editingFor", { month })
-            : t("challenges.proposingFor", { month })}
+          {editingId ? t("challenges.editingNote") : t("challenges.proposingNote")}
         </p>
       </div>
       {generalError && <Banner tone="danger" title={generalError} />}

@@ -127,15 +127,18 @@
     "not_found": "We couldn't find that.",
     "already_member": "You're already in this crew.",
     "crew_not_found": "You're not in this crew.",
-    "round_closed": "This round is closed: the challenge has already been chosen.",
-    "round_not_found": "This round doesn't exist.",
     "challenge_not_found": "This challenge doesn't exist or was withdrawn.",
     "not_your_proposal": "Only the person who proposed it can change it.",
     "challenge_started": "The challenge has already started.",
     "challenge_finished": "The challenge has finished.",
-    "period_over": "This month is over. Choose a challenge for the next one.",
+    "period_over": "This month is over. Choose a later one.",
     "not_chosen_yet": "Only a chosen challenge has participants.",
-    "conflict": "That can't be done right now."
+    "conflict": "That can't be done right now.",
+    "pool_full": "The list of proposals is full. Withdraw one or wait until one is chosen.",
+    "not_a_proposal": "This challenge has already been chosen, so it can't be changed or voted on.",
+    "period_too_far": "Choose a month at most a year ahead.",
+    "too_few_days": "Too few days are left this month for how many times the challenge asks.",
+    "period_kind_not_available": "Only months can be chosen for now."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -166,29 +169,23 @@
   "challenges": {
     "title": "Challenges",
     "propose": "Propose a challenge",
-    "forMonth": "For {{month}}",
-    "roundEmpty": "Nobody has proposed anything for {{month}} yet. Be the first.",
     "proposedBy": "Proposed by {{name}}, {{date}}",
     "someone": "someone",
     "votes": "Votes: {{n}}",
     "vote": "Vote",
-    "voted": "Your vote",
-    "choose": "Choose it",
-    "chooseTitle": "Choose “{{title}}” for {{month}}?",
-    "chooseBody": "The whole crew takes part from {{date}}. Anyone can opt out until then. You can change the choice until it starts.",
-    "chooseConfirm": "Choose the challenge",
-    "chosenToast": "The challenge for {{month}} is chosen",
+    "voted": "Voted",
+    "choose": "Choose",
     "dates": "{{start}} - {{end}}",
     "until": "Until {{date}}",
     "open": "See the challenge",
     "sections": {
       "active": "Active now",
       "upcoming": "Coming up",
-      "finished": "Finished"
+      "finished": "Finished",
+      "pool": "Proposals"
     },
     "state": {
-      "proposed": "Proposal",
-      "notChosen": "Not chosen"
+      "proposed": "Proposal"
     },
     "phase": {
       "upcoming": "Coming up",
@@ -202,7 +199,9 @@
       "target": "Target",
       "proof": "Proof",
       "period": "Period",
-      "proposed": "Proposed"
+      "proposed": "Proposed",
+      "chosen": "Chosen",
+      "votes": "Votes"
     },
     "participantsTitle": "Taking part",
     "leftOn": "Left on {{date}}",
@@ -215,18 +214,14 @@
     "withdrawBody": "It disappears from the list together with its votes.",
     "withdrawConfirm": "Withdraw the proposal",
     "withdrawn": "Proposal withdrawn",
-    "repropose": "Propose it again",
-    "reproposed": "Proposed again",
     "published": "Proposal published",
     "saved": "Proposal saved",
-    "proposingFor": "Proposal for {{month}}",
-    "editingFor": "Editing your proposal for {{month}}",
     "stepLabel": "Step {{n}} of {{total}}",
     "back": "Back",
     "next": "Continue",
     "publish": "Publish the proposal",
     "save": "Save the changes",
-    "reviewNote": "The crew sees it right away and can vote. An admin chooses the month's challenge.",
+    "reviewNote": "The crew sees it right away and can vote. An admin chooses the month it runs in.",
     "editResetsVotes": "The votes so far are reset.",
     "steps": {
       "what": {
@@ -402,11 +397,39 @@
       "targetValue": "Write a number above zero."
     },
     "today": {
-      "roundTitle": "The challenge for {{month}}",
-      "chooseTitle": "Choose the challenge for {{month}}",
-      "none": "No proposals yet. Propose what you do in {{month}}.",
-      "some": "Proposals: {{n}}. Vote for your favourite.",
+      "poolTitle": "Proposals for the next challenges",
+      "chooseTitle": "No challenge for {{month}} yet",
+      "none": "Nobody has proposed anything yet. Be the first.",
+      "one": "One proposal. Vote if you like it.",
+      "some": "Proposals: {{n}}. Vote for the ones you like.",
       "see": "See the proposals"
-    }
+    },
+    "poolSize": "{{n}} of {{limit}}",
+    "poolEmpty": "No proposals yet. Propose what the crew could do next.",
+    "poolFull": "The list is full ({{limit}} proposals). Withdraw one or wait until one is chosen.",
+    "sort": {
+      "label": "Order",
+      "newest": "Newest",
+      "votes": "Most votes"
+    },
+    "proposingNote": "The crew votes, an admin chooses when it runs.",
+    "editingNote": "Editing your proposal",
+    "chosenBy": "Chosen by {{name}}, {{date}}",
+    "schedule": {
+      "open": "Choose a month",
+      "title": "When does “{{title}}” run?",
+      "moveTitle": "Move “{{title}}”",
+      "month": "Month",
+      "wholeMonth": "The whole month",
+      "fromTomorrow": "From tomorrow, {{date}}",
+      "body": "The whole crew takes part. Anyone can opt out until it starts. You can change the month until then.",
+      "moveBody": "Everyone takes part again, also those who opted out.",
+      "confirm": "Choose for {{month}}",
+      "done": "Scheduled for {{month}}",
+      "move": "Move to another month",
+      "back": "Back to proposals",
+      "backDone": "Back in the proposals"
+    },
+    "periodFrom": "{{month}}, from {{date}}"
   }
 }

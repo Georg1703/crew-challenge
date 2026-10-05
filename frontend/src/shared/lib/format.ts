@@ -36,3 +36,18 @@ export function monthName(day: string, language: string): string {
     new Date(`${day}T00:00:00Z`),
   );
 }
+
+/** Today's date in a time zone as "2026-10-05" (the crew's day, not the phone's). */
+export function todayIn(timeZone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
+}
+
+/** "Noiembrie 2026" for a crew-local date (capitalized: it is used as a heading or an option). */
+export function monthAndYear(day: string, language: string): string {
+  const text = new Intl.DateTimeFormat(language, {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${day}T00:00:00Z`));
+  return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
+}

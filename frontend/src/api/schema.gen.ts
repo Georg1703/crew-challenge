@@ -62,10 +62,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Chosen challenges, by start date. */
+        /** @description Scheduled challenges, by start date. */
         get: operations["challenges_list"];
         put?: never;
-        /** @description Propose a challenge for the open round. */
+        /** @description Add a proposal to the crew's pool (409 pool_full when it is full). */
         post: operations["challenges_create"];
         delete?: never;
         options?: never;
@@ -81,10 +81,10 @@ export interface paths {
             cookie?: never;
         };
         get: operations["challenges_retrieve"];
-        /** @description The creator replaces their proposal while the round is open. Resets its votes. */
+        /** @description The creator replaces their proposal while it is in the pool. Resets its votes. */
         put: operations["challenges_update"];
         post?: never;
-        /** @description The creator or an admin withdraws a proposal while the round is open. */
+        /** @description The creator or an admin withdraws a proposal from the pool. */
         delete: operations["challenges_destroy"];
         options?: never;
         head?: never;
@@ -109,7 +109,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/challenges/{challenge_id}/repropose": {
+    "/api/v1/challenges/{challenge_id}/schedule": {
         parameters: {
             query?: never;
             header?: never;
@@ -117,10 +117,29 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** @description Propose a challenge that was not chosen again, in the open round. */
-        post: operations["challenges_repropose"];
-        delete?: never;
+        /** @description Admin: schedule a proposal for a period, or move it before it starts. */
+        put: operations["challenges_schedule"];
+        post?: never;
+        /** @description Admin: put a scheduled challenge back in the pool before it starts. */
+        delete: operations["challenges_unschedule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Vote for a proposal (voting twice counts once). */
+        put: operations["challenges_vote"];
+        post?: never;
+        /** @description Take your vote back. */
+        delete: operations["challenges_vote_clear"];
         options?: never;
         head?: never;
         patch?: never;
@@ -264,66 +283,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/rounds/{round_id}": {
+    "/api/v1/proposals": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["rounds_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rounds/{round_id}/choice": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Admin: choose the round's challenge, or change the choice before it starts. */
-        put: operations["rounds_choose"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rounds/{round_id}/vote": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Vote for a proposal in this round (replaces your vote), or clear your vote. */
-        put: operations["rounds_vote"];
-        post?: never;
-        /** @description Vote for a proposal in this round (replaces your vote), or clear your vote. */
-        delete: operations["rounds_vote_clear"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rounds/current": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The round people propose and vote in now (created on first use). */
-        get: operations["rounds_current"];
+        /** @description The crew's pool of proposals, newest first, with votes and how full it is. */
+        get: operations["proposals_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -355,8 +323,6 @@ export interface components {
         ChallengeDetailOut: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            round_id: string;
             title: string;
             rules: string;
             icon: components["schemas"]["IconEnum"];
@@ -372,14 +338,26 @@ export interface components {
             proof_required: boolean;
             state: components["schemas"]["ChallengeStateEnum"];
             phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            period_kind: (components["schemas"]["PeriodKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            period_start: string | null;
             /** Format: date */
             start_date: string | null;
             /** Format: date */
             end_date: string | null;
+            chosen_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            chosen_at: string | null;
             created_by: components["schemas"]["PersonOut"] | null;
             /** Format: date-time */
             created_at: string;
             revision: number;
+            vote_count: number;
+            voters: components["schemas"]["PersonOut"][];
+            /** @description The current member voted for it. */
+            my_vote: boolean;
+            /** @description Proposed by the current member. */
+            mine: boolean;
             participants: components["schemas"]["ParticipantOut"][];
             /** @description The current member counts in it today. */
             taking_part: boolean;
@@ -410,8 +388,6 @@ export interface components {
         ChallengeOut: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            round_id: string;
             title: string;
             rules: string;
             icon: components["schemas"]["IconEnum"];
@@ -427,26 +403,33 @@ export interface components {
             proof_required: boolean;
             state: components["schemas"]["ChallengeStateEnum"];
             phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            period_kind: (components["schemas"]["PeriodKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            period_start: string | null;
             /** Format: date */
             start_date: string | null;
             /** Format: date */
             end_date: string | null;
+            chosen_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            chosen_at: string | null;
             created_by: components["schemas"]["PersonOut"] | null;
             /** Format: date-time */
             created_at: string;
             revision: number;
-        };
-        ChallengeRefInRequest: {
-            /** Format: uuid */
-            challenge_id: string;
+            vote_count: number;
+            voters: components["schemas"]["PersonOut"][];
+            /** @description The current member voted for it. */
+            my_vote: boolean;
+            /** @description Proposed by the current member. */
+            mine: boolean;
         };
         /**
          * @description * `proposed` - Proposed
          *     * `chosen` - Chosen
-         *     * `not_chosen` - Not chosen
          * @enum {string}
          */
-        ChallengeStateEnum: "proposed" | "chosen" | "not_chosen";
+        ChallengeStateEnum: "proposed" | "chosen";
         CrewDetailOut: {
             /** Format: uuid */
             id: string;
@@ -595,6 +578,14 @@ export interface components {
          * @enum {string}
          */
         PhaseEnum: "upcoming" | "active" | "finished";
+        PoolOut: {
+            /** @description Newest first. */
+            proposals: components["schemas"]["ChallengeOut"][];
+            /** @description Proposals in the pool. */
+            size: number;
+            /** @description How many the pool can hold (Crew.max_proposals). */
+            limit: number;
+        };
         /**
          * @description * `ro` - Romana
          *     * `en` - English
@@ -609,74 +600,14 @@ export interface components {
          * @enum {string}
          */
         ProofKindEnum: "none" | "photo" | "video" | "photo_or_video";
-        ProposalOut: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            round_id: string;
-            title: string;
-            rules: string;
-            icon: components["schemas"]["IconEnum"];
-            measure: components["schemas"]["MeasureEnum"];
-            unit: string;
-            frequency: components["schemas"]["FrequencyEnum"];
-            weekdays: number[];
-            times: number | null;
-            target_scope: components["schemas"]["TargetScopeEnum"];
-            /** Format: double */
-            target_value: number | null;
-            proof_kind: components["schemas"]["ProofKindEnum"];
-            proof_required: boolean;
-            state: components["schemas"]["ChallengeStateEnum"];
-            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
-            /** Format: date */
-            start_date: string | null;
-            /** Format: date */
-            end_date: string | null;
-            created_by: components["schemas"]["PersonOut"] | null;
-            /** Format: date-time */
-            created_at: string;
-            revision: number;
-            vote_count: number;
-            voters: components["schemas"]["PersonOut"][];
-            /** @description Proposed by the current member. */
-            mine: boolean;
-        };
-        RoundOut: {
-            /** Format: uuid */
-            id: string;
+        ScheduleInRequest: {
             period_kind: components["schemas"]["PeriodKindEnum"];
-            /** Format: date */
-            period_start: string;
-            /** Format: date */
-            period_end: string;
-            state: components["schemas"]["RoundStateEnum"];
-            selection: components["schemas"]["SelectionEnum"];
-            /** Format: uuid */
-            chosen_id: string | null;
-            chosen_by: components["schemas"]["PersonOut"] | null;
-            /** Format: date-time */
-            chosen_at: string | null;
-            /** @description Oldest first. */
-            proposals: components["schemas"]["ProposalOut"][];
             /**
-             * Format: uuid
-             * @description The proposal you voted for.
+             * Format: date
+             * @description First day of the period (the 1st for a month).
              */
-            my_vote: string | null;
-            votes_cast: number;
+            period_start: string;
         };
-        /**
-         * @description * `open` - Open
-         *     * `closed` - Closed
-         * @enum {string}
-         */
-        RoundStateEnum: "open" | "closed";
-        /**
-         * @description * `admin` - An admin chooses
-         * @enum {string}
-         */
-        SelectionEnum: "admin";
         /**
          * @description * `valid` - valid
          *     * `expired` - expired
@@ -918,7 +849,32 @@ export interface operations {
             };
         };
     };
-    challenges_repropose: {
+    challenges_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeDetailOut"];
+                };
+            };
+        };
+    };
+    challenges_unschedule: {
         parameters: {
             query?: never;
             header?: never;
@@ -929,13 +885,53 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            201: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_vote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChallengeOut"];
                 };
+            };
+        };
+    };
+    challenges_vote_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1152,98 +1148,7 @@ export interface operations {
             };
         };
     };
-    rounds_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                round_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoundOut"];
-                };
-            };
-        };
-    };
-    rounds_choose: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                round_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChallengeRefInRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoundOut"];
-                };
-            };
-        };
-    };
-    rounds_vote: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                round_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChallengeRefInRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoundOut"];
-                };
-            };
-        };
-    };
-    rounds_vote_clear: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                round_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    rounds_current: {
+    proposals_list: {
         parameters: {
             query?: never;
             header?: never;
@@ -1257,7 +1162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoundOut"];
+                    "application/json": components["schemas"]["PoolOut"];
                 };
             };
         };

@@ -4,13 +4,11 @@ import { StatusPill } from "@/shared/ui";
 
 import type { Challenge } from "../api";
 
-/** Where a challenge stands: proposal, not chosen, upcoming, active, finished. */
+/** Where a challenge stands: proposal, upcoming, active, finished. */
 export function PhasePill({ challenge }: { challenge: Challenge }) {
   const { t } = useTranslation();
   if (challenge.state === "proposed")
     return <StatusPill>{t("challenges.state.proposed")}</StatusPill>;
-  if (challenge.state === "not_chosen")
-    return <StatusPill>{t("challenges.state.notChosen")}</StatusPill>;
   if (challenge.phase === "active")
     return <StatusPill tone="success">{t("challenges.phase.active")}</StatusPill>;
   if (challenge.phase === "upcoming")

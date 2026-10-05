@@ -26,7 +26,10 @@ export function HomeRoute() {
   return (
     <Screen title={t("home.greeting", { name: member.display_name })}>
       <InstallCard dismissible />
-      <TodayChallenges isAdmin={member.role === "admin"} today={new Date()} />
+      <TodayChallenges
+        isAdmin={member.role === "admin"}
+        timeZone={me.data?.crew?.timezone ?? "UTC"}
+      />
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>{me.data?.crew?.name ?? t("home.membersTitle")}</h2>
         {crew.data ? (

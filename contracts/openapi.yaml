@@ -51,7 +51,7 @@ paths:
   /api/v1/challenges:
     get:
       operationId: challenges_list
-      description: Chosen challenges, by start date.
+      description: Scheduled challenges, by start date.
       parameters:
       - in: query
         name: phase
@@ -73,7 +73,7 @@ paths:
           description: ''
     post:
       operationId: challenges_create
-      description: Propose a challenge for the open round.
+      description: Add a proposal to the crew's pool (409 pool_full when it is full).
       tags:
       - challenges
       requestBody:
@@ -114,7 +114,7 @@ paths:
           description: ''
     put:
       operationId: challenges_update
-      description: The creator replaces their proposal while the round is open. Resets
+      description: The creator replaces their proposal while it is in the pool. Resets
         its votes.
       parameters:
       - in: path
@@ -142,8 +142,7 @@ paths:
           description: ''
     delete:
       operationId: challenges_destroy
-      description: The creator or an admin withdraws a proposal while the round is
-        open.
+      description: The creator or an admin withdraws a proposal from the pool.
       parameters:
       - in: path
         name: challenge_id
@@ -197,10 +196,38 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/challenges/{challenge_id}/repropose:
-    post:
-      operationId: challenges_repropose
-      description: Propose a challenge that was not chosen again, in the open round.
+  /api/v1/challenges/{challenge_id}/schedule:
+    put:
+      operationId: challenges_schedule
+      description: 'Admin: schedule a proposal for a period, or move it before it
+        starts.'
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDetailOut'
+          description: ''
+    delete:
+      operationId: challenges_unschedule
+      description: 'Admin: put a scheduled challenge back in the pool before it starts.'
       parameters:
       - in: path
         name: challenge_id
@@ -213,12 +240,47 @@ paths:
       security:
       - cookieAuth: []
       responses:
-        '201':
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/vote:
+    put:
+      operationId: challenges_vote
+      description: Vote for a proposal (voting twice counts once).
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChallengeOut'
           description: ''
+    delete:
+      operationId: challenges_vote_clear
+      description: Take your vote back.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -422,18 +484,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeOut'
           description: ''
-  /api/v1/rounds/{round_id}:
+  /api/v1/proposals:
     get:
-      operationId: rounds_retrieve
-      parameters:
-      - in: path
-        name: round_id
-        schema:
-          type: string
-          format: uuid
-        required: true
+      operationId: proposals_list
+      description: The crew's pool of proposals, newest first, with votes and how
+        full it is.
       tags:
-      - rounds
+      - proposals
       security:
       - cookieAuth: []
       responses:
@@ -441,98 +498,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoundOut'
-          description: ''
-  /api/v1/rounds/{round_id}/choice:
-    put:
-      operationId: rounds_choose
-      description: 'Admin: choose the round''s challenge, or change the choice before
-        it starts.'
-      parameters:
-      - in: path
-        name: round_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - rounds
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChallengeRefInRequest'
-        required: true
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoundOut'
-          description: ''
-  /api/v1/rounds/{round_id}/vote:
-    put:
-      operationId: rounds_vote
-      description: Vote for a proposal in this round (replaces your vote), or clear
-        your vote.
-      parameters:
-      - in: path
-        name: round_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - rounds
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChallengeRefInRequest'
-        required: true
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoundOut'
-          description: ''
-    delete:
-      operationId: rounds_vote_clear
-      description: Vote for a proposal in this round (replaces your vote), or clear
-        your vote.
-      parameters:
-      - in: path
-        name: round_id
-        schema:
-          type: string
-          format: uuid
-        required: true
-      tags:
-      - rounds
-      security:
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/rounds/current:
-    get:
-      operationId: rounds_current
-      description: The round people propose and vote in now (created on first use).
-      tags:
-      - rounds
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoundOut'
+                $ref: '#/components/schemas/PoolOut'
           description: ''
 components:
   schemas:
@@ -578,9 +544,6 @@ components:
         id:
           type: string
           format: uuid
-        round_id:
-          type: string
-          format: uuid
         title:
           type: string
         rules:
@@ -621,6 +584,15 @@ components:
           oneOf:
           - $ref: '#/components/schemas/PhaseEnum'
           - $ref: '#/components/schemas/NullEnum'
+        period_kind:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PeriodKindEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        period_start:
+          type: string
+          format: date
+          nullable: true
         start_date:
           type: string
           format: date
@@ -628,6 +600,14 @@ components:
         end_date:
           type: string
           format: date
+          nullable: true
+        chosen_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        chosen_at:
+          type: string
+          format: date-time
           nullable: true
         created_by:
           allOf:
@@ -638,6 +618,18 @@ components:
           format: date-time
         revision:
           type: integer
+        vote_count:
+          type: integer
+        voters:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+        my_vote:
+          type: boolean
+          description: The current member voted for it.
+        mine:
+          type: boolean
+          description: Proposed by the current member.
         participants:
           type: array
           items:
@@ -646,6 +638,8 @@ components:
           type: boolean
           description: The current member counts in it today.
       required:
+      - chosen_at
+      - chosen_by
       - created_at
       - created_by
       - end_date
@@ -653,12 +647,15 @@ components:
       - icon
       - id
       - measure
+      - mine
+      - my_vote
       - participants
+      - period_kind
+      - period_start
       - phase
       - proof_kind
       - proof_required
       - revision
-      - round_id
       - rules
       - start_date
       - state
@@ -668,6 +665,8 @@ components:
       - times
       - title
       - unit
+      - vote_count
+      - voters
       - weekdays
     ChallengeInRequest:
       type: object
@@ -731,9 +730,6 @@ components:
         id:
           type: string
           format: uuid
-        round_id:
-          type: string
-          format: uuid
         title:
           type: string
         rules:
@@ -774,6 +770,15 @@ components:
           oneOf:
           - $ref: '#/components/schemas/PhaseEnum'
           - $ref: '#/components/schemas/NullEnum'
+        period_kind:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PeriodKindEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        period_start:
+          type: string
+          format: date
+          nullable: true
         start_date:
           type: string
           format: date
@@ -781,6 +786,14 @@ components:
         end_date:
           type: string
           format: date
+          nullable: true
+        chosen_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        chosen_at:
+          type: string
+          format: date-time
           nullable: true
         created_by:
           allOf:
@@ -791,7 +804,21 @@ components:
           format: date-time
         revision:
           type: integer
+        vote_count:
+          type: integer
+        voters:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+        my_vote:
+          type: boolean
+          description: The current member voted for it.
+        mine:
+          type: boolean
+          description: Proposed by the current member.
       required:
+      - chosen_at
+      - chosen_by
       - created_at
       - created_by
       - end_date
@@ -799,11 +826,14 @@ components:
       - icon
       - id
       - measure
+      - mine
+      - my_vote
+      - period_kind
+      - period_start
       - phase
       - proof_kind
       - proof_required
       - revision
-      - round_id
       - rules
       - start_date
       - state
@@ -812,25 +842,17 @@ components:
       - times
       - title
       - unit
+      - vote_count
+      - voters
       - weekdays
-    ChallengeRefInRequest:
-      type: object
-      properties:
-        challenge_id:
-          type: string
-          format: uuid
-      required:
-      - challenge_id
     ChallengeStateEnum:
       enum:
       - proposed
       - chosen
-      - not_chosen
       type: string
       description: |-
         * `proposed` - Proposed
         * `chosen` - Chosen
-        * `not_chosen` - Not chosen
     CrewDetailOut:
       type: object
       properties:
@@ -1153,6 +1175,24 @@ components:
         * `upcoming` - upcoming
         * `active` - active
         * `finished` - finished
+    PoolOut:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChallengeOut'
+          description: Newest first.
+        size:
+          type: integer
+          description: Proposals in the pool.
+        limit:
+          type: integer
+          description: How many the pool can hold (Crew.max_proposals).
+      required:
+      - limit
+      - proposals
+      - size
     PreferredLanguageEnum:
       enum:
       - ro
@@ -1173,174 +1213,18 @@ components:
         * `photo` - Photo
         * `video` - Video
         * `photo_or_video` - Photo or video
-    ProposalOut:
+    ScheduleInRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        round_id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        rules:
-          type: string
-        icon:
-          $ref: '#/components/schemas/IconEnum'
-        measure:
-          $ref: '#/components/schemas/MeasureEnum'
-        unit:
-          type: string
-        frequency:
-          $ref: '#/components/schemas/FrequencyEnum'
-        weekdays:
-          type: array
-          items:
-            type: integer
-        times:
-          type: integer
-          nullable: true
-        target_scope:
-          $ref: '#/components/schemas/TargetScopeEnum'
-        target_value:
-          type: number
-          format: double
-          maximum: 100000000
-          minimum: -100000000
-          exclusiveMaximum: true
-          exclusiveMinimum: true
-          nullable: true
-        proof_kind:
-          $ref: '#/components/schemas/ProofKindEnum'
-        proof_required:
-          type: boolean
-        state:
-          $ref: '#/components/schemas/ChallengeStateEnum'
-        phase:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/PhaseEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        start_date:
-          type: string
-          format: date
-          nullable: true
-        end_date:
-          type: string
-          format: date
-          nullable: true
-        created_by:
-          allOf:
-          - $ref: '#/components/schemas/PersonOut'
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        revision:
-          type: integer
-        vote_count:
-          type: integer
-        voters:
-          type: array
-          items:
-            $ref: '#/components/schemas/PersonOut'
-        mine:
-          type: boolean
-          description: Proposed by the current member.
-      required:
-      - created_at
-      - created_by
-      - end_date
-      - frequency
-      - icon
-      - id
-      - measure
-      - mine
-      - phase
-      - proof_kind
-      - proof_required
-      - revision
-      - round_id
-      - rules
-      - start_date
-      - state
-      - target_scope
-      - target_value
-      - times
-      - title
-      - unit
-      - vote_count
-      - voters
-      - weekdays
-    RoundOut:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
         period_kind:
           $ref: '#/components/schemas/PeriodKindEnum'
         period_start:
           type: string
           format: date
-        period_end:
-          type: string
-          format: date
-        state:
-          $ref: '#/components/schemas/RoundStateEnum'
-        selection:
-          $ref: '#/components/schemas/SelectionEnum'
-        chosen_id:
-          type: string
-          format: uuid
-          nullable: true
-        chosen_by:
-          allOf:
-          - $ref: '#/components/schemas/PersonOut'
-          nullable: true
-        chosen_at:
-          type: string
-          format: date-time
-          nullable: true
-        proposals:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProposalOut'
-          description: Oldest first.
-        my_vote:
-          type: string
-          format: uuid
-          nullable: true
-          description: The proposal you voted for.
-        votes_cast:
-          type: integer
+          description: First day of the period (the 1st for a month).
       required:
-      - chosen_at
-      - chosen_by
-      - chosen_id
-      - id
-      - my_vote
-      - period_end
       - period_kind
       - period_start
-      - proposals
-      - selection
-      - state
-      - votes_cast
-    RoundStateEnum:
-      enum:
-      - open
-      - closed
-      type: string
-      description: |-
-        * `open` - Open
-        * `closed` - Closed
-    SelectionEnum:
-      enum:
-      - admin
-      type: string
-      description: '* `admin` - An admin chooses'
     StatusEnum:
       enum:
       - valid

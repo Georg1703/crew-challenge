@@ -127,15 +127,18 @@
     "not_found": "Nu am găsit ce căutai.",
     "already_member": "Ești deja în echipa asta.",
     "crew_not_found": "Nu ești în această echipă.",
-    "round_closed": "Runda e închisă: provocarea a fost deja aleasă.",
-    "round_not_found": "Runda nu există.",
     "challenge_not_found": "Provocarea nu există sau a fost retrasă.",
     "not_your_proposal": "Doar cine a propus-o o poate modifica.",
     "challenge_started": "Provocarea a început deja.",
     "challenge_finished": "Provocarea s-a terminat.",
-    "period_over": "Luna s-a terminat. Alege o provocare pentru luna următoare.",
+    "period_over": "Luna aceasta s-a terminat. Alege una mai târzie.",
     "not_chosen_yet": "Doar o provocare aleasă are participanți.",
-    "conflict": "Nu se poate acum."
+    "conflict": "Nu se poate acum.",
+    "pool_full": "Lista de propuneri e plină. Retrage una sau așteaptă până se alege una.",
+    "not_a_proposal": "Provocarea a fost deja aleasă, nu mai poate fi schimbată sau votată.",
+    "period_too_far": "Alege o lună cel mult cu un an înainte.",
+    "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
+    "period_kind_not_available": "Deocamdată se pot alege doar luni."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -166,29 +169,23 @@
   "challenges": {
     "title": "Provocări",
     "propose": "Propune o provocare",
-    "forMonth": "Pentru {{month}}",
-    "roundEmpty": "Încă nu a propus nimeni nimic pentru {{month}}. Fii primul.",
     "proposedBy": "Propusă de {{name}}, {{date}}",
     "someone": "cineva",
     "votes": "Voturi: {{n}}",
     "vote": "Votează",
-    "voted": "Votul tău",
-    "choose": "Alege-o",
-    "chooseTitle": "Alegi „{{title}}” pentru {{month}}?",
-    "chooseBody": "Toată echipa participă de pe {{date}}. Cine nu vrea se poate retrage până atunci. Poți schimba alegerea până începe.",
-    "chooseConfirm": "Alege provocarea",
-    "chosenToast": "Provocarea pentru {{month}} e aleasă",
+    "voted": "Ai votat",
+    "choose": "Alege",
     "dates": "{{start}} - {{end}}",
     "until": "Până pe {{date}}",
     "open": "Vezi provocarea",
     "sections": {
       "active": "Active acum",
       "upcoming": "Urmează",
-      "finished": "Terminate"
+      "finished": "Terminate",
+      "pool": "Propuneri"
     },
     "state": {
-      "proposed": "Propunere",
-      "notChosen": "Nealeasă"
+      "proposed": "Propunere"
     },
     "phase": {
       "upcoming": "Urmează",
@@ -202,7 +199,9 @@
       "target": "Ținta",
       "proof": "Dovada",
       "period": "Perioada",
-      "proposed": "Propusă"
+      "proposed": "Propusă",
+      "chosen": "Aleasă",
+      "votes": "Voturi"
     },
     "participantsTitle": "Participă",
     "leftOn": "A ieșit pe {{date}}",
@@ -215,18 +214,14 @@
     "withdrawBody": "Dispare din listă împreună cu voturile ei.",
     "withdrawConfirm": "Retrage propunerea",
     "withdrawn": "Propunere retrasă",
-    "repropose": "Propune-o din nou",
-    "reproposed": "Propusă din nou",
     "published": "Propunere publicată",
     "saved": "Propunere salvată",
-    "proposingFor": "Propunere pentru {{month}}",
-    "editingFor": "Modifici propunerea pentru {{month}}",
     "stepLabel": "Pasul {{n}} din {{total}}",
     "back": "Înapoi",
     "next": "Continuă",
     "publish": "Publică propunerea",
     "save": "Salvează modificările",
-    "reviewNote": "Echipa o vede imediat și poate vota. Adminul alege provocarea lunii.",
+    "reviewNote": "Echipa o vede imediat și poate vota. Un admin alege luna în care are loc.",
     "editResetsVotes": "Voturile de până acum se resetează.",
     "steps": {
       "what": {
@@ -402,11 +397,39 @@
       "targetValue": "Scrie un număr mai mare ca zero."
     },
     "today": {
-      "roundTitle": "Provocarea pentru {{month}}",
-      "chooseTitle": "Alege provocarea pentru {{month}}",
-      "none": "Încă nicio propunere. Propune ce faceți în {{month}}.",
-      "some": "Propuneri: {{n}}. Votează-ți preferata.",
+      "poolTitle": "Propuneri pentru următoarele provocări",
+      "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
+      "none": "Nimeni n-a propus nimic încă. Fii primul.",
+      "one": "O propunere. Votează dacă îți place.",
+      "some": "Propuneri: {{n}}. Votează-le pe cele care îți plac.",
       "see": "Vezi propunerile"
-    }
+    },
+    "poolSize": "{{n}} din {{limit}}",
+    "poolEmpty": "Încă nu e nicio propunere. Propune ce ar putea face echipa.",
+    "poolFull": "Lista e plină ({{limit}} propuneri). Retrage una sau așteaptă până se alege una.",
+    "sort": {
+      "label": "Ordinea",
+      "newest": "Cele mai noi",
+      "votes": "Cele mai votate"
+    },
+    "proposingNote": "Echipa votează, un admin alege când are loc.",
+    "editingNote": "Modifici propunerea ta",
+    "chosenBy": "Aleasă de {{name}}, {{date}}",
+    "schedule": {
+      "open": "Alege luna",
+      "title": "Când are loc „{{title}}”?",
+      "moveTitle": "Mută „{{title}}”",
+      "month": "Luna",
+      "wholeMonth": "Toată luna",
+      "fromTomorrow": "De mâine, {{date}}",
+      "body": "Participă toată echipa. Oricine se poate retrage până începe. Poți schimba luna până atunci.",
+      "moveBody": "Participă din nou toți, și cei care s-au retras.",
+      "confirm": "Alege pentru {{month}}",
+      "done": "Programată pentru {{month}}",
+      "move": "Mută în altă lună",
+      "back": "Înapoi la propuneri",
+      "backDone": "E din nou printre propuneri"
+    },
+    "periodFrom": "{{month}}, din {{date}}"
   }
 }

@@ -2,28 +2,27 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, call, type components } from "@/api";
 
-export type Round = components["schemas"]["RoundOut"];
-export type Proposal = components["schemas"]["ProposalOut"];
 export type Challenge = components["schemas"]["ChallengeOut"];
 export type ChallengeDetail = components["schemas"]["ChallengeDetailOut"];
 export type ChallengeInput = components["schemas"]["ChallengeInRequest"];
+export type Pool = components["schemas"]["PoolOut"];
 export type Phase = components["schemas"]["PhaseEnum"];
 
 export const challengesKey = ["challenges"] as const;
-const currentRoundKey = [...challengesKey, "round", "current"] as const;
+const poolKey = [...challengesKey, "pool"] as const;
 const chosenKey = (phases: string) => [...challengesKey, "chosen", phases] as const;
 const challengeKey = (id: string) => [...challengesKey, "one", id] as const;
 
-/** The round people propose and vote in now. */
-export function useCurrentRound({ enabled = true }: { enabled?: boolean } = {}) {
+/** The crew's proposals, newest first, with votes and how full the pool is. */
+export function usePool({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
-    queryKey: currentRoundKey,
-    queryFn: () => call(api.GET("/api/v1/rounds/current")),
+    queryKey: poolKey,
+    queryFn: () => call(api.GET("/api/v1/proposals")),
     enabled,
   });
 }
 
-/** Chosen challenges in the given phases ("active,upcoming"). */
+/** Scheduled challenges in the given phases ("active,upcoming"). */
 export function useChosenChallenges(phases: Phase[], { enabled = true } = {}) {
   const phase = phases.join(",");
   return useQuery({
@@ -49,6 +48,8 @@ function useInvalidate() {
   return () => queryClient.invalidateQueries({ queryKey: challengesKey });
 }
 
+const path = (id: string) => ({ params: { path: { challenge_id: id } } });
+
 export function useProposeChallenge() {
   const invalidate = useInvalidate();
   return useMutation({
@@ -61,12 +62,7 @@ export function useEditChallenge(id: string) {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (body: ChallengeInput) =>
-      call(
-        api.PUT("/api/v1/challenges/{challenge_id}", {
-          params: { path: { challenge_id: id } },
-          body,
-        }),
-      ),
+      call(api.PUT("/api/v1/challenges/{challenge_id}", { ...path(id), body })),
     onSuccess: invalidate,
   });
 }
@@ -74,83 +70,79 @@ export function useEditChallenge(id: string) {
 export function useWithdrawChallenge() {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (id: string) =>
-      call(
-        api.DELETE("/api/v1/challenges/{challenge_id}", { params: { path: { challenge_id: id } } }),
-      ),
+    mutationFn: (id: string) => call(api.DELETE("/api/v1/challenges/{challenge_id}", path(id))),
     onSuccess: invalidate,
   });
 }
 
-export function useRepropose() {
-  const invalidate = useInvalidate();
-  return useMutation({
-    mutationFn: (id: string) =>
-      call(
-        api.POST("/api/v1/challenges/{challenge_id}/repropose", {
-          params: { path: { challenge_id: id } },
-        }),
-      ),
-    onSuccess: invalidate,
-  });
-}
-
-/** Vote for a proposal; the round comes back with the new counts. Optimistic `my_vote`. */
+/** Vote for a proposal or take the vote back. The pool shows the change at once. */
 export function useVote() {
   const queryClient = useQueryClient();
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: ({ roundId, challengeId }: { roundId: string; challengeId: string | null }) =>
-      challengeId
-        ? call(
-            api.PUT("/api/v1/rounds/{round_id}/vote", {
-              params: { path: { round_id: roundId } },
-              body: { challenge_id: challengeId },
-            }),
-          )
-        : call(
-            api.DELETE("/api/v1/rounds/{round_id}/vote", {
-              params: { path: { round_id: roundId } },
-            }),
+    mutationFn: ({ id, vote }: { id: string; vote: boolean }) =>
+      vote
+        ? call(api.PUT("/api/v1/challenges/{challenge_id}/vote", path(id)))
+        : call(api.DELETE("/api/v1/challenges/{challenge_id}/vote", path(id))),
+    onMutate: async ({ id, vote }) => {
+      await queryClient.cancelQueries({ queryKey: poolKey });
+      const previous = queryClient.getQueryData<Pool>(poolKey);
+      if (previous) {
+        queryClient.setQueryData<Pool>(poolKey, {
+          ...previous,
+          proposals: previous.proposals.map((p) =>
+            p.id === id && p.my_vote !== vote
+              ? { ...p, my_vote: vote, vote_count: p.vote_count + (vote ? 1 : -1) }
+              : p,
           ),
-    onMutate: async ({ challengeId }) => {
-      await queryClient.cancelQueries({ queryKey: currentRoundKey });
-      const previous = queryClient.getQueryData<Round>(currentRoundKey);
-      if (previous)
-        queryClient.setQueryData<Round>(currentRoundKey, { ...previous, my_vote: challengeId });
+        });
+      }
       return { previous };
     },
     onError: (_error, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(currentRoundKey, context.previous);
+      if (context?.previous) queryClient.setQueryData(poolKey, context.previous);
     },
-    onSuccess: (round) => queryClient.setQueryData(currentRoundKey, round),
     onSettled: invalidate,
   });
 }
 
-export function useChoose() {
-  const invalidate = useInvalidate();
+/** Admin: schedule a proposal for a month, or move a scheduled one before it starts. */
+export function useSchedule(id: string) {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roundId, challengeId }: { roundId: string; challengeId: string }) =>
+    mutationFn: (periodStart: string) =>
       call(
-        api.PUT("/api/v1/rounds/{round_id}/choice", {
-          params: { path: { round_id: roundId } },
-          body: { challenge_id: challengeId },
+        api.PUT("/api/v1/challenges/{challenge_id}/schedule", {
+          ...path(id),
+          body: { period_kind: "month", period_start: periodStart },
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: (detail) => {
+      queryClient.setQueryData(challengeKey(id), detail);
+      void queryClient.invalidateQueries({ queryKey: challengesKey });
+    },
+  });
+}
+
+/** Admin: put a scheduled challenge back in the pool before it starts. */
+export function useUnschedule(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => call(api.DELETE("/api/v1/challenges/{challenge_id}/schedule", path(id))),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(challengeKey(id), detail);
+      void queryClient.invalidateQueries({ queryKey: challengesKey });
+    },
   });
 }
 
 export function useParticipation(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (takePart: boolean) => {
-      const options = { params: { path: { challenge_id: id } } };
-      return takePart
-        ? call(api.PUT("/api/v1/challenges/{challenge_id}/participation", options))
-        : call(api.DELETE("/api/v1/challenges/{challenge_id}/participation", options));
-    },
+    mutationFn: (takePart: boolean) =>
+      takePart
+        ? call(api.PUT("/api/v1/challenges/{challenge_id}/participation", path(id)))
+        : call(api.DELETE("/api/v1/challenges/{challenge_id}/participation", path(id))),
     onSuccess: (detail) => {
       queryClient.setQueryData(challengeKey(id), detail);
       void queryClient.invalidateQueries({ queryKey: challengesKey });
