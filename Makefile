@@ -45,7 +45,7 @@ setup: ## First-time setup: .env, images, migrations, seed data
 	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 	$(COMPOSE) build
 	$(COMPOSE) run --rm migrate
-	$(COMPOSE) run --rm backend python manage.py seed_demo
+	$(COMPOSE) run --rm backend sh -c "python manage.py seed_demo && python manage.py seed_demo_challenge"
 	@echo "OK: setup done - run: make dev, then open http://localhost:5173"
 
 ##@ Running locally
@@ -109,9 +109,9 @@ superuser: ## Create a Django admin user (asks for username, email, password); a
 	$(COMPOSE) run --rm backend python manage.py createsuperuser
 
 .PHONY: seed
-seed: ## Load the demo crew (known users and passwords, local only)
+seed: ## Load the demo crew and a challenge running this month (local only)
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) run --rm backend python manage.py seed_demo
+	$(COMPOSE) run --rm backend sh -c "python manage.py seed_demo && python manage.py seed_demo_challenge"
 
 ##@ Quality
 

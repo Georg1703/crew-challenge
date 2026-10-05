@@ -35,6 +35,7 @@ export default defineConfig({
     {
       command:
         "uv run python manage.py migrate -v0 && uv run python manage.py seed_demo && " +
+        "uv run python manage.py seed_demo_challenge && " +
         "uv run python manage.py runserver 127.0.0.1:8000 --noreload",
       cwd: "../backend",
       url: "http://127.0.0.1:8000/api/health",
