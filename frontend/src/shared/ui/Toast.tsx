@@ -7,27 +7,41 @@ import { Icon } from "./Icon";
 import styles from "./Toast.module.css";
 
 type Tone = "info" | "success" | "error";
+/** One short action in the toast, for example "Undo". */
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
 interface ToastItem {
   id: number;
   tone: Tone;
   message: string;
+  action?: ToastAction;
 }
-type Show = (message: string, tone?: Tone) => void;
+type Show = (message: string, tone?: Tone, action?: ToastAction) => void;
 
 const ToastContext = createContext<Show | null>(null);
 const DURATION_MS = 3500;
+const WITH_ACTION_MS = 5000; // long enough to reach "Undo"
 
-/** Wrap the app once; call useToast()(message, tone) anywhere below it. */
+/** Wrap the app once; call useToast()(message, tone, action?) anywhere below it. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
   const spring = useSpring("snappy");
 
-  const show = useCallback<Show>((message, tone = "info") => {
-    const id = nextId.current++;
-    setItems((current) => [...current.slice(-2), { id, tone, message }]);
-    window.setTimeout(() => setItems((current) => current.filter((t) => t.id !== id)), DURATION_MS);
-  }, []);
+  const dismiss = useCallback(
+    (id: number) => setItems((current) => current.filter((t) => t.id !== id)),
+    [],
+  );
+  const show = useCallback<Show>(
+    (message, tone = "info", action) => {
+      const id = nextId.current++;
+      setItems((current) => [...current.slice(-2), { id, tone, message, action }]);
+      window.setTimeout(() => dismiss(id), action ? WITH_ACTION_MS : DURATION_MS);
+    },
+    [dismiss],
+  );
   const value = useMemo(() => show, [show]);
 
   return (
@@ -50,6 +64,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <Icon name={item.tone === "error" ? "alert" : "check"} size={16} />
               </span>
               {item.message}
+              {item.action && (
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => {
+                    item.action?.onClick();
+                    dismiss(item.id);
+                  }}
+                >
+                  {item.action.label}
+                </button>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>

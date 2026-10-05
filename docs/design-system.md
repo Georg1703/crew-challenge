@@ -114,7 +114,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring), a row of up to five members then "+N" |
 | `Sheet` | Bottom sheets for a short task (invite, check in, confirm). Title, close button, one primary action |
 | `Banner` | A message that stays true until it changes (wrong password, offline, your turn). Inline; `floating` only for app-wide notices |
-| `Toast` (`useToast`) | A short confirmation after an action, above the tab bar |
+| `Toast` (`useToast`) | A short confirmation after an action, above the tab bar; optionally one action ("Undo") for 5 seconds |
 | `QrCode` | A scannable code for a link |
 | `Segmented` | A small set of exclusive options (language, theme) |
 | `OptionList` | One choice among a few that each need a line of explanation (how often, what proof) |

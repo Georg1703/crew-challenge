@@ -6,7 +6,7 @@ import { api } from "@/api";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
-import { ActiveChallenges, ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
+import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
 import type { Challenge, ChallengeDetail, Pool } from "./api";
 import { monthOptions } from "./months";
 
@@ -409,30 +409,6 @@ describe("one challenge", () => {
     expect(del).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participation", {
       params: { path: { challenge_id: "c1" } },
     });
-  });
-});
-
-describe("today", () => {
-  it("shows only the challenges running now", async () => {
-    mockGets(bogdan, {
-      chosen: [scheduled({ phase: "active", title: "Walk", end_date: "2026-10-31" })],
-    });
-    renderRoutes([{ path: "/", element: <ActiveChallenges /> }]);
-
-    expect(await screen.findByRole("heading", { name: "Walk" })).toBeInTheDocument();
-    expect(screen.getByText("Until October 31")).toBeInTheDocument();
-    expect(api.GET).toHaveBeenCalledWith("/api/v1/challenges", {
-      params: { query: { phase: "active" } },
-    });
-    expect(api.GET).not.toHaveBeenCalledWith("/api/v1/proposals");
-  });
-
-  it("says where to find proposals when nothing is running", async () => {
-    mockGets(bogdan);
-    renderRoutes([{ path: "/", element: <ActiveChallenges /> }]);
-
-    expect(await screen.findByRole("heading", { name: "No challenge yet" })).toBeInTheDocument();
-    expect(screen.getByText("Proposals and votes are in the Crew tab.")).toBeInTheDocument();
   });
 });
 

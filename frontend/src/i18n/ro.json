@@ -56,7 +56,7 @@
   "home": {
     "greeting": "Bună, {{name}}",
     "noChallengeTitle": "Încă nu e nicio provocare",
-    "noChallengeBody": "Propunerile și voturile sunt în Echipa.",
+    "noChallengeBody": "Provocările care încep apar aici. Propunerile sunt în Echipa.",
     "noCrewTitle": "Încă nu ești într-o echipă",
     "noCrewBody": "Cere cuiva din echipă un link de invitație."
   },
@@ -138,7 +138,11 @@
     "period_too_far": "Alege o lună cel mult cu un an înainte.",
     "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
     "period_kind_not_available": "Deocamdată se pot alege doar luni.",
-    "not_invited": "Doar cei care participă pot face asta."
+    "not_invited": "Doar cei care participă pot face asta.",
+    "day_closed": "Ziua s-a încheiat. Poți bifa doar pentru azi.",
+    "not_taking_part": "Nu participi azi la provocarea asta.",
+    "not_due_today": "Provocarea asta nu cere nimic azi.",
+    "nothing_to_undo": "Nu e nimic de anulat azi."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -449,5 +453,57 @@
       "adminOnly": "O vezi pentru că ești admin; nu participi.",
       "short": "{{n}} din {{total}}"
     }
+  },
+  "checkins": {
+    "today": "azi",
+    "ringLabel": "{{done}} din {{total}} bifate azi",
+    "dayDone": "Ziua e bifată",
+    "restTitle": "Azi te odihnești",
+    "restBody": "Provocările tale nu cer nimic azi.",
+    "timeLeft": "Mai ai {{h}} h {{m}} min",
+    "hold": "Ține apăsat ca să bifezi",
+    "holdAbstain": "Ține apăsat: am rezistat azi",
+    "notDue": "Azi nu se cere",
+    "doneToday": "Bifat azi",
+    "doneAbstain": "Ai rezistat azi",
+    "doneShort": "Gata",
+    "checkedIn": "Bifat",
+    "added": "Ai adăugat {{amount}} {{unit}}",
+    "undo": "Anulează",
+    "undone": "Am anulat",
+    "plus": "+{{n}}",
+    "other": "Altul",
+    "totalOf": "{{total}} / {{goal}} {{unit}}",
+    "totalToday": "{{total}} {{unit}} azi",
+    "streak": "Serie: {{n}}",
+    "progress": {
+      "days": {
+        "week": "{{done}} din {{goal}} săptămâna asta",
+        "period": "{{done}} din {{goal}} până la final"
+      },
+      "amount": {
+        "week": "{{done}} / {{goal}} {{unit}} săptămâna asta",
+        "period": "{{done}} / {{goal}} {{unit}} până la final"
+      }
+    },
+    "weekLabel": "Săptămâna asta",
+    "states": {
+      "done": "bifat",
+      "partial": "început",
+      "todo": "de bifat",
+      "open": "poți bifa",
+      "missed": "ratat",
+      "not_due": "nu se cere",
+      "future": "urmează",
+      "outside": "nu participi"
+    },
+    "proofLater": "Dovada o vei putea adăuga aici în curând.",
+    "crewTitle": "Echipa azi",
+    "crewRow": "{{name}}: {{done}} din {{needed}}",
+    "amountTitle": "Cât adaugi?",
+    "amountLabel": "Câte {{unit}}",
+    "amountAdd": "Adaugă",
+    "amountError": "Scrie un număr mai mare ca zero.",
+    "fraction": "{{done}}/{{total}}"
   }
 }

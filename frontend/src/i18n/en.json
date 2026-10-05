@@ -56,7 +56,7 @@
   "home": {
     "greeting": "Hi, {{name}}",
     "noChallengeTitle": "No challenge yet",
-    "noChallengeBody": "Proposals and votes are in the Crew tab.",
+    "noChallengeBody": "Challenges that start show up here. Proposals are in the Crew tab.",
     "noCrewTitle": "You're not in a crew yet",
     "noCrewBody": "Ask someone in a crew for an invite link."
   },
@@ -138,7 +138,11 @@
     "period_too_far": "Choose a month at most a year ahead.",
     "too_few_days": "Too few days are left this month for how many times the challenge asks.",
     "period_kind_not_available": "Only months can be chosen for now.",
-    "not_invited": "Only the people taking part can do this."
+    "not_invited": "Only the people taking part can do this.",
+    "day_closed": "That day has ended. You can only check in for today.",
+    "not_taking_part": "You're not taking part in this challenge today.",
+    "not_due_today": "This challenge asks for nothing today.",
+    "nothing_to_undo": "There's nothing to undo today."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -449,5 +453,57 @@
       "adminOnly": "You see it because you are an admin; you don't take part.",
       "short": "{{n}} of {{total}}"
     }
+  },
+  "checkins": {
+    "today": "today",
+    "ringLabel": "{{done}} of {{total}} done today",
+    "dayDone": "Day done",
+    "restTitle": "A day off",
+    "restBody": "Your challenges ask for nothing today.",
+    "timeLeft": "{{h}} h {{m}} min left",
+    "hold": "Hold to check in",
+    "holdAbstain": "Hold: I held back today",
+    "notDue": "Not asked today",
+    "doneToday": "Done today",
+    "doneAbstain": "You held back today",
+    "doneShort": "Done",
+    "checkedIn": "Checked in",
+    "added": "Added {{amount}} {{unit}}",
+    "undo": "Undo",
+    "undone": "Undone",
+    "plus": "+{{n}}",
+    "other": "Other",
+    "totalOf": "{{total}} / {{goal}} {{unit}}",
+    "totalToday": "{{total}} {{unit}} today",
+    "streak": "Streak: {{n}}",
+    "progress": {
+      "days": {
+        "week": "{{done}} of {{goal}} this week",
+        "period": "{{done}} of {{goal}} by the end"
+      },
+      "amount": {
+        "week": "{{done}} / {{goal}} {{unit}} this week",
+        "period": "{{done}} / {{goal}} {{unit}} by the end"
+      }
+    },
+    "weekLabel": "This week",
+    "states": {
+      "done": "done",
+      "partial": "started",
+      "todo": "to do",
+      "open": "you can check in",
+      "missed": "missed",
+      "not_due": "not asked",
+      "future": "to come",
+      "outside": "not taking part"
+    },
+    "proofLater": "You'll be able to add the proof here soon.",
+    "crewTitle": "The crew today",
+    "crewRow": "{{name}}: {{done}} of {{needed}}",
+    "amountTitle": "How much?",
+    "amountLabel": "How many {{unit}}",
+    "amountAdd": "Add",
+    "amountError": "Write a number above zero.",
+    "fraction": "{{done}}/{{total}}"
   }
 }
