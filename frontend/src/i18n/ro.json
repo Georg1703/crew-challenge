@@ -137,7 +137,8 @@
     "not_a_proposal": "Provocarea a fost deja aleasă, nu mai poate fi schimbată sau votată.",
     "period_too_far": "Alege o lună cel mult cu un an înainte.",
     "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
-    "period_kind_not_available": "Deocamdată se pot alege doar luni."
+    "period_kind_not_available": "Deocamdată se pot alege doar luni.",
+    "not_invited": "Doar cei care participă pot face asta."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -200,7 +201,8 @@
       "period": "Perioada",
       "proposed": "Propusă",
       "chosen": "Aleasă",
-      "votes": "Voturi"
+      "votes": "Voturi",
+      "who": "Cine participă"
     },
     "participantsTitle": "Participă",
     "leftOn": "A ieșit pe {{date}}",
@@ -221,7 +223,7 @@
     "publish": "Publică propunerea",
     "save": "Salvează modificările",
     "reviewNote": "Echipa o vede imediat și poate vota. Un admin alege luna în care are loc.",
-    "editResetsVotes": "Voturile de până acum se resetează.",
+    "editResetsVotes": "Dacă schimbi provocarea, voturile de până acum se șterg.",
     "steps": {
       "what": {
         "title": "Ce provocare propui?"
@@ -237,6 +239,9 @@
       },
       "review": {
         "title": "Verifică"
+      },
+      "who": {
+        "title": "Cine participă?"
       }
     },
     "fields": {
@@ -429,6 +434,20 @@
       "back": "Înapoi la propuneri",
       "backDone": "E din nou printre propuneri"
     },
-    "periodFrom": "{{month}}, din {{date}}"
+    "periodFrom": "{{month}}, din {{date}}",
+    "who": {
+      "title": "Cine participă",
+      "label": "Echipa",
+      "creator": "Ai propus-o",
+      "everyone": "Participă toată echipa.",
+      "count": "Participă {{n}} din {{total}}. Doar ei văd provocarea.",
+      "cardCount": "Participanți: {{n}}",
+      "edit": "Modifică participanții",
+      "save": "Salvează",
+      "saved": "Participanții au fost salvați",
+      "note": "Cine e scos nu mai vede provocarea și își pierde votul.",
+      "adminOnly": "O vezi pentru că ești admin; nu participi.",
+      "short": "{{n}} din {{total}}"
+    }
   }
 }

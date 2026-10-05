@@ -91,6 +91,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges/{challenge_id}/invitees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description The creator changes who takes part while the challenge is a proposal. */
+        put: operations["challenges_invitees"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/{challenge_id}/participation": {
         parameters: {
             query?: never;
@@ -356,6 +373,10 @@ export interface components {
             voters: components["schemas"]["PersonOut"][];
             /** @description The current member voted for it. */
             my_vote: boolean;
+            /** @description Who takes part, in the order they joined the crew. */
+            invitees: components["schemas"]["PersonOut"][];
+            /** @description The current member is one of the invitees. */
+            invited: boolean;
             /** @description Proposed by the current member. */
             mine: boolean;
             participants: components["schemas"]["ParticipantOut"][];
@@ -384,6 +405,8 @@ export interface components {
             proof_kind: components["schemas"]["ProofKindEnum"];
             /** @default false */
             proof_required: boolean;
+            /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
+            invitee_ids?: string[] | null;
         };
         ChallengeOut: {
             /** Format: uuid */
@@ -421,6 +444,10 @@ export interface components {
             voters: components["schemas"]["PersonOut"][];
             /** @description The current member voted for it. */
             my_vote: boolean;
+            /** @description Who takes part, in the order they joined the crew. */
+            invitees: components["schemas"]["PersonOut"][];
+            /** @description The current member is one of the invitees. */
+            invited: boolean;
             /** @description Proposed by the current member. */
             mine: boolean;
         };
@@ -495,6 +522,10 @@ export interface components {
              * @description The crew's id, only for its own members (to switch to it).
              */
             crew_id: string | null;
+        };
+        InviteesInRequest: {
+            /** @description Who takes part; the creator is always in. */
+            invitee_ids: string[];
         };
         JoinWithAccountInRequest: {
             display_name: string;
@@ -805,6 +836,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    challenges_invitees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteesInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
             };
         };
     };

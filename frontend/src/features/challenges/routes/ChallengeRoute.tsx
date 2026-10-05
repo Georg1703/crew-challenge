@@ -31,6 +31,7 @@ import styles from "../challenges.module.css";
 import { describeFrequency, describeMeasure, describeProof, describeTarget } from "../describe";
 import { ChallengeIcon } from "../components/ChallengeIcon";
 import { PhasePill } from "../components/PhasePill";
+import { InviteesSheet } from "../components/InviteesSheet";
 import { ScheduleSheet } from "../components/ScheduleSheet";
 
 /** One challenge: its rules in plain words, who proposed it, and who takes part. */
@@ -69,6 +70,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
   const vote = useVote();
   const [withdrawing, setWithdrawing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   const mine = challenge.mine;
   const isAdmin = member?.role === "admin";
@@ -138,22 +140,24 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
 
       {proposal && (
         <div className={styles.actions}>
-          <Button
-            variant={challenge.my_vote ? "primary" : "secondary"}
-            size="lg"
-            fullWidth
-            icon={challenge.my_vote ? <Icon name="check" size={20} /> : undefined}
-            aria-pressed={challenge.my_vote}
-            loading={vote.isPending}
-            onClick={() =>
-              vote.mutate(
-                { id: challenge.id, vote: !challenge.my_vote },
-                { onError: (error) => toast(errorMessage(t, error), "error") },
-              )
-            }
-          >
-            {challenge.my_vote ? t("challenges.voted") : t("challenges.vote")}
-          </Button>
+          {challenge.invited && (
+            <Button
+              variant={challenge.my_vote ? "primary" : "secondary"}
+              size="lg"
+              fullWidth
+              icon={challenge.my_vote ? <Icon name="check" size={20} /> : undefined}
+              aria-pressed={challenge.my_vote}
+              loading={vote.isPending}
+              onClick={() =>
+                vote.mutate(
+                  { id: challenge.id, vote: !challenge.my_vote },
+                  { onError: (error) => toast(errorMessage(t, error), "error") },
+                )
+              }
+            >
+              {challenge.my_vote ? t("challenges.voted") : t("challenges.vote")}
+            </Button>
+          )}
           {isAdmin && (
             <Button
               size="lg"
@@ -210,6 +214,38 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
         </div>
       )}
 
+      {proposal && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("challenges.who.title")}</h2>
+          <List label={t("challenges.who.title")}>
+            {challenge.invitees.map((person) => (
+              <ListRow
+                key={person.id}
+                leading={<Avatar name={person.display_name} seed={person.avatar_seed} />}
+                title={person.display_name}
+                trailing={
+                  person.id === member?.id ? (
+                    <StatusPill tone="accent">{t("crew.you")}</StatusPill>
+                  ) : undefined
+                }
+              />
+            ))}
+          </List>
+          {!challenge.invited && <p className={styles.meta}>{t("challenges.who.adminOnly")}</p>}
+          {mine && (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              icon={<Icon name="users" size={20} />}
+              onClick={() => setInviting(true)}
+            >
+              {t("challenges.who.edit")}
+            </Button>
+          )}
+        </section>
+      )}
+
       {challenge.state === "chosen" && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t("challenges.participantsTitle")}</h2>
@@ -232,7 +268,7 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
               />
             ))}
           </List>
-          {challenge.phase !== "finished" && (
+          {challenge.phase !== "finished" && challenge.invited && (
             <Button
               variant={challenge.taking_part ? "danger" : "primary"}
               size="lg"
@@ -250,6 +286,8 @@ function ChallengeScreen({ challenge }: { challenge: ChallengeDetail }) {
           )}
         </section>
       )}
+
+      {inviting && <InviteesSheet challenge={challenge} onClose={() => setInviting(false)} />}
 
       {scheduling && (
         <ScheduleSheet

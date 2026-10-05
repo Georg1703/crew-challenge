@@ -157,6 +157,34 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges/{challenge_id}/invitees:
+    put:
+      operationId: challenges_invitees
+      description: The creator changes who takes part while the challenge is a proposal.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteesInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
   /api/v1/challenges/{challenge_id}/participation:
     put:
       operationId: challenges_take_part
@@ -627,6 +655,14 @@ components:
         my_vote:
           type: boolean
           description: The current member voted for it.
+        invitees:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+          description: Who takes part, in the order they joined the crew.
+        invited:
+          type: boolean
+          description: The current member is one of the invitees.
         mine:
           type: boolean
           description: Proposed by the current member.
@@ -646,6 +682,8 @@ components:
       - frequency
       - icon
       - id
+      - invited
+      - invitees
       - measure
       - mine
       - my_vote
@@ -720,6 +758,14 @@ components:
         proof_required:
           type: boolean
           default: false
+        invitee_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: 'Who takes part (the creator is always in). Create: default
+            the whole crew. Edit: leave out to keep the list.'
       required:
       - frequency
       - measure
@@ -813,6 +859,14 @@ components:
         my_vote:
           type: boolean
           description: The current member voted for it.
+        invitees:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+          description: Who takes part, in the order they joined the crew.
+        invited:
+          type: boolean
+          description: The current member is one of the invitees.
         mine:
           type: boolean
           description: Proposed by the current member.
@@ -825,6 +879,8 @@ components:
       - frequency
       - icon
       - id
+      - invited
+      - invitees
       - measure
       - mine
       - my_vote
@@ -988,6 +1044,17 @@ components:
       - invited_by
       - members
       - status
+    InviteesInRequest:
+      type: object
+      properties:
+        invitee_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who takes part; the creator is always in.
+      required:
+      - invitee_ids
     JoinWithAccountInRequest:
       type: object
       properties:

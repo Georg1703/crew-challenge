@@ -43,6 +43,9 @@ export function PoolProposals({
               <span className={styles.cardTitle}>{proposal.title}</span>
               <span className={styles.meta}>{summaryLine(t, proposal, i18n.language)}</span>
               <span className={styles.meta}>
+                {t("challenges.who.cardCount", { n: proposal.invitees.length })}
+              </span>
+              <span className={styles.meta}>
                 {t("challenges.proposedBy", {
                   name: proposal.created_by?.display_name ?? t("challenges.someone"),
                   date: formatDate(proposal.created_at, i18n.language, timeZone),
@@ -71,14 +74,16 @@ export function PoolProposals({
                   {t("challenges.choose")}
                 </Button>
               )}
-              <Button
-                variant={proposal.my_vote ? "primary" : "secondary"}
-                icon={proposal.my_vote ? <Icon name="check" size={20} /> : undefined}
-                aria-pressed={proposal.my_vote}
-                onClick={() => toggleVote(proposal)}
-              >
-                {proposal.my_vote ? t("challenges.voted") : t("challenges.vote")}
-              </Button>
+              {proposal.invited && (
+                <Button
+                  variant={proposal.my_vote ? "primary" : "secondary"}
+                  icon={proposal.my_vote ? <Icon name="check" size={20} /> : undefined}
+                  aria-pressed={proposal.my_vote}
+                  onClick={() => toggleVote(proposal)}
+                >
+                  {proposal.my_vote ? t("challenges.voted") : t("challenges.vote")}
+                </Button>
+              )}
             </span>
           </div>
         </Card>

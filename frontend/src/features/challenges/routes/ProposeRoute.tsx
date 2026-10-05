@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 
 import { isApiError } from "@/api";
+import { useMe } from "@/features/auth";
+import { useCrew } from "@/features/crew";
 import { errorMessage } from "@/i18n/errors";
+import { formatList } from "@/shared/lib/format";
 import {
   Banner,
   Button,
@@ -23,6 +26,7 @@ import {
 
 import { useChallenge, useEditChallenge, useProposeChallenge, type ChallengeInput } from "../api";
 import styles from "../challenges.module.css";
+import { InviteePicker } from "../components/InviteePicker";
 import {
   CHALLENGE_ICONS,
   WEEKDAYS,
@@ -33,9 +37,11 @@ import {
   weekdayShort,
 } from "../describe";
 
-type Draft = Required<Omit<ChallengeInput, "target_value" | "times">> & {
+type Draft = Required<Omit<ChallengeInput, "target_value" | "times" | "invitee_ids">> & {
   times: number;
   target_value: string;
+  /** null: nobody changed the list yet, so the whole crew takes part. */
+  invitee_ids: string[] | null;
 };
 
 const EMPTY: Draft = {
@@ -51,9 +57,10 @@ const EMPTY: Draft = {
   target_value: "",
   proof_kind: "none",
   proof_required: false,
+  invitee_ids: null,
 };
 
-const STEPS = ["what", "often", "record", "proof", "review"] as const;
+const STEPS = ["what", "who", "often", "record", "proof", "review"] as const;
 type Step = (typeof STEPS)[number];
 
 /** Which step shows each field, to send people back to the field the server rejected. */
@@ -61,6 +68,7 @@ const FIELD_STEP: Record<string, Step> = {
   title: "what",
   rules: "what",
   icon: "what",
+  invitee_ids: "who",
   frequency: "often",
   weekdays: "often",
   times: "often",
@@ -88,6 +96,7 @@ function toInput(draft: Draft): ChallengeInput {
     target_value: target === "none" ? null : draft.target_value.replace(",", "."),
     proof_kind: draft.proof_kind,
     proof_required: draft.proof_kind !== "none" && draft.proof_required,
+    ...(draft.invitee_ids ? { invitee_ids: draft.invitee_ids } : {}),
   };
 }
 
@@ -131,6 +140,7 @@ function EditProposal({ id }: { id: string }) {
         target_value: c.target_value == null ? "" : String(c.target_value),
         proof_kind: c.proof_kind,
         proof_required: c.proof_required,
+        invitee_ids: c.invitees.map((person) => person.id),
       }}
     />
   );
@@ -140,6 +150,8 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
+  const me = useMe();
+  const crew = useCrew();
   const propose = useProposeChallenge();
   const edit = useEditChallenge(editingId ?? "");
   const save = editingId ? edit : propose;
@@ -152,6 +164,8 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const fieldError = (name: string) => localErrors[name] ?? apiError?.field(name);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
+  const people = crew.data?.members ?? [];
+  const creatorId = me.data?.member?.id; // only the creator proposes or edits
 
   /** The checks a person needs before moving on; the server checks everything again. */
   const check = (current: Step): Record<string, string> => {
@@ -235,6 +249,19 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
               />
             </Stack>
           )}
+
+          {step === "who" &&
+            (crew.data ? (
+              <InviteePicker
+                people={people}
+                creatorId={creatorId}
+                values={draft.invitee_ids ?? people.map((person) => person.id)}
+                onChange={(ids) => set("invitee_ids", ids)}
+                error={fieldError("invitee_ids")}
+              />
+            ) : (
+              <Skeleton lines={4} />
+            ))}
 
           {step === "often" && (
             <Stack>
@@ -345,7 +372,9 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
             </Stack>
           )}
 
-          {step === "review" && <Review draft={draft} editing={Boolean(editingId)} />}
+          {step === "review" && (
+            <Review draft={draft} editing={Boolean(editingId)} people={people} />
+          )}
 
           <div className={styles.wizardNav}>
             <Button variant="secondary" size="lg" onClick={back}>
@@ -365,7 +394,15 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   );
 }
 
-function Review({ draft, editing }: { draft: Draft; editing: boolean }) {
+function Review({
+  draft,
+  editing,
+  people,
+}: {
+  draft: Draft;
+  editing: boolean;
+  people: { id: string; display_name: string }[];
+}) {
   const { t, i18n } = useTranslation();
   const input = toInput(draft);
   const shape = {
@@ -375,8 +412,20 @@ function Review({ draft, editing }: { draft: Draft; editing: boolean }) {
     target_value: input.target_value == null ? null : Number(input.target_value),
   };
   const target = describeTarget(t, shape, i18n.language);
+  /** "The whole crew", a few names, or "18 of 20" when many. */
+  const whoSummary = (ids: string[] | null, crew: { id: string; display_name: string }[]) => {
+    const chosen = crew.filter((person) => !ids || ids.includes(person.id));
+    if (chosen.length >= crew.length) return t("challenges.who.everyone");
+    if (chosen.length > 5)
+      return t("challenges.who.short", { n: chosen.length, total: crew.length });
+    return formatList(
+      chosen.map((person) => person.display_name),
+      i18n.language,
+    );
+  };
   const facts: [string, string][] = [
     [t("challenges.facts.name"), draft.title.trim()],
+    [t("challenges.facts.who"), whoSummary(draft.invitee_ids, people)],
     [t("challenges.facts.often"), describeFrequency(t, shape)],
     [t("challenges.facts.record"), describeMeasure(t, shape)],
     ...(target ? [[t("challenges.facts.target"), target] as [string, string]] : []),

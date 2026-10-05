@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-import { ana, bogdan, meAs } from "@/test/fixtures";
+import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ActiveChallenges, ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
@@ -45,6 +45,8 @@ const pushUps: Challenge = {
   voters: [person(bogdan)],
   my_vote: false,
   mine: false,
+  invitees: [person(ana), person(bogdan)],
+  invited: true,
 };
 
 const reading: Challenge = { ...pushUps, id: "c2", title: "Read", vote_count: 3, voters: [] };
@@ -85,6 +87,7 @@ function mockGets(
 ) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
     if (path === "/api/v1/me") return ok(meAs(member));
+    if (path === "/api/v1/crew") return ok(crewDetail);
     if (path === "/api/v1/proposals") return ok(value(proposals));
     if (path === "/api/v1/challenges") return ok(value(chosen));
     if (path === "/api/v1/challenges/{challenge_id}") return ok(value(one));
@@ -245,6 +248,13 @@ describe("proposing", () => {
     await userEvent.type(await screen.findByLabelText("Name of the challenge"), "Read");
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
+    await screen.findByRole("heading", { name: "Who takes part?" });
+    expect(await screen.findByText("The whole crew takes part.")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /Bogdan/ })).toBeDisabled(); // the creator
+    await userEvent.click(screen.getByRole("checkbox", { name: /Ana/ }));
+    expect(screen.getByText("1 of 2 take part. Only they see the challenge.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+
     await screen.findByRole("heading", { name: "How often?" });
     await userEvent.click(screen.getByRole("radio", { name: /A few times a week/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -262,6 +272,7 @@ describe("proposing", () => {
 
     await screen.findByRole("heading", { name: "Check it" });
     expect(screen.getByText("3 times a week")).toBeInTheDocument();
+    expect(screen.getByText("Bogdan")).toBeInTheDocument(); // who takes part
     await userEvent.click(screen.getByRole("button", { name: "Publish the proposal" }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/challenges/c1"));
@@ -279,6 +290,7 @@ describe("proposing", () => {
         target_value: null,
         proof_kind: "photo",
         proof_required: false,
+        invitee_ids: [bogdan.id],
       },
     });
   });
@@ -289,7 +301,7 @@ describe("proposing", () => {
     renderRoutes(routes, { at: "/challenges/new" });
 
     await userEvent.type(await screen.findByLabelText("Name of the challenge"), "Read");
-    for (let step = 0; step < 4; step += 1) {
+    for (let step = 0; step < 5; step += 1) {
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     }
     await userEvent.click(await screen.findByRole("button", { name: "Publish the proposal" }));
@@ -299,6 +311,45 @@ describe("proposing", () => {
 });
 
 describe("one challenge", () => {
+  it("shows who takes part and lets the creator change it", async () => {
+    let one = detail({ mine: true });
+    mockGets(bogdan, { one: () => one });
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => {
+      one = detail({ mine: true, invitees: [person(bogdan)] });
+      return ok(one);
+    }) as never);
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    const list = await screen.findByRole("list", { name: "Who takes part" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+    await userEvent.click(await screen.findByRole("button", { name: "Change who takes part" }));
+    const sheet = await screen.findByRole("dialog");
+    await userEvent.click(await within(sheet).findByRole("checkbox", { name: /Ana/ }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Participants saved")).toBeInTheDocument();
+    expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/invitees", {
+      params: { path: { challenge_id: "c1" } },
+      body: { invitee_ids: [bogdan.id] },
+    });
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("list", { name: "Who takes part" })).getAllByRole("listitem"),
+      ).toHaveLength(1),
+    );
+  });
+
+  it("shows an admin who is not invited the proposal without a vote", async () => {
+    mockGets(ana, { one: detail({ invitees: [person(bogdan)], invited: false }) });
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    expect(
+      await screen.findByText("You see it because you are an admin; you don't take part."),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Choose a month" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
+  });
+
   it("lets the creator vote, edit or withdraw a proposal", async () => {
     mockGets(bogdan, { one: detail({ mine: true }) });
     renderRoutes(routes, { at: "/challenges/c1" });

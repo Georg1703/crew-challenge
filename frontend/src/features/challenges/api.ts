@@ -75,6 +75,21 @@ export function useWithdrawChallenge() {
   });
 }
 
+/** The creator changes who takes part while the challenge is a proposal. */
+export function useSetInvitees(id: string) {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (inviteeIds: string[]) =>
+      call(
+        api.PUT("/api/v1/challenges/{challenge_id}/invitees", {
+          ...path(id),
+          body: { invitee_ids: inviteeIds },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
 /** Vote for a proposal or take the vote back. The pool shows the change at once. */
 export function useVote() {
   const queryClient = useQueryClient();

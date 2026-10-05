@@ -137,7 +137,8 @@
     "not_a_proposal": "This challenge has already been chosen, so it can't be changed or voted on.",
     "period_too_far": "Choose a month at most a year ahead.",
     "too_few_days": "Too few days are left this month for how many times the challenge asks.",
-    "period_kind_not_available": "Only months can be chosen for now."
+    "period_kind_not_available": "Only months can be chosen for now.",
+    "not_invited": "Only the people taking part can do this."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -200,7 +201,8 @@
       "period": "Period",
       "proposed": "Proposed",
       "chosen": "Chosen",
-      "votes": "Votes"
+      "votes": "Votes",
+      "who": "Who takes part"
     },
     "participantsTitle": "Taking part",
     "leftOn": "Left on {{date}}",
@@ -221,7 +223,7 @@
     "publish": "Publish the proposal",
     "save": "Save the changes",
     "reviewNote": "The crew sees it right away and can vote. An admin chooses the month it runs in.",
-    "editResetsVotes": "The votes so far are reset.",
+    "editResetsVotes": "If you change the challenge, the votes so far are reset.",
     "steps": {
       "what": {
         "title": "What do you propose?"
@@ -237,6 +239,9 @@
       },
       "review": {
         "title": "Check it"
+      },
+      "who": {
+        "title": "Who takes part?"
       }
     },
     "fields": {
@@ -429,6 +434,20 @@
       "back": "Back to proposals",
       "backDone": "Back in the proposals"
     },
-    "periodFrom": "{{month}}, from {{date}}"
+    "periodFrom": "{{month}}, from {{date}}",
+    "who": {
+      "title": "Who takes part",
+      "label": "The crew",
+      "creator": "You proposed it",
+      "everyone": "The whole crew takes part.",
+      "count": "{{n}} of {{total}} take part. Only they see the challenge.",
+      "cardCount": "Taking part: {{n}}",
+      "edit": "Change who takes part",
+      "save": "Save",
+      "saved": "Participants saved",
+      "note": "People you remove no longer see the challenge and lose their vote.",
+      "adminOnly": "You see it because you are an admin; you don't take part.",
+      "short": "{{n}} of {{total}}"
+    }
   }
 }
