@@ -77,9 +77,6 @@ test("hold to check in, undo, and see the crew's month", async ({ browser }) => 
   await expect(walk.getByRole("button", { name: "Bifat azi" })).toBeVisible();
   await expect(dan.getByRole("status").filter({ hasText: "Bifat" })).toBeVisible();
 
-  // The crew row and the raised button follow.
-  await expect(dan.getByRole("heading", { name: "Echipa azi" })).toBeVisible();
-
   await dan.getByRole("button", { name: "Anulează" }).first().click();
   await expect(dan.getByText("Am anulat")).toBeVisible();
   await expect(walk.getByRole("button", { name: "Ține apăsat ca să bifezi" })).toBeVisible();
@@ -90,8 +87,13 @@ test("hold to check in, undo, and see the crew's month", async ({ browser }) => 
   await expect(sheet.getByRole("heading", { name: WALK })).toBeVisible();
   await sheet.getByRole("button", { name: "Închide" }).click();
 
+  // Echipa shows each member's day.
+  await dan.goto("/crew");
+  await expect(dan.getByRole("img", { name: /^Dan: azi \d+ din \d+$/ })).toBeVisible();
+
   // The challenge page has the crew's month.
   await dan.goto("/challenges");
   await dan.getByRole("link").filter({ hasText: WALK }).first().click();
-  await expect(dan.getByRole("table", { name: /Luna echipei/ })).toBeVisible();
+  await expect(dan.getByRole("heading", { name: "Cum merge fiecare" })).toBeVisible();
+  await expect(dan.getByRole("img", { name: /^Dan: \d+ bifate, \d+ ratate$/ })).toBeVisible();
 });
