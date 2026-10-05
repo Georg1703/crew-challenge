@@ -46,6 +46,8 @@ const walk: TodayChallenge = {
   week: week("todo"),
   progress: null,
   settled: false,
+  proofs: [],
+  proof_days: [],
 };
 
 const read: TodayChallenge = {

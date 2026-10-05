@@ -35,10 +35,11 @@ Celery worker, Celery beat, Redis, and Postgres. Video bytes never pass through 
 receive a session cookie, then calls `/api/v1/*` with `X-CSRFToken` on unsafe requests.
 See [API conventions](api-conventions.md).
 
-**Proof upload.** The phone creates a check-in (`uploading`), asks the API to start an S3
-multipart upload, uploads parts directly to S3 with presigned URLs, reports each part's ETag, and
-completes. Django verifies the object and a Celery task starts a MediaConvert job. MediaConvert
-calls back when renditions are ready.
+**Proof upload.** After checking in, the phone adds proof to the check-in. A photo (shrunk on
+the phone) goes up with one presigned PUT; a video as an S3 multipart upload: parts go directly to
+S3 with presigned URLs and each part's ETag is reported, so a closed app can resume. On complete
+Django verifies the object's size and a Celery task starts a MediaConvert job. MediaConvert calls
+back when renditions are ready. Uploads that miss their grace are expired by a Celery job.
 
 **Midnight judgment.** Celery beat runs idempotent jobs in each crew's time zone: mark missed
 days, expire stuck uploads, reset streaks, create pending spins, send push notifications.

@@ -55,6 +55,10 @@ class ObjectStorage(ABC):
         """Return a URL the browser can PUT a whole file to, sending this Content-Type."""
 
     @abstractmethod
+    def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
+        """Return a URL the browser can read an object from (an <img> or <video> source)."""
+
+    @abstractmethod
     def create_multipart(self, *, key: str, content_type: str) -> str:
         """Start a multipart upload and return its upload id."""
 

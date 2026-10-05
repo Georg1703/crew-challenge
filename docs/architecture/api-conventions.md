@@ -71,8 +71,8 @@ Every error, from any layer, has this shape:
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
 | 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `not_taking_part`, `permission_denied` |
-| 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started`, `day_closed`, `not_due_today`, `nothing_to_undo` |
+| 404 | Not found or not in your crew | `not_found`, `invite_not_found`, `proof_not_found`, `upload_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -128,7 +128,17 @@ DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or lea
 GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
 POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today -> today's card
 DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's last entry -> today's card
+                                        (the last one takes the day's proofs with it)
 GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
+
+POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   {kind, content_type, size, fingerprint?,
+                                        thumb_size?}: add proof to today's check-in -> 201
+                                        proof + how to upload (one PUT, or multipart parts)
+GET    /api/v1/proofs/resume?fingerprint=...   my open video upload for this file, or 404
+POST   /api/v1/proofs/{id}/parts        {numbers} -> fresh part URLs
+PUT    /api/v1/proofs/{id}/parts/{number}   {etag}: report a finished part -> 204
+POST   /api/v1/proofs/{id}/complete     check the file -> the proof (ready); safe to repeat
+DELETE /api/v1/proofs/{id}              mine, only on its own day -> 204
 ```
 
 ## Changing the contract

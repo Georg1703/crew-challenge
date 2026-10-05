@@ -1,7 +1,7 @@
 """Check-ins: what a participant recorded for one challenge on one day.
 
 Missed days are not stored: a due day before today without a `done` check-in is missed
-(see days.py). Business rules live in services.py.
+(see days.py). Proofs attach to a check-in after it exists. Business rules live in services.py.
 """
 
 from __future__ import annotations
@@ -9,7 +9,8 @@ from __future__ import annotations
 from django.db import models
 
 from apps.challenges.models import Challenge
-from apps.crews.models import CrewScopedModel, Member
+from apps.crews.models import CrewScopedModel, CrewScopedSoftDeleteModel, Member
+from apps.media.models import Upload
 
 
 class CheckIn(CrewScopedModel):
@@ -59,3 +60,36 @@ class CheckInEntry(CrewScopedModel):
 
     def __str__(self) -> str:
         return f"{self.check_in}: {self.amount}"
+
+
+class Proof(CrewScopedSoftDeleteModel):
+    """A photo or video backing a check-in (at most 5). Removable only on its own day."""
+
+    class Kind(models.TextChoices):
+        PHOTO = "photo", "Photo"
+        VIDEO = "video", "Video"
+
+    class Status(models.TextChoices):
+        UPLOADING = "uploading", "Uploading"
+        PROCESSING = "processing", "Processing (video renditions)"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
+
+    check_in = models.ForeignKey(CheckIn, on_delete=models.CASCADE, related_name="proofs")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.UPLOADING)
+    original = models.ForeignKey(Upload, on_delete=models.PROTECT, related_name="+")
+    thumb = models.ForeignKey(
+        Upload,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="A small JPEG made on the phone (a video's poster frame).",
+    )
+
+    class Meta(CrewScopedSoftDeleteModel.Meta):
+        ordering = ("created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.kind} for {self.check_in}"

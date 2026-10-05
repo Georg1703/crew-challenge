@@ -52,11 +52,12 @@ def span(challenge: Challenge, left_on: date | None) -> Span:
 
 @dataclass
 class Record:
-    """What a participant has: the days that counted and the totals per day."""
+    """What a participant has: the days that counted, the totals per day, days with proof."""
 
     done: set[date] = field(default_factory=set)
     partial: set[date] = field(default_factory=set)
     amounts: dict[date, Decimal] = field(default_factory=dict)
+    proof_days: set[date] = field(default_factory=set)
 
 
 def is_fixed(challenge: Challenge) -> bool:

@@ -89,6 +89,7 @@ def test_single_put_round_trip_and_delete(storage):
     key = "originals/crew-1/photo.jpg"
     assert "contentType=image/jpeg" in storage.presign_put(key=key, content_type="image/jpeg")
     storage.put_object(key=key, data=b"jpeg", content_type="image/jpeg")
+    assert key in storage.presign_get(key=key)
 
     info = storage.head(key=key)
     assert info is not None

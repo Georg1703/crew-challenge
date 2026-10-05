@@ -1,8 +1,9 @@
 """Check the S3 adapter against the real dev bucket: `make upload-smoke`.
 
-Does what the browser does: one presigned PUT of a small file, then a two-part multipart upload,
-sending the app's Origin so the bucket's CORS must expose `ETag`. Checks each object and deletes
-everything it made. Uses the AWS profile and bucket from `.env`; tests never run it.
+Does what the browser does: one presigned PUT of a small file (read back with a presigned GET),
+then a two-part multipart upload, sending the app's Origin so the bucket's CORS must expose
+`ETag`. Checks each object and deletes everything it made. Uses the AWS profile and bucket from
+`.env`; tests never run it.
 """
 
 import uuid
@@ -44,7 +45,10 @@ class Command(BaseCommand):
             info = storage.head(key=small)
             if info is None or (info.size, info.content_type) != (5, "text/plain"):
                 raise CommandError(f"Single PUT stored {info!r}")
-            self.stdout.write(self.style.SUCCESS("OK: single presigned PUT"))
+            with urlopen(storage.presign_get(key=small), timeout=60) as response:
+                if response.read() != b"hello":
+                    raise CommandError("Presigned GET returned other bytes")
+            self.stdout.write(self.style.SUCCESS("OK: single presigned PUT, presigned GET"))
 
             upload_id = storage.create_multipart(key=big, content_type="video/mp4")
             parts = []

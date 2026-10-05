@@ -57,6 +57,11 @@ class S3ObjectStorage(ObjectStorage):
             HttpMethod="PUT",
         )
 
+    def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
+        return self.client.generate_presigned_url(
+            "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
+        )
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         with _translate_errors():
             response = self.client.create_multipart_upload(

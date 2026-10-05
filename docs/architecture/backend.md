@@ -22,7 +22,7 @@ backend/
 |   |-- accounts/           # User, login/logout/me
 |   |-- crews/              # Crew, Member, Invite, switching crews
 |   |-- challenges/         # Challenge (soft deleted), Participant, Vote
-|   |-- checkins/           # CheckIn, CheckInEntry; days.py: due days, day states, streaks
+|   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: due days, day states, streaks
 |   `-- media/              # Upload: files sent straight to S3 (one PUT or multipart); knows no challenges
 |-- integrations/
 |   `-- storage/            # ObjectStorage ABC (presigned PUT, multipart, head, delete), S3, in-memory, factory

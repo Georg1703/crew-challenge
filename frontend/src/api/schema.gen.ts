@@ -135,8 +135,25 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Undo today's last entry (`day` is today, YYYY-MM-DD). */
+        /** @description Undo today's last entry (`day` is today, YYYY-MM-DD). The last one takes its proofs. */
         delete: operations["challenges_undo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins/{day}/proofs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a photo or video to today's check-in. Then send the file straight to storage. */
+        post: operations["proofs_start"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -354,6 +371,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/proofs/{proof_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove my proof and its files (only on its own day). */
+        delete: operations["proofs_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The file is uploaded: check it and show the proof. Safe to repeat. */
+        post: operations["proofs_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Fresh URLs to PUT these parts to (also when earlier ones expired). */
+        post: operations["proofs_sign_parts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/parts/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Report a finished part and its ETag, so a later resume skips it. */
+        put: operations["proofs_record_part"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My unfinished video upload for this file (name|size|lastModified), or 404. */
+        get: operations["proofs_resume"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proposals": {
         parameters: {
             query?: never;
@@ -417,6 +519,8 @@ export interface components {
             /** @description One per day. */
             states: components["schemas"]["DayStateEnum"][];
             streak: number | null;
+            /** @description Days of the month with proof. */
+            proof_days: string[];
         };
         /** @description The creator's choices. Combinations are checked in services.clean_shape. */
         ChallengeInRequest: {
@@ -619,6 +723,12 @@ export interface components {
          * @enum {string}
          */
         MeasureEnum: "check" | "quantity" | "abstain";
+        /**
+         * @description * `photo` - Photo
+         *     * `video` - Video
+         * @enum {string}
+         */
+        MediaKindEnum: "photo" | "video";
         MemberOut: {
             /** Format: uuid */
             id: string;
@@ -639,6 +749,18 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        PartInRequest: {
+            /** @description The ETag header S3 answered with. */
+            etag: string;
+        };
+        PartOut: {
+            number: number;
+            etag: string;
+        };
+        PartUrlOut: {
+            number: number;
+            url: string;
+        };
         ParticipantOut: {
             member: components["schemas"]["PersonOut"];
             /**
@@ -650,6 +772,12 @@ export interface components {
         ParticipantsInRequest: {
             /** @description Who takes part; the creator is always in. */
             participant_ids: string[];
+        };
+        PartsInRequest: {
+            numbers: number[];
+        };
+        PartsOut: {
+            parts: components["schemas"]["PartUrlOut"][];
         };
         PatchedMePatchInRequest: {
             display_name?: string;
@@ -714,6 +842,60 @@ export interface components {
          * @enum {string}
          */
         ProofKindEnum: "none" | "photo" | "video" | "photo_or_video";
+        ProofOut: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["MediaKindEnum"];
+            status: components["schemas"]["ProofStatusEnum"];
+            /** @description The file, once fully uploaded. */
+            url: string | null;
+            /** @description A small JPEG, when the phone made one; else use `url`. */
+            thumb_url: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ProofStartInRequest: {
+            kind: components["schemas"]["MediaKindEnum"];
+            /** @description The file's type, e.g. video/mp4. */
+            content_type: string;
+            /** @description Bytes. */
+            size: number;
+            /**
+             * @description name|size|lastModified of the picked video, to resume it later.
+             * @default
+             */
+            fingerprint: string;
+            /** @description Bytes of the JPEG thumbnail made on the phone, if any. */
+            thumb_size?: number | null;
+        };
+        /**
+         * @description * `uploading` - Uploading
+         *     * `processing` - Processing (video renditions)
+         *     * `ready` - Ready
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        ProofStatusEnum: "uploading" | "processing" | "ready" | "failed";
+        /** @description A proof being uploaded and how to send its files straight to storage. */
+        ProofUploadOut: {
+            proof: components["schemas"]["ProofOut"];
+            /** Format: uuid */
+            challenge_id: string;
+            /** Format: date */
+            day: string;
+            mode: components["schemas"]["UploadModeEnum"];
+            /** @description Send this Content-Type with the original. */
+            content_type: string;
+            /** @description Single mode (photos): PUT the whole file here. */
+            put_url: string | null;
+            /** @description Multipart (videos): bytes per part; the last one is smaller. */
+            part_size: number | null;
+            part_count: number | null;
+            /** @description Parts already uploaded: skip them when resuming. */
+            parts: components["schemas"]["PartOut"][];
+            /** @description PUT the thumbnail here, Content-Type image/jpeg. */
+            thumb_put_url: string | null;
+        };
         ScheduleInRequest: {
             period_kind: components["schemas"]["PeriodKindEnum"];
             /**
@@ -779,6 +961,10 @@ export interface components {
             progress: components["schemas"]["ProgressOut"] | null;
             /** @description Today's ring segment: full, empty, or none (null). */
             settled: boolean | null;
+            /** @description Today's proofs, uploads in flight too. */
+            proofs: components["schemas"]["ProofOut"][];
+            /** @description Days of this week with proof. */
+            proof_days: string[];
         };
         TodayOut: {
             /** Format: date */
@@ -792,6 +978,12 @@ export interface components {
             /** @description Everyone with something today, in join order. */
             crew: components["schemas"]["CrewDayOut"][];
         };
+        /**
+         * @description * `single` - One presigned PUT
+         *     * `multipart` - Multipart, resumable
+         * @enum {string}
+         */
+        UploadModeEnum: "single" | "multipart";
         UserOut: {
             /** Format: uuid */
             id: string;
@@ -1044,6 +1236,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    proofs_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProofStartInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
             };
         };
     };
@@ -1387,6 +1605,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    proofs_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofOut"];
+                };
+            };
+        };
+    };
+    proofs_sign_parts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartsInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartsOut"];
+                };
+            };
+        };
+    };
+    proofs_record_part: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartInRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_resume: {
+        parameters: {
+            query: {
+                fingerprint: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
                 };
             };
         };

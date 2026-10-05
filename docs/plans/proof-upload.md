@@ -53,7 +53,7 @@ This replaces one line of `docs/architecture/overview.md` ("the phone creates a 
 
 | Model | Fields | Notes |
 |---|---|---|
-| `Proof` | crew, check_in, member, kind (`photo` / `video`), original (Upload), thumb (Upload, nullable), status (`uploading`, `processing`, `ready`, `failed`), width, height, duration, created_at | At most 5 per check-in (not counting failed). Soft deleted (AGENTS: proofs are kept): removing one today hides it and deletes its files. |
+| `Proof` | crew, check_in, kind (`photo` / `video`), original (Upload), thumb (Upload, nullable), status (`uploading`, `processing`, `ready`, `failed`), created_at | At most 5 per check-in (not counting failed). Soft deleted (AGENTS: proofs are kept): removing one today hides it and deletes its files. The member is the check-in's. Width, height and duration come when the viewer needs them. |
 
 Layers: `checkins` uses `media` services; `media` uses `integrations/storage` and a new
 `integrations/transcoding` (MediaConvert) and `integrations/cdn` (signed cookies or presigned
@@ -151,6 +151,8 @@ the code, tested against the in-memory fake, nothing to keep in sync in the cons
 | Transcoding fails | The proof shows the original (if the browser can play it) or "Nu s-a putut pregati". |
 | Leaving a challenge | Proofs stay with the check-ins; the crew still sees them on the board. |
 | Deleted after midnight | Not possible (permanent). |
+| Undo removes the day's last entry | The check-in goes, and its proofs and files with it. |
+| Thumbnail never arrives | Complete drops it; the original stands in. |
 | HEIC from an iPhone | Safari hands JPEG to the page when we ask for images; we accept HEIC anyway. |
 
 ## Stages

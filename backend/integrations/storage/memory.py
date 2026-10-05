@@ -65,6 +65,9 @@ class InMemoryObjectStorage(ObjectStorage):
     ) -> str:
         return f"memory://{self.bucket}/{key}?contentType={content_type}&expires={expires_in}"
 
+    def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
+        return f"memory://{self.bucket}/{key}?expires={expires_in}"
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         upload_id = uuid.uuid4().hex
         self.uploads[upload_id] = _PendingUpload(key=key, content_type=content_type)

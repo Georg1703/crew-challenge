@@ -216,7 +216,8 @@ paths:
   /api/v1/challenges/{challenge_id}/check-ins/{day}/last:
     delete:
       operationId: challenges_undo
-      description: Undo today's last entry (`day` is today, YYYY-MM-DD).
+      description: Undo today's last entry (`day` is today, YYYY-MM-DD). The last
+        one takes its proofs.
       parameters:
       - in: path
         name: challenge_id
@@ -236,6 +237,40 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges/{challenge_id}/check-ins/{day}/proofs:
+    post:
+      operationId: proofs_start
+      description: Add a photo or video to today's check-in. Then send the file straight
+        to storage.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofStartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
   /api/v1/challenges/{challenge_id}/participants:
     put:
       operationId: challenges_participants
@@ -573,6 +608,125 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeOut'
           description: ''
+  /api/v1/proofs/{proof_id}:
+    delete:
+      operationId: proofs_delete
+      description: Remove my proof and its files (only on its own day).
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/proofs/{proof_id}/complete:
+    post:
+      operationId: proofs_complete
+      description: 'The file is uploaded: check it and show the proof. Safe to repeat.'
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofOut'
+          description: ''
+  /api/v1/proofs/{proof_id}/parts:
+    post:
+      operationId: proofs_sign_parts
+      description: Fresh URLs to PUT these parts to (also when earlier ones expired).
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartsInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartsOut'
+          description: ''
+  /api/v1/proofs/{proof_id}/parts/{number}:
+    put:
+      operationId: proofs_record_part
+      description: Report a finished part and its ETag, so a later resume skips it.
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/proofs/resume:
+    get:
+      operationId: proofs_resume
+      description: My unfinished video upload for this file (name|size|lastModified),
+        or 404.
+      parameters:
+      - in: query
+        name: fingerprint
+        schema:
+          type: string
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
   /api/v1/proposals:
     get:
       operationId: proposals_list
@@ -670,8 +824,15 @@ components:
         streak:
           type: integer
           nullable: true
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Days of the month with proof.
       required:
       - member
+      - proof_days
       - states
       - streak
     ChallengeInRequest:
@@ -1137,6 +1298,14 @@ components:
         * `check` - Just check in
         * `quantity` - A number with a unit
         * `abstain` - Held it (did not do something)
+    MediaKindEnum:
+      enum:
+      - photo
+      - video
+      type: string
+      description: |-
+        * `photo` - Photo
+        * `video` - Video
     MemberOut:
       type: object
       properties:
@@ -1184,6 +1353,36 @@ components:
     NullEnum:
       enum:
       - null
+    PartInRequest:
+      type: object
+      properties:
+        etag:
+          type: string
+          minLength: 1
+          description: The ETag header S3 answered with.
+          maxLength: 100
+      required:
+      - etag
+    PartOut:
+      type: object
+      properties:
+        number:
+          type: integer
+        etag:
+          type: string
+      required:
+      - etag
+      - number
+    PartUrlOut:
+      type: object
+      properties:
+        number:
+          type: integer
+        url:
+          type: string
+      required:
+      - number
+      - url
     ParticipantOut:
       type: object
       properties:
@@ -1208,6 +1407,26 @@ components:
           description: Who takes part; the creator is always in.
       required:
       - participant_ids
+    PartsInRequest:
+      type: object
+      properties:
+        numbers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          maxItems: 1000
+      required:
+      - numbers
+    PartsOut:
+      type: object
+      properties:
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartUrlOut'
+      required:
+      - parts
     PatchedMePatchInRequest:
       type: object
       properties:
@@ -1328,6 +1547,122 @@ components:
         * `photo` - Photo
         * `video` - Video
         * `photo_or_video` - Photo or video
+    ProofOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/MediaKindEnum'
+        status:
+          $ref: '#/components/schemas/ProofStatusEnum'
+        url:
+          type: string
+          nullable: true
+          description: The file, once fully uploaded.
+        thumb_url:
+          type: string
+          nullable: true
+          description: A small JPEG, when the phone made one; else use `url`.
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - kind
+      - status
+      - thumb_url
+      - url
+    ProofStartInRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/MediaKindEnum'
+        content_type:
+          type: string
+          minLength: 1
+          description: The file's type, e.g. video/mp4.
+          maxLength: 100
+        size:
+          type: integer
+          minimum: 1
+          description: Bytes.
+        fingerprint:
+          type: string
+          default: ''
+          description: name|size|lastModified of the picked video, to resume it later.
+          maxLength: 300
+        thumb_size:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Bytes of the JPEG thumbnail made on the phone, if any.
+      required:
+      - content_type
+      - kind
+      - size
+    ProofStatusEnum:
+      enum:
+      - uploading
+      - processing
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `uploading` - Uploading
+        * `processing` - Processing (video renditions)
+        * `ready` - Ready
+        * `failed` - Failed
+    ProofUploadOut:
+      type: object
+      description: A proof being uploaded and how to send its files straight to storage.
+      properties:
+        proof:
+          $ref: '#/components/schemas/ProofOut'
+        challenge_id:
+          type: string
+          format: uuid
+        day:
+          type: string
+          format: date
+        mode:
+          $ref: '#/components/schemas/UploadModeEnum'
+        content_type:
+          type: string
+          description: Send this Content-Type with the original.
+        put_url:
+          type: string
+          nullable: true
+          description: 'Single mode (photos): PUT the whole file here.'
+        part_size:
+          type: integer
+          nullable: true
+          description: 'Multipart (videos): bytes per part; the last one is smaller.'
+        part_count:
+          type: integer
+          nullable: true
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartOut'
+          description: 'Parts already uploaded: skip them when resuming.'
+        thumb_put_url:
+          type: string
+          nullable: true
+          description: PUT the thumbnail here, Content-Type image/jpeg.
+      required:
+      - challenge_id
+      - content_type
+      - day
+      - mode
+      - part_count
+      - part_size
+      - parts
+      - proof
+      - put_url
+      - thumb_put_url
     ScheduleInRequest:
       type: object
       properties:
@@ -1432,6 +1767,17 @@ components:
           type: boolean
           nullable: true
           description: 'Today''s ring segment: full, empty, or none (null).'
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Today's proofs, uploads in flight too.
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Days of this week with proof.
       required:
       - end_date
       - frequency
@@ -1439,8 +1785,10 @@ components:
       - id
       - measure
       - progress
+      - proof_days
       - proof_kind
       - proof_required
+      - proofs
       - settled
       - state
       - streak
@@ -1475,6 +1823,14 @@ components:
       - crew
       - day
       - deadline
+    UploadModeEnum:
+      enum:
+      - single
+      - multipart
+      type: string
+      description: |-
+        * `single` - One presigned PUT
+        * `multipart` - Multipart, resumable
     UserOut:
       type: object
       properties:

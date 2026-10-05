@@ -8,16 +8,65 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.checkins import selectors, services
+from apps.checkins.models import Proof
 from apps.core import clock
 from apps.core.errors import ValidationFailed
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
+from apps.media import selectors as media
+from apps.media.models import Upload
 
-from .serializers import BoardOut, CheckInIn, TodayChallengeOut, TodayOut
+from .serializers import (
+    BoardOut,
+    CheckInIn,
+    PartIn,
+    PartsIn,
+    PartsOut,
+    ProofOut,
+    ProofStartIn,
+    ProofUploadOut,
+    TodayChallengeOut,
+    TodayOut,
+)
 
 
 def _member(request: Request) -> Member:
     return request.member  # type: ignore[attr-defined]
+
+
+def _day(raw: str) -> date:
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as exc:
+        raise ValidationFailed(fields={"day": ["Use YYYY-MM-DD."]}) from exc
+
+
+def proof_data(proof: Proof) -> dict[str, Any]:
+    return {
+        "id": proof.pk,
+        "kind": proof.kind,
+        "status": proof.status,
+        "url": media.url(proof.original),
+        "thumb_url": media.url(proof.thumb),
+        "created_at": proof.created_at,
+    }
+
+
+def upload_data(plan: services.ProofUpload) -> dict[str, Any]:
+    proof, original = plan.proof, plan.proof.original
+    multipart = original.mode == Upload.Mode.MULTIPART
+    return {
+        "proof": proof_data(proof),
+        "challenge_id": proof.check_in.challenge_id,
+        "day": proof.check_in.day,
+        "mode": original.mode,
+        "content_type": original.content_type,
+        "put_url": plan.put_url,
+        "part_size": original.part_size if multipart else None,
+        "part_count": original.part_count if multipart else None,
+        "parts": [{"number": n, "etag": etag} for n, etag in sorted(plan.parts.items())],
+        "thumb_put_url": plan.thumb_put_url,
+    }
 
 
 def _person(member: Member) -> dict[str, Any]:
@@ -45,6 +94,8 @@ def card_data(card: selectors.Card) -> dict[str, Any]:
         "week": [{"day": d, "state": s} for d, s in card.week],
         "progress": card.progress.__dict__ if card.progress else None,
         "settled": card.settled,
+        "proofs": [proof_data(p) for p in card.proofs],
+        "proof_days": card.proof_days,
     }
 
 
@@ -95,12 +146,8 @@ class UndoView(APIView):
 
     @extend_schema(request=None, responses=TodayChallengeOut, operation_id="challenges_undo")
     def delete(self, request: Request, challenge_id: UUID, day: str) -> Response:
-        """Undo today's last entry (`day` is today, YYYY-MM-DD)."""
-        try:
-            parsed = date.fromisoformat(day)
-        except ValueError as exc:
-            raise ValidationFailed(fields={"day": ["Use YYYY-MM-DD."]}) from exc
-        services.undo_last(by=_member(request), challenge_id=challenge_id, day=parsed)
+        """Undo today's last entry (`day` is today, YYYY-MM-DD). The last one takes its proofs."""
+        services.undo_last(by=_member(request), challenge_id=challenge_id, day=_day(day))
         return _card_response(request, challenge_id)
 
 
@@ -128,9 +175,96 @@ class BoardView(APIView):
                 {
                     "days": board.days,
                     "rows": [
-                        {"member": _person(r.member), "states": r.states, "streak": r.streak}
+                        {
+                            "member": _person(r.member),
+                            "states": r.states,
+                            "streak": r.streak,
+                            "proof_days": r.proof_days,
+                        }
                         for r in board.rows
                     ],
                 }
             ).data
         )
+
+
+class ProofsView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(
+        request=ProofStartIn, responses={201: ProofUploadOut}, operation_id="proofs_start"
+    )
+    def post(self, request: Request, challenge_id: UUID, day: str) -> Response:
+        """Add a photo or video to today's check-in. Then send the file straight to storage."""
+        data = ProofStartIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        plan = services.start_proof(
+            by=_member(request), challenge_id=challenge_id, day=_day(day), **data.validated_data
+        )
+        return Response(ProofUploadOut(upload_data(plan)).data, status=201)
+
+
+class ResumeProofView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("fingerprint", str, required=True)],
+        responses=ProofUploadOut,
+        operation_id="proofs_resume",
+    )
+    def get(self, request: Request) -> Response:
+        """My unfinished video upload for this file (name|size|lastModified), or 404."""
+        plan = services.resume_proof(
+            by=_member(request), fingerprint=request.query_params.get("fingerprint", "")
+        )
+        return Response(ProofUploadOut(upload_data(plan)).data)
+
+
+class PartsView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=PartsIn, responses=PartsOut, operation_id="proofs_sign_parts")
+    def post(self, request: Request, proof_id: UUID) -> Response:
+        """Fresh URLs to PUT these parts to (also when earlier ones expired)."""
+        data = PartsIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        urls = services.sign_parts(
+            by=_member(request), proof_id=proof_id, numbers=data.validated_data["numbers"]
+        )
+        return Response(
+            PartsOut({"parts": [{"number": n, "url": u} for n, u in urls.items()]}).data
+        )
+
+
+class PartView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=PartIn, responses={204: None}, operation_id="proofs_record_part")
+    def put(self, request: Request, proof_id: UUID, number: int) -> Response:
+        """Report a finished part and its ETag, so a later resume skips it."""
+        data = PartIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.record_part(
+            by=_member(request), proof_id=proof_id, number=number, etag=data.validated_data["etag"]
+        )
+        return Response(status=204)
+
+
+class CompleteProofView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=None, responses=ProofOut, operation_id="proofs_complete")
+    def post(self, request: Request, proof_id: UUID) -> Response:
+        """The file is uploaded: check it and show the proof. Safe to repeat."""
+        proof = services.complete_proof(by=_member(request), proof_id=proof_id)
+        return Response(ProofOut(proof_data(proof)).data)
+
+
+class ProofView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(request=None, responses={204: None}, operation_id="proofs_delete")
+    def delete(self, request: Request, proof_id: UUID) -> Response:
+        """Remove my proof and its files (only on its own day)."""
+        services.delete_proof(by=_member(request), proof_id=proof_id)
+        return Response(status=204)

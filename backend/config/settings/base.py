@@ -143,6 +143,12 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "ChallengeStateEnum": "apps.challenges.models.Challenge.State",
         "DayStateEnum": "apps.checkins.api.serializers.DAY_STATES",
+        "MediaKindEnum": "apps.checkins.models.Proof.Kind",
+        "ProofStatusEnum": "apps.checkins.models.Proof.Status",
+        "UploadModeEnum": "apps.media.models.Upload.Mode",
+        # Names the contract had before proofs also brought a "kind" and a "status".
+        "KindEnum": ["days", "amount"],
+        "StatusEnum": ["valid", "expired", "used"],
     },
 }
 

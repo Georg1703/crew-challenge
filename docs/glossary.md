@@ -20,14 +20,14 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` (and back, before the start). Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
 | Participant | `Participant` | A member who takes part in a challenge, chosen by its creator when proposing (the whole crew by default, the creator always). Sees it, votes on it while it is a proposal, checks in once it runs. Opting out before the start removes the row; leaving during it sets `left_on`. Not `Invite` (joining a crew). |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
-| Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `uploading` and `excused`. A missed day has no row: it is derived. |
+| Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `excused`. A missed day has no row: it is derived. |
 | Entry | `CheckInEntry` | One "+N" of a check-in; a day's entries add up. Undo removes the last one. |
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
 | Due day | `days.is_due` | A day a daily or chosen-weekday challenge asks for. Challenges asked a number of times per week or period have no due days, only a quota. |
-| Proof | `Proof` | What backs a check-in or a served punishment: `video`, `audio`, `photo`, or `text`. |
+| Proof | `Proof` | What backs a check-in: a `photo` or `video` (v1), at most 5 a day, added after checking in. Status: `uploading`, `processing`, `ready`, `failed`. Removable only on its own day. Later also for a served punishment. |
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `hls_key`, `poster_key` | Processed versions of a video for playback (HLS 720p/360p + poster image). |
-| Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for an `uploading` check-in to finish. |
+| Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for a proof's upload to finish (`Upload.expires_at`). |
 | Streak | `days.streak` | Per challenge: due days in a row without a miss (daily, weekdays) or weeks in a row with the quota met (times a week). Today never breaks it. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |
 | Garden | - | Home screen showing every member's tree. After v1. |

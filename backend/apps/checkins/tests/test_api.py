@@ -4,6 +4,7 @@ import pytest
 import time_machine
 
 from apps.challenges import services as challenges
+from apps.media.models import MiB
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -15,6 +16,7 @@ READ = {
     "frequency": "daily",
     "target_scope": "per_check_in",
     "target_value": 20,
+    "proof_kind": "photo_or_video",
 }
 
 
@@ -92,3 +94,94 @@ def test_not_taking_part_answers_403(browser, setup):
         )
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "not_taking_part"
+
+
+def start(browser, read, **body):
+    url = f"/api/v1/challenges/{read.pk}/check-ins/2026-11-10/proofs"
+    return browser.post(url, body, format="json")
+
+
+def test_photo_proof_over_http(browser, setup, object_storage):
+    admin, member, read = setup
+    browser.force_login(member.user)
+    early = start(browser, read, kind="photo", content_type="image/jpeg", size=4)
+    assert (early.status_code, early.json()["error"]["code"]) == (409, "not_checked_in")
+    check_in = {"day": "2026-11-10", "amount": 5}
+    browser.post(f"/api/v1/challenges/{read.pk}/check-ins", check_in, format="json")
+
+    response = start(browser, read, kind="photo", content_type="image/jpeg", size=4, thumb_size=2)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert (body["mode"], body["part_size"], body["parts"]) == ("single", None, [])
+    assert body["put_url"]
+    assert body["thumb_put_url"]
+    assert (body["day"], body["proof"]["status"], body["proof"]["url"]) == (
+        "2026-11-10",
+        "uploading",
+        None,
+    )
+    proof_id = body["proof"]["id"]
+    for name, data in (("original.jpg", b"jpeg"), ("thumb.jpg", b"tn")):
+        key = f"crews/{member.crew_id}/proofs/{proof_id}/{name}"
+        object_storage.put_object(key=key, data=data, content_type="image/jpeg")
+
+    done = browser.post(f"/api/v1/proofs/{proof_id}/complete").json()
+    assert (done["status"], bool(done["url"]), bool(done["thumb_url"])) == ("ready", True, True)
+    card = browser.get("/api/v1/today").json()["challenges"][0]
+    assert ([p["id"] for p in card["proofs"]], card["proof_days"]) == ([proof_id], ["2026-11-10"])
+    board = browser.get(f"/api/v1/challenges/{read.pk}/board").json()
+    assert {r["member"]["display_name"]: r["proof_days"] for r in board["rows"]} == {
+        "Ana": [],
+        "Bogdan": ["2026-11-10"],
+    }
+
+    browser.force_login(admin.user)  # someone else's proof is not found
+    assert browser.delete(f"/api/v1/proofs/{proof_id}").json()["error"]["code"] == (
+        "proof_not_found"
+    )
+    browser.force_login(member.user)
+    assert browser.delete(f"/api/v1/proofs/{proof_id}").status_code == 204
+
+
+def test_video_proof_resumes_over_http(browser, setup, object_storage):
+    _, member, read = setup
+    browser.force_login(member.user)
+    check_in = {"day": "2026-11-10", "amount": 5}
+    browser.post(f"/api/v1/challenges/{read.pk}/check-ins", check_in, format="json")
+    body = start(
+        browser, read, kind="video", content_type="video/mp4", size=10, fingerprint="a.mp4|10|1"
+    ).json()
+    assert (body["mode"], body["put_url"], body["part_size"], body["part_count"]) == (
+        "multipart",
+        None,
+        16 * MiB,
+        1,
+    )
+    proof_id = body["proof"]["id"]
+
+    signed = browser.post(f"/api/v1/proofs/{proof_id}/parts", {"numbers": [1]}, format="json")
+    assert [p["number"] for p in signed.json()["parts"]] == [1]
+    upload_id, upload = next(iter(object_storage.uploads.items()))  # the browser's PUT
+    etag = object_storage.upload_part(
+        key=upload.key, upload_id=upload_id, part_number=1, data=b"x" * 10
+    )
+    reported = browser.put(f"/api/v1/proofs/{proof_id}/parts/1", {"etag": etag}, format="json")
+    assert reported.status_code == 204
+
+    resumed = browser.get("/api/v1/proofs/resume?fingerprint=a.mp4|10|1").json()
+    assert resumed["parts"] == [{"number": 1, "etag": etag}]
+    assert browser.get("/api/v1/proofs/resume?fingerprint=b").status_code == 404
+    assert browser.post(f"/api/v1/proofs/{proof_id}/complete").json()["status"] == "ready"
+
+
+def test_proof_input_is_checked(browser, setup):
+    _, member, read = setup
+    browser.force_login(member.user)
+    bad_day = browser.post(
+        f"/api/v1/challenges/{read.pk}/check-ins/today/proofs",
+        {"kind": "photo", "content_type": "image/jpeg", "size": 4},
+        format="json",
+    )
+    assert bad_day.status_code == 400
+    assert start(browser, read, kind="audio", content_type="audio/mp4", size=4).status_code == 400
