@@ -5,6 +5,7 @@ import time_machine
 
 from apps.challenges import services as challenges
 from apps.checkins import services
+from apps.checkins.models import Proof
 from apps.media.models import MiB
 from tests.factories import AdminFactory, MemberFactory
 
@@ -151,7 +152,13 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     check_in = {"day": "2026-11-10", "amount": 5}
     browser.post(f"/api/v1/challenges/{read.pk}/check-ins", check_in, format="json")
     body = start(
-        browser, read, kind="video", content_type="video/mp4", size=10, fingerprint="a.mp4|10|1"
+        browser,
+        read,
+        kind="video",
+        content_type="video/mp4",
+        size=10,
+        fingerprint="a.mp4|10|1",
+        thumb_size=2,
     ).json()
     assert (body["mode"], body["put_url"], body["part_size"], body["part_count"]) == (
         "multipart",
@@ -173,8 +180,12 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     resumed = browser.get("/api/v1/proofs/resume?fingerprint=a.mp4|10|1").json()
     assert resumed["parts"] == [{"number": 1, "etag": etag}]
     assert browser.get("/api/v1/proofs/resume?fingerprint=b").status_code == 404
+    thumb = Proof.objects.get(pk=proof_id).thumb  # the phone's frame, PUT by the browser
+    assert thumb is not None
+    object_storage.put_object(key=thumb.key, data=b"tn", content_type="image/jpeg")
     done = browser.post(f"/api/v1/proofs/{proof_id}/complete").json()
     assert (done["status"], done["hls_url"]) == ("processing", None)  # renditions on their way
+    assert "thumb" in done["thumb_url"]  # meanwhile the phone's frame stands in
 
     services.finish_videos()  # starts the job
     prefix = upload.key.rsplit(".", 1)[0]
@@ -185,7 +196,7 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     services.finish_videos()
     shown = browser.get("/api/v1/today").json()["challenges"][0]["proofs"][0]
     assert shown["status"] == "ready"
-    assert "poster" in shown["thumb_url"]  # no thumbnail from the phone: the poster stands in
+    assert "poster" in shown["thumb_url"]  # the server's poster wins over the phone's frame
     assert shown["hls_url"] is None  # locally the original plays
 
 

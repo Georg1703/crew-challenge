@@ -54,7 +54,7 @@ class ProofOut(serializers.Serializer):
     )
     thumb_url = serializers.CharField(
         allow_null=True,
-        help_text="A small JPEG from the phone, or a video's poster; else show `url`.",
+        help_text="A video's poster once ready, else a small JPEG from the phone; else show `url`.",
     )
     created_at = serializers.DateTimeField()
     duration = serializers.IntegerField(

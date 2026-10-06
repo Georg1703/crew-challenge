@@ -71,6 +71,21 @@ function once(target: HTMLMediaElement, event: string, ms: number) {
   });
 }
 
+/** A frame with nothing in it: all transparent or almost black (what iOS draws before decoding). */
+function blank(video: HTMLVideoElement): boolean {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 8;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return true;
+  context.drawImage(video, 0, 0, 8, 8);
+  const pixels = context.getImageData(0, 0, 8, 8).data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const [r = 0, g = 0, b = 0, a = 0] = pixels.subarray(i, i + 4);
+    if (a > 0 && Math.max(r, g, b) > 12) return false;
+  }
+  return true;
+}
+
 export async function prepareVideo(file: File, wait = POSTER_WAIT_MS): Promise<Prepared> {
   const url = URL.createObjectURL(file);
   let thumb: Blob | null = null;
@@ -81,11 +96,19 @@ export async function prepareVideo(file: File, wait = POSTER_WAIT_MS): Promise<P
     video.playsInline = true;
     video.preload = "auto";
     video.src = url;
-    await once(video, "loadeddata", wait);
+    // iOS Safari loads no frame of a video that is not playing: "loadeddata" never comes there.
+    await once(video, "loadedmetadata", wait);
     duration = seconds(video.duration);
+    try {
+      await video.play(); // muted and inline, so allowed; it makes iOS decode frames
+      video.pause();
+    } catch {
+      // other browsers decode on seek anyway
+    }
     video.currentTime = Math.min(0.1, video.duration || 0);
     await once(video, "seeked", wait);
-    thumb = await draw(video, video.videoWidth, video.videoHeight, THUMB_MAX_PX);
+    // A black frame would hide the server's poster: better no thumbnail than a black one.
+    if (!blank(video)) thumb = await draw(video, video.videoWidth, video.videoHeight, THUMB_MAX_PX);
   } catch {
     thumb = null; // the phone cannot decode it here: the server's poster comes later
   } finally {

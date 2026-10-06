@@ -1992,8 +1992,8 @@ components:
         thumb_url:
           type: string
           nullable: true
-          description: A small JPEG from the phone, or a video's poster; else show
-            `url`.
+          description: A video's poster once ready, else a small JPEG from the phone;
+            else show `url`.
         created_at:
           type: string
           format: date-time

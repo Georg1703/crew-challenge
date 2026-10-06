@@ -1086,7 +1086,7 @@ export interface components {
             url: string | null;
             /** @description A video's HLS playlist once transcoded (production only); else play `url`. */
             hls_url: string | null;
-            /** @description A small JPEG from the phone, or a video's poster; else show `url`. */
+            /** @description A video's poster once ready, else a small JPEG from the phone; else show `url`. */
             thumb_url: string | null;
             /** Format: date-time */
             created_at: string;

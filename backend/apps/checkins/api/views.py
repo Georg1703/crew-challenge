@@ -53,7 +53,8 @@ def proof_data(proof: Proof) -> dict[str, Any]:
         "status": proof.status,
         "url": media.url(proof.original),
         "hls_url": hls_url,
-        "thumb_url": media.url(proof.thumb) or poster_url,
+        # A video's poster beats the phone's frame, which some phones (iOS) draw black.
+        "thumb_url": poster_url or media.url(proof.thumb),
         "created_at": proof.created_at,
         "duration": proof.duration,
     }
