@@ -19,3 +19,10 @@
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
 }
+
+.dot {
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-text);
+}

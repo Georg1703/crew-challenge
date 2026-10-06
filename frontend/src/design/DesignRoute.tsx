@@ -19,6 +19,7 @@ import {
   DayBarsAxis,
   DayMark,
   type DayState,
+  FeedItem,
   HoldButton,
   Icon,
   IconPicker,
@@ -28,7 +29,10 @@ import {
   OptionList,
   ProgressBar,
   ProgressRing,
+  ProofTile,
+  ProofViewer,
   type RingSegment,
+  type ViewerItem,
   QrCode,
   Segmented,
   Sheet,
@@ -57,8 +61,19 @@ import {
 } from "./tokens";
 import { applyTheme, type Theme } from "@/shared/lib/theme";
 
+// Sample pictures for the proof components: the app's own icons (no network on /design).
+const PICTURES = ["/icons/icon-512.png", "/icons/icon-maskable-512.png", "/icons/icon-192.png"];
+const VIEWER: ViewerItem[] = PICTURES.map((src, i) => ({
+  key: src,
+  kind: "photo",
+  src,
+  caption: `Ana, Walk, Monday 5 October (${i + 1})`,
+}));
+
 export function DesignRoute() {
   const [theme, setTheme] = useState<Theme>("system");
+  const [upload, setUpload] = useState(0.4);
+  const [viewer, setViewer] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
   const [segment, setSegment] = useState("ro");
@@ -453,9 +468,10 @@ export function DesignRoute() {
           ).map((state, i) => ({
             key: String(i),
             letter: "MTWTFSS"[i] ?? "",
-            name: `Day ${i + 1}: ${state}`,
+            name: `Day ${i + 1}: ${state}${i === 0 || i === 2 ? ", with proof" : ""}`,
             state,
             today: i === 4,
+            proof: i === 0 || i === 2,
           }))}
         />
         <div className={styles.row}>
@@ -471,6 +487,7 @@ export function DesignRoute() {
             <DayBars
               key={r}
               label={r ? "Bogdan" : "Ana"}
+              proofs={Array.from({ length: 30 }, (_, i) => row[i] === "d" && i % 3 === 0)}
               states={Array.from({ length: 30 }, (_, i): DayState => {
                 const mark = row[i];
                 if (mark === "d") return "done";
@@ -487,7 +504,69 @@ export function DesignRoute() {
           ).map((state) => (
             <DayBar key={state} state={state} label={state} />
           ))}
+          <DayBar state="done" label="done, with proof" proof />
         </div>
+      </Section>
+
+      <Section title="Proofs">
+        <div className={styles.proofs}>
+          <ProofTile
+            kind="photo"
+            src={PICTURES[0]}
+            label="Photo"
+            onOpen={() => setViewer(0)}
+            onRemove={() => toast("Photo removed", "info")}
+            removeLabel="Remove photo"
+          />
+          <ProofTile kind="video" src={PICTURES[1]} label="Video" onOpen={() => setViewer(1)} />
+          <ProofTile
+            kind="photo"
+            src={PICTURES[2]}
+            state="uploading"
+            progress={upload}
+            label={`Uploading, ${Math.round(upload * 100)}%. Tap to add 20%`}
+            onOpen={() => setUpload((p) => (p >= 1 ? 0 : Math.min(p + 0.2, 1)))}
+          />
+          <ProofTile kind="video" src={PICTURES[0]} state="paused" label="Waiting to upload" />
+          <ProofTile kind="video" src={PICTURES[1]} state="processing" label="Being prepared" />
+          <ProofTile kind="photo" src={PICTURES[2]} state="failed" label="Could not upload" />
+          <ProofTile kind="video" label="Video, no poster yet" />
+          <ProofTile kind="photo" label="Photo, no thumbnail" />
+        </div>
+        <List label="Activity">
+          <FeedItem
+            name="Ana"
+            seed="ana"
+            text="Ana checked in Walk"
+            time="5 min ago"
+            proofs={[...PICTURES, ...PICTURES].slice(0, 5).map((src, i) => ({
+              key: String(i),
+              kind: i === 1 ? "video" : "photo",
+              state: i === 2 ? "processing" : "ready",
+              src,
+              label: `Proof ${i + 1}`,
+            }))}
+            onOpenProof={(i) => setViewer(Math.min(i, VIEWER.length - 1))}
+            moreLabel="2 more proofs"
+          />
+          <FeedItem
+            name="Bogdan"
+            seed="bogdan"
+            text="Bogdan read 20 pages"
+            time="yesterday 21:40"
+          />
+        </List>
+        <ProofViewer
+          items={VIEWER}
+          index={viewer ?? 0}
+          onIndexChange={setViewer}
+          open={viewer !== null}
+          onClose={() => setViewer(null)}
+          label="Proofs"
+          closeLabel="Close"
+          previousLabel="Previous proof"
+          nextLabel="Next proof"
+        />
       </Section>
 
       <Section title="Segmented control">

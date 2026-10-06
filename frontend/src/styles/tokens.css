@@ -83,6 +83,11 @@
   --color-code-bg: var(--palette-white);
   --color-code-fg: var(--palette-ink-900);
 
+  /* Photos and videos sit on near-black in both themes; marks drawn over them are white. */
+  --color-media-bg: var(--palette-night-950);
+  --color-on-media: var(--palette-white);
+  --color-media-scrim: var(--palette-black-alpha-60);
+
   /* ---------- Semantic: typography (Nunito Sans, 400 and 700 only) ---------- */
   --font-sans:
     "Nunito Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -140,6 +145,7 @@
   /* ---------- Semantic: layering ---------- */
   --z-tabbar: 10;
   --z-sheet: 20;
+  --z-viewer: 25; /* above a sheet it opens from, under toasts */
   --z-toast: 30;
 
   /* ---------- Semantic: motion (CSS). JS springs live in src/shared/motion/presets.ts ---------- */
@@ -158,6 +164,7 @@
   --avatar-lg: 4rem;
   --progress-ring-size: 10.5rem;
   --day-bar-height: 1.25rem; /* a day in a month of bars */
+  --proof-tile-size: 4.5rem; /* a proof thumbnail: four fit across a card on a phone */
   --tabbar-height: 64px;
   --content-max-width: 34rem;
 }

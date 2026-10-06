@@ -27,6 +27,9 @@ export const colorTokens = [
   "avatar-5",
   "code-bg",
   "code-fg",
+  "media-bg",
+  "on-media",
+  "media-scrim",
 ] as const;
 
 export const textTokens = [
@@ -51,4 +54,5 @@ export const sizeTokens = [
   "avatar-lg",
   "tabbar-height",
   "day-bar-height",
+  "proof-tile-size",
 ] as const;

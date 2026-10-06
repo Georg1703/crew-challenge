@@ -1,0 +1,65 @@
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.item + .item {
+  border-top: 1px solid var(--color-border);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.text,
+.time {
+  margin: 0;
+}
+
+.text {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
+}
+
+.time {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* Four tracks: three proofs and "+N", each at most a tile wide. */
+.proofs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, var(--proof-tile-size)));
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.more {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
+  cursor: pointer;
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.more:disabled {
+  cursor: default;
+}

@@ -3,25 +3,59 @@ import { cx } from "@/shared/lib/cx";
 import styles from "./DayBars.module.css";
 import type { DayState } from "./DayMark";
 
-/** A day as a thin bar: tall and green when done, short and red when missed, outlined when due. */
-export function DayBar({ state, label }: { state: DayState; label?: string }) {
+/**
+ * A day as a thin bar: tall and green when done, short and red when missed, outlined when due.
+ * `proof` adds the dot under it (for a legend).
+ */
+export function DayBar({
+  state,
+  label,
+  proof = false,
+}: {
+  state: DayState;
+  label?: string;
+  proof?: boolean;
+}) {
   return (
-    <span className={styles.slot} role={label ? "img" : undefined} aria-label={label}>
-      <span className={cx(styles.bar, styles[cssName(state)])} />
+    <span className={styles.single} role={label ? "img" : undefined} aria-label={label}>
+      <span className={styles.slot}>
+        <span className={cx(styles.bar, styles[cssName(state)])} />
+      </span>
+      {proof && <span className={styles.dot} />}
     </span>
   );
 }
 
 /**
  * A person's month as one row of bars, one per day. Screen readers get `label` (a summary such
- * as "Ana: 5 days done, 1 missed") instead of 31 bars.
+ * as "Ana: 5 days done, 1 missed, 4 with proof") instead of 31 bars. `proofs` (one per day) adds
+ * a row of dots under the days with proof; pass it to every row of a board so rows line up.
  */
-export function DayBars({ states, label }: { states: DayState[]; label: string }) {
+export function DayBars({
+  states,
+  label,
+  proofs,
+}: {
+  states: DayState[];
+  label: string;
+  proofs?: boolean[];
+}) {
   return (
-    <span className={styles.bars} role="img" aria-label={label}>
-      {states.map((state, i) => (
-        <span key={i} className={cx(styles.bar, styles[cssName(state)])} />
-      ))}
+    <span className={styles.days} role="img" aria-label={label}>
+      <span className={styles.bars}>
+        {states.map((state, i) => (
+          <span key={i} className={cx(styles.bar, styles[cssName(state)])} />
+        ))}
+      </span>
+      {proofs && (
+        <span className={styles.dots}>
+          {states.map((_, i) => (
+            <span key={i} className={styles.dotSlot}>
+              {proofs[i] && <span className={styles.dot} />}
+            </span>
+          ))}
+        </span>
+      )}
     </span>
   );
 }

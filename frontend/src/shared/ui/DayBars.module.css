@@ -1,5 +1,17 @@
+.days {
+  display: grid;
+  gap: var(--space-hair);
+}
+
+.single {
+  display: inline-grid;
+  justify-items: center;
+  gap: var(--space-hair);
+}
+
 .bars,
-.axis {
+.axis,
+.dots {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
@@ -9,6 +21,20 @@
 .bars {
   align-items: end;
   height: var(--day-bar-height);
+}
+
+.dotSlot {
+  display: flex;
+  justify-content: center;
+  height: var(--space-1);
+}
+
+/* A day with proof: a dot, so it reads by shape as well as color. */
+.dot {
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-text);
 }
 
 .slot {

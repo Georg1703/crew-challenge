@@ -15,7 +15,7 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | canvas-confetti | After v1: celebrations |
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
-| hls.js | HLS playback outside Safari |
+| hls.js | HLS playback outside Safari; loaded on demand by `ProofViewer` only |
 | Uppy core + @uppy/aws-s3 | Multipart upload engine, no Uppy UI |
 
 Do not add a library that overlaps one of these.

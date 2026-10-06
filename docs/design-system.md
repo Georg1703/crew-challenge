@@ -59,6 +59,7 @@ A new token needs a reason: add it to `tokens.css` and, for colors and sizes, to
 | overlay | `--color-overlay` | Dim layer behind sheets |
 | avatar-1..5 | `--color-avatar-1` .. `-5`, `--color-on-avatar` | Member colors, white initials |
 | code | `--color-code-bg`, `--color-code-fg` | QR codes: dark on white in both themes |
+| media | `--color-media-bg`, `--color-on-media`, `--color-media-scrim` | Behind photos and videos (proof tiles, the viewer): the same near-black in both themes; marks over them are white on the scrim |
 
 Every text color reaches 4.5:1 on its background in both themes (enforced by
 `src/design/tokens.test.ts`). Status colors are never decoration.
@@ -94,8 +95,10 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
   banners. Nothing else casts a shadow. Dark cards rely on their border.
 - Sizes: `--tap-min` 44px (every control), `--button-height` 52px, `--button-height-sm` 44px,
   `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px,
-  `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`).
+  `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`),
+  `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens).
   `--ring-current` marks today in a week strip.
+- Layers: `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
 
 ## Components (`frontend/src/shared/ui`)
 
@@ -129,8 +132,11 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `HoldButton` | Press and hold (0.6 s) to confirm a check-in; letting go cancels; keyboard confirms at once |
 | `ProgressRing` | Today's ring: one segment per thing to do, full / half / empty; closes with the center popping to "done" |
 | `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
-| `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday |
-| `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint); a single bar for a legend; the day numbers above the rows |
+| `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday, with a small dot under the days with proof |
+| `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows |
+| `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A button when it opens something; an optional remove button (today only) |
+| `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline, muted until tapped (HLS, with hls.js loaded only where needed) |
+| `FeedItem` | One check-in in the crew feed, inside a `List`: avatar, what and when, up to three proofs and "+N" |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation, with an optional raised action (check in) and its count; the shared icon set (Lucide shapes, stroke 1.75) |
 

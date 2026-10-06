@@ -1,13 +1,23 @@
 import styles from "./WeekStrip.module.css";
 import { DayMark, type DayState } from "./DayMark";
 
-/** Seven days, Monday to Sunday, as shapes with the weekday's letter under each. */
+/**
+ * Seven days, Monday to Sunday, as shapes with the weekday's letter under each, and a dot under
+ * the days with proof (say so in `name` too).
+ */
 export function WeekStrip({
   label,
   days,
 }: {
   label: string;
-  days: { key: string; letter: string; name: string; state: DayState; today?: boolean }[];
+  days: {
+    key: string;
+    letter: string;
+    name: string;
+    state: DayState;
+    today?: boolean;
+    proof?: boolean;
+  }[];
 }) {
   return (
     <ol className={styles.strip} aria-label={label}>
@@ -17,6 +27,7 @@ export function WeekStrip({
           <span className={styles.letter} aria-hidden="true">
             {day.letter}
           </span>
+          {day.proof && <span className={styles.dot} aria-hidden="true" />}
         </li>
       ))}
     </ol>
