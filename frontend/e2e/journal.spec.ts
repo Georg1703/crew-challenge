@@ -70,7 +70,7 @@ test("a check-in fills the ring, a new photo shows on it, and the member page op
       .filter({ has: cristina.getByRole("heading", { name: WALK }) })
       .last();
     await card
-      .locator('input[type="file"]')
+      .locator('input[accept="image/*"]') // the photo picker; videos have their own
       .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
     await expect(
       card.getByRole("button", { name: "Poză. Atinge pentru a deschide" }),
