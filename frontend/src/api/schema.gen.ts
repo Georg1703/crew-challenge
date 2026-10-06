@@ -751,6 +751,26 @@ export interface components {
             activity_at: string;
             /** @description Processing and ready proofs. */
             proofs: components["schemas"]["ProofOut"][];
+            /** @description Days (or weeks) in a row as of this day; null without one. */
+            streak: number | null;
+            /** @description This day within the challenge, from 1. */
+            day_index: number;
+            /** @description Days the challenge runs. */
+            day_count: number;
+            /** @description The seven days ending on this day. */
+            week: components["schemas"]["DayOut"][];
+            /**
+             * Format: double
+             * @description The last amount added (numbers only).
+             */
+            last_amount: number | null;
+            /**
+             * Format: double
+             * @description The day's target, when the challenge sets one per day.
+             */
+            target: number | null;
+            /** @description Set when this check-in made the streak reach 3, 7, 14 or 30. */
+            milestone: components["schemas"]["MilestoneOut"] | null;
         };
         /**
          * @description * `daily` - Every day
@@ -859,6 +879,16 @@ export interface components {
             display_name: string;
             role: string;
         };
+        MilestoneOut: {
+            kind: components["schemas"]["MilestoneOutKindEnum"];
+            /** @description Days in a row: 3, 7, 14 or 30. */
+            n: number;
+        };
+        /**
+         * @description * `streak` - streak
+         * @enum {string}
+         */
+        MilestoneOutKindEnum: "streak";
         /** @enum {unknown} */
         NullEnum: null;
         PaginatedFeedItemOutList: {

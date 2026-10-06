@@ -1297,15 +1297,52 @@ components:
           items:
             $ref: '#/components/schemas/ProofOut'
           description: Processing and ready proofs.
+        streak:
+          type: integer
+          nullable: true
+          description: Days (or weeks) in a row as of this day; null without one.
+        day_index:
+          type: integer
+          description: This day within the challenge, from 1.
+        day_count:
+          type: integer
+          description: Days the challenge runs.
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayOut'
+          description: The seven days ending on this day.
+        last_amount:
+          type: number
+          format: double
+          nullable: true
+          description: The last amount added (numbers only).
+        target:
+          type: number
+          format: double
+          nullable: true
+          description: The day's target, when the challenge sets one per day.
+        milestone:
+          allOf:
+          - $ref: '#/components/schemas/MilestoneOut'
+          nullable: true
+          description: Set when this check-in made the streak reach 3, 7, 14 or 30.
       required:
       - activity_at
       - challenge
       - day
+      - day_count
+      - day_index
       - id
+      - last_amount
       - member
+      - milestone
       - proofs
       - status
+      - streak
+      - target
       - total
+      - week
     FrequencyEnum:
       enum:
       - daily
@@ -1528,6 +1565,22 @@ components:
       - crew_name
       - display_name
       - role
+    MilestoneOut:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/MilestoneOutKindEnum'
+        n:
+          type: integer
+          description: 'Days in a row: 3, 7, 14 or 30.'
+      required:
+      - kind
+      - n
+    MilestoneOutKindEnum:
+      enum:
+      - streak
+      type: string
+      description: '* `streak` - streak'
     NullEnum:
       enum:
       - null

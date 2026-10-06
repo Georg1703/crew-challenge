@@ -19,15 +19,16 @@ from apps.core import clock
 from apps.crews.models import Member
 
 from . import days
-from .models import CheckIn, Proof
+from .models import CheckIn, CheckInEntry, Proof
 
 SHOWN = (Proof.Status.PROCESSING, Proof.Status.READY)  # proof the crew can see
 
 
 def records(
-    *, challenge_ids: list[UUID], member_ids: list[UUID]
+    *, challenge_ids: list[UUID], member_ids: list[UUID], proof_days: bool = True
 ) -> dict[tuple[UUID, UUID], days.Record]:
-    """Check-ins per (challenge, member): days done, in progress, totals, days with proof."""
+    """Check-ins per (challenge, member): days done, in progress, totals, days with proof
+    (left out with `proof_days=False`, one query less)."""
     result: dict[tuple[UUID, UUID], days.Record] = defaultdict(days.Record)
     rows = CheckIn.objects.filter(challenge_id__in=challenge_ids, member_id__in=member_ids)
     for row in rows:
@@ -38,6 +39,8 @@ def records(
             record.partial.add(row.day)
         if row.amount is not None:
             record.amounts[row.day] = row.amount
+    if not proof_days:
+        return dict(result)
     proofs = (
         Proof.objects.filter(
             check_in__challenge_id__in=challenge_ids,
@@ -257,3 +260,65 @@ def feed(*, member: Member) -> QuerySet[CheckIn]:
         .select_related("member", "challenge")
         .prefetch_related(Prefetch("proofs", queryset=shown, to_attr="shown_proofs"))
     )
+
+
+MILESTONES = (3, 7, 14, 30)  # days in a row worth a card of their own
+
+
+@dataclass
+class FeedDetail:
+    """What a feed card says around a check-in, as of its own day."""
+
+    streak: int | None
+    day_index: int  # the check-in's day within the challenge, from 1
+    day_count: int
+    week: list[tuple[date, str]]  # the 7 days ending on the check-in's day
+    last_amount: Decimal | None  # the last "+N" of a number challenge
+    target: Decimal | None  # the day's target, when the challenge sets one per day
+    milestone: int | None  # the streak, when it just reached one of MILESTONES
+
+
+def feed_details(check_ins: list[CheckIn]) -> dict[UUID, FeedDetail]:
+    """Streaks, weeks and amounts for a page of the feed, in three queries whatever its size."""
+    if not check_ins:
+        return {}
+    challenge_ids = list({c.challenge_id for c in check_ins})
+    member_ids = list({c.member_id for c in check_ins})
+    left_on = {
+        (p.challenge_id, p.member_id): p.left_on
+        for p in Participant.objects.filter(
+            challenge_id__in=challenge_ids, member_id__in=member_ids
+        ).only("challenge_id", "member_id", "left_on")
+    }
+    loaded = records(challenge_ids=challenge_ids, member_ids=member_ids, proof_days=False)
+    last_amounts = dict(
+        CheckInEntry.objects.filter(check_in__in=check_ins, amount__isnull=False)
+        .order_by("check_in_id", "-number")
+        .distinct("check_in_id")
+        .values_list("check_in_id", "amount")
+    )
+    result = {}
+    for check_in in check_ins:
+        challenge, day = check_in.challenge, check_in.day
+        assert challenge.start_date is not None
+        assert challenge.end_date is not None
+        key = (check_in.challenge_id, check_in.member_id)
+        part = days.span(challenge, left_on.get(key))
+        record = loaded.get(key, days.Record())
+        streak = days.streak(challenge, part, record, day)
+        week = [day - timedelta(days=n) for n in range(6, -1, -1)]
+        per_day = challenge.target_scope == Challenge.TargetScope.PER_CHECK_IN
+        result[check_in.pk] = FeedDetail(
+            streak=streak,
+            day_index=(day - challenge.start_date).days + 1,
+            day_count=(challenge.end_date - challenge.start_date).days + 1,
+            week=[(d, days.state(challenge, part, record, d, day)) for d in week],
+            last_amount=last_amounts.get(check_in.pk),
+            target=challenge.target_value if per_day else None,
+            milestone=(
+                streak
+                if days.is_fixed(challenge) and day in record.done and streak in MILESTONES
+                else None
+            ),
+        )
+    return result

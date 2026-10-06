@@ -292,6 +292,18 @@ class DaySheetView(APIView):
         return Response(DaySheetRowOut(data, many=True).data)
 
 
+def feed_detail_data(d: selectors.FeedDetail) -> dict[str, Any]:
+    return {
+        "streak": d.streak,
+        "day_index": d.day_index,
+        "day_count": d.day_count,
+        "week": [{"day": day, "state": state} for day, state in d.week],
+        "last_amount": d.last_amount,
+        "target": d.target,
+        "milestone": {"kind": "streak", "n": d.milestone} if d.milestone else None,
+    }
+
+
 class FeedPagination(CursorPagination):
     page_size = 30
     ordering = "-activity_at"
@@ -307,6 +319,7 @@ class FeedView(APIView):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(selectors.feed(member=_member(request)), request, self)
         assert page is not None  # always paginated
+        details = selectors.feed_details(page)
         items = [
             {
                 "id": c.pk,
@@ -317,6 +330,7 @@ class FeedView(APIView):
                 "total": c.amount,
                 "activity_at": c.activity_at,  # type: ignore[attr-defined]
                 "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
+                **feed_detail_data(details[c.pk]),
             }
             for c in page
         ]

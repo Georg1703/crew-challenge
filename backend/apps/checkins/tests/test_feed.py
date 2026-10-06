@@ -1,6 +1,7 @@
 """The crew feed and the day sheet: who sees what, in which order, and paging."""
 
 from datetime import date
+from decimal import Decimal
 
 import pytest
 from django.db import connection
@@ -126,3 +127,76 @@ def test_a_fuller_feed_page_costs_no_more_queries(object_storage, crew, browser)
         four_items = queries()
 
     assert four_items == one_item
+
+
+def test_feed_items_say_the_streak_week_and_milestone_as_of_their_day(
+    object_storage, crew, browser
+):
+    ana, bogdan, _, walk, _ = crew
+    for n in (1, 2, 3, 4, 6, 7, 8):  # a miss on the 5th
+        with at(f"2026-11-0{n} 08:00Z"):
+            check_in(bogdan, walk, day=date(2026, 11, n))
+    browser.force_login(ana.user)
+    with at("2026-11-08 09:00Z"):
+        body = browser.get("/api/v1/feed").json()
+
+    by_day = {i["day"]: i for i in body["results"]}
+    third, fourth, eighth = by_day["2026-11-03"], by_day["2026-11-04"], by_day["2026-11-08"]
+    assert (third["streak"], third["milestone"]) == (3, {"kind": "streak", "n": 3})
+    assert (fourth["streak"], fourth["milestone"]) == (4, None)  # not again the day after
+    assert (eighth["streak"], eighth["milestone"]) == (3, {"kind": "streak", "n": 3})
+    assert (eighth["day_index"], eighth["day_count"]) == (8, 30)
+    assert [d["state"] for d in eighth["week"]] == [
+        "done", "done", "done", "missed", "done", "done", "done"
+    ]  # fmt: skip
+    assert eighth["week"][-1]["day"] == "2026-11-08"
+    first_week = by_day["2026-11-02"]["week"]
+    assert [d["state"] for d in first_week][:5] == ["outside"] * 5  # before the start
+    assert (eighth["last_amount"], eighth["target"]) == (None, None)
+
+
+def test_feed_items_of_number_challenges_say_the_last_amount_and_the_days_target(
+    object_storage, crew, browser
+):
+    ana, bogdan, _, _, _ = crew
+    with at("2026-10-10 12:00Z"):
+        pages = scheduled(
+            ana,
+            bogdan,
+            date(2026, 11, 1),
+            title="Pages",
+            measure="quantity",
+            unit="pages",
+            target_scope="per_check_in",
+            target_value="30",
+        )
+        km = scheduled(
+            ana, bogdan, date(2026, 11, 1), title="Km", measure="quantity", unit="km",
+            frequency="times_per_week", times=3,
+        )  # fmt: skip
+    with at("2026-11-10 08:00Z"):
+        services.check_in(by=bogdan, challenge_id=pages.pk, day=DAY, amount=Decimal(8))
+        services.check_in(by=bogdan, challenge_id=pages.pk, day=DAY, amount=Decimal(12))
+        services.check_in(by=bogdan, challenge_id=km.pk, day=DAY, amount=Decimal("2.5"))
+        browser.force_login(ana.user)
+        body = browser.get("/api/v1/feed").json()
+
+    by_title = {i["challenge"]["title"]: i for i in body["results"]}
+    assert (by_title["Pages"]["total"], by_title["Pages"]["last_amount"]) == (20, 12)
+    assert by_title["Pages"]["target"] == 30
+    assert (by_title["Pages"]["milestone"], by_title["Pages"]["streak"]) == (None, 0)  # not done
+    assert (by_title["Km"]["last_amount"], by_title["Km"]["target"]) == (2.5, None)
+    assert by_title["Km"]["milestone"] is None  # weeks, not days in a row
+
+
+def test_milestones_come_at_7_14_and_30_days(crew):
+    _, bogdan, _, walk, _ = crew
+    for n in range(1, 31):
+        with at(f"2026-11-{n:02d} 08:00Z"):
+            check_in(bogdan, walk, day=date(2026, 11, n))
+    with at("2026-11-30 09:00Z"):
+        page = list(selectors.feed(member=bogdan).filter(challenge=walk))
+        details = selectors.feed_details(page)
+    hits = sorted(c.day.day for c in page if details[c.pk].milestone)
+    assert hits == [3, 7, 14, 30]
+    assert selectors.feed_details([]) == {}

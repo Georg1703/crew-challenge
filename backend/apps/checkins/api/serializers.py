@@ -194,6 +194,11 @@ class DaySheetRowOut(serializers.Serializer):
     proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
 
 
+class MilestoneOut(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["streak"])
+    n = serializers.IntegerField(help_text="Days in a row: 3, 7, 14 or 30.")
+
+
 class FeedItemOut(serializers.Serializer):
     """One check-in: who, on what, which day, and its proofs."""
 
@@ -207,3 +212,18 @@ class FeedItemOut(serializers.Serializer):
         help_text="The later of the check-in's last change and its newest proof; the feed's order."
     )
     proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
+    streak = serializers.IntegerField(
+        allow_null=True, help_text="Days (or weeks) in a row as of this day; null without one."
+    )
+    day_index = serializers.IntegerField(help_text="This day within the challenge, from 1.")
+    day_count = serializers.IntegerField(help_text="Days the challenge runs.")
+    week = DayOut(many=True, help_text="The seven days ending on this day.")
+    last_amount = serializers.FloatField(
+        allow_null=True, help_text="The last amount added (numbers only)."
+    )
+    target = serializers.FloatField(
+        allow_null=True, help_text="The day's target, when the challenge sets one per day."
+    )
+    milestone = MilestoneOut(
+        allow_null=True, help_text="Set when this check-in made the streak reach 3, 7, 14 or 30."
+    )

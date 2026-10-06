@@ -34,6 +34,13 @@ const walked: FeedItem = {
   total: null,
   activity_at: "2026-11-10T08:30:00Z",
   proofs: ["a", "b", "c", "d", "e"].map(photo),
+  streak: 4,
+  day_index: 10,
+  day_count: 30,
+  week: [],
+  last_amount: null,
+  target: null,
+  milestone: null,
 };
 const read: FeedItem = {
   id: "c2",
@@ -44,6 +51,13 @@ const read: FeedItem = {
   total: 12,
   activity_at: "2026-11-09T19:40:00Z",
   proofs: [],
+  streak: 0,
+  day_index: 9,
+  day_count: 30,
+  week: [],
+  last_amount: 4,
+  target: 20,
+  milestone: null,
 };
 
 afterEach(() => {
