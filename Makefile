@@ -131,6 +131,9 @@ check: check-repo check-compose check-backend check-frontend check-contract ## E
 check-repo: ## Repo-level checks: docs links, referenced paths, ASCII, required files
 	@out=$$($(PYTHON) -m unittest discover -s tools/tests 2>&1) || { echo "$$out"; echo "ERROR: tool tests failed"; exit 1; }; echo "OK: tool tests passed"
 	@$(PYTHON) tools/check_repo.py
+	@if command -v shellcheck >/dev/null; then \
+		shellcheck -x infra/scripts/*.sh && echo "OK: shell scripts pass shellcheck"; \
+	else echo "SKIP: shellcheck not installed"; fi
 
 .PHONY: check-compose
 check-compose: ## Validate compose.yaml and compose.prod.yaml (skipped without Docker)
