@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 
+import { formatDuration } from "@/shared/lib/format";
 import type { FeedProof, ViewerItem } from "@/shared/ui";
 
 import type { Proof } from "./api";
@@ -15,6 +16,7 @@ export function shownTile(proof: Proof, t: TFunction, who: string): FeedProof {
     kind: proof.kind,
     state: processing ? "processing" : "ready",
     src: proof.thumb_url ?? (proof.kind === "photo" ? proof.url : null),
+    duration: proof.duration === null ? undefined : formatDuration(proof.duration),
     label: t(processing ? "feed.proofProcessing" : "feed.proof", {
       kind: t(`proofs.kind.${proof.kind}`),
       name: who,

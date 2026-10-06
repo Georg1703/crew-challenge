@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-import { ana, bogdan } from "@/test/fixtures";
+import { ana, bogdan, crewDetail } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ChallengeBoard, CrewFeed } from ".";
@@ -42,7 +42,7 @@ const walked: FeedItem = {
   last_amount: null,
   target: null,
   milestone: null,
-  day_summary: { check_ins: 1, proofs: 0, crew_done: false },
+  day_summary: { check_ins: 3, proofs: 5, crew_done: false },
 };
 const read: FeedItem = {
   id: "c2",
@@ -68,16 +68,39 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("the crew feed", () => {
-  it("says who did what and when, with three proofs and +N, and opens them", async () => {
-    vi.spyOn(api, "GET").mockImplementation((() =>
-      ok({ results: [walked, read], next: null })) as never);
-    renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" /> }]);
+const members = [crewDetail.members[0], crewDetail.members[1]].filter((m) => m !== undefined);
 
-    expect(await screen.findByText("Bogdan checked in Walk")).toBeInTheDocument();
-    expect(screen.getByText("Ana: 12 pages · Read")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Photo by Bogdan" })).toHaveLength(3);
+function showFeed(results: FeedItem[]) {
+  vi.spyOn(api, "GET").mockImplementation((() => ok({ results, next: null })) as never);
+  renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> }]);
+}
 
+const plainWalk = (id: string, member: typeof ana, at: string): FeedItem => ({
+  ...walked,
+  id,
+  member: person(member),
+  activity_at: at,
+  proofs: [],
+});
+
+describe("the crew journal", () => {
+  it("shows each day under its divider, with cards that say who did what", async () => {
+    showFeed([walked, read]);
+
+    expect(await screen.findByText("Bogdan checked in")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(2);
+    expect(screen.getByText("3 check-ins, 5 proofs")).toBeInTheDocument();
+    expect(screen.getByText("Streak 4")).toBeInTheDocument();
+    expect(screen.getByText("day 10 of 30")).toBeInTheDocument();
+    expect(screen.getByText("Ana added")).toBeInTheDocument();
+    expect(screen.getByText("+4 pages")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "12 of 20 pages" })).toBeInTheDocument();
+  });
+
+  it("shows three proofs with +N, and opens them", async () => {
+    showFeed([walked]);
+
+    expect(await screen.findAllByRole("button", { name: "Photo by Bogdan" })).toHaveLength(3);
     await userEvent.click(screen.getByRole("button", { name: "2 more" }));
 
     const viewer = await screen.findByRole("dialog", { name: "Proofs" });
@@ -85,25 +108,51 @@ describe("the crew feed", () => {
     expect(within(viewer).getByText("Bogdan, Walk")).toBeInTheDocument();
   });
 
-  it("shows older activity on request", async () => {
+  it("says plain check-ins of one challenge in one card", async () => {
+    showFeed([
+      plainWalk("w1", bogdan, "2026-11-10T09:00:00Z"),
+      plainWalk("w2", ana, "2026-11-10T08:00:00Z"),
+    ]);
+
+    expect(await screen.findByText("Bogdan and Ana checked in")).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+  });
+
+  it("gives a streak milestone and the crew's whole day cards of their own", async () => {
+    showFeed([
+      {
+        ...plainWalk("w1", bogdan, "2026-11-10T09:00:00Z"),
+        streak: 7,
+        milestone: { kind: "streak", n: 7 },
+        day_summary: { check_ins: 2, proofs: 0, crew_done: true },
+      },
+    ]);
+
+    expect(await screen.findByText("Bogdan keeps it up")).toBeInTheDocument();
+    expect(screen.getByText("days in a row")).toBeInTheDocument();
+    expect(screen.getByText("The whole crew finished the day")).toBeInTheDocument();
+  });
+
+  it("shows older days on request", async () => {
     const get = vi
       .spyOn(api, "GET")
       .mockImplementation(((_path: string, options: { params: { query: { cursor?: string } } }) =>
         options.params.query.cursor === "c2"
           ? ok({ results: [read], next: null })
           : ok({ results: [walked], next: "c2" })) as never);
-    renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" /> }]);
+    renderRoutes([
+      { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
+    ]);
 
     await userEvent.click(await screen.findByRole("button", { name: "Show older" }));
 
-    expect(await screen.findByText("Ana: 12 pages · Read")).toBeInTheDocument();
+    expect(await screen.findByText("Ana added")).toBeInTheDocument();
     expect(get).toHaveBeenLastCalledWith("/api/v1/feed", { params: { query: { cursor: "c2" } } });
     expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
   });
 
   it("says what will appear while the crew has done nothing yet", async () => {
-    vi.spyOn(api, "GET").mockImplementation((() => ok({ results: [], next: null })) as never);
-    renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" /> }]);
+    showFeed([]);
 
     expect(
       await screen.findByText("Check-ins and proofs from the crew will show here."),

@@ -42,14 +42,30 @@ function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = [], crewToda
 }
 
 describe("crew screen", () => {
-  it("starts with the proposals for the next challenges", async () => {
-    mockGets(meAs(bogdan));
+  it("starts with everyone's day, you first, and hides an empty pool", async () => {
+    mockGets(
+      meAs(bogdan),
+      [],
+      [
+        {
+          member: person(ana),
+          done: 1,
+          needed: 2,
+          challenges: [
+            { challenge_id: "walk", state: "done" },
+            { challenge_id: "read", state: "started" },
+          ],
+        },
+      ],
+    );
     renderScreen(<CrewRoute />);
 
-    expect(
-      await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Propose a challenge" })).toBeInTheDocument();
+    const stories = await screen.findByRole("list", { name: "Today in the crew" });
+    const items = within(stories).getAllByRole("listitem");
+    expect(items.map((item) => item.textContent)).toEqual(["BYou-", "AAna1/2"]);
+    expect(within(stories).getByRole("img", { name: "Ana: 1 of 2 today" })).toBeInTheDocument();
+    expect(within(stories).getByRole("img", { name: "Bogdan: nothing due today" })).toBeTruthy();
+    expect(screen.queryByRole("list", { name: "Proposals" })).not.toBeInTheDocument();
   });
 
   it("lists members in join order and marks you", async () => {
@@ -77,7 +93,8 @@ describe("crew screen", () => {
     );
     renderScreen(<CrewRoute />);
 
-    expect(await screen.findByRole("img", { name: "Ana: 2 of 2 today" })).toBeInTheDocument();
+    const list = await screen.findByRole("list", { name: "Crew members" });
+    expect(within(list).getByRole("img", { name: "Ana: 2 of 2 today" })).toBeInTheDocument();
     expect(screen.getByText("Admin · 2 of 2 today")).toBeInTheDocument();
     expect(screen.getByText("Member · 0 of 1 today")).toBeInTheDocument();
   });

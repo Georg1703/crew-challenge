@@ -12,6 +12,16 @@ export interface Prepared {
   body: Blob;
   contentType: string;
   thumb: Blob | null;
+  /** A video's length in whole seconds, when the phone could read it. */
+  duration?: number | null;
+}
+
+/** The API takes 1 second to 3 hours; anything else stays unknown. */
+const MAX_SECONDS = 3 * 60 * 60;
+
+function seconds(value: number): number | null {
+  const whole = Math.round(value);
+  return Number.isFinite(value) && whole >= 1 && whole <= MAX_SECONDS ? whole : null;
 }
 
 /** name|size|lastModified: picking the same file again finds its unfinished upload. */
@@ -64,6 +74,7 @@ function once(target: HTMLMediaElement, event: string, ms: number) {
 export async function prepareVideo(file: File, wait = POSTER_WAIT_MS): Promise<Prepared> {
   const url = URL.createObjectURL(file);
   let thumb: Blob | null = null;
+  let duration: number | null = null;
   try {
     const video = document.createElement("video");
     video.muted = true;
@@ -71,6 +82,7 @@ export async function prepareVideo(file: File, wait = POSTER_WAIT_MS): Promise<P
     video.preload = "auto";
     video.src = url;
     await once(video, "loadeddata", wait);
+    duration = seconds(video.duration);
     video.currentTime = Math.min(0.1, video.duration || 0);
     await once(video, "seeked", wait);
     thumb = await draw(video, video.videoWidth, video.videoHeight, THUMB_MAX_PX);
@@ -79,5 +91,5 @@ export async function prepareVideo(file: File, wait = POSTER_WAIT_MS): Promise<P
   } finally {
     URL.revokeObjectURL(url);
   }
-  return { body: file, contentType: file.type, thumb };
+  return { body: file, contentType: file.type, thumb, duration };
 }

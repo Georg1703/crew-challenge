@@ -86,7 +86,37 @@
     "revokeBody": "The link {{code}} will stop working. You can send a new one any time.",
     "revokeConfirm": "Cancel the invite",
     "revokeKeep": "Keep it",
-    "revoked": "Invite cancelled"
+    "revoked": "Invite cancelled",
+    "journal": {
+      "label": "Crew journal",
+      "storiesLabel": "Today in the crew",
+      "you": "You",
+      "nothingDue": "{{name}}: nothing due today",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "checkIns_one": "{{count}} check-in",
+      "checkIns_few": "{{count}} check-ins",
+      "checkIns_other": "{{count}} check-ins",
+      "proofs_one": "{{count}} proof",
+      "proofs_few": "{{count}} proofs",
+      "proofs_other": "{{count}} proofs",
+      "checked": "{{name}} checked in",
+      "held": "{{name}} held on",
+      "added": "{{name}} added",
+      "group": "{{names}} checked in",
+      "crewDay": "The whole crew finished the day",
+      "crewDayLabel": "The whole crew",
+      "milestone": "{{name}} keeps it up",
+      "inARow_one": "day in a row",
+      "inARow_few": "days in a row",
+      "inARow_other": "days in a row",
+      "streak": "Streak {{count}}",
+      "dayOf": "day {{n}} of {{total}}",
+      "todayTotal": "{{total}} today",
+      "dayTotal": "{{total}} that day",
+      "ofTarget": "{{total}} of {{target}} {{unit}}",
+      "week": "Last 7 days: {{done}} done"
+    }
   },
   "me": {
     "title": "Me",
@@ -420,12 +450,15 @@
       "targetValue": "Write a number above zero."
     },
     "today": {
-      "poolTitle": "Proposals for the next challenges",
       "chooseTitle": "No challenge for {{month}} yet",
       "none": "Nobody has proposed anything yet. Be the first.",
-      "one": "One proposal. Vote if you like it.",
-      "some": "Proposals: {{n}}. Vote for the ones you like.",
-      "see": "See the proposals"
+      "label": "Proposals",
+      "waiting_one": "{{count}} proposal waits for your vote",
+      "waiting_few": "{{count}} proposals wait for your vote",
+      "waiting_other": "{{count}} proposals wait for your vote",
+      "listed_one": "{{count}} proposal in the list",
+      "listed_few": "{{count}} proposals in the list",
+      "listed_other": "{{count}} proposals in the list"
     },
     "poolSize": "{{n}} of {{limit}}",
     "poolEmpty": "No proposals yet. Propose what the crew could do next.",
@@ -591,11 +624,7 @@
     "uploading": "Check in. Uploading proof, {{percent}}%"
   },
   "feed": {
-    "title": "Activity",
     "empty": "Check-ins and proofs from the crew will show here.",
-    "checked": "{{name}} checked in {{title}}",
-    "held": "{{name}} held on: {{title}}",
-    "amount": "{{name}}: {{total}} {{unit}} · {{title}}",
     "older": "Show older",
     "proof": "{{kind}} by {{name}}",
     "proofProcessing": "{{kind}} by {{name}}, being prepared",

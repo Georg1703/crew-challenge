@@ -2,17 +2,21 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
-import { ProposalsCard } from "@/features/challenges";
+import { ProposalsRow } from "@/features/challenges";
 import { CrewFeed, useToday } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
 import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
 
 import { useCrew } from "../api";
+import { CrewStories } from "../components/CrewStories";
 import { InviteSheet } from "../components/InviteSheet";
 import { MemberList } from "../components/MemberList";
 import { PendingInvites } from "../components/PendingInvites";
 
-/** Crew: the proposals, the members with their day so far, the activity; admins also invite. */
+/**
+ * Echipa, the crew's journal: everyone's day as a row of rings, the proposals when there are
+ * some, then day by day what the crew did. Members and invites stay below.
+ */
 export function CrewRoute() {
   const { t } = useTranslation();
   const me = useMe();
@@ -37,13 +41,18 @@ export function CrewRoute() {
       )}
       {crew.data && (
         <>
-          <ProposalsCard isAdmin={isAdmin} timeZone={crew.data.timezone} />
+          <CrewStories
+            members={crew.data.members}
+            meId={me.data?.member?.id}
+            today={today.data?.crew}
+          />
+          <ProposalsRow isAdmin={isAdmin} timeZone={crew.data.timezone} />
+          <CrewFeed timeZone={crew.data.timezone} members={crew.data.members} />
           <MemberList
             members={crew.data.members}
             meId={me.data?.member?.id}
             today={today.data?.crew}
           />
-          <CrewFeed timeZone={crew.data.timezone} />
           {isAdmin && (
             <>
               <Button

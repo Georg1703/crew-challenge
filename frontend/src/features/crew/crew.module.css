@@ -30,3 +30,20 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* The avatar row scrolls sideways; you stay first. */
+.stories {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.story {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}

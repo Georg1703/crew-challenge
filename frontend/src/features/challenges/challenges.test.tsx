@@ -6,7 +6,7 @@ import { api } from "@/api";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
-import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsCard } from ".";
+import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsRow } from ".";
 import type { Challenge, Pool } from "./api";
 import { monthOptions } from "./months";
 
@@ -507,14 +507,18 @@ describe("one challenge", () => {
   });
 });
 
-describe("proposals card", () => {
-  const card = (member: typeof ana, now: string, chosen: Challenge[] = []) => {
-    mockGets(member, { chosen });
+describe("proposals row", () => {
+  const row = (
+    member: typeof ana,
+    now: string,
+    { chosen = [] as Challenge[], proposals = pool } = {},
+  ) => {
+    mockGets(member, { chosen, proposals });
     renderRoutes([
       {
         path: "/",
         element: (
-          <ProposalsCard
+          <ProposalsRow
             isAdmin={member.role === "admin"}
             timeZone="Europe/Chisinau"
             now={new Date(now)}
@@ -524,25 +528,35 @@ describe("proposals card", () => {
     ]);
   };
 
-  it("invites people to vote on the proposals", async () => {
-    card(bogdan, "2026-10-26T09:00:00Z");
-    expect(
-      await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("One proposal. Vote if you like it.")).toBeInTheDocument();
+  it("says how many proposals wait for your vote, as a link to them", async () => {
+    row(bogdan, "2026-10-26T09:00:00Z");
+    const link = await screen.findByRole("link", { name: /1 proposal waits for your vote/ });
+    expect(link).toHaveAttribute("href", "/challenges");
+  });
+
+  it("counts the list once you voted for everything", async () => {
+    row(bogdan, "2026-10-26T09:00:00Z", {
+      proposals: { ...pool, proposals: [{ ...pushUps, my_vote: true }] },
+    });
+    expect(await screen.findByRole("link", { name: /1 proposal in the list/ })).toBeInTheDocument();
+  });
+
+  it("is not there while the pool is empty", async () => {
+    row(bogdan, "2026-10-26T09:00:00Z", { proposals: { ...pool, proposals: [], size: 0 } });
+    await waitFor(() => expect(api.GET).toHaveBeenCalledWith("/api/v1/proposals"));
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("reminds admins from the 25th when next month has no challenge", async () => {
-    card(ana, "2026-10-26T09:00:00Z");
+    row(ana, "2026-10-26T09:00:00Z");
     expect(
-      await screen.findByRole("heading", { name: "No challenge for November yet" }),
+      await screen.findByRole("link", { name: /No challenge for November yet/ }),
     ).toBeInTheDocument();
   });
 
   it("does not remind admins when next month has a challenge", async () => {
-    card(ana, "2026-10-26T09:00:00Z", [scheduled()]);
-    expect(
-      await screen.findByRole("heading", { name: "Proposals for the next challenges" }),
-    ).toBeInTheDocument();
+    row(ana, "2026-10-26T09:00:00Z", { chosen: [scheduled()] });
+    expect(await screen.findByRole("link", { name: /1 proposal waits/ })).toBeInTheDocument();
+    expect(screen.queryByText(/No challenge for November/)).toBeNull();
   });
 });

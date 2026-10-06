@@ -193,6 +193,7 @@ export async function upload({
     size: prepared.body.size,
     fingerprint: kind === "video" ? print : "",
     thumb_size: prepared.thumb?.size ?? null,
+    duration: prepared.duration ?? null,
   });
   const proofId = plan.proof.id;
   if (plan.thumb_put_url && prepared.thumb) {

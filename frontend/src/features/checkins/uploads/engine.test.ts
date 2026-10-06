@@ -69,7 +69,12 @@ vi.mock("./media", () => ({
     contentType: "image/jpeg",
     thumb: new Blob(["t"], { type: "image/jpeg" }),
   }),
-  prepareVideo: async (file: File) => ({ body: file, contentType: "video/mp4", thumb: null }),
+  prepareVideo: async (file: File) => ({
+    body: file,
+    contentType: "video/mp4",
+    thumb: null,
+    duration: 42,
+  }),
 }));
 vi.mock("@/api", async (original) => ({
   ...(await original<typeof ApiModule>()),
@@ -153,7 +158,14 @@ describe("upload engine", () => {
 
     expect(post).toHaveBeenCalledWith(START, {
       params: { path: { challenge_id: "walk", day: "2026-11-10" } },
-      body: { kind: "photo", content_type: "image/jpeg", size: 5, fingerprint: "", thumb_size: 1 },
+      body: {
+        kind: "photo",
+        content_type: "image/jpeg",
+        size: 5,
+        fingerprint: "",
+        thumb_size: 1,
+        duration: null,
+      },
     });
     expect(putFile).toHaveBeenCalledWith("https://s3/thumb", expect.any(Blob), "image/jpeg");
     expect(uppy().hooks).toMatchObject({
@@ -255,6 +267,7 @@ describe("upload engine", () => {
           kind: "video",
           fingerprint: "clip.mp4|20",
           thumb_size: null,
+          duration: 42,
         }),
       }),
     );

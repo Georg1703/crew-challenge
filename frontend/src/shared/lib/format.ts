@@ -98,3 +98,12 @@ export function formatDayLong(day: string, language: string): string {
   }).format(new Date(`${day}T00:00:00Z`));
   return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
 }
+
+/** A video's length: "0:42", "12:05", "1:02:03". */
+export function formatDuration(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const s = String(whole % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}

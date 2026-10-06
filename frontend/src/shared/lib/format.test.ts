@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDayLong, formatWhen } from "./format";
+import { formatDayLong, formatDuration, formatWhen } from "./format";
 
 const NOW = new Date("2026-11-10T19:00:00Z"); // 21:00 in Chisinau
 const when = (iso: string, language = "ro") => formatWhen(iso, language, "Europe/Chisinau", NOW);
@@ -25,5 +25,13 @@ describe("formatDayLong", () => {
   it("names the weekday, capitalized for a heading", () => {
     expect(formatDayLong("2026-10-05", "ro")).toBe("Luni, 5 octombrie");
     expect(formatDayLong("2026-10-05", "en")).toBe("Monday, October 5");
+  });
+});
+
+describe("formatDuration", () => {
+  it("says a video's length in minutes, or hours past one hour", () => {
+    expect(formatDuration(42)).toBe("0:42");
+    expect(formatDuration(725)).toBe("12:05");
+    expect(formatDuration(3723)).toBe("1:02:03");
   });
 });

@@ -86,7 +86,37 @@
     "revokeBody": "Linkul {{code}} nu va mai merge. Poți trimite oricând unul nou.",
     "revokeConfirm": "Anulează invitația",
     "revokeKeep": "Păstreaz-o",
-    "revoked": "Invitație anulată"
+    "revoked": "Invitație anulată",
+    "journal": {
+      "label": "Jurnalul echipei",
+      "storiesLabel": "Azi în echipă",
+      "you": "Tu",
+      "nothingDue": "{{name}}: nimic de făcut azi",
+      "today": "Azi",
+      "yesterday": "Ieri",
+      "checkIns_one": "{{count}} bifare",
+      "checkIns_few": "{{count}} bifări",
+      "checkIns_other": "{{count}} de bifări",
+      "proofs_one": "{{count}} dovadă",
+      "proofs_few": "{{count}} dovezi",
+      "proofs_other": "{{count}} de dovezi",
+      "checked": "{{name}} a bifat",
+      "held": "{{name}} a rezistat",
+      "added": "{{name}} a adăugat",
+      "group": "{{names}} au bifat",
+      "crewDay": "Toată echipa a terminat ziua",
+      "crewDayLabel": "Toată echipa",
+      "milestone": "{{name}} ține ritmul",
+      "inARow_one": "zi la rând",
+      "inARow_few": "zile la rând",
+      "inARow_other": "de zile la rând",
+      "streak": "Serie: {{count}}",
+      "dayOf": "ziua {{n}} din {{total}}",
+      "todayTotal": "{{total}} azi",
+      "dayTotal": "{{total}} în ziua aceea",
+      "ofTarget": "{{total}} din {{target}} {{unit}}",
+      "week": "Ultimele 7 zile: {{done}} bifate"
+    }
   },
   "me": {
     "title": "Eu",
@@ -420,12 +450,15 @@
       "targetValue": "Scrie un număr mai mare ca zero."
     },
     "today": {
-      "poolTitle": "Propuneri pentru următoarele provocări",
       "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
       "none": "Nimeni n-a propus nimic încă. Fii primul.",
-      "one": "O propunere. Votează dacă îți place.",
-      "some": "Propuneri: {{n}}. Votează-le pe cele care îți plac.",
-      "see": "Vezi propunerile"
+      "label": "Propuneri",
+      "waiting_one": "{{count}} propunere așteaptă votul tău",
+      "waiting_few": "{{count}} propuneri așteaptă votul tău",
+      "waiting_other": "{{count}} de propuneri așteaptă votul tău",
+      "listed_one": "{{count}} propunere în listă",
+      "listed_few": "{{count}} propuneri în listă",
+      "listed_other": "{{count}} de propuneri în listă"
     },
     "poolSize": "{{n}} din {{limit}}",
     "poolEmpty": "Încă nu e nicio propunere. Propune ce ar putea face echipa.",
@@ -591,11 +624,7 @@
     "uploading": "Bifează. Se încarcă dovada, {{percent}}%"
   },
   "feed": {
-    "title": "Activitate",
     "empty": "Bifările și dovezile echipei apar aici.",
-    "checked": "{{name}} a bifat {{title}}",
-    "held": "{{name}} a rezistat: {{title}}",
-    "amount": "{{name}}: {{total}} {{unit}} · {{title}}",
     "older": "Arată mai vechi",
     "proof": "{{kind}} de la {{name}}",
     "proofProcessing": "{{kind}} de la {{name}}, se pregătește",
