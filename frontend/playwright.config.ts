@@ -9,6 +9,9 @@ import { defineConfig, devices } from "@playwright/test";
 const backendEnv = {
   DJANGO_SETTINGS_MODULE: "config.settings.local",
   DJANGO_DEBUG: "true",
+  // Proofs upload to Django itself instead of S3 (integrations/storage/memory_views.py).
+  OBJECT_STORAGE_BACKEND: "memory",
+  TRANSCODER_BACKEND: "off",
   ...(process.env.E2E_DATABASE_URL ? { DATABASE_URL: process.env.E2E_DATABASE_URL } : {}),
 };
 

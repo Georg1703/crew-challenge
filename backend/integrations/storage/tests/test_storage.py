@@ -6,7 +6,8 @@ the real dev bucket by the upload smoke test. Tests never call AWS.
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
-from django.test import override_settings
+from django.http import Http404
+from django.test import RequestFactory, override_settings
 
 from integrations.storage import (
     MIN_PART_SIZE,
@@ -18,6 +19,7 @@ from integrations.storage import (
     get_object_storage,
 )
 from integrations.storage.base import sorted_parts
+from integrations.storage.memory_views import memory_bucket
 
 KEY = "originals/crew-1/proof-1.mp4"
 
@@ -146,3 +148,28 @@ def test_factory_rejects_unknown_backend():
     get_object_storage.cache_clear()
     with override_settings(OBJECT_STORAGE_BACKEND="ftp"), pytest.raises(ImproperlyConfigured):
         get_object_storage()
+
+
+def test_debug_urls_point_at_the_dev_view_which_stands_in_for_s3():
+    get_object_storage.cache_clear()
+    with override_settings(DEBUG=True):
+        storage = get_object_storage()
+    assert isinstance(storage, InMemoryObjectStorage)
+    assert storage.presign_get(key=KEY).startswith(f"/api/dev-storage/{KEY}?")
+    requests = RequestFactory()
+
+    def put(query: str, data: bytes, content_type: str = "video/mp4"):
+        request = requests.put(f"/api/dev-storage/{KEY}?{query}", data, content_type=content_type)
+        return memory_bucket(request, KEY)
+
+    upload_id = storage.create_multipart(key=KEY, content_type="video/mp4")
+    part = put(f"uploadId={upload_id}&partNumber=1", b"part")
+    assert part["ETag"] == storage.list_parts(key=KEY, upload_id=upload_id)[0].etag
+    assert put("uploadId=nope&partNumber=1", b"part").status_code == 400
+
+    whole = put("contentType=image/jpeg", b"jpg", "image/jpeg")
+    assert whole["Location"] == f"http://testserver/api/dev-storage/{KEY}"
+    served = memory_bucket(requests.get(f"/api/dev-storage/{KEY}"), KEY)
+    assert (served.content, served["Content-Type"]) == (b"jpg", "image/jpeg")
+    with pytest.raises(Http404):
+        memory_bucket(requests.get("/api/dev-storage/missing"), "missing")

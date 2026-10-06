@@ -19,6 +19,7 @@ def test_creates_a_challenge_running_this_month_once(settings):
     challenge = Challenge.objects.get(title="Plimbare (demo)")
     assert (str(challenge.start_date), str(challenge.end_date)) == ("2026-11-01", "2026-11-30")
     assert Participant.objects.filter(challenge=challenge).count() == 4
+    assert challenge.proof_kind == Challenge.ProofKind.PHOTO_OR_VIDEO
     assert "already runs" in out.getvalue()
 
 

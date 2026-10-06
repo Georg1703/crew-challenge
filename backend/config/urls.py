@@ -38,3 +38,9 @@ if settings.DEBUG:  # pragma: no cover - local development only
         path("api/schema", SpectacularAPIView.as_view(), name="schema"),
         path("api/docs", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
     ]
+
+    if settings.OBJECT_STORAGE_BACKEND == "memory":  # make e2e: the browser uploads here, not S3
+        from integrations.storage.memory import SERVED_AT
+        from integrations.storage.memory_views import memory_bucket
+
+        urlpatterns += [path(f"{SERVED_AT.lstrip('/')}<path:key>", memory_bucket)]

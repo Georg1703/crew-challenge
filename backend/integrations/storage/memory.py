@@ -1,4 +1,7 @@
-"""ObjectStorage kept in memory, for tests. Mirrors the S3 behavior services rely on."""
+"""ObjectStorage kept in memory, for tests. Mirrors the S3 behavior services rely on.
+
+With DEBUG (make e2e) its URLs point at memory_views.py, so a real browser can upload too.
+"""
 
 from __future__ import annotations
 
@@ -38,11 +41,15 @@ def _etag(data: bytes) -> str:
     return f'"{hashlib.md5(data, usedforsecurity=False).hexdigest()}"'
 
 
+SERVED_AT = "/api/dev-storage/"
+
+
 class InMemoryObjectStorage(ObjectStorage):
     """Use `upload_part()` in tests to play the browser's role."""
 
-    def __init__(self, *, bucket: str = "memory") -> None:
+    def __init__(self, *, bucket: str = "memory", url_base: str | None = None) -> None:
         self.bucket = bucket
+        self.url_base = url_base or f"memory://{bucket}/"
         self.uploads: dict[str, _PendingUpload] = {}
         self.objects: dict[str, _StoredObject] = {}
 
@@ -63,10 +70,10 @@ class InMemoryObjectStorage(ObjectStorage):
     def presign_put(
         self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
     ) -> str:
-        return f"memory://{self.bucket}/{key}?contentType={content_type}&expires={expires_in}"
+        return f"{self.url_base}{key}?contentType={content_type}&expires={expires_in}"
 
     def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
-        return f"memory://{self.bucket}/{key}?expires={expires_in}"
+        return f"{self.url_base}{key}?expires={expires_in}"
 
     def create_multipart(self, *, key: str, content_type: str) -> str:
         upload_id = uuid.uuid4().hex
@@ -84,7 +91,7 @@ class InMemoryObjectStorage(ObjectStorage):
         validate_part_number(part_number)
         self._pending(key, upload_id)
         return (
-            f"memory://{self.bucket}/{key}?uploadId={upload_id}"
+            f"{self.url_base}{key}?uploadId={upload_id}"
             f"&partNumber={part_number}&expires={expires_in}"
         )
 

@@ -1,8 +1,9 @@
 """Give the demo crew a challenge that runs today, for trying check-ins locally: `make seed`.
 
-"Plimbare (demo)": every day of the current month, the whole Demo Crew takes part. Scheduling
-through the app can only start a challenge tomorrow, so this writes the rows directly. Safe to run
-more than once (one per month). Refuses to run when DEBUG is off, so it never touches production.
+"Plimbare (demo)": every day of the current month, the whole Demo Crew takes part, with a photo
+or video as proof. Scheduling through the app can only start a challenge tomorrow, so this writes
+the rows directly. Safe to run more than once (one per month). Refuses to run when DEBUG is off,
+so it never touches production.
 """
 
 from datetime import timedelta
@@ -19,6 +20,7 @@ from apps.crews import selectors as crews
 from apps.crews.models import Crew
 
 TITLE = "Plimbare (demo)"
+PROOF_KIND = Challenge.ProofKind.PHOTO_OR_VIDEO
 
 
 class Command(BaseCommand):
@@ -32,7 +34,9 @@ class Command(BaseCommand):
         if crew is None:
             raise CommandError("Run seed_demo first: Demo Crew does not exist.")
         first, last = periods.month_of(clock.crew_today(crew))
-        if Challenge.objects.for_crew(crew).filter(title=TITLE, start_date=first).exists():
+        running = Challenge.objects.for_crew(crew).filter(title=TITLE, start_date=first)
+        if running.exists():
+            running.update(proof_kind=PROOF_KIND)  # one seeded before proofs existed takes them too
             self.stdout.write(f"{TITLE} already runs this month; nothing to do.")
             return
         members = crews.list_members(crew=crew)
@@ -43,6 +47,7 @@ class Command(BaseCommand):
             title=TITLE,
             icon="walk",
             frequency=Challenge.Frequency.DAILY,
+            proof_kind=PROOF_KIND,
             state=Challenge.State.CHOSEN,
             period_kind="month",
             period_start=first,

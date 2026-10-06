@@ -128,4 +128,6 @@ prefers reduced motion. One signature animation per screen; everything else stay
   `vi.spyOn(api, "GET")` returning `ok(data)` or `fail(status, {code})`, never by mocking `fetch`.
 - Tests query English text (the test setup switches i18n to English).
 - Playwright (`make e2e`) runs main flows against the real backend with the demo crew: login,
-  joining with an invite. Add a step when a main flow changes.
+  joining with an invite, adding a photo as proof. Add a step when a main flow changes. Its
+  backend uses in-memory storage: with `DEBUG`, the browser uploads to Django
+  (`/api/dev-storage/`, `integrations/storage/memory_views.py`) instead of S3, so e2e needs no AWS.
