@@ -187,8 +187,11 @@ describe("upload engine", () => {
 
     await uppy().emit("upload-progress", file, { bytesUploaded: 2, bytesTotal: 5 });
     expect(useUploads.getState().items[file.id]?.progress).toBe(0.4);
+    const put = vi.spyOn(api, "PUT");
+    await uppy().emit("s3-multipart:part-uploaded", file, { PartNumber: 1, ETag: '"e"' }); // Uppy does
     await uppy().emit("upload-success", file);
 
+    expect(put).not.toHaveBeenCalled(); // a photo has no parts to report
     expect(post).toHaveBeenCalledWith(COMPLETE, { params: { path: { proof_id: "p1" } } });
     expect(onDone).toHaveBeenCalled();
     expect(useUploads.getState().items).toEqual({});

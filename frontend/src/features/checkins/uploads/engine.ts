@@ -110,7 +110,8 @@ async function createUppy() {
   });
 
   uppy.on("s3-multipart:part-uploaded", (file, part) => {
-    if (!file) return;
+    // Uppy calls a photo's single PUT "part 1" too; only a video's parts are reported.
+    if (!file || (file as ProofFile).meta.kind !== "video") return;
     const proofId = (file as ProofFile).meta.proofId;
     reports.set(proofId, [
       ...(reports.get(proofId) ?? []),
