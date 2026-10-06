@@ -30,3 +30,51 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* The avatar row scrolls sideways; you stay first. */
+.stories {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.story {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+.memberHead {
+  display: flex;
+  justify-content: center;
+}
+
+.memberChallenge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.memberBars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.memberProofs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.memberProofs > :last-child {
+  align-self: stretch;
+}

@@ -7,7 +7,8 @@
     "saved": "Salvat",
     "close": "Închide",
     "copied": "Link copiat",
-    "somethingWrong": "Ceva nu a mers."
+    "somethingWrong": "Ceva nu a mers.",
+    "cancel": "Renunță"
   },
   "nav": {
     "label": "Navigare principală",
@@ -55,8 +56,7 @@
   "home": {
     "greeting": "Bună, {{name}}",
     "noChallengeTitle": "Încă nu e nicio provocare",
-    "noChallengeBody": "Când cineva din echipă publică una, o vezi aici.",
-    "membersTitle": "Echipa",
+    "noChallengeBody": "Provocările care încep apar aici. Propunerile sunt în Echipa.",
     "noCrewTitle": "Încă nu ești într-o echipă",
     "noCrewBody": "Cere cuiva din echipă un link de invitație."
   },
@@ -65,7 +65,8 @@
     "membersLabel": "Membrii echipei",
     "you": "tu",
     "admin": "Admin",
-    "member": "Membru",
+    "todayRow": "{{name}}: azi {{done}} din {{needed}}",
+    "todaySubtitle": "{{role}} · azi {{done}} din {{needed}}",
     "invite": "Invită pe cineva",
     "inviteTitle": "Invită pe cineva",
     "inviteBody": "Trimite linkul sau arată codul. Persoana își alege numele și parola și intră direct în echipă.",
@@ -84,7 +85,55 @@
     "revokeBody": "Linkul {{code}} nu va mai merge. Poți trimite oricând unul nou.",
     "revokeConfirm": "Anulează invitația",
     "revokeKeep": "Păstreaz-o",
-    "revoked": "Invitație anulată"
+    "revoked": "Invitație anulată",
+    "journal": {
+      "label": "Jurnalul echipei",
+      "storiesLabel": "Azi în echipă",
+      "you": "Tu",
+      "nothingDue": "{{name}}: nimic de făcut azi",
+      "today": "Azi",
+      "yesterday": "Ieri",
+      "checkIns_one": "{{count}} bifare",
+      "checkIns_few": "{{count}} bifări",
+      "checkIns_other": "{{count}} de bifări",
+      "proofs_one": "{{count}} dovadă",
+      "proofs_few": "{{count}} dovezi",
+      "proofs_other": "{{count}} de dovezi",
+      "checked": "{{name}} a bifat",
+      "held": "{{name}} a rezistat",
+      "added": "{{name}} a adăugat",
+      "group": "{{names}} au bifat",
+      "crewDay": "Toată echipa a terminat ziua",
+      "crewDayLabel": "Toată echipa",
+      "milestone": "{{name}} ține ritmul",
+      "inARow_one": "zi la rând",
+      "inARow_few": "zile la rând",
+      "inARow_other": "de zile la rând",
+      "streak": "Serie: {{count}}",
+      "dayOf": "ziua {{n}} din {{total}}",
+      "todayTotal": "{{total}} azi",
+      "dayTotal": "{{total}} în ziua aceea",
+      "ofTarget": "{{total}} din {{target}} {{unit}}",
+      "week": "Ultimele 7 zile: {{done}} bifate",
+      "fresh_one": "{{count}} dovadă nouă",
+      "fresh_few": "{{count}} dovezi noi",
+      "fresh_other": "{{count}} de dovezi noi"
+    },
+    "members": {
+      "title": "Membri",
+      "open": "Membri și invitații"
+    },
+    "memberPage": {
+      "title": "Membru",
+      "streak": "zile la rând",
+      "longest": "cea mai lungă serie",
+      "month": "din {{month}}",
+      "monthOf": "{{title}} luna aceasta",
+      "none": "Nicio provocare pe care o vezi luna aceasta.",
+      "proofs": "Dovezi",
+      "noProofs": "Încă nicio dovadă luna aceasta."
+    },
+    "member": "Membru"
   },
   "me": {
     "title": "Eu",
@@ -95,11 +144,19 @@
     "crewsTitle": "Echipele mele",
     "crewAs": "Ca {{name}}",
     "crewCurrent": "Acum",
-    "crewSwitched": "Ai trecut în {{crew}}"
+    "crewSwitched": "Ai trecut în {{crew}}",
+    "moreLabel": "Mai mult",
+    "challengesHint": "Propuneri, voturi și provocările echipei",
+    "theme": "Tema"
   },
   "languages": {
     "ro": "Română",
     "en": "English"
+  },
+  "themes": {
+    "system": "Ca telefonul",
+    "light": "Luminoasă",
+    "dark": "Întunecată"
   },
   "notFound": {
     "title": "Pagina nu există",
@@ -123,7 +180,33 @@
     "not_authenticated": "Intră din nou în cont.",
     "not_found": "Nu am găsit ce căutai.",
     "already_member": "Ești deja în echipa asta.",
-    "crew_not_found": "Nu ești în această echipă."
+    "crew_not_found": "Nu ești în această echipă.",
+    "challenge_not_found": "Provocarea nu există sau a fost retrasă.",
+    "not_your_proposal": "Doar cine a propus-o o poate modifica.",
+    "challenge_started": "Provocarea a început deja.",
+    "challenge_finished": "Provocarea s-a terminat.",
+    "period_over": "Luna aceasta s-a terminat. Alege una mai târzie.",
+    "not_chosen_yet": "Doar o provocare aleasă are participanți.",
+    "conflict": "Nu se poate acum.",
+    "pool_full": "Lista de propuneri e plină. Retrage una sau așteaptă până se alege una.",
+    "not_a_proposal": "Provocarea a fost deja aleasă, nu mai poate fi schimbată sau votată.",
+    "period_too_far": "Alege o lună cel mult cu un an înainte.",
+    "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
+    "period_kind_not_available": "Deocamdată se pot alege doar luni.",
+    "day_closed": "Ziua s-a încheiat. Poți bifa doar pentru azi.",
+    "not_taking_part": "Nu participi azi la provocarea asta.",
+    "not_due_today": "Provocarea asta nu cere nimic azi.",
+    "nothing_to_undo": "Nu e nimic de anulat azi.",
+    "not_a_participant": "Doar cei care participă pot face asta.",
+    "not_checked_in": "Bifează întâi, apoi adaugă dovada.",
+    "too_many_proofs": "O zi poate avea cel mult 5 dovezi.",
+    "upload_closed": "Încărcarea s-a încheiat. Alege din nou fișierul ca s-o iei de la capăt.",
+    "upload_incomplete": "Fișierul nu e încărcat complet. Încearcă din nou.",
+    "upload_size_mismatch": "Fișierul încărcat nu e cel ales. Alege-l din nou.",
+    "proof_not_found": "Dovada nu mai există.",
+    "upload_not_found": "Încărcarea nu mai există. Alege din nou fișierul.",
+    "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou.",
+    "member_not_found": "Persoana nu face parte din echipa ta."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -150,5 +233,421 @@
     "dayTitle": "Ziua se închide la miezul nopții",
     "dayBody": "După ora echipei: {{timezone}}.",
     "start": "Începe"
+  },
+  "challenges": {
+    "title": "Provocări",
+    "propose": "Propune o provocare",
+    "proposedBy": "Propusă de {{name}}, {{date}}",
+    "someone": "cineva",
+    "votes": "Voturi: {{n}}",
+    "vote": "Votează",
+    "voted": "Ai votat",
+    "choose": "Alege",
+    "dates": "{{start}} - {{end}}",
+    "until": "Până pe {{date}}",
+    "open": "Vezi provocarea",
+    "sections": {
+      "active": "Active acum",
+      "upcoming": "Urmează",
+      "finished": "Terminate",
+      "pool": "Propuneri"
+    },
+    "state": {
+      "proposed": "Propunere"
+    },
+    "phase": {
+      "upcoming": "Urmează",
+      "active": "Activă",
+      "finished": "Terminată"
+    },
+    "facts": {
+      "name": "Nume",
+      "often": "Cât de des",
+      "record": "Ce notezi",
+      "target": "Ținta",
+      "proof": "Dovada",
+      "period": "Perioada",
+      "proposed": "Propusă",
+      "chosen": "Aleasă",
+      "votes": "Voturi",
+      "who": "Cine participă"
+    },
+    "participantsTitle": "Participă",
+    "leftOn": "A ieșit pe {{date}}",
+    "optOut": "Nu particip",
+    "leave": "Ies din provocare",
+    "edit": "Modifică propunerea",
+    "withdraw": "Retrage propunerea",
+    "withdrawTitle": "Retragi propunerea?",
+    "withdrawBody": "Dispare din listă împreună cu voturile ei.",
+    "withdrawConfirm": "Retrage propunerea",
+    "withdrawn": "Propunere retrasă",
+    "published": "Propunere publicată",
+    "saved": "Propunere salvată",
+    "stepLabel": "Pasul {{n}} din {{total}}",
+    "back": "Înapoi",
+    "next": "Continuă",
+    "publish": "Publică propunerea",
+    "save": "Salvează modificările",
+    "reviewNote": "Echipa o vede imediat și poate vota. Un admin alege luna în care are loc.",
+    "editResetsVotes": "Dacă schimbi provocarea, voturile de până acum se șterg.",
+    "steps": {
+      "what": {
+        "title": "Ce provocare propui?"
+      },
+      "often": {
+        "title": "Cât de des?"
+      },
+      "record": {
+        "title": "Ce notezi la bifă?"
+      },
+      "proof": {
+        "title": "Ce dovadă cerem?"
+      },
+      "review": {
+        "title": "Verifică"
+      },
+      "who": {
+        "title": "Cine participă?"
+      }
+    },
+    "fields": {
+      "title": "Numele provocării",
+      "titleHint": "Scurt și clar, de exemplu „50 de flotări pe zi”.",
+      "icon": "Iconița",
+      "rules": "Regulile, pe scurt",
+      "rulesHint": "Ce contează și ce nu. Opțional.",
+      "frequency": "Cât de des",
+      "weekdays": "Zilele",
+      "times": "De câte ori",
+      "fewer": "Mai puțin",
+      "more": "Mai mult",
+      "measure": "La fiecare bifă",
+      "unit": "Unitatea",
+      "unitHint": "De exemplu km, pagini, minute.",
+      "target": "Ținta",
+      "targetValue": "Cât ({{unit}})",
+      "proof": "Dovada",
+      "proofRequired": "Dovada e obligatorie",
+      "proofRequiredHint": "Fără ea bifa nu contează."
+    },
+    "options": {
+      "frequency": {
+        "daily": {
+          "title": "În fiecare zi",
+          "description": "O bifă pe zi, toată luna"
+        },
+        "weekdays": {
+          "title": "În zilele alese",
+          "description": "De exemplu luni - vineri"
+        },
+        "times_per_week": {
+          "title": "De câteva ori pe săptămână",
+          "description": "În orice zile, de un număr de ori"
+        },
+        "times_per_period": {
+          "title": "De câteva ori pe lună",
+          "description": "De un număr de ori până la final"
+        },
+        "once": {
+          "title": "O singură dată",
+          "description": "Un obiectiv, până la final"
+        }
+      },
+      "measure": {
+        "check": {
+          "title": "Doar bifă",
+          "description": "Am făcut, atât"
+        },
+        "quantity": {
+          "title": "Un număr",
+          "description": "Kilometri, pagini, minute, flotări"
+        },
+        "abstain": {
+          "title": "M-am abținut",
+          "description": "Pentru „fără zahăr”, „fără telefon”"
+        }
+      },
+      "target": {
+        "none": "Fără țintă",
+        "per_check_in": "La fiecare bifă",
+        "per_week": "Pe săptămână",
+        "per_period": "Pe toată luna"
+      },
+      "proof": {
+        "none": {
+          "title": "Fără dovadă",
+          "description": "Pe cuvânt"
+        },
+        "photo": {
+          "title": "Poză",
+          "description": "Rapid, pentru aproape orice"
+        },
+        "video": {
+          "title": "Video",
+          "description": "Pentru mișcare: flotări, exerciții"
+        },
+        "photo_or_video": {
+          "title": "Poză sau video",
+          "description": "Fiecare alege"
+        }
+      }
+    },
+    "describe": {
+      "daily": "În fiecare zi",
+      "weekdays": "În zilele: {{days}}",
+      "oncePerWeek": "O dată pe săptămână",
+      "timesPerWeek": "De {{n}} ori pe săptămână",
+      "oncePerPeriod": "O dată în lună",
+      "timesPerPeriod": "De {{n}} ori în lună",
+      "once": "O dată, până la final",
+      "check": "Doar bifă",
+      "quantity": "Un număr ({{unit}})",
+      "abstain": "Te abții",
+      "target": {
+        "per_check_in": "Cel puțin {{value}} {{unit}} la fiecare bifă",
+        "per_week": "{{value}} {{unit}} pe săptămână",
+        "per_period": "{{value}} {{unit}} în toată luna"
+      },
+      "proof": {
+        "none": "Fără dovadă",
+        "photo": "Poză",
+        "video": "Video",
+        "photo_or_video": "Poză sau video"
+      },
+      "proofRequired": "{{kind}}, obligatorie",
+      "proofOptional": "{{kind}}, opțională"
+    },
+    "icons": {
+      "dumbbell": "Sală",
+      "running": "Alergare",
+      "book": "Citit",
+      "water": "Apă",
+      "sugar": "Dulciuri",
+      "phone": "Telefon",
+      "sleep": "Somn",
+      "walk": "Drumeție",
+      "meditate": "Liniște",
+      "food": "Mâncare",
+      "money": "Bani",
+      "star": "Altceva"
+    },
+    "days": {
+      "short": {
+        "0": "L",
+        "1": "M",
+        "2": "M",
+        "3": "J",
+        "4": "V",
+        "5": "S",
+        "6": "D"
+      },
+      "abbr": {
+        "0": "lun",
+        "1": "mar",
+        "2": "mie",
+        "3": "joi",
+        "4": "vin",
+        "5": "sâm",
+        "6": "dum"
+      },
+      "long": {
+        "0": "luni",
+        "1": "marți",
+        "2": "miercuri",
+        "3": "joi",
+        "4": "vineri",
+        "5": "sâmbătă",
+        "6": "duminică"
+      }
+    },
+    "errors": {
+      "title": "Dă-i un nume provocării.",
+      "weekdays": "Alege cel puțin o zi.",
+      "unit": "Scrie unitatea, de exemplu km.",
+      "targetValue": "Scrie un număr mai mare ca zero."
+    },
+    "today": {
+      "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
+      "none": "Nimeni n-a propus nimic încă. Fii primul.",
+      "label": "Propuneri",
+      "waiting_one": "{{count}} propunere așteaptă votul tău",
+      "waiting_few": "{{count}} propuneri așteaptă votul tău",
+      "waiting_other": "{{count}} de propuneri așteaptă votul tău",
+      "listed_one": "{{count}} propunere în listă",
+      "listed_few": "{{count}} propuneri în listă",
+      "listed_other": "{{count}} de propuneri în listă"
+    },
+    "poolSize": "{{n}} din {{limit}}",
+    "poolEmpty": "Încă nu e nicio propunere. Propune ce ar putea face echipa.",
+    "poolFull": "Lista e plină ({{limit}} propuneri). Retrage una sau așteaptă până se alege una.",
+    "sort": {
+      "label": "Ordinea",
+      "newest": "Cele mai noi",
+      "votes": "Cele mai votate"
+    },
+    "proposingNote": "Echipa votează, un admin alege când are loc.",
+    "editingNote": "Modifici propunerea ta",
+    "chosenBy": "Aleasă de {{name}}, {{date}}",
+    "schedule": {
+      "open": "Alege luna",
+      "title": "Când are loc „{{title}}”?",
+      "moveTitle": "Mută „{{title}}”",
+      "month": "Luna",
+      "wholeMonth": "Toată luna",
+      "fromTomorrow": "De mâine, {{date}}",
+      "body": "Participă toată echipa. Oricine se poate retrage până începe. Poți schimba luna până atunci.",
+      "moveBody": "Participă din nou toți, și cei care s-au retras.",
+      "confirm": "Alege pentru {{month}}",
+      "done": "Programată pentru {{month}}",
+      "move": "Mută în altă lună",
+      "back": "Înapoi la propuneri",
+      "backDone": "E din nou printre propuneri"
+    },
+    "periodFrom": "{{month}}, din {{date}}",
+    "who": {
+      "title": "Cine participă",
+      "label": "Echipa",
+      "creator": "Ai propus-o",
+      "everyone": "Participă toată echipa.",
+      "count": "Participă {{n}} din {{total}}. Doar ei văd provocarea.",
+      "cardCount": "Participanți: {{n}}",
+      "edit": "Modifică participanții",
+      "save": "Salvează",
+      "saved": "Participanții au fost salvați",
+      "note": "Cine e scos nu mai vede provocarea și își pierde votul.",
+      "adminOnly": "O vezi pentru că ești admin; nu participi.",
+      "short": "{{n}} din {{total}}"
+    },
+    "factsLabel": "Ce cere provocarea",
+    "periodLine": "Pentru {{period}}",
+    "checkIn": "Bifează azi",
+    "optOutTitle": "Nu participi?",
+    "optOutBody": "Provocarea dispare din lista ta și nu mai poți reveni în ea.",
+    "optedOut": "Nu mai participi",
+    "leaveTitle": "Ieși din provocare?",
+    "leaveBody": "Provocarea dispare din lista ta și nu mai poți reveni. Zilele bifate până azi rămân pe tabla echipei.",
+    "left": "Ai ieșit din provocare"
+  },
+  "checkins": {
+    "today": "azi",
+    "ringLabel": "{{done}} din {{total}} bifate azi",
+    "dayDone": "Ziua e bifată",
+    "restTitle": "Azi te odihnești",
+    "restBody": "Provocările tale nu cer nimic azi.",
+    "timeLeft": "Mai ai {{h}} h {{m}} min",
+    "hold": "Ține apăsat ca să bifezi",
+    "holdAbstain": "Ține apăsat: am rezistat azi",
+    "notDue": "Azi nu se cere",
+    "doneToday": "Bifat azi",
+    "doneAbstain": "Ai rezistat azi",
+    "doneShort": "Gata",
+    "checkedIn": "Bifat",
+    "added": "Ai adăugat {{amount}} {{unit}}",
+    "undo": "Anulează",
+    "undone": "Am anulat",
+    "plus": "+{{n}}",
+    "other": "Altul",
+    "totalOf": "{{total}} / {{goal}} {{unit}}",
+    "totalToday": "{{total}} {{unit}} azi",
+    "streak": "Serie: {{n}}",
+    "progress": {
+      "days": {
+        "week": "{{done}} din {{goal}} săptămâna asta",
+        "period": "{{done}} din {{goal}} până la final"
+      },
+      "amount": {
+        "week": "{{done}} / {{goal}} {{unit}} săptămâna asta",
+        "period": "{{done}} / {{goal}} {{unit}} până la final"
+      }
+    },
+    "weekLabel": "Săptămâna asta",
+    "states": {
+      "done": "bifat",
+      "partial": "început",
+      "todo": "de bifat",
+      "open": "poți bifa",
+      "missed": "ratat",
+      "not_due": "nu se cere",
+      "future": "urmează",
+      "outside": "nu participi"
+    },
+    "amountTitle": "Cât adaugi?",
+    "amountLabel": "Câte {{unit}}",
+    "amountAdd": "Adaugă",
+    "amountError": "Scrie un număr mai mare ca zero.",
+    "fraction": "{{done}}/{{total}}",
+    "board": {
+      "whereLabel": "Unde e provocarea",
+      "dayOf": "Ziua {{day}} din {{total}}",
+      "daysLeft": "Zile rămase: {{n}}",
+      "ended": "S-a încheiat pe {{date}}",
+      "stats": {
+        "done": "zile bifate de echipă",
+        "missed": "zile ratate",
+        "today": "de bifat azi"
+      },
+      "title": "Cum merge fiecare",
+      "streak": "seria: {{n}}",
+      "notYet": "azi încă nu",
+      "left": "a ieșit pe {{date}}",
+      "doneDays": "{{n}} bifate",
+      "rowLabel": "{{name}}: {{done}} bifate, {{missed}} ratate",
+      "legend": {
+        "done": "bifat",
+        "missed": "ratat",
+        "todo": "azi, de bifat",
+        "future": "urmează",
+        "proof": "cu dovadă"
+      },
+      "previous": "Luna dinainte",
+      "next": "Luna următoare",
+      "withProof": "zile cu dovadă: {{count}}"
+    },
+    "sheetTitle": "Ce bifezi acum?",
+    "tabLabel": "Bifează",
+    "day": {
+      "previous": "Ziua anterioară",
+      "next": "Ziua următoare"
+    },
+    "withProof": ", cu dovadă"
+  },
+  "proofs": {
+    "add": "Adaugă o poză sau un video",
+    "addPhoto": "Adaugă o poză",
+    "addVideo": "Adaugă un video",
+    "nudge": "Adaugă o poză sau un video ca dovadă pentru azi.",
+    "kind": {
+      "photo": "Poză",
+      "video": "Video"
+    },
+    "tile": {
+      "ready": "{{kind}}. Atinge pentru a deschide",
+      "uploading": "{{kind}}, {{percent}}% încărcat. Atinge ca să pui pauză",
+      "paused": "{{kind}}, în așteptare. Atinge ca să continui",
+      "waiting": "{{kind}}, neterminat. Alege din nou același fișier ca să continui",
+      "processing": "{{kind}}, se pregătește",
+      "failed": "{{kind}}: nu s-a putut încărca. Atinge ca să încerci din nou",
+      "failedSaved": "{{kind}}: nu s-a putut încărca"
+    },
+    "remove": "Șterge dovada",
+    "removed": "Dovadă ștearsă",
+    "pickAgain": "Alege din nou același video ca să continui de unde s-a oprit.",
+    "bigTitle": "Încarci {{size}} GB?",
+    "bigBody": "Videoul e mare și poate folosi multe date mobile. Se încarcă în timp ce folosești aplicația.",
+    "bigUpload": "Încarcă-l",
+    "viewer": {
+      "label": "Dovezi",
+      "previous": "Dovada anterioară",
+      "next": "Dovada următoare"
+    },
+    "uploading": "Bifează. Se încarcă dovada, {{percent}}%"
+  },
+  "feed": {
+    "empty": "Bifările și dovezile echipei apar aici.",
+    "older": "Arată mai vechi",
+    "proof": "{{kind}} de la {{name}}",
+    "proofProcessing": "{{kind}} de la {{name}}, se pregătește",
+    "more": "încă {{count}}"
   }
 }

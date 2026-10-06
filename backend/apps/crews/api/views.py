@@ -30,7 +30,6 @@ from .serializers import (
     MeOut,
     MePatchIn,
     PendingInviteOut,
-    RotationIn,
 )
 
 
@@ -98,25 +97,12 @@ class ActiveCrewView(APIView):
 
 
 class CrewView(APIView):
-    """The crew the user is acting in, with members in rotation order."""
+    """The crew the user is acting in, with its members in the order they joined."""
 
     permission_classes = [IsCrewMember]
 
     @extend_schema(responses=CrewDetailOut, operation_id="crew_retrieve")
     def get(self, request: Request) -> Response:
-        return Response(crew_payload(request.member))  # type: ignore[attr-defined]
-
-
-class RotationView(APIView):
-    """Admin: set the proposer order. Send every member id once, in the new order."""
-
-    permission_classes = [IsCrewMember]
-
-    @extend_schema(request=RotationIn, responses=CrewDetailOut, operation_id="crew_rotation_update")
-    def patch(self, request: Request) -> Response:
-        data = RotationIn(data=request.data)
-        data.is_valid(raise_exception=True)
-        services.reorder_rotation(by=request.member, member_ids=data.validated_data["member_ids"])  # type: ignore[attr-defined]
         return Response(crew_payload(request.member))  # type: ignore[attr-defined]
 
 

@@ -1,0 +1,13 @@
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:5173",
+      "http://localhost:4173",
+      "https://*.trycloudflare.com"
+    ],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]

@@ -34,3 +34,10 @@ export const staggerStep = 0.06;
 
 /** Scale applied while a pressable element is held down. */
 export const pressScale = 0.96;
+
+/** Press-and-hold to confirm (check in): how long to hold, and the fill that shows it. */
+export const holdToConfirm = {
+  ms: 600,
+  fill: { duration: 0.6, ease: "linear" },
+  release: { duration: 0.15, ease: "easeOut" },
+} satisfies { ms: number; fill: Transition; release: Transition };

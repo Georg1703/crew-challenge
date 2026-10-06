@@ -25,7 +25,6 @@ class MemberFactory(factory.django.DjangoModelFactory[Member]):
     display_name = factory.Sequence(lambda n: f"Member {n}")
     avatar_seed = factory.Sequence(lambda n: f"{n:08x}")
     role = Member.Role.MEMBER
-    rotation_position = factory.LazyAttribute(lambda m: Member.objects.filter(crew=m.crew).count())
 
 
 class AdminFactory(MemberFactory):

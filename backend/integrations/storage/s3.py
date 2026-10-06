@@ -46,6 +46,22 @@ class S3ObjectStorage(ObjectStorage):
         self.bucket = bucket
         self.client = client
 
+    def presign_put(
+        self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
+    ) -> str:
+        # ContentType is signed: the browser must send the same Content-Type header.
+        return self.client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+
+    def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
+        return self.client.generate_presigned_url(
+            "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
+        )
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         with _translate_errors():
             response = self.client.create_multipart_upload(
@@ -129,6 +145,42 @@ class S3ObjectStorage(ObjectStorage):
             content_type=response.get("ContentType"),
             etag=response.get("ETag"),
         )
+
+    def delete(self, *, key: str) -> None:
+        with _translate_errors():
+            self.client.delete_object(Bucket=self.bucket, Key=key)  # S3 answers 204 when missing
+
+    def put(self, *, key: str, data: bytes, content_type: str) -> None:
+        with _translate_errors():
+            self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+    def copy(self, *, source: str, key: str) -> None:
+        with _translate_errors():  # one request up to 5 GB, which every proof is under
+            self.client.copy_object(
+                Bucket=self.bucket, Key=key, CopySource={"Bucket": self.bucket, "Key": source}
+            )
+
+    def _pages(self, prefix: str) -> Iterator[list[str]]:
+        """Keys under a prefix, in S3's (sorted) order, at most 1000 per page."""
+        paginator = self.client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            yield [item["Key"] for item in page.get("Contents", [])]
+
+    def list_keys(self, *, prefix: str) -> list[str]:
+        with _translate_errors():
+            return [key for page in self._pages(prefix) for key in page]
+
+    def delete_prefix(self, *, prefix: str) -> None:
+        with _translate_errors():
+            for keys in self._pages(prefix):  # a page fits one delete_objects call (1000 keys)
+                if not keys:
+                    continue
+                response = self.client.delete_objects(
+                    Bucket=self.bucket,
+                    Delete={"Objects": [{"Key": k} for k in keys], "Quiet": True},
+                )
+                if response.get("Errors"):  # S3 answers 200 even when some keys failed
+                    raise StorageError(f"Could not delete {response['Errors'][0]}")
 
 
 def _error_code(exc: ClientError) -> str:

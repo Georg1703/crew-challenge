@@ -14,6 +14,7 @@ dependencies = [
     "psycopg[binary]>=3.2,<3.3",
     "gunicorn>=23,<24",
     "boto3>=1.35,<2",
+    "cryptography>=44,<48",
 ]
 
 [dependency-groups]
@@ -162,12 +163,13 @@ name = "Only integrations talk to external SDKs"
 type = "forbidden"
 source_modules = ["apps", "config"]
 forbidden_modules = ["boto3", "botocore", "pywebpush"]
+allow_indirect_imports = true  # apps reach them only through integrations/* adapters
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on domain apps"
 type = "forbidden"
 source_modules = ["apps.core"]
-forbidden_modules = ["apps.accounts", "apps.crews"]
+forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.checkins", "apps.media"]
 ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
 
 [[tool.importlinter.contracts]]
@@ -175,6 +177,24 @@ name = "Accounts does not depend on crews (crews builds on accounts)"
 type = "forbidden"
 source_modules = ["apps.accounts"]
 forbidden_modules = ["apps.crews"]
+
+[[tool.importlinter.contracts]]
+name = "Crews and accounts do not depend on challenges (challenges builds on crews)"
+type = "forbidden"
+source_modules = ["apps.crews", "apps.accounts"]
+forbidden_modules = ["apps.challenges"]
+
+[[tool.importlinter.contracts]]
+name = "Check-ins build on challenges: nothing below depends on them"
+type = "forbidden"
+source_modules = ["apps.challenges", "apps.crews", "apps.accounts"]
+forbidden_modules = ["apps.checkins"]
+
+[[tool.importlinter.contracts]]
+name = "Media knows files, not challenges: check-ins build on it, never the other way"
+type = "forbidden"
+source_modules = ["apps.media"]
+forbidden_modules = ["apps.challenges", "apps.checkins"]
 
 [[tool.importlinter.contracts]]
 name = "Integrations do not depend on domain apps"

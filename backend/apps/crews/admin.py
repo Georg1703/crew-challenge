@@ -6,20 +6,20 @@ from .models import Crew, Invite, Member
 class MemberInline(admin.TabularInline):
     model = Member
     extra = 0
-    fields = ("display_name", "user", "role", "rotation_position")
-    ordering = ("rotation_position",)
+    fields = ("display_name", "user", "role")
+    ordering = ("created_at",)
 
 
 @admin.register(Crew)
 class CrewAdmin(admin.ModelAdmin):
-    list_display = ("name", "timezone", "proposal_deadline_day", "reveal_time", "created_at")
+    list_display = ("name", "timezone", "max_proposals", "created_at")
     search_fields = ("name",)
     inlines = [MemberInline]
 
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "crew", "user", "role", "rotation_position")
+    list_display = ("display_name", "crew", "user", "role", "created_at")
     list_filter = ("crew", "role")
     search_fields = ("display_name", "user__username")
 

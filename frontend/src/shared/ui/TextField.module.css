@@ -59,3 +59,8 @@
   color: var(--color-danger);
   font-weight: var(--weight-bold);
 }
+
+.multiline {
+  padding-block: var(--space-3);
+  resize: vertical;
+}

@@ -10,7 +10,7 @@ LOGIN = "/api/v1/auth/login"
 def test_csrf_endpoint_sets_the_cookie(api_client):
     response = api_client.get("/api/v1/auth/csrf")
     assert response.status_code == 200
-    assert response.cookies["csrftoken"].value
+    assert response.cookies["crew_csrftoken"].value
     assert response.json()["csrf_token"]
 
 
@@ -27,7 +27,7 @@ def test_login_starts_a_session(browser):
     member = MemberFactory.create(user__username="ana")
     response = browser.post(LOGIN, {"username": "Ana", "password": DEFAULT_PASSWORD}, format="json")
     assert response.status_code == 204
-    assert response.cookies["sessionid"]["httponly"]
+    assert response.cookies["crew_session"]["httponly"]
     me = browser.get("/api/v1/me").json()
     assert me["member"]["id"] == str(member.id)
 
@@ -57,7 +57,7 @@ def test_logout_ends_the_session(browser):
     UserFactory.create(username="ana")
     browser.post(LOGIN, {"username": "ana", "password": DEFAULT_PASSWORD}, format="json")
     # Django rotates the CSRF token on login; the SPA re-reads the cookie.
-    browser.credentials(HTTP_X_CSRFTOKEN=browser.cookies["csrftoken"].value)
+    browser.credentials(HTTP_X_CSRFTOKEN=browser.cookies["crew_csrftoken"].value)
     assert browser.post("/api/v1/auth/logout").status_code == 204
     assert browser.get("/api/v1/me").status_code == 401
 

@@ -15,7 +15,6 @@ class MemberOut(serializers.Serializer):
     id = serializers.UUIDField()
     display_name = serializers.CharField()
     role = serializers.CharField()
-    rotation_position = serializers.IntegerField()
     avatar_seed = serializers.CharField()
 
 
@@ -23,12 +22,10 @@ class CrewOut(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     timezone = serializers.CharField()
-    proposal_deadline_day = serializers.IntegerField()
-    reveal_time = serializers.TimeField()
 
 
 class CrewDetailOut(CrewOut):
-    members = MemberOut(many=True, help_text="In rotation order.")
+    members = MemberOut(many=True, help_text="In the order they joined.")
 
 
 class MembershipOut(serializers.Serializer):
@@ -52,10 +49,6 @@ class ActiveCrewIn(serializers.Serializer):
 class MePatchIn(serializers.Serializer):
     display_name = serializers.CharField(max_length=DISPLAY_NAME_MAX, required=False)
     preferred_language = serializers.ChoiceField(choices=User.Language.choices, required=False)
-
-
-class RotationIn(serializers.Serializer):
-    member_ids = serializers.ListField(child=serializers.UUIDField(), min_length=1, max_length=100)
 
 
 class InviteOut(serializers.Serializer):
@@ -82,7 +75,7 @@ class InvitePreviewOut(serializers.Serializer):
         allow_null=True, help_text="Who created the invite. Only for valid invites."
     )
     members = MemberSummaryOut(
-        many=True, help_text="Members in rotation order. Empty unless the invite is valid."
+        many=True, help_text="Members in the order they joined. Empty unless the invite is valid."
     )
     already_member = serializers.BooleanField(
         help_text="True when the logged-in user is already in this crew."

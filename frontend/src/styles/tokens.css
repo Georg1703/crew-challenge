@@ -35,7 +35,9 @@
   --palette-clay-950: #3a2620;
   --palette-green-50: #e7f2e9;
   --palette-green-300: #6cc59a;
+  --palette-green-100: #cfe5d6;
   --palette-green-700: #2f7556;
+  --palette-green-900: #2a4a38;
   --palette-green-950: #1e3328;
   --palette-amber-50: #fff4d8;
   --palette-amber-300: #e8bc5a;
@@ -66,6 +68,7 @@
   --color-on-accent: var(--palette-white);
   --color-success: var(--palette-green-700);
   --color-success-soft: var(--palette-green-50);
+  --color-success-line: var(--palette-green-100); /* border of a card on success-soft */
   --color-warning: var(--palette-amber-700);
   --color-warning-soft: var(--palette-amber-50);
   --color-danger: var(--palette-red-700);
@@ -82,6 +85,18 @@
   /* QR codes stay dark on white in both themes so every camera can read them. */
   --color-code-bg: var(--palette-white);
   --color-code-fg: var(--palette-ink-900);
+
+  /* Photos and videos sit on near-black in both themes; marks drawn over them are white. */
+  --color-media-bg: var(--palette-night-950);
+  --color-on-media: var(--palette-white);
+  --color-media-scrim: var(--palette-black-alpha-60);
+
+  /* A video being converted: calm stripes in the surface colors (follows the theme). */
+  --media-pending: repeating-linear-gradient(
+    135deg,
+    var(--color-surface-sunken) 0 12px,
+    var(--color-border) 12px 24px
+  );
 
   /* ---------- Semantic: typography (Nunito Sans, 400 and 700 only) ---------- */
   --font-sans:
@@ -110,6 +125,7 @@
   --tracking-tight: -0.01em;
 
   /* ---------- Semantic: space (4px grid) ---------- */
+  --space-hair: 2px; /* between the bars of DayBars */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -121,7 +137,9 @@
   --space-12: 3rem;
 
   /* ---------- Semantic: shape and depth ---------- */
+  --radius-xs: 0.125rem; /* the bars of DayBars */
   --radius-sm: 0.5rem;
+  --radius-media-inner: 0.25rem; /* between proofs in a mosaic */
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
@@ -133,10 +151,13 @@
   --ring-gap: 0 0 0 2px var(--color-bg);
   --ring-done: var(--ring-gap), 0 0 0 4px var(--color-success);
   --ring-todo: var(--ring-gap), 0 0 0 4px var(--color-border);
+  --ring-current: var(--ring-gap), 0 0 0 4px var(--color-focus-ring);
 
   /* ---------- Semantic: layering ---------- */
+  --z-sticky: 1; /* a day's divider over the cards scrolling under it */
   --z-tabbar: 10;
   --z-sheet: 20;
+  --z-viewer: 25; /* above a sheet it opens from, under toasts */
   --z-toast: 30;
 
   /* ---------- Semantic: motion (CSS). JS springs live in src/shared/motion/presets.ts ---------- */
@@ -153,6 +174,13 @@
   --avatar-sm: 1.75rem;
   --avatar-md: 2.5rem;
   --avatar-lg: 4rem;
+  --progress-ring-size: 10.5rem;
+  --day-bar-height: 1.25rem; /* a day in a month of bars */
+  --proof-tile-size: 4.5rem; /* a proof thumbnail: four fit across a card on a phone */
+  --story-avatar-size: 4.25rem; /* the crew's avatars with their day rings */
+  --story-avatar-size-lg: 5.5rem; /* the same, at the top of a member's page */
+  --mini-bar-height: 1.125rem; /* a day in a MiniWeek */
+  --mini-bar-width: 0.5rem;
   --tabbar-height: 64px;
   --content-max-width: 34rem;
 }
@@ -174,6 +202,7 @@
     --color-on-accent: var(--palette-night-950);
     --color-success: var(--palette-green-300);
     --color-success-soft: var(--palette-green-950);
+    --color-success-line: var(--palette-green-900);
     --color-warning: var(--palette-amber-300);
     --color-warning-soft: var(--palette-amber-950);
     --color-danger: var(--palette-red-300);
@@ -202,6 +231,7 @@
   --color-on-accent: var(--palette-night-950);
   --color-success: var(--palette-green-300);
   --color-success-soft: var(--palette-green-950);
+  --color-success-line: var(--palette-green-900);
   --color-warning: var(--palette-amber-300);
   --color-warning-soft: var(--palette-amber-950);
   --color-danger: var(--palette-red-300);
@@ -214,6 +244,8 @@
   color-scheme: dark;
 }
 
+/* "only light": a forced light theme must also stop the browser darkening the page on its own
+   (Chrome on Android, "dark theme for sites"); plain "light" still allows that. */
 :root[data-theme="light"] {
-  color-scheme: light;
+  color-scheme: only light;
 }

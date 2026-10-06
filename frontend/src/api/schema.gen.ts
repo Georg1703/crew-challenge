@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description GET /api/v1/auth/csrf - sets the csrftoken cookie; call it before the first POST. */
+        /** @description GET /api/v1/auth/csrf - sets the crew_csrftoken cookie; call it before the first POST. */
         get: operations["auth_csrf"];
         put?: never;
         post?: never;
@@ -55,6 +55,201 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Scheduled challenges, by start date. */
+        get: operations["challenges_list"];
+        put?: never;
+        /** @description Add a proposal to the crew's pool (409 pool_full when it is full). */
+        post: operations["challenges_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["challenges_retrieve"];
+        /** @description The creator replaces their proposal while it is in the pool. Resets its votes. */
+        put: operations["challenges_update"];
+        post?: never;
+        /** @description The creator or an admin withdraws a proposal from the pool. */
+        delete: operations["challenges_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every participant's month, one state per day. */
+        get: operations["challenges_board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Check in for today (numbers add up). Returns the challenge as on today's card. */
+        post: operations["challenges_check_in"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins/{day}/last": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Undo today's last entry (`day` is today, YYYY-MM-DD). The last one takes its proofs. */
+        delete: operations["challenges_undo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/check-ins/{day}/proofs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a photo or video to today's check-in. Then send the file straight to storage. */
+        post: operations["proofs_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/days/{day}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Everyone's state, total and proofs on one day (`day` is YYYY-MM-DD), in join order. */
+        get: operations["challenges_day_sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description The creator changes who takes part while the challenge is a proposal. */
+        put: operations["challenges_participants"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/participation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * @description Opt out before the start, or leave a running challenge (today still counts).
+         *
+         *     Either way the challenge is gone for the member afterwards (an admin still sees it).
+         */
+        delete: operations["challenges_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Admin: schedule a proposal for a period, or move it before it starts. */
+        put: operations["challenges_schedule"];
+        post?: never;
+        /** @description Admin: put a scheduled challenge back in the pool before it starts. */
+        delete: operations["challenges_unschedule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/challenges/{challenge_id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Vote for a proposal (voting twice counts once). */
+        put: operations["challenges_vote"];
+        post?: never;
+        /** @description Take your vote back. */
+        delete: operations["challenges_vote_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -62,7 +257,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The crew the user is acting in, with members in rotation order. */
+        /** @description The crew the user is acting in, with its members in the order they joined. */
         get: operations["crew_retrieve"];
         put?: never;
         post?: never;
@@ -107,21 +302,21 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/crew/rotation": {
+    "/api/v1/feed": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** @description The crew's check-ins with their proofs, latest activity first. */
+        get: operations["feed_list"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Admin: set the proposer order. Send every member id once, in the new order. */
-        patch: operations["crew_rotation_update"];
+        patch?: never;
         trace?: never;
     };
     "/api/v1/invites/{code}": {
@@ -210,6 +405,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Set the cookies that let this browser load the crew's photos and videos.
+         *
+         *     Call it when the app starts, after switching crews, and before `expires_at`.
+         */
+        post: operations["media_session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/{member_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A member's month: streaks, each challenge's days and their proofs by day. */
+        get: operations["members_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove my proof and its files (only on its own day). */
+        delete: operations["proofs_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The file is uploaded: check it and show the proof. Safe to repeat. */
+        post: operations["proofs_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Fresh URLs to PUT these parts to (also when earlier ones expired). */
+        post: operations["proofs_sign_parts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/{proof_id}/parts/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Report a finished part and its ETag, so a later resume skips it. */
+        put: operations["proofs_record_part"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My unfinished video upload for this file (name|size|lastModified), or 404. */
+        get: operations["proofs_resume"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The crew's pool of proposals, newest first, with votes and how full it is. */
+        get: operations["proposals_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My challenges today with their state, and the crew's progress. */
+        get: operations["today_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -230,15 +582,150 @@ export interface components {
             /** Format: uuid */
             crew_id: string;
         };
+        BoardOut: {
+            days: string[];
+            rows: components["schemas"]["BoardRowOut"][];
+        };
+        BoardRowOut: {
+            member: components["schemas"]["PersonOut"];
+            /** @description One per day. */
+            states: components["schemas"]["DayStateEnum"][];
+            streak: number | null;
+            /** @description Days of the month with proof. */
+            proof_days: string[];
+        };
+        ChallengeBriefOut: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+        };
+        /** @description The creator's choices. Combinations are checked in services.clean_shape. */
+        ChallengeInRequest: {
+            title: string;
+            /** @default  */
+            rules: string;
+            /** @default star */
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            /** @default  */
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            /** @description For frequency=weekdays: 0 = Monday ... 6 = Sunday. */
+            weekdays?: number[];
+            times?: number | null;
+            /** @default none */
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: decimal */
+            target_value?: string | null;
+            /** @default none */
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            /** @default false */
+            proof_required: boolean;
+            /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
+            participant_ids?: string[] | null;
+        };
+        ChallengeOut: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            rules: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            weekdays: number[];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            state: components["schemas"]["ChallengeStateEnum"];
+            phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
+            period_kind: (components["schemas"]["PeriodKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date */
+            period_start: string | null;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            chosen_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            chosen_at: string | null;
+            created_by: components["schemas"]["PersonOut"] | null;
+            /** Format: date-time */
+            created_at: string;
+            revision: number;
+            vote_count: number;
+            voters: components["schemas"]["PersonOut"][];
+            /** @description The current member voted for it. */
+            my_vote: boolean;
+            /** @description Who takes part (and who left), in the order they joined the crew. */
+            participants: components["schemas"]["ParticipantOut"][];
+            /** @description The current member is a participant and has not left. */
+            taking_part: boolean;
+            /** @description Proposed by the current member. */
+            mine: boolean;
+        };
+        /**
+         * @description * `proposed` - Proposed
+         *     * `chosen` - Chosen
+         * @enum {string}
+         */
+        ChallengeStateEnum: "proposed" | "chosen";
+        CheckInInRequest: {
+            /**
+             * Format: date
+             * @description Today in the crew's time zone; any other day is refused.
+             */
+            day: string;
+            /**
+             * Format: decimal
+             * @description For challenges that record a number: how much to add.
+             */
+            amount?: string | null;
+        };
+        /**
+         * @description * `done` - Done
+         *     * `in_progress` - In progress (a number below the day's target)
+         * @enum {string}
+         */
+        CheckInStatusEnum: "done" | "in_progress";
+        CrewChallengeOut: {
+            /** Format: uuid */
+            challenge_id: string;
+            /**
+             * @description Started: a number below the day's target.
+             *
+             *     * `done` - done
+             *     * `started` - started
+             *     * `todo` - todo
+             */
+            state: components["schemas"]["CrewChallengeOutStateEnum"];
+        };
+        /**
+         * @description * `done` - done
+         *     * `started` - started
+         *     * `todo` - todo
+         * @enum {string}
+         */
+        CrewChallengeOutStateEnum: "done" | "started" | "todo";
+        CrewDayOut: {
+            member: components["schemas"]["PersonOut"];
+            done: number;
+            needed: number;
+            /** @description One per segment of their ring today. */
+            challenges: components["schemas"]["CrewChallengeOut"][];
+        };
         CrewDetailOut: {
             /** Format: uuid */
             id: string;
             name: string;
             timezone: string;
-            proposal_deadline_day: number;
-            /** Format: time */
-            reveal_time: string;
-            /** @description In rotation order. */
+            /** @description In the order they joined. */
             members: components["schemas"]["MemberOut"][];
         };
         CrewOut: {
@@ -246,13 +733,117 @@ export interface components {
             id: string;
             name: string;
             timezone: string;
-            proposal_deadline_day: number;
-            /** Format: time */
-            reveal_time: string;
         };
         CsrfOut: {
             csrf_token: string;
         };
+        DayOut: {
+            /** Format: date */
+            day: string;
+            state: components["schemas"]["DayStateEnum"];
+        };
+        DaySheetRowOut: {
+            member: components["schemas"]["PersonOut"];
+            state: components["schemas"]["DayStateEnum"];
+            /**
+             * Format: double
+             * @description The day's total (numbers only).
+             */
+            total: number | null;
+            /** @description Processing and ready proofs. */
+            proofs: components["schemas"]["ProofOut"][];
+        };
+        /**
+         * @description * `done` - done
+         *     * `partial` - partial
+         *     * `todo` - todo
+         *     * `open` - open
+         *     * `missed` - missed
+         *     * `not_due` - not_due
+         *     * `future` - future
+         *     * `outside` - outside
+         * @enum {string}
+         */
+        DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
+        DaySummaryOut: {
+            check_ins: number;
+            /** @description Processing and ready proofs. */
+            proofs: number;
+            /** @description Everyone finished everything due that day (daily and weekday challenges). */
+            crew_done: boolean;
+        };
+        /** @description One check-in: who, on what, which day, and its proofs. */
+        FeedItemOut: {
+            /**
+             * Format: uuid
+             * @description The check-in.
+             */
+            id: string;
+            member: components["schemas"]["PersonOut"];
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            /** Format: date */
+            day: string;
+            status: components["schemas"]["CheckInStatusEnum"];
+            /**
+             * Format: double
+             * @description The day's total (numbers only).
+             */
+            total: number | null;
+            /**
+             * Format: date-time
+             * @description The later of the check-in's last change and its newest proof; the feed's order.
+             */
+            activity_at: string;
+            /** @description Processing and ready proofs. */
+            proofs: components["schemas"]["ProofOut"][];
+            /** @description Days (or weeks) in a row as of this day; null without one. */
+            streak: number | null;
+            /** @description This day within the challenge, from 1. */
+            day_index: number;
+            /** @description Days the challenge runs. */
+            day_count: number;
+            /** @description The seven days ending on this day. */
+            week: components["schemas"]["DayOut"][];
+            /**
+             * Format: double
+             * @description The last amount added (numbers only).
+             */
+            last_amount: number | null;
+            /**
+             * Format: double
+             * @description The day's target, when the challenge sets one per day.
+             */
+            target: number | null;
+            /** @description Set when this check-in made the streak reach 3, 7, 14 or 30. */
+            milestone: components["schemas"]["MilestoneOut"] | null;
+            /** @description The crew's whole day (the same on every item of that day), for its divider. */
+            day_summary: components["schemas"]["DaySummaryOut"];
+        };
+        /**
+         * @description * `daily` - Every day
+         *     * `weekdays` - Chosen days of the week
+         *     * `times_per_week` - A number of times a week
+         *     * `times_per_period` - A number of times in the period
+         *     * `once` - Once, by the end
+         * @enum {string}
+         */
+        FrequencyEnum: "daily" | "weekdays" | "times_per_week" | "times_per_period" | "once";
+        /**
+         * @description * `dumbbell` - dumbbell
+         *     * `running` - running
+         *     * `book` - book
+         *     * `water` - water
+         *     * `sugar` - sugar
+         *     * `phone` - phone
+         *     * `sleep` - sleep
+         *     * `walk` - walk
+         *     * `meditate` - meditate
+         *     * `food` - food
+         *     * `money` - money
+         *     * `star` - star
+         * @enum {string}
+         */
+        IconEnum: "dumbbell" | "running" | "book" | "water" | "sugar" | "phone" | "sleep" | "walk" | "meditate" | "food" | "money" | "star";
         InviteOut: {
             code: string;
             /** Format: uri */
@@ -267,7 +858,7 @@ export interface components {
             expires_at: string;
             /** @description Who created the invite. Only for valid invites. */
             invited_by: components["schemas"]["MemberSummaryOut"] | null;
-            /** @description Members in rotation order. Empty unless the invite is valid. */
+            /** @description Members in the order they joined. Empty unless the invite is valid. */
             members: components["schemas"]["MemberSummaryOut"][];
             /** @description True when the logged-in user is already in this crew. */
             already_member: boolean;
@@ -280,6 +871,12 @@ export interface components {
         JoinWithAccountInRequest: {
             display_name: string;
         };
+        /**
+         * @description * `days` - days
+         *     * `amount` - amount
+         * @enum {string}
+         */
+        KindEnum: "days" | "amount";
         LoginInRequest: {
             username: string;
             password: string;
@@ -291,13 +888,68 @@ export interface components {
             /** @description Every crew the user belongs to, by name. */
             crews: components["schemas"]["MembershipOut"][];
         };
+        /**
+         * @description * `check` - Just check in
+         *     * `quantity` - A number with a unit
+         *     * `abstain` - Held it (did not do something)
+         * @enum {string}
+         */
+        MeasureEnum: "check" | "quantity" | "abstain";
+        /**
+         * @description * `photo` - Photo
+         *     * `video` - Video
+         * @enum {string}
+         */
+        MediaKindEnum: "photo" | "video";
+        MediaSessionOut: {
+            /**
+             * Format: date-time
+             * @description Ask again before this. Null when media needs no cookies (local development).
+             */
+            expires_at: string | null;
+        };
+        MemberChallengeOut: {
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            /** @description One per day of the month. */
+            states: components["schemas"]["DayStateEnum"][];
+            proof_days: string[];
+            streak: number | null;
+            /**
+             * @description Today's state.
+             *
+             *     * `done` - done
+             *     * `partial` - partial
+             *     * `todo` - todo
+             *     * `open` - open
+             *     * `missed` - missed
+             *     * `not_due` - not_due
+             *     * `future` - future
+             *     * `outside` - outside
+             */
+            today: components["schemas"]["DayStateEnum"];
+        };
         MemberOut: {
             /** Format: uuid */
             id: string;
             display_name: string;
             role: string;
-            rotation_position: number;
             avatar_seed: string;
+        };
+        /** @description A member's month, on the challenges you can see. */
+        MemberProgressOut: {
+            member: components["schemas"]["PersonOut"];
+            /** @description The month's days. */
+            days: string[];
+            /** @description Their best current streak. */
+            streak: number;
+            longest_streak: number;
+            /** @description Due days done this month so far (daily and weekday challenges). */
+            month_done: number;
+            /** @description Due days this month so far; today counts once done. */
+            month_due: number;
+            challenges: components["schemas"]["MemberChallengeOut"][];
+            /** @description Their proofs this month, latest day first. */
+            proof_days: components["schemas"]["ProofDayOut"][];
         };
         MemberSummaryOut: {
             display_name: string;
@@ -310,12 +962,55 @@ export interface components {
             display_name: string;
             role: string;
         };
+        MilestoneOut: {
+            kind: components["schemas"]["MilestoneOutKindEnum"];
+            /** @description Days in a row: 3, 7, 14 or 30. */
+            n: number;
+        };
+        /**
+         * @description * `streak` - streak
+         * @enum {string}
+         */
+        MilestoneOutKindEnum: "streak";
+        /** @enum {unknown} */
+        NullEnum: null;
+        PaginatedFeedItemOutList: {
+            results: components["schemas"]["FeedItemOut"][];
+            next: string | null;
+        };
+        PartInRequest: {
+            /** @description The ETag header S3 answered with. */
+            etag: string;
+        };
+        PartOut: {
+            number: number;
+            etag: string;
+        };
+        PartUrlOut: {
+            number: number;
+            url: string;
+        };
+        ParticipantOut: {
+            member: components["schemas"]["PersonOut"];
+            /**
+             * Format: date
+             * @description Last day that counted, when they left during the challenge.
+             */
+            left_on: string | null;
+        };
+        ParticipantsInRequest: {
+            /** @description Who takes part; the creator is always in. */
+            participant_ids: string[];
+        };
+        PartsInRequest: {
+            numbers: number[];
+        };
+        PartsOut: {
+            parts: components["schemas"]["PartUrlOut"][];
+        };
         PatchedMePatchInRequest: {
             display_name?: string;
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
-        };
-        PatchedRotationInRequest: {
-            member_ids?: string[];
         };
         PendingInviteOut: {
             code: string;
@@ -328,11 +1023,128 @@ export interface components {
             created_by: components["schemas"]["MemberSummaryOut"] | null;
         };
         /**
+         * @description * `month` - Month
+         *     * `week` - Week
+         *     * `custom` - Custom
+         * @enum {string}
+         */
+        PeriodKindEnum: "month" | "week" | "custom";
+        PersonOut: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            avatar_seed: string;
+        };
+        /**
+         * @description * `upcoming` - upcoming
+         *     * `active` - active
+         *     * `finished` - finished
+         * @enum {string}
+         */
+        PhaseEnum: "upcoming" | "active" | "finished";
+        PoolOut: {
+            /** @description Newest first. */
+            proposals: components["schemas"]["ChallengeOut"][];
+            /** @description Proposals in the pool. */
+            size: number;
+            /** @description How many the pool can hold (Crew.max_proposals). */
+            limit: number;
+        };
+        /**
          * @description * `ro` - Romana
          *     * `en` - English
          * @enum {string}
          */
         PreferredLanguageEnum: "ro" | "en";
+        ProgressOut: {
+            kind: components["schemas"]["KindEnum"];
+            /** Format: double */
+            done: number;
+            /** Format: double */
+            goal: number;
+        };
+        ProofDayOut: {
+            /** Format: date */
+            day: string;
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            proofs: components["schemas"]["ProofOut"][];
+        };
+        /**
+         * @description * `none` - No proof
+         *     * `photo` - Photo
+         *     * `video` - Video
+         *     * `photo_or_video` - Photo or video
+         * @enum {string}
+         */
+        ProofKindEnum: "none" | "photo" | "video" | "photo_or_video";
+        ProofOut: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["MediaKindEnum"];
+            status: components["schemas"]["ProofStatusEnum"];
+            /** @description The file, once fully uploaded. */
+            url: string | null;
+            /** @description A video's HLS playlist once transcoded (production only); else play `url`. */
+            hls_url: string | null;
+            /** @description A small JPEG from the phone, or a video's poster; else show `url`. */
+            thumb_url: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** @description A video's length in seconds, when the phone could read it. */
+            duration: number | null;
+        };
+        ProofStartInRequest: {
+            kind: components["schemas"]["MediaKindEnum"];
+            /** @description A video's length in whole seconds, from the file's metadata. */
+            duration?: number | null;
+            /** @description The file's type, e.g. video/mp4. */
+            content_type: string;
+            /** @description Bytes. */
+            size: number;
+            /**
+             * @description name|size|lastModified of the picked video, to resume it later.
+             * @default
+             */
+            fingerprint: string;
+            /** @description Bytes of the JPEG thumbnail made on the phone, if any. */
+            thumb_size?: number | null;
+        };
+        /**
+         * @description * `uploading` - Uploading
+         *     * `processing` - Processing (video renditions)
+         *     * `ready` - Ready
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        ProofStatusEnum: "uploading" | "processing" | "ready" | "failed";
+        /** @description A proof being uploaded and how to send its files straight to storage. */
+        ProofUploadOut: {
+            proof: components["schemas"]["ProofOut"];
+            /** Format: uuid */
+            challenge_id: string;
+            /** Format: date */
+            day: string;
+            mode: components["schemas"]["UploadModeEnum"];
+            /** @description Send this Content-Type with the original. */
+            content_type: string;
+            /** @description Single mode (photos): PUT the whole file here. */
+            put_url: string | null;
+            /** @description Multipart (videos): bytes per part; the last one is smaller. */
+            part_size: number | null;
+            part_count: number | null;
+            /** @description Parts already uploaded: skip them when resuming. */
+            parts: components["schemas"]["PartOut"][];
+            /** @description PUT the thumbnail here, Content-Type image/jpeg. */
+            thumb_put_url: string | null;
+        };
+        ScheduleInRequest: {
+            period_kind: components["schemas"]["PeriodKindEnum"];
+            /**
+             * Format: date
+             * @description First day of the period (the 1st for a month).
+             */
+            period_start: string;
+        };
         /**
          * @description * `valid` - valid
          *     * `expired` - expired
@@ -340,6 +1152,79 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "valid" | "expired" | "used";
+        /**
+         * @description * `none` - No target
+         *     * `per_check_in` - Each check-in
+         *     * `per_week` - Each week
+         *     * `per_period` - The whole period
+         * @enum {string}
+         */
+        TargetScopeEnum: "none" | "per_check_in" | "per_week" | "per_period";
+        /** @description One of my challenges today: what to show on its card and in the ring. */
+        TodayChallengeOut: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+            frequency: components["schemas"]["FrequencyEnum"];
+            times: number | null;
+            target_scope: components["schemas"]["TargetScopeEnum"];
+            /** Format: double */
+            target_value: number | null;
+            proof_kind: components["schemas"]["ProofKindEnum"];
+            proof_required: boolean;
+            /** Format: date */
+            end_date: string;
+            /**
+             * @description Today's state.
+             *
+             *     * `done` - done
+             *     * `partial` - partial
+             *     * `todo` - todo
+             *     * `open` - open
+             *     * `missed` - missed
+             *     * `not_due` - not_due
+             *     * `future` - future
+             *     * `outside` - outside
+             */
+            state: components["schemas"]["DayStateEnum"];
+            /**
+             * Format: double
+             * @description Today's total (numbers only).
+             */
+            total: number | null;
+            streak: number | null;
+            /** @description Monday to Sunday of this week. */
+            week: components["schemas"]["DayOut"][];
+            /** @description Toward the week's or the period's goal. */
+            progress: components["schemas"]["ProgressOut"] | null;
+            /** @description Today's ring segment: full, empty, or none (null). */
+            settled: boolean | null;
+            /** @description Today's proofs, uploads in flight too. */
+            proofs: components["schemas"]["ProofOut"][];
+            /** @description Days of this week with proof. */
+            proof_days: string[];
+        };
+        TodayOut: {
+            /** Format: date */
+            day: string;
+            /**
+             * Format: date-time
+             * @description When today ends (crew-local midnight).
+             */
+            deadline: string;
+            challenges: components["schemas"]["TodayChallengeOut"][];
+            /** @description Everyone with something today, in join order. */
+            crew: components["schemas"]["CrewDayOut"][];
+        };
+        /**
+         * @description * `single` - One presigned PUT
+         *     * `multipart` - Multipart, resumable
+         * @enum {string}
+         */
+        UploadModeEnum: "single" | "multipart";
         UserOut: {
             /** Format: uuid */
             id: string;
@@ -401,6 +1286,366 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_list: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated: upcoming, active, finished. Default: all three. */
+                phase?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"][];
+                };
+            };
+        };
+    };
+    challenges_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_board: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; default this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardOut"];
+                };
+            };
+        };
+    };
+    challenges_check_in: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_undo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProofStartInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
+            };
+        };
+    };
+    challenges_day_sheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaySheetRowOut"][];
+                };
+            };
+        };
+    };
+    challenges_participants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantsInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_leave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_unschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    challenges_vote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOut"];
+                };
+            };
+        };
+    };
+    challenges_vote_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -491,25 +1736,26 @@ export interface operations {
             };
         };
     };
-    crew_rotation_update: {
+    feed_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedRotationInRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CrewDetailOut"];
+                    "application/json": components["schemas"]["PaginatedFeedItemOutList"];
                 };
             };
         };
@@ -646,6 +1892,199 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    media_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaSessionOut"];
+                };
+            };
+        };
+    };
+    members_progress: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; default this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberProgressOut"];
+                };
+            };
+        };
+    };
+    proofs_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofOut"];
+                };
+            };
+        };
+    };
+    proofs_sign_parts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartsInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartsOut"];
+                };
+            };
+        };
+    };
+    proofs_record_part: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartInRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_resume: {
+        parameters: {
+            query: {
+                fingerprint: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
+            };
+        };
+    };
+    proposals_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoolOut"];
+                };
+            };
+        };
+    };
+    today_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayOut"];
                 };
             };
         };

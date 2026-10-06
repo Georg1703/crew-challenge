@@ -10,5 +10,5 @@ void i18n.changeLanguage("en");
 
 afterEach(() => {
   cleanup();
-  document.cookie = "csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+  document.cookie = "crew_csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
 });

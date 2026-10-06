@@ -50,10 +50,11 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | `make check` | Everything CI runs. Must pass before a task is done. |
 | `make test` / `make test-fast` | All tests / tests for changed apps only |
 | `make e2e` | Playwright end-to-end tests against the real backend (needs Postgres and Redis) |
+| `make upload-smoke` | Upload test files to the dev S3 bucket like the browser, check, delete (needs `AWS_PROFILE`) |
 | `make fmt` | Format all code |
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
 | `make migrate` / `make makemigrations` | Database migrations |
-| `make seed` | Demo crew with known users |
+| `make seed` | Demo crew with known users and a challenge running this month |
 | `make superuser` | Create a Django admin user (interactive) |
 | `make shell` / `make logs` | Django shell / service logs |
 | `make tunnel` / `make preview` | HTTPS URL for a phone: dev server / production build (to install) |
@@ -93,7 +94,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   django-celery-beat, boto3, pywebpush. Tooling: uv, ruff, mypy + django-stubs, pytest-django,
   factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
-  TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3
+  TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3 (v5)
   (after v1: @rive-app/react-canvas, canvas-confetti). CSS Modules + tokens in `src/styles/tokens.css`.
 - **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
 - **Auth:** Django session cookie + CSRF. No JWT.
@@ -105,16 +106,34 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Business rules live in `services.py`, never in views, serializers or tasks. Views and Celery
   tasks call services. Non-trivial reads go through `selectors.py`.
 - Every domain row carries `crew_id`. A user can belong to several crews (through `Member`).
+- Rows people delete but we keep (challenges, proofs) inherit `SoftDeleteModel` or
+  `CrewScopedSoftDeleteModel`: `objects` hides deleted rows, `delete()` is soft. See
+  `docs/recipes/soft-delete.md`.
 - Store datetimes in UTC. A "challenge day" is a local date in `Crew.timezone`
   (default `Europe/Chisinau`). Test around midnight and DST switches.
 - Scheduled jobs are idempotent (safe to run twice).
 - Tree stage and flame tier (after v1) are derived in the API, not stored.
 
 ## Game rules that code must respect
-- One proposer per month, taken from a fixed rotation (`Member.rotation_position`). Only the
-  proposer can create or edit the next challenge. Challenges go draft -> sealed -> active -> finished.
-- A check-in is created the moment proof upload *starts* (status `uploading`). It counts for the
-  day if the upload completes within 24 h after that day's midnight deadline.
+- Any member adds proposals to the crew's pool (at most `Crew.max_proposals`, default 50). The crew
+  votes (one vote per member per proposal, for as many as they like) and a crew admin schedules
+  proposals for periods (v1: months). A period can have several challenges. Votes guide the admin;
+  they do not decide.
+- A challenge shows who proposed it and when. Its creator chooses who takes part (the
+  participants: one `Participant` row each, the whole crew by default, the creator always) and can
+  change the list until it is scheduled. Only participants and crew admins see a challenge; only
+  participants vote and take part. People who join the crew later are not added. A proposal can be
+  edited by its creator while it is in the pool (editing the challenge resets its votes; removing
+  someone deletes only their vote); once scheduled, nothing can be edited. Before the start an
+  admin can move it or put it back in the pool (the participants stay as they are). Opting out
+  before the start deletes the row; leaving during it sets `left_on` (today still counts). Either
+  way the member stops seeing it and cannot come back; the board keeps a leaver's days.
+- Plan and details: `docs/plans/monthly-challenges.md`.
+- A participant checks in for today only (crew time zone; midnight closes the day). Numbers add up
+  during the day. A due day before today without a `done` check-in is missed; missed days are
+  derived on read, not stored. Streaks are per challenge.
+- Proof (stage 3) attaches to the day's check-in. A proof upload that starts before midnight
+  counts if it completes within 24 h after that day's deadline.
 - Missed day -> streak reset. After v1: tree wilted and one pending Wheel of Doom spin per missed day.
 - After v1: the Wheel of Doom result is chosen on the server before the client animation starts.
 
@@ -124,9 +143,10 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   5 GiB max part, 10,000 parts max. Validate size <= 20 GB server-side.
 - 4 parallel parts, 6 retries with exponential backoff, auto re-sign expired URLs,
   pause on `offline`, resume on `online`.
-- Report each completed part (number + ETag) to the API. Also keep `upload_id`, file fingerprint
-  (name + size + lastModified) and completed parts in IndexedDB. Resume = user re-picks the same
-  file, fingerprint matches, only missing parts are uploaded.
+- Report each completed part (number + ETag) to the API, which keeps them with the upload. Resume =
+  user re-picks the same file, its fingerprint (name + size + lastModified) finds the open upload
+  (`GET /api/v1/proofs/resume`), only missing parts are uploaded. No browser storage for this: it
+  may be evicted on iOS, and the server already has it.
 - The upload manager is a global store outside routes: the user is never blocked from using the
   app while an upload runs. Progress shows in the tab bar.
 - Request a Screen Wake Lock during uploads (tolerate rejection). Warn before > 2 GB on phones.

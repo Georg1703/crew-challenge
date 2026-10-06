@@ -45,7 +45,7 @@ setup: ## First-time setup: .env, images, migrations, seed data
 	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 	$(COMPOSE) build
 	$(COMPOSE) run --rm migrate
-	$(COMPOSE) run --rm backend python manage.py seed_demo
+	$(COMPOSE) run --rm backend sh -c "python manage.py seed_demo && python manage.py seed_demo_challenge"
 	@echo "OK: setup done - run: make dev, then open http://localhost:5173"
 
 ##@ Running locally
@@ -109,9 +109,9 @@ superuser: ## Create a Django admin user (asks for username, email, password); a
 	$(COMPOSE) run --rm backend python manage.py createsuperuser
 
 .PHONY: seed
-seed: ## Load the demo crew (known users and passwords, local only)
+seed: ## Load the demo crew and a challenge running this month (local only)
 	$(call require,compose.yaml,Local environment)
-	$(COMPOSE) run --rm backend python manage.py seed_demo
+	$(COMPOSE) run --rm backend sh -c "python manage.py seed_demo && python manage.py seed_demo_challenge"
 
 ##@ Quality
 
@@ -182,6 +182,11 @@ endif
 e2e: ## End-to-end tests (Playwright) against the real backend; needs Postgres and Redis
 	$(call require,$(FRONTEND_DIR)/package.json,Frontend)
 	$(PNPM) exec playwright test
+
+.PHONY: upload-smoke
+upload-smoke: ## Upload test files to the dev S3 bucket like the browser, check, delete (needs AWS_PROFILE)
+	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
+	$(UV) python manage.py upload_smoke --settings=config.settings.local
 
 .PHONY: test
 test: ## Run all tests

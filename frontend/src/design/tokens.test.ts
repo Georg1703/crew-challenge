@@ -68,6 +68,7 @@ const READABLE: [text: string, background: string][] = [
   ["on-avatar", "avatar-3"],
   ["on-avatar", "avatar-4"],
   ["on-avatar", "avatar-5"],
+  ["on-media", "media-bg"],
 ];
 
 describe("design tokens", () => {

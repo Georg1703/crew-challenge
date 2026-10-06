@@ -7,6 +7,18 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="color-scheme" content="light dark" />
+    <script>
+      // The saved theme (src/shared/lib/theme.ts), applied before the first paint: Chrome on
+      // Android decides from this meta, while the page loads, whether to darken it on its own.
+      try {
+        var theme = localStorage.getItem("theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+          document.querySelector('meta[name="color-scheme"]').content =
+            theme === "light" ? "only light" : "dark";
+        }
+      } catch (e) {}
+    </script>
     <meta name="theme-color" content="#fbfaf6" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#161a18" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

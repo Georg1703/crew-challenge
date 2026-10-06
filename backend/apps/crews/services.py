@@ -1,4 +1,4 @@
-"""Crew rules: creating crews, invites, joining, the proposer rotation, member profiles.
+"""Crew rules: creating crews, invites, joining, switching crews, member profiles.
 
 Every write goes through here. Functions are keyword-only and raise DomainError subclasses.
 """
@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import secrets
 import unicodedata
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import timedelta
 from uuid import UUID
 
 from django.conf import settings
 from django.db import IntegrityError, models, transaction
-from django.db.models import Max
 from django.db.models.functions import Lower
 
 from apps.accounts import services as accounts
@@ -170,26 +169,6 @@ def _use_invite(invite: Invite, member: Member) -> None:
     invite.save(update_fields=["used_by", "used_at", "updated_at"])
 
 
-# --- rotation --------------------------------------------------------------------------------
-
-
-@transaction.atomic
-def reorder_rotation(*, by: Member, member_ids: Sequence[UUID]) -> list[Member]:
-    """An admin sets the proposer order. `member_ids` must list every member exactly once."""
-    require_admin(by)
-    members = {m.id: m for m in Member.objects.select_for_update().for_crew(by.crew)}
-    if len(member_ids) != len(set(member_ids)) or set(member_ids) != set(members):
-        raise ValidationFailed(
-            fields={"member_ids": ["List every member of the crew exactly once."]}
-        )
-    ordered = [members[member_id] for member_id in member_ids]
-    for position, member in enumerate(ordered):
-        member.rotation_position = position
-    # The unique (crew, rotation_position) constraint is deferred until commit, so swaps work.
-    Member.objects.bulk_update(ordered, ["rotation_position", "updated_at"])
-    return ordered
-
-
 def normalize_invite_code(code: str) -> str:
     """Codes are lowercase; people may type them as shown in capitals or with spaces."""
     return code.strip().lower()
@@ -230,17 +209,16 @@ def _add_member(
 ) -> Member:
     Crew.objects.select_for_update().filter(pk=crew.pk).first()  # serialize joins per crew
     name = _clean_display_name(display_name, crew=crew)
-    last = Member.objects.for_crew(crew).aggregate(last=Max("rotation_position"))["last"]
     with _translate_member_conflicts():
-        return Member.objects.create(
+        member = Member.objects.create(
             crew=crew,
             user=user,
             display_name=name,
             role=role,
             avatar_seed=secrets.token_hex(4),
-            rotation_position=0 if last is None else last + 1,
             last_active_at=clock.now(),
         )
+    return member
 
 
 @contextmanager

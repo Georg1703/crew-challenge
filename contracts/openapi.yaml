@@ -6,8 +6,8 @@ paths:
   /api/v1/auth/csrf:
     get:
       operationId: auth_csrf
-      description: GET /api/v1/auth/csrf - sets the csrftoken cookie; call it before
-        the first POST.
+      description: GET /api/v1/auth/csrf - sets the crew_csrftoken cookie; call it
+        before the first POST.
       tags:
       - auth
       security:
@@ -48,10 +48,398 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges:
+    get:
+      operationId: challenges_list
+      description: Scheduled challenges, by start date.
+      parameters:
+      - in: query
+        name: phase
+        schema:
+          type: string
+        description: 'Comma-separated: upcoming, active, finished. Default: all three.'
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    post:
+      operationId: challenges_create
+      description: Add a proposal to the crew's pool (409 pool_full when it is full).
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}:
+    get:
+      operationId: challenges_retrieve
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    put:
+      operationId: challenges_update
+      description: The creator replaces their proposal while it is in the pool. Resets
+        its votes.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    delete:
+      operationId: challenges_destroy
+      description: The creator or an admin withdraws a proposal from the pool.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/board:
+    get:
+      operationId: challenges_board
+      description: Every participant's month, one state per day.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: YYYY-MM; default this month.
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/check-ins:
+    post:
+      operationId: challenges_check_in
+      description: Check in for today (numbers add up). Returns the challenge as on
+        today's card.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayChallengeOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/check-ins/{day}/last:
+    delete:
+      operationId: challenges_undo
+      description: Undo today's last entry (`day` is today, YYYY-MM-DD). The last
+        one takes its proofs.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/check-ins/{day}/proofs:
+    post:
+      operationId: proofs_start
+      description: Add a photo or video to today's check-in. Then send the file straight
+        to storage.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofStartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/days/{day}:
+    get:
+      operationId: challenges_day_sheet
+      description: Everyone's state, total and proofs on one day (`day` is YYYY-MM-DD),
+        in join order.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DaySheetRowOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/participants:
+    put:
+      operationId: challenges_participants
+      description: The creator changes who takes part while the challenge is a proposal.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantsInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+  /api/v1/challenges/{challenge_id}/participation:
+    delete:
+      operationId: challenges_leave
+      description: |-
+        Opt out before the start, or leave a running challenge (today still counts).
+
+        Either way the challenge is gone for the member afterwards (an admin still sees it).
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/schedule:
+    put:
+      operationId: challenges_schedule
+      description: 'Admin: schedule a proposal for a period, or move it before it
+        starts.'
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    delete:
+      operationId: challenges_unschedule
+      description: 'Admin: put a scheduled challenge back in the pool before it starts.'
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/challenges/{challenge_id}/vote:
+    put:
+      operationId: challenges_vote
+      description: Vote for a proposal (voting twice counts once).
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeOut'
+          description: ''
+    delete:
+      operationId: challenges_vote_clear
+      description: Take your vote back.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/crew:
     get:
       operationId: crew_retrieve
-      description: The crew the user is acting in, with members in rotation order.
+      description: The crew the user is acting in, with its members in the order they
+        joined.
       tags:
       - crew
       security:
@@ -114,18 +502,25 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/crew/rotation:
-    patch:
-      operationId: crew_rotation_update
-      description: 'Admin: set the proposer order. Send every member id once, in the
-        new order.'
+  /api/v1/feed:
+    get:
+      operationId: feed_list
+      description: The crew's check-ins with their proofs, latest activity first.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
-      - crew
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedRotationInRequest'
+      - feed
       security:
       - cookieAuth: []
       responses:
@@ -133,7 +528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CrewDetailOut'
+                $ref: '#/components/schemas/PaginatedFeedItemOutList'
           description: ''
   /api/v1/invites/{code}:
     get:
@@ -271,6 +666,202 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeOut'
           description: ''
+  /api/v1/media/session:
+    post:
+      operationId: media_session
+      description: |-
+        Set the cookies that let this browser load the crew's photos and videos.
+
+        Call it when the app starts, after switching crews, and before `expires_at`.
+      tags:
+      - media
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaSessionOut'
+          description: ''
+  /api/v1/members/{member_id}/progress:
+    get:
+      operationId: members_progress
+      description: 'A member''s month: streaks, each challenge''s days and their proofs
+        by day.'
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: YYYY-MM; default this month.
+      tags:
+      - members
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberProgressOut'
+          description: ''
+  /api/v1/proofs/{proof_id}:
+    delete:
+      operationId: proofs_delete
+      description: Remove my proof and its files (only on its own day).
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/proofs/{proof_id}/complete:
+    post:
+      operationId: proofs_complete
+      description: 'The file is uploaded: check it and show the proof. Safe to repeat.'
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofOut'
+          description: ''
+  /api/v1/proofs/{proof_id}/parts:
+    post:
+      operationId: proofs_sign_parts
+      description: Fresh URLs to PUT these parts to (also when earlier ones expired).
+      parameters:
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartsInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartsOut'
+          description: ''
+  /api/v1/proofs/{proof_id}/parts/{number}:
+    put:
+      operationId: proofs_record_part
+      description: Report a finished part and its ETag, so a later resume skips it.
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: proof_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - proofs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/proofs/resume:
+    get:
+      operationId: proofs_resume
+      description: My unfinished video upload for this file (name|size|lastModified),
+        or 404.
+      parameters:
+      - in: query
+        name: fingerprint
+        schema:
+          type: string
+        required: true
+      tags:
+      - proofs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
+  /api/v1/proposals:
+    get:
+      operationId: proposals_list
+      description: The crew's pool of proposals, newest first, with votes and how
+        full it is.
+      tags:
+      - proposals
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoolOut'
+          description: ''
+  /api/v1/today:
+    get:
+      operationId: today_retrieve
+      description: My challenges today with their state, and the crew's progress.
+      tags:
+      - today
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayOut'
+          description: ''
 components:
   schemas:
     AcceptInviteInRequest:
@@ -309,6 +900,339 @@ components:
           format: uuid
       required:
       - crew_id
+    BoardOut:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardRowOut'
+      required:
+      - days
+      - rows
+    BoardRowOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayStateEnum'
+          description: One per day.
+        streak:
+          type: integer
+          nullable: true
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Days of the month with proof.
+      required:
+      - member
+      - proof_days
+      - states
+      - streak
+    ChallengeBriefOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+      required:
+      - icon
+      - id
+      - measure
+      - title
+      - unit
+    ChallengeInRequest:
+      type: object
+      description: The creator's choices. Combinations are checked in services.clean_shape.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 60
+        rules:
+          type: string
+          default: ''
+          maxLength: 500
+        icon:
+          allOf:
+          - $ref: '#/components/schemas/IconEnum'
+          default: star
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+          default: ''
+          maxLength: 20
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+            maximum: 6
+            minimum: 0
+          description: 'For frequency=weekdays: 0 = Monday ... 6 = Sunday.'
+          maxItems: 7
+        times:
+          type: integer
+          minimum: 1
+          nullable: true
+        target_scope:
+          allOf:
+          - $ref: '#/components/schemas/TargetScopeEnum'
+          default: none
+        target_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        proof_kind:
+          allOf:
+          - $ref: '#/components/schemas/ProofKindEnum'
+          default: none
+        proof_required:
+          type: boolean
+          default: false
+        participant_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: 'Who takes part (the creator is always in). Create: default
+            the whole crew. Edit: leave out to keep the list.'
+      required:
+      - frequency
+      - measure
+      - title
+    ChallengeOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        rules:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        weekdays:
+          type: array
+          items:
+            type: integer
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          maximum: 100000000
+          minimum: -100000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        state:
+          $ref: '#/components/schemas/ChallengeStateEnum'
+        phase:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        period_kind:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PeriodKindEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        period_start:
+          type: string
+          format: date
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        chosen_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        chosen_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        revision:
+          type: integer
+        vote_count:
+          type: integer
+        voters:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOut'
+        my_vote:
+          type: boolean
+          description: The current member voted for it.
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantOut'
+          description: Who takes part (and who left), in the order they joined the
+            crew.
+        taking_part:
+          type: boolean
+          description: The current member is a participant and has not left.
+        mine:
+          type: boolean
+          description: Proposed by the current member.
+      required:
+      - chosen_at
+      - chosen_by
+      - created_at
+      - created_by
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - mine
+      - my_vote
+      - participants
+      - period_kind
+      - period_start
+      - phase
+      - proof_kind
+      - proof_required
+      - revision
+      - rules
+      - start_date
+      - state
+      - taking_part
+      - target_scope
+      - target_value
+      - times
+      - title
+      - unit
+      - vote_count
+      - voters
+      - weekdays
+    ChallengeStateEnum:
+      enum:
+      - proposed
+      - chosen
+      type: string
+      description: |-
+        * `proposed` - Proposed
+        * `chosen` - Chosen
+    CheckInInRequest:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+          description: Today in the crew's time zone; any other day is refused.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+          description: 'For challenges that record a number: how much to add.'
+      required:
+      - day
+    CheckInStatusEnum:
+      enum:
+      - done
+      - in_progress
+      type: string
+      description: |-
+        * `done` - Done
+        * `in_progress` - In progress (a number below the day's target)
+    CrewChallengeOut:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        state:
+          allOf:
+          - $ref: '#/components/schemas/CrewChallengeOutStateEnum'
+          description: |-
+            Started: a number below the day's target.
+
+            * `done` - done
+            * `started` - started
+            * `todo` - todo
+      required:
+      - challenge_id
+      - state
+    CrewChallengeOutStateEnum:
+      enum:
+      - done
+      - started
+      - todo
+      type: string
+      description: |-
+        * `done` - done
+        * `started` - started
+        * `todo` - todo
+    CrewDayOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        done:
+          type: integer
+        needed:
+          type: integer
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrewChallengeOut'
+          description: One per segment of their ring today.
+      required:
+      - challenges
+      - done
+      - member
+      - needed
     CrewDetailOut:
       type: object
       properties:
@@ -319,22 +1243,15 @@ components:
           type: string
         timezone:
           type: string
-        proposal_deadline_day:
-          type: integer
-        reveal_time:
-          type: string
-          format: time
         members:
           type: array
           items:
             $ref: '#/components/schemas/MemberOut'
-          description: In rotation order.
+          description: In the order they joined.
       required:
       - id
       - members
       - name
-      - proposal_deadline_day
-      - reveal_time
       - timezone
     CrewOut:
       type: object
@@ -346,16 +1263,9 @@ components:
           type: string
         timezone:
           type: string
-        proposal_deadline_day:
-          type: integer
-        reveal_time:
-          type: string
-          format: time
       required:
       - id
       - name
-      - proposal_deadline_day
-      - reveal_time
       - timezone
     CsrfOut:
       type: object
@@ -364,6 +1274,201 @@ components:
           type: string
       required:
       - csrf_token
+    DayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        state:
+          $ref: '#/components/schemas/DayStateEnum'
+      required:
+      - day
+      - state
+    DaySheetRowOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        state:
+          $ref: '#/components/schemas/DayStateEnum'
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: The day's total (numbers only).
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Processing and ready proofs.
+      required:
+      - member
+      - proofs
+      - state
+      - total
+    DayStateEnum:
+      enum:
+      - done
+      - partial
+      - todo
+      - open
+      - missed
+      - not_due
+      - future
+      - outside
+      type: string
+      description: |-
+        * `done` - done
+        * `partial` - partial
+        * `todo` - todo
+        * `open` - open
+        * `missed` - missed
+        * `not_due` - not_due
+        * `future` - future
+        * `outside` - outside
+    DaySummaryOut:
+      type: object
+      properties:
+        check_ins:
+          type: integer
+        proofs:
+          type: integer
+          description: Processing and ready proofs.
+        crew_done:
+          type: boolean
+          description: Everyone finished everything due that day (daily and weekday
+            challenges).
+      required:
+      - check_ins
+      - crew_done
+      - proofs
+    FeedItemOut:
+      type: object
+      description: 'One check-in: who, on what, which day, and its proofs.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The check-in.
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        day:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/CheckInStatusEnum'
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: The day's total (numbers only).
+        activity_at:
+          type: string
+          format: date-time
+          description: The later of the check-in's last change and its newest proof;
+            the feed's order.
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Processing and ready proofs.
+        streak:
+          type: integer
+          nullable: true
+          description: Days (or weeks) in a row as of this day; null without one.
+        day_index:
+          type: integer
+          description: This day within the challenge, from 1.
+        day_count:
+          type: integer
+          description: Days the challenge runs.
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayOut'
+          description: The seven days ending on this day.
+        last_amount:
+          type: number
+          format: double
+          nullable: true
+          description: The last amount added (numbers only).
+        target:
+          type: number
+          format: double
+          nullable: true
+          description: The day's target, when the challenge sets one per day.
+        milestone:
+          allOf:
+          - $ref: '#/components/schemas/MilestoneOut'
+          nullable: true
+          description: Set when this check-in made the streak reach 3, 7, 14 or 30.
+        day_summary:
+          allOf:
+          - $ref: '#/components/schemas/DaySummaryOut'
+          description: The crew's whole day (the same on every item of that day),
+            for its divider.
+      required:
+      - activity_at
+      - challenge
+      - day
+      - day_count
+      - day_index
+      - day_summary
+      - id
+      - last_amount
+      - member
+      - milestone
+      - proofs
+      - status
+      - streak
+      - target
+      - total
+      - week
+    FrequencyEnum:
+      enum:
+      - daily
+      - weekdays
+      - times_per_week
+      - times_per_period
+      - once
+      type: string
+      description: |-
+        * `daily` - Every day
+        * `weekdays` - Chosen days of the week
+        * `times_per_week` - A number of times a week
+        * `times_per_period` - A number of times in the period
+        * `once` - Once, by the end
+    IconEnum:
+      enum:
+      - dumbbell
+      - running
+      - book
+      - water
+      - sugar
+      - phone
+      - sleep
+      - walk
+      - meditate
+      - food
+      - money
+      - star
+      type: string
+      description: |-
+        * `dumbbell` - dumbbell
+        * `running` - running
+        * `book` - book
+        * `water` - water
+        * `sugar` - sugar
+        * `phone` - phone
+        * `sleep` - sleep
+        * `walk` - walk
+        * `meditate` - meditate
+        * `food` - food
+        * `money` - money
+        * `star` - star
     InviteOut:
       type: object
       properties:
@@ -398,7 +1503,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MemberSummaryOut'
-          description: Members in rotation order. Empty unless the invite is valid.
+          description: Members in the order they joined. Empty unless the invite is
+            valid.
         already_member:
           type: boolean
           description: True when the logged-in user is already in this crew.
@@ -424,6 +1530,14 @@ components:
           maxLength: 40
       required:
       - display_name
+    KindEnum:
+      enum:
+      - days
+      - amount
+      type: string
+      description: |-
+        * `days` - days
+        * `amount` - amount
     LoginInRequest:
       type: object
       properties:
@@ -462,6 +1576,73 @@ components:
       - crews
       - member
       - user
+    MeasureEnum:
+      enum:
+      - check
+      - quantity
+      - abstain
+      type: string
+      description: |-
+        * `check` - Just check in
+        * `quantity` - A number with a unit
+        * `abstain` - Held it (did not do something)
+    MediaKindEnum:
+      enum:
+      - photo
+      - video
+      type: string
+      description: |-
+        * `photo` - Photo
+        * `video` - Video
+    MediaSessionOut:
+      type: object
+      properties:
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ask again before this. Null when media needs no cookies (local
+            development).
+      required:
+      - expires_at
+    MemberChallengeOut:
+      type: object
+      properties:
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayStateEnum'
+          description: One per day of the month.
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+        streak:
+          type: integer
+          nullable: true
+        today:
+          allOf:
+          - $ref: '#/components/schemas/DayStateEnum'
+          description: |-
+            Today's state.
+
+            * `done` - done
+            * `partial` - partial
+            * `todo` - todo
+            * `open` - open
+            * `missed` - missed
+            * `not_due` - not_due
+            * `future` - future
+            * `outside` - outside
+      required:
+      - challenge
+      - proof_days
+      - states
+      - streak
+      - today
     MemberOut:
       type: object
       properties:
@@ -472,8 +1653,6 @@ components:
           type: string
         role:
           type: string
-        rotation_position:
-          type: integer
         avatar_seed:
           type: string
       required:
@@ -481,7 +1660,47 @@ components:
       - display_name
       - id
       - role
-      - rotation_position
+    MemberProgressOut:
+      type: object
+      description: A member's month, on the challenges you can see.
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: The month's days.
+        streak:
+          type: integer
+          description: Their best current streak.
+        longest_streak:
+          type: integer
+        month_done:
+          type: integer
+          description: Due days done this month so far (daily and weekday challenges).
+        month_due:
+          type: integer
+          description: Due days this month so far; today counts once done.
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberChallengeOut'
+        proof_days:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofDayOut'
+          description: Their proofs this month, latest day first.
+      required:
+      - challenges
+      - days
+      - longest_streak
+      - member
+      - month_done
+      - month_due
+      - proof_days
+      - streak
     MemberSummaryOut:
       type: object
       properties:
@@ -509,6 +1728,112 @@ components:
       - crew_name
       - display_name
       - role
+    MilestoneOut:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/MilestoneOutKindEnum'
+        n:
+          type: integer
+          description: 'Days in a row: 3, 7, 14 or 30.'
+      required:
+      - kind
+      - n
+    MilestoneOutKindEnum:
+      enum:
+      - streak
+      type: string
+      description: '* `streak` - streak'
+    NullEnum:
+      enum:
+      - null
+    PaginatedFeedItemOutList:
+      type: object
+      required:
+      - results
+      - next
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedItemOut'
+        next:
+          type: string
+          nullable: true
+    PartInRequest:
+      type: object
+      properties:
+        etag:
+          type: string
+          minLength: 1
+          description: The ETag header S3 answered with.
+          maxLength: 100
+      required:
+      - etag
+    PartOut:
+      type: object
+      properties:
+        number:
+          type: integer
+        etag:
+          type: string
+      required:
+      - etag
+      - number
+    PartUrlOut:
+      type: object
+      properties:
+        number:
+          type: integer
+        url:
+          type: string
+      required:
+      - number
+      - url
+    ParticipantOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        left_on:
+          type: string
+          format: date
+          nullable: true
+          description: Last day that counted, when they left during the challenge.
+      required:
+      - left_on
+      - member
+    ParticipantsInRequest:
+      type: object
+      properties:
+        participant_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who takes part; the creator is always in.
+      required:
+      - participant_ids
+    PartsInRequest:
+      type: object
+      properties:
+        numbers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          maxItems: 1000
+      required:
+      - numbers
+    PartsOut:
+      type: object
+      properties:
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartUrlOut'
+      required:
+      - parts
     PatchedMePatchInRequest:
       type: object
       properties:
@@ -518,16 +1843,6 @@ components:
           maxLength: 40
         preferred_language:
           $ref: '#/components/schemas/PreferredLanguageEnum'
-    PatchedRotationInRequest:
-      type: object
-      properties:
-        member_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
-          maxItems: 100
-          minItems: 1
     PendingInviteOut:
       type: object
       properties:
@@ -552,6 +1867,58 @@ components:
       - expires_at
       - id
       - url
+    PeriodKindEnum:
+      enum:
+      - month
+      - week
+      - custom
+      type: string
+      description: |-
+        * `month` - Month
+        * `week` - Week
+        * `custom` - Custom
+    PersonOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_seed:
+          type: string
+      required:
+      - avatar_seed
+      - display_name
+      - id
+    PhaseEnum:
+      enum:
+      - upcoming
+      - active
+      - finished
+      type: string
+      description: |-
+        * `upcoming` - upcoming
+        * `active` - active
+        * `finished` - finished
+    PoolOut:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChallengeOut'
+          description: Newest first.
+        size:
+          type: integer
+          description: Proposals in the pool.
+        limit:
+          type: integer
+          description: How many the pool can hold (Crew.max_proposals).
+      required:
+      - limit
+      - proposals
+      - size
     PreferredLanguageEnum:
       enum:
       - ro
@@ -560,6 +1927,193 @@ components:
       description: |-
         * `ro` - Romana
         * `en` - English
+    ProgressOut:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        done:
+          type: number
+          format: double
+        goal:
+          type: number
+          format: double
+      required:
+      - done
+      - goal
+      - kind
+    ProofDayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+      required:
+      - challenge
+      - day
+      - proofs
+    ProofKindEnum:
+      enum:
+      - none
+      - photo
+      - video
+      - photo_or_video
+      type: string
+      description: |-
+        * `none` - No proof
+        * `photo` - Photo
+        * `video` - Video
+        * `photo_or_video` - Photo or video
+    ProofOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/MediaKindEnum'
+        status:
+          $ref: '#/components/schemas/ProofStatusEnum'
+        url:
+          type: string
+          nullable: true
+          description: The file, once fully uploaded.
+        hls_url:
+          type: string
+          nullable: true
+          description: A video's HLS playlist once transcoded (production only); else
+            play `url`.
+        thumb_url:
+          type: string
+          nullable: true
+          description: A small JPEG from the phone, or a video's poster; else show
+            `url`.
+        created_at:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          nullable: true
+          description: A video's length in seconds, when the phone could read it.
+      required:
+      - created_at
+      - duration
+      - hls_url
+      - id
+      - kind
+      - status
+      - thumb_url
+      - url
+    ProofStartInRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/MediaKindEnum'
+        duration:
+          type: integer
+          nullable: true
+          description: A video's length in whole seconds, from the file's metadata.
+        content_type:
+          type: string
+          minLength: 1
+          description: The file's type, e.g. video/mp4.
+          maxLength: 100
+        size:
+          type: integer
+          minimum: 1
+          description: Bytes.
+        fingerprint:
+          type: string
+          default: ''
+          description: name|size|lastModified of the picked video, to resume it later.
+          maxLength: 300
+        thumb_size:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Bytes of the JPEG thumbnail made on the phone, if any.
+      required:
+      - content_type
+      - kind
+      - size
+    ProofStatusEnum:
+      enum:
+      - uploading
+      - processing
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `uploading` - Uploading
+        * `processing` - Processing (video renditions)
+        * `ready` - Ready
+        * `failed` - Failed
+    ProofUploadOut:
+      type: object
+      description: A proof being uploaded and how to send its files straight to storage.
+      properties:
+        proof:
+          $ref: '#/components/schemas/ProofOut'
+        challenge_id:
+          type: string
+          format: uuid
+        day:
+          type: string
+          format: date
+        mode:
+          $ref: '#/components/schemas/UploadModeEnum'
+        content_type:
+          type: string
+          description: Send this Content-Type with the original.
+        put_url:
+          type: string
+          nullable: true
+          description: 'Single mode (photos): PUT the whole file here.'
+        part_size:
+          type: integer
+          nullable: true
+          description: 'Multipart (videos): bytes per part; the last one is smaller.'
+        part_count:
+          type: integer
+          nullable: true
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartOut'
+          description: 'Parts already uploaded: skip them when resuming.'
+        thumb_put_url:
+          type: string
+          nullable: true
+          description: PUT the thumbnail here, Content-Type image/jpeg.
+      required:
+      - challenge_id
+      - content_type
+      - day
+      - mode
+      - part_count
+      - part_size
+      - parts
+      - proof
+      - put_url
+      - thumb_put_url
+    ScheduleInRequest:
+      type: object
+      properties:
+        period_kind:
+          $ref: '#/components/schemas/PeriodKindEnum'
+        period_start:
+          type: string
+          format: date
+          description: First day of the period (the 1st for a month).
+      required:
+      - period_kind
+      - period_start
     StatusEnum:
       enum:
       - valid
@@ -570,6 +2124,152 @@ components:
         * `valid` - valid
         * `expired` - expired
         * `used` - used
+    TargetScopeEnum:
+      enum:
+      - none
+      - per_check_in
+      - per_week
+      - per_period
+      type: string
+      description: |-
+        * `none` - No target
+        * `per_check_in` - Each check-in
+        * `per_week` - Each week
+        * `per_period` - The whole period
+    TodayChallengeOut:
+      type: object
+      description: 'One of my challenges today: what to show on its card and in the
+        ring.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        times:
+          type: integer
+          nullable: true
+        target_scope:
+          $ref: '#/components/schemas/TargetScopeEnum'
+        target_value:
+          type: number
+          format: double
+          nullable: true
+        proof_kind:
+          $ref: '#/components/schemas/ProofKindEnum'
+        proof_required:
+          type: boolean
+        end_date:
+          type: string
+          format: date
+        state:
+          allOf:
+          - $ref: '#/components/schemas/DayStateEnum'
+          description: |-
+            Today's state.
+
+            * `done` - done
+            * `partial` - partial
+            * `todo` - todo
+            * `open` - open
+            * `missed` - missed
+            * `not_due` - not_due
+            * `future` - future
+            * `outside` - outside
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: Today's total (numbers only).
+        streak:
+          type: integer
+          nullable: true
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayOut'
+          description: Monday to Sunday of this week.
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/ProgressOut'
+          nullable: true
+          description: Toward the week's or the period's goal.
+        settled:
+          type: boolean
+          nullable: true
+          description: 'Today''s ring segment: full, empty, or none (null).'
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Today's proofs, uploads in flight too.
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Days of this week with proof.
+      required:
+      - end_date
+      - frequency
+      - icon
+      - id
+      - measure
+      - progress
+      - proof_days
+      - proof_kind
+      - proof_required
+      - proofs
+      - settled
+      - state
+      - streak
+      - target_scope
+      - target_value
+      - times
+      - title
+      - total
+      - unit
+      - week
+    TodayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        deadline:
+          type: string
+          format: date-time
+          description: When today ends (crew-local midnight).
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodayChallengeOut'
+        crew:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrewDayOut'
+          description: Everyone with something today, in join order.
+      required:
+      - challenges
+      - crew
+      - day
+      - deadline
+    UploadModeEnum:
+      enum:
+      - single
+      - multipart
+      type: string
+      description: |-
+        * `single` - One presigned PUT
+        * `multipart` - Multipart, resumable
     UserOut:
       type: object
       properties:
@@ -588,4 +2288,4 @@ components:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: sessionid
+      name: crew_session

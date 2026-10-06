@@ -1,4 +1,7 @@
-"""ObjectStorage kept in memory, for tests. Mirrors the S3 behavior services rely on."""
+"""ObjectStorage kept in memory, for tests. Mirrors the S3 behavior services rely on.
+
+With DEBUG (make e2e) its URLs point at memory_views.py, so a real browser can upload too.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ from .base import (
     InvalidPart,
     ObjectInfo,
     ObjectStorage,
+    StorageError,
     UploadedPart,
     UploadNotFound,
     sorted_parts,
@@ -38,15 +42,24 @@ def _etag(data: bytes) -> str:
     return f'"{hashlib.md5(data, usedforsecurity=False).hexdigest()}"'
 
 
+SERVED_AT = "/api/dev-storage/"
+
+
 class InMemoryObjectStorage(ObjectStorage):
     """Use `upload_part()` in tests to play the browser's role."""
 
-    def __init__(self, *, bucket: str = "memory") -> None:
+    def __init__(self, *, bucket: str = "memory", url_base: str | None = None) -> None:
         self.bucket = bucket
+        self.url_base = url_base or f"memory://{bucket}/"
         self.uploads: dict[str, _PendingUpload] = {}
         self.objects: dict[str, _StoredObject] = {}
 
-    # --- test helper -------------------------------------------------------------------------
+    # --- test helpers ------------------------------------------------------------------------
+    def put_object(self, *, key: str, data: bytes, content_type: str) -> str:
+        """Store a whole file as the browser would via its presigned PUT URL; returns the ETag."""
+        self.objects[key] = _StoredObject(data=data, content_type=content_type, etag=_etag(data))
+        return self.objects[key].etag
+
     def upload_part(self, *, key: str, upload_id: str, part_number: int, data: bytes) -> str:
         """Store one part as the browser would via its presigned URL; returns the ETag."""
         validate_part_number(part_number)
@@ -55,6 +68,14 @@ class InMemoryObjectStorage(ObjectStorage):
         return _etag(data)
 
     # --- ObjectStorage -----------------------------------------------------------------------
+    def presign_put(
+        self, *, key: str, content_type: str, expires_in: int = DEFAULT_PRESIGN_SECONDS
+    ) -> str:
+        return f"{self.url_base}{key}?contentType={content_type}&expires={expires_in}"
+
+    def presign_get(self, *, key: str, expires_in: int = DEFAULT_PRESIGN_SECONDS) -> str:
+        return f"{self.url_base}{key}?expires={expires_in}"
+
     def create_multipart(self, *, key: str, content_type: str) -> str:
         upload_id = uuid.uuid4().hex
         self.uploads[upload_id] = _PendingUpload(key=key, content_type=content_type)
@@ -71,7 +92,7 @@ class InMemoryObjectStorage(ObjectStorage):
         validate_part_number(part_number)
         self._pending(key, upload_id)
         return (
-            f"memory://{self.bucket}/{key}?uploadId={upload_id}"
+            f"{self.url_base}{key}?uploadId={upload_id}"
             f"&partNumber={part_number}&expires={expires_in}"
         )
 
@@ -109,6 +130,24 @@ class InMemoryObjectStorage(ObjectStorage):
 
     def head(self, *, key: str) -> ObjectInfo | None:
         return self._info(key) if key in self.objects else None
+
+    def delete(self, *, key: str) -> None:
+        self.objects.pop(key, None)
+
+    def put(self, *, key: str, data: bytes, content_type: str) -> None:
+        self.put_object(key=key, data=data, content_type=content_type)
+
+    def copy(self, *, source: str, key: str) -> None:
+        if source not in self.objects:
+            raise StorageError(f"No object {source!r} to copy.")
+        self.objects[key] = self.objects[source]
+
+    def list_keys(self, *, prefix: str) -> list[str]:
+        return sorted(k for k in self.objects if k.startswith(prefix))
+
+    def delete_prefix(self, *, prefix: str) -> None:
+        for key in self.list_keys(prefix=prefix):
+            del self.objects[key]
 
     # --- internals ---------------------------------------------------------------------------
     def _pending(self, key: str, upload_id: str) -> _PendingUpload:

@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.crews",
+    "apps.challenges",
+    "apps.checkins",
+    "apps.media",
 ]
 
 MIDDLEWARE = [
@@ -92,6 +95,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Our own cookie names: browsers share cookies across every port of a host, so another Django
+# app on localhost (or the same domain) would overwrite the default "sessionid" / "csrftoken"
+# and log people out of this one.
+SESSION_COOKIE_NAME = "crew_session"
+CSRF_COOKIE_NAME = "crew_csrftoken"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 365  # one year: people stay logged in on their phones
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -131,6 +139,18 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    # Several models have a "state" field; give each enum its own name in the contract.
+    "ENUM_NAME_OVERRIDES": {
+        "ChallengeStateEnum": "apps.challenges.models.Challenge.State",
+        "DayStateEnum": "apps.checkins.api.serializers.DAY_STATES",
+        "MediaKindEnum": "apps.checkins.models.Proof.Kind",
+        "CheckInStatusEnum": "apps.checkins.models.CheckIn.Status",
+        "ProofStatusEnum": "apps.checkins.models.Proof.Status",
+        "UploadModeEnum": "apps.media.models.Upload.Mode",
+        # Names the contract had before proofs also brought a "kind" and a "status".
+        "KindEnum": ["days", "amount"],
+        "StatusEnum": ["valid", "expired", "used"],
+    },
 }
 
 # --- Redis, cache and Celery ----------------------------------------------------------------
@@ -161,6 +181,15 @@ AWS_PROFILE = env("AWS_PROFILE", default="") or None
 MEDIA_BUCKET = env("MEDIA_BUCKET", default="cc-dev-media")
 # "s3" in every real environment; "memory" in tests (see integrations/storage).
 OBJECT_STORAGE_BACKEND = env("OBJECT_STORAGE_BACKEND", default="s3")
+# Videos: "mediaconvert" in production (and locally to try it), "off" plays them as uploaded,
+# "memory" in tests (see integrations/transcoding).
+TRANSCODER_BACKEND = env("TRANSCODER_BACKEND", default="off")
+MEDIACONVERT_ROLE_ARN = env("MEDIACONVERT_ROLE_ARN", default="")
+# Production media through CloudFront with signed cookies (media.<app host>); empty locally,
+# where media is read with presigned URLs (see integrations/cdn).
+MEDIA_CDN_DOMAIN = env("MEDIA_CDN_DOMAIN", default="")
+CLOUDFRONT_KEY_PAIR_ID = env("CLOUDFRONT_KEY_PAIR_ID", default="")
+CLOUDFRONT_PRIVATE_KEY_PATH = env("CLOUDFRONT_PRIVATE_KEY_PATH", default="")
 
 # --- Logging --------------------------------------------------------------------------------
 LOGGING = {

@@ -35,6 +35,15 @@ describe("translations", () => {
       "validation_failed",
       "not_authenticated",
       "not_found",
+      "not_checked_in",
+      "too_many_proofs",
+      "upload_closed",
+      "upload_incomplete",
+      "upload_size_mismatch",
+      "proof_not_found",
+      "upload_not_found",
+      "upload_failed",
+      "member_not_found",
     ];
     for (const code of codes) expect(Object.keys(ro.errors)).toContain(code);
   });

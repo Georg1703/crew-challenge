@@ -1,5 +1,6 @@
 export { api, call, onUnauthorized } from "./client";
 export { ApiError, isApiError, NETWORK_ERROR } from "./errors";
+export { putFile } from "./upload";
 export type { components, paths } from "./schema.gen";
 
 import type { components } from "./schema.gen";

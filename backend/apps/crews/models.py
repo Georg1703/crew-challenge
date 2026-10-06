@@ -5,16 +5,18 @@ Business rules live in services.py; this module holds data and database-level in
 
 from __future__ import annotations
 
-from datetime import time
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
 
 from apps.core import clock
-from apps.core.models import TimeStampedModel
+from apps.core.models import (
+    SoftDeleteManager,
+    SoftDeleteModel,
+    SoftDeleteQuerySet,
+    TimeStampedModel,
+)
 
 
 def validate_timezone(value: str) -> None:
@@ -36,23 +38,18 @@ class Crew(TimeStampedModel):
         validators=[validate_timezone],
         help_text="IANA time zone, for example Europe/Chisinau. Challenge days follow it.",
     )
-    proposal_deadline_day = models.PositiveSmallIntegerField(
-        default=28,
-        validators=[MinValueValidator(1), MaxValueValidator(28)],
-        help_text="Day of the month by which the proposer must publish the next challenge.",
-    )
-    reveal_time = models.TimeField(
-        default=time(20, 0),
-        help_text="Local time on the last day of the month when the next challenge is revealed.",
+    max_proposals = models.PositiveSmallIntegerField(
+        default=50,
+        help_text="How many proposals the pool can hold (1-200).",
     )
 
     class Meta:
         ordering = ("name",)
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(proposal_deadline_day__gte=1, proposal_deadline_day__lte=28),
-                name="crew_deadline_day_1_to_28",
-            ),
+                condition=models.Q(max_proposals__gte=1, max_proposals__lte=200),
+                name="crew_max_proposals_range",
+            )
         ]
 
     def __str__(self) -> str:
@@ -75,6 +72,38 @@ class CrewScopedModel(TimeStampedModel):
         abstract = True
 
 
+class CrewScopedSoftDeleteQuerySet[M: models.Model](  # type: ignore[override]
+    CrewScopedQuerySet[M], SoftDeleteQuerySet[M]
+):
+    def for_crew(self, crew: Crew) -> CrewScopedSoftDeleteQuerySet[M]:
+        return self.filter(crew=crew)
+
+
+class CrewScopedSoftDeleteManager[M: models.Model](SoftDeleteManager[M]):
+    """Only rows that are not deleted, with `.for_crew(crew)`."""
+
+    def get_queryset(self) -> CrewScopedSoftDeleteQuerySet[M]:
+        rows: CrewScopedSoftDeleteQuerySet[M] = CrewScopedSoftDeleteQuerySet(
+            self.model, using=self._db
+        )
+        return rows.filter(deleted_at__isnull=True)
+
+    def for_crew(self, crew: Crew) -> CrewScopedSoftDeleteQuerySet[M]:
+        return self.get_queryset().for_crew(crew)
+
+
+class CrewScopedSoftDeleteModel(SoftDeleteModel):
+    """A crew-owned row that is soft deleted (see `apps.core.models.SoftDeleteModel`)."""
+
+    crew = models.ForeignKey(Crew, on_delete=models.CASCADE, related_name="%(class)ss")
+
+    objects = CrewScopedSoftDeleteManager()  # type: ignore[misc]
+    all_objects = CrewScopedSoftDeleteQuerySet.as_manager()  # type: ignore[assignment, misc]
+
+    class Meta(SoftDeleteModel.Meta):
+        abstract = True
+
+
 class Member(CrewScopedModel):
     """A user's membership in one crew. One user can be a member of several crews."""
 
@@ -88,9 +117,6 @@ class Member(CrewScopedModel):
     display_name = models.CharField(max_length=40)
     avatar_seed = models.CharField(max_length=16, help_text="Seed for the generated avatar.")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
-    rotation_position = models.PositiveSmallIntegerField(
-        help_text="Order in which members propose challenges, starting at 0."
-    )
     last_active_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -98,15 +124,9 @@ class Member(CrewScopedModel):
     )
 
     class Meta:
-        ordering = ("crew", "rotation_position")
+        ordering = ("crew", "created_at")
         constraints = [
             models.UniqueConstraint(fields=["crew", "user"], name="member_unique_user_per_crew"),
-            # Deferred so a whole rotation can be reordered inside one transaction.
-            models.UniqueConstraint(
-                fields=["crew", "rotation_position"],
-                name="member_unique_rotation_position",
-                deferrable=models.Deferrable.DEFERRED,
-            ),
             models.UniqueConstraint(
                 Lower("display_name"), "crew", name="member_unique_display_name_per_crew"
             ),

@@ -16,6 +16,9 @@ from apps.core.api.views import HealthView
 api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.accounts.api.urls")),
     path("", include("apps.crews.api.urls")),
+    path("", include("apps.challenges.api.urls")),
+    path("", include("apps.checkins.api.urls")),
+    path("", include("apps.media.api.urls")),
 ]
 
 # JSON instead of HTML for unknown /api/ URLs and crashes (see apps/core/api/errors.py).
@@ -35,3 +38,9 @@ if settings.DEBUG:  # pragma: no cover - local development only
         path("api/schema", SpectacularAPIView.as_view(), name="schema"),
         path("api/docs", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
     ]
+
+    if settings.OBJECT_STORAGE_BACKEND == "memory":  # make e2e: the browser uploads here, not S3
+        from integrations.storage.memory import SERVED_AT
+        from integrations.storage.memory_views import memory_bucket
+
+        urlpatterns += [path(f"{SERVED_AT.lstrip('/')}<path:key>", memory_bucket)]

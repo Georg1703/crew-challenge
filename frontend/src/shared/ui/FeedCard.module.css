@@ -1,0 +1,111 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.success {
+  border-color: var(--color-success-line);
+  background: var(--color-success-soft);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.text,
+.meta,
+.highlight,
+.amountLine {
+  margin: 0;
+}
+
+.text {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.time {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.highlight {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--color-success);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
+}
+
+.big {
+  font-size: var(--text-number);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-number);
+  letter-spacing: var(--tracking-title);
+}
+
+.amount {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.amountLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.amountValue {
+  font-size: var(--text-title-m);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-title-m);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.success .foot {
+  border-top-color: var(--color-success-line);
+}
+
+.fact {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}

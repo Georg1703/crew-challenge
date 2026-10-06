@@ -45,3 +45,23 @@
 .error .mark {
   background: var(--color-danger);
 }
+
+.action {
+  min-height: var(--tap-min);
+  margin-left: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

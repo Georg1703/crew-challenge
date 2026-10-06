@@ -28,7 +28,8 @@ export function Sheet({
     const previous = document.activeElement as HTMLElement | null;
     panel.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      // A layer above (the proof viewer) handles its own Escape first and marks it handled.
+      if (event.key === "Escape" && !event.defaultPrevented) onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => {

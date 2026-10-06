@@ -7,6 +7,7 @@ import { useLogout, useMe } from "@/features/auth";
 import { setLanguage, type Language } from "@/i18n";
 import { InstallCard } from "@/pwa";
 import { errorMessage } from "@/i18n/errors";
+import { setTheme, storedTheme, type Theme } from "@/shared/lib/theme";
 import {
   Avatar,
   Button,
@@ -27,7 +28,7 @@ import {
 import { useSwitchCrew, useUpdateMe } from "../api";
 import styles from "../me.module.css";
 
-/** Me: profile, crews (when you are in several), language, install, log out. */
+/** Me: profile, crews (when you are in several), language and theme, install, log out. */
 export function MeRoute() {
   const { t } = useTranslation();
   const me = useMe();
@@ -53,6 +54,7 @@ function MeScreen() {
   const member = me.data?.member;
   const crews = me.data?.crews ?? [];
   const [name, setName] = useState(member?.display_name ?? "");
+  const [theme, setThemeState] = useState<Theme>(storedTheme);
 
   const saveName = (event: FormEvent) => {
     event.preventDefault();
@@ -102,6 +104,19 @@ function MeScreen() {
           </form>
         </Card>
       )}
+      <List label={t("me.moreLabel")}>
+        <ListRow
+          to="/challenges"
+          leading={
+            <IconTile>
+              <Icon name="flag" size={20} />
+            </IconTile>
+          }
+          title={t("challenges.title")}
+          subtitle={t("me.challengesHint")}
+          trailing={<Icon name="chevronRight" size={20} />}
+        />
+      </List>
       {crews.length > 1 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t("me.crewsTitle")}</h2>
@@ -143,15 +158,30 @@ function MeScreen() {
         </section>
       )}
       <Card>
-        <Segmented<Language>
-          label={t("me.language")}
-          value={i18n.language === "en" ? "en" : "ro"}
-          onChange={changeLanguage}
-          options={[
-            { value: "ro", label: t("languages.ro") },
-            { value: "en", label: t("languages.en") },
-          ]}
-        />
+        <Stack>
+          <Segmented<Language>
+            label={t("me.language")}
+            value={i18n.language === "en" ? "en" : "ro"}
+            onChange={changeLanguage}
+            options={[
+              { value: "ro", label: t("languages.ro") },
+              { value: "en", label: t("languages.en") },
+            ]}
+          />
+          <Segmented<Theme>
+            label={t("me.theme")}
+            value={theme}
+            onChange={(value) => {
+              setTheme(value);
+              setThemeState(value);
+            }}
+            options={[
+              { value: "system", label: t("themes.system") },
+              { value: "light", label: t("themes.light") },
+              { value: "dark", label: t("themes.dark") },
+            ]}
+          />
+        </Stack>
       </Card>
       <InstallCard />
       <Button

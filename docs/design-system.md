@@ -52,13 +52,15 @@ A new token needs a reason: add it to `tokens.css` and, for colors and sizes, to
 | ink-muted | `--color-text-muted` | Secondary lines, hints, labels, inactive tabs |
 | ink-disabled | `--color-text-disabled` | Placeholders and disabled labels only, never information |
 | primary | `--color-accent` (+ `-pressed`, `-soft`), `--color-on-accent` | The one main action per screen; `-soft` highlights at most one card |
-| success | `--color-success`, `--color-success-soft` | Done, checked in, the active tab |
+| success | `--color-success`, `--color-success-soft`, `--color-success-line` | Done, checked in, the active tab; `-line` borders a card on `-soft` (a streak milestone) |
 | warning | `--color-warning`, `--color-warning-soft` | Attention: offline, paused, large file |
 | danger | `--color-danger`, `--color-danger-soft` | Errors, missed days, destructive actions |
 | focus | `--color-focus-ring` | Keyboard focus outline (2px) |
 | overlay | `--color-overlay` | Dim layer behind sheets |
 | avatar-1..5 | `--color-avatar-1` .. `-5`, `--color-on-avatar` | Member colors, white initials |
 | code | `--color-code-bg`, `--color-code-fg` | QR codes: dark on white in both themes |
+| media | `--color-media-bg`, `--color-on-media`, `--color-media-scrim` | Behind photos and videos (proof tiles, the viewer): the same near-black in both themes; marks over them are white on the scrim |
+| media pending | `--media-pending` | Stripes in the surface colors on a video being converted (`ProofTile`, `ProofMosaic`) |
 
 Every text color reaches 4.5:1 on its background in both themes (enforced by
 `src/design/tokens.test.ts`). Status colors are never decoration.
@@ -85,13 +87,22 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 
 - Radius: `--radius-md` 12px for buttons and inputs (about 23% of a 52px button),
   `--radius-lg` 16px for cards and lists, `--radius-xl` 24px for sheet tops, `--radius-sm` 8px for
-  small cells and thumbnails, `--radius-full` for avatars and pills. No other values (enforced).
+  small cells and thumbnails, `--radius-media-inner` 4px between the proofs of a `ProofMosaic` (its
+  outer corners keep the card's), `--radius-xs` 2px only for the bars of `DayBars` and `MiniWeek`,
+  `--radius-full` for avatars and pills. No other values (enforced).
 - Space: 4px grid, `--space-1` .. `--space-12`. Screen gutter `--space-5`, sections `--space-6`
-  apart, card padding `--space-4` (enforced for margin, padding and gap).
+  apart, card padding `--space-4` (enforced for margin, padding and gap). `--space-hair` (2px) only
+  between the bars of `DayBars`.
 - Depth: `--shadow-card` on cards and lists, `--shadow-sheet` on sheets, toasts and floating
   banners. Nothing else casts a shadow. Dark cards rely on their border.
 - Sizes: `--tap-min` 44px (every control), `--button-height` 52px, `--button-height-sm` 44px,
-  `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px.
+  `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px,
+  `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`),
+  `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens),
+  `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
+  `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`).
+  `--ring-current` marks today in a week strip.
+- Layers: `--z-sticky` (a `DayDivider` over the cards under it), `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
 
 ## Components (`frontend/src/shared/ui`)
 
@@ -109,13 +120,36 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring), a row of up to five members then "+N" |
-| `Sheet` | Bottom sheets for a short task (invite, check in, confirm). Title, close button, one primary action |
+| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it |
 | `Banner` | A message that stays true until it changes (wrong password, offline, your turn). Inline; `floating` only for app-wide notices |
-| `Toast` (`useToast`) | A short confirmation after an action, above the tab bar |
+| `Toast` (`useToast`) | A short confirmation after an action, above the tab bar; optionally one action ("Undo") for 5 seconds |
 | `QrCode` | A scannable code for a link |
 | `Segmented` | A small set of exclusive options (language, theme) |
+| `OptionList` | One choice among a few that each need a line of explanation (how often, what proof) |
+| `ChipGroup` | Several short choices that combine (days of the week, quick ideas) |
+| `CheckList` | Pick several rows, each with an optional avatar and a line of detail (who takes part); a row can be locked |
+| `Stepper` | A small whole number with minus and plus (times a week) |
+| `TextArea` | A labelled multi-line field (rules, notes); same states as `TextField` |
+| `Toggle` | An on/off setting with a label and an optional explanation |
+| `StepProgress` | Where you are in a multi-step form (segments) |
+| `IconPicker` | Pick one icon from a small set (a challenge's icon) |
+| `HoldButton` | Press and hold (0.6 s) to confirm a check-in; letting go cancels; keyboard confirms at once |
+| `ProgressRing` | Today's ring: one segment per thing to do, full / half / empty; closes with the center popping to "done" |
+| `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
+| `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday, with a small dot under the days with proof |
+| `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows. With `onPick` the day numbers become buttons (named by `labels`) and a tap on a row picks the day under the finger |
+| `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A ready video shows its length in a pill; a video being prepared with no poster shows calm stripes. A button when it opens something; an optional remove button (today only); `fill` fills a mosaic cell instead of staying square |
+| `ProofMosaic` | A check-in's proofs laid out by count: one in a 4:3 box, two side by side, three or more as one big and two small with "+N" over the third. The big tiles show the full photo (`full`), the small ones the thumbnail. Tapping a tile opens the viewer at that proof |
+| `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline, muted until tapped (HLS, with hls.js loaded only where needed) |
+| `FeedCard` | One moment in the crew's journal, as a card of its own: who (an avatar with today's ring, or a stack for a group), what, the challenge as a chip and when; then by kind a `ProofMosaic`, an amount with a bar to the target, or a milestone's big number; a footer with `MiniWeek` and short facts. `tone="success"` for a milestone or the whole crew finishing the day |
+| `StoryAvatar` | A member with today's ring split into one segment per challenge due today (done green, started faint green, to do grey; nothing due: a plain grey ring), their name and "2/2" under it, and a count of new proofs. A link to the member's page; `lg` at the top of that page |
+| `MiniWeek` | The last seven days as small bars with the shapes of `DayBars`, today outlined; read as one summary |
+| `DayDivider` | A day in the crew's journal: its name, a line and what happened; sticks to the top while that day scrolls |
+| `StatGroup` | Up to three numbers in one card, divided, each with a short label under it; a number can be success green |
+| `ChallengeChip` | A challenge named inside a card: its icon in a small accent circle and its title, cut with an ellipsis |
+| `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kind a challenge takes. When it takes a photo or a video, a sheet asks which first, so each picker takes one type (Chrome on Android hides videos from a picker that also takes images) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
-| `TabBar`, `Icon` | Main navigation; the shared icon set (Lucide shapes, stroke 1.75) |
+| `TabBar`, `Icon` | Main navigation, with an optional raised action (check in), its count and, while proofs upload, a thin progress ring; the shared icon set (Lucide shapes, stroke 1.75) |
 
 Rules:
 - A feature needs something new? Add or extend a component in `shared/ui` (with all its states),
@@ -145,7 +179,7 @@ Rules:
 ## Layout
 
 Phone first, 390px reference, content column up to `--content-max-width`. The tab bar has Today,
-Crew and Me in v1 (the raised check-in button and News come with their features). Use `Screen`
+Crew, the raised check-in button and Me in v1 (News, after it, will put the button in the center). Use `Screen`
 for safe areas and `100dvh`.
 
 ## Not in this version

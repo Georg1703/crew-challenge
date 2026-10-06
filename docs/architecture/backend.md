@@ -20,9 +20,14 @@ backend/
 |-- apps/
 |   |-- core/               # shared building blocks, no domain logic
 |   |-- accounts/           # User, login/logout/me
-|   `-- crews/              # Crew, Member, Invite, rotation
+|   |-- crews/              # Crew, Member, Invite, switching crews
+|   |-- challenges/         # Challenge (soft deleted), Participant, Vote
+|   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: due days, day states, streaks
+|   `-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |-- integrations/
-|   `-- storage/            # ObjectStorage ABC, S3ObjectStorage, InMemoryObjectStorage, factory
+|   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
+|   |-- transcoding/        # Transcoder ABC, MediaConvert (job settings in code), in-memory, factory
+|   `-- cdn/                # CloudFront URLs and signed cookies (production); None locally
 |-- tests/
 |   `-- factories/          # factory-boy factories, one module per app
 `-- conftest.py             # fixtures for every test: api_client, user, auth_client, object_storage
@@ -33,8 +38,8 @@ backend/
 ```
 apps/crews/
 |-- models.py        # fields, constraints, small computed properties
-|-- services.py      # writes: create_crew_with_admin, create_invite, accept_invite, reorder_rotation
-|-- selectors.py     # reads: get_member_for_user, list_members, next_proposer
+|-- services.py      # writes: create_crew_with_admin, create_invite, accept_invite, switch_crew
+|-- selectors.py     # reads: get_active_member, list_members, list_pending_invites
 |-- api/
 |   |-- serializers.py
 |   |-- views.py
@@ -87,6 +92,7 @@ name = "Only integrations talk to external SDKs"
 type = "forbidden"
 source_modules = ["apps"]
 forbidden_modules = ["boto3", "botocore", "pywebpush"]
+allow_indirect_imports = true  # apps reach them only through integrations/* adapters
 
 [[tool.importlinter.contracts]]
 name = "Core does not depend on domain apps"
@@ -99,7 +105,7 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 
 | Module | Provides |
 |---|---|
-| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`) |
+| `models.py` | `TimeStampedModel` (UUID pk, `created_at`, `updated_at`); `SoftDeleteModel` (adds `deleted_at`; `objects` hides deleted rows, `all_objects` shows all; see `docs/recipes/soft-delete.md`) |
 | `clock.py` | The only source of current time: `now()`, `crew_today(crew)`, `local_today(tz)`, `day_bounds_utc(day, tz)`, `deadline_utc(day, tz)` |
 | `errors.py` | `DomainError(message, code=, fields=)` and subclasses: `ValidationFailed`, `PermissionDenied`, `NotFound`, `Conflict` |
 | `exception_handler.py` | DRF handler that turns every error into the standard error shape |
@@ -108,7 +114,6 @@ forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.che
 | `api/errors.py` | JSON 404/500 for `/api/` paths (`handler404`, `handler500` in `config/urls.py`) |
 | `health.py` + `api/views.py` | `GET /api/health`: database and Redis checks, 200 or 503 |
 | `tasks.py` | `core.ping`, proves a worker is connected |
-
 | `throttling.py` | Per-IP rate limits (`LoginRateThrottle`, `JoinRateThrottle`, `InvitePreviewRateThrottle`), counted in Redis |
 | `schema.py` | drf-spectacular extensions (documents our session auth) |
 
@@ -117,8 +122,8 @@ Crew building blocks live in the `crews` app, because core must not depend on do
 | Where | What |
 |---|---|
 | `apps.crews.models.CrewScopedModel` | Abstract base with a `crew` FK and `Model.objects.for_crew(crew)`; every crew-owned model inherits it |
+| `apps.crews.models.CrewScopedSoftDeleteModel` | The same, soft deleted: `objects.for_crew(crew)` returns only rows that are not deleted |
 | `apps.crews.api.permissions.IsCrewMember` | Logged in and in a crew; sets `request.member` (the member in the session's active crew) |
-| `apps.crews.selectors.next_in_rotation` | Who proposes after a given member, wrapping around |
 
 Admin-only actions are checked in services (`NotCrewAdmin`), not by a permission class, so the rule
 lives in one place and also protects Celery tasks and commands.
@@ -130,8 +135,7 @@ lives in one place and also protects Celery tasks and commands.
 - Login and joining are rate-limited per IP in Redis; behind Caddy the IP comes from
   `X-Forwarded-For` (`TRUSTED_PROXY_COUNT`, 1 in production).
 - Invites are single-use, expire after 7 days, and are locked (`select_for_update`) while used.
-- Database constraints back the rules: one membership per user per crew, unique rotation
-  positions (deferred, so a rotation can be reordered in one transaction), unique display names
+- Database constraints back the rules: one membership per user per crew and unique display names
   per crew ignoring case.
 
 ## Time

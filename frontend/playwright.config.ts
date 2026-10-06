@@ -9,6 +9,9 @@ import { defineConfig, devices } from "@playwright/test";
 const backendEnv = {
   DJANGO_SETTINGS_MODULE: "config.settings.local",
   DJANGO_DEBUG: "true",
+  // Proofs upload to Django itself instead of S3 (integrations/storage/memory_views.py).
+  OBJECT_STORAGE_BACKEND: "memory",
+  TRANSCODER_BACKEND: "off",
   ...(process.env.E2E_DATABASE_URL ? { DATABASE_URL: process.env.E2E_DATABASE_URL } : {}),
 };
 
@@ -35,6 +38,7 @@ export default defineConfig({
     {
       command:
         "uv run python manage.py migrate -v0 && uv run python manage.py seed_demo && " +
+        "uv run python manage.py seed_demo_challenge && " +
         "uv run python manage.py runserver 127.0.0.1:8000 --noreload",
       cwd: "../backend",
       url: "http://127.0.0.1:8000/api/health",

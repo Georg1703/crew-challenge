@@ -17,7 +17,6 @@ __pycache__/
 htmlcov/
 *.egg-info/
 backend/staticfiles/
-backend/media/
 # Node
 node_modules/
 frontend/dist/

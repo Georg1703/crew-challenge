@@ -6,6 +6,7 @@ import { renderScreen } from "@/test/render";
 
 import { Avatar, AvatarStack, avatarColor, initials } from "./Avatar";
 import { Button } from "./Button";
+import { DayBar, DayBars, DayBarsAxis } from "./DayBars";
 import { List, ListRow } from "./ListRow";
 import { QrCode } from "./QrCode";
 import { Sheet } from "./Sheet";
@@ -101,5 +102,27 @@ describe("QrCode", () => {
     render(<QrCode value="https://example.com/join/abc" label="Invite QR code" />);
     const image = screen.getByRole("img", { name: "Invite QR code" });
     expect(image.querySelector("path")?.getAttribute("d")).toMatch(/^M\d+ \d+h1v1h-1z/);
+  });
+});
+
+describe("DayBars", () => {
+  it("reads as one summary, not a bar per day", () => {
+    render(<DayBars states={["done", "missed", "todo", "future"]} label="Ana: 1 done, 1 missed" />);
+
+    expect(screen.getByRole("img", { name: "Ana: 1 done, 1 missed" })).toBeInTheDocument();
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+  });
+
+  it("numbers the first day, every fifth, the last and today", () => {
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    const { container } = render(<DayBarsAxis days={days} todayIndex={6} />);
+
+    expect(container.textContent).toBe(["1", "5", "7", "10", "15", "20", "25", "31"].join(""));
+  });
+
+  it("names a single bar when it has a label", () => {
+    render(<DayBar state="missed" label="missed" />);
+
+    expect(screen.getByRole("img", { name: "missed" })).toBeInTheDocument();
   });
 });

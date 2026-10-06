@@ -12,15 +12,17 @@ The contract between the React app and Django. The machine-readable version is
 
 ## Authentication
 
-1. `GET /api/v1/auth/csrf` sets the `csrftoken` cookie (and returns the token).
+1. `GET /api/v1/auth/csrf` sets the `crew_csrftoken` cookie (and returns the token).
 2. `POST /api/v1/auth/login` with `{username, password}` and header `X-CSRFToken` sets
-   `sessionid` and answers `204`. Then `GET /api/v1/me` loads the user.
+   `crew_session` and answers `204`. Then `GET /api/v1/me` loads the user.
 3. Every unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`) sends `X-CSRFToken`, logged in or not.
    Without it the answer is `403 csrf_failed`. Django rotates the token on login, so re-read the
-   `csrftoken` cookie after logging in.
+   `crew_csrftoken` cookie after logging in.
 4. A `401` means the session is gone: the client clears its cache and goes to `/login`.
 
-Cookies: `sessionid` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
+Cookies: `crew_session` is `HttpOnly`, `Secure` in production, `SameSite=Lax`, one-year age.
+Both cookies have names of their own, not Django's defaults: cookies are shared by every port of
+a host, so another Django app on localhost would otherwise overwrite them and log people out.
 Usernames are case-insensitive (stored in lowercase).
 
 Rate limits per client IP: login 5/minute, joining a crew 10/minute, looking up an invite
@@ -68,9 +70,9 @@ Every error, from any layer, has this shape:
 |---|---|---|
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `permission_denied` |
-| 404 | Not found or not in your crew | `not_found`, `invite_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `not_taking_part`, `permission_denied` |
+| 404 | Not found or not in your crew | `not_found`, `invite_not_found`, `proof_not_found`, `upload_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -86,6 +88,7 @@ shape (Django's own HTML pages are used only outside `/api/`).
 - Resource names are plural nouns (`/invites`); actions on a resource are sub-paths
   (`/invites/{code}/accept`).
 - A member only ever sees data from their own crews. Out-of-crew ids return `404`, not `403`.
+  The same holds for a challenge the member is not invited to (admins see every challenge).
 - Write endpoints return the created or updated resource.
 
 ## Endpoints
@@ -95,20 +98,53 @@ shape (Django's own HTML pages are used only outside `/api/`).
 ```
 GET    /api/health                      liveness: database and Redis (not versioned, not in the contract)
 
-GET    /api/v1/auth/csrf                sets the csrftoken cookie
+GET    /api/v1/auth/csrf                sets the crew_csrftoken cookie
 POST   /api/v1/auth/login               {username, password} -> 204, session cookie
 POST   /api/v1/auth/logout              -> 204
 
 GET    /api/v1/me                       {user, member, crew}; member and crew are null outside a crew
 PATCH  /api/v1/me                       {display_name?, preferred_language?} -> me
 
-GET    /api/v1/crew                     the active crew + members in rotation order
-PATCH  /api/v1/crew/rotation            admin: {member_ids: [...every member, in the new order]}
+GET    /api/v1/crew                     the active crew + members in the order they joined
 POST   /api/v1/crew/invites             admin: -> 201 {code, url, expires_at} (single use, 7 days)
 
 GET    /api/v1/invites/{code}           public: {crew_name, status: valid|expired|used, expires_at}
 POST   /api/v1/invites/{code}/accept    public: {username, password, display_name}
-                                        -> 201 me, logged in, joined at the end of the rotation
+                                        -> 201 me, logged in, a member of the crew
+
+GET    /api/v1/proposals                the pool: proposals (newest first) with votes, size, limit
+GET    /api/v1/challenges?phase=...     scheduled challenges: upcoming, active, finished
+POST   /api/v1/challenges               propose into the pool, {participant_ids?} -> 201 (409 pool_full)
+GET    /api/v1/challenges/{id}          one challenge with participants
+PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
+DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
+PUT    /api/v1/challenges/{id}/participants   creator: {participant_ids} (while proposed)
+PUT    /api/v1/challenges/{id}/vote     participants: vote for a proposal; DELETE takes it back
+PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
+                                        move before the start; DELETE puts it back in the pool
+DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or leave -> 204;
+                                        either way the challenge is gone for the member
+
+GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
+POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today -> today's card
+DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's last entry -> today's card
+                                        (the last one takes the day's proofs with it)
+GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
+GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
+GET    /api/v1/feed?cursor=...          the crew's check-ins with proofs, latest activity first
+                                        (30 per page, challenges you can see)
+
+POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   {kind, content_type, size, fingerprint?,
+                                        thumb_size?}: add proof to today's check-in -> 201
+                                        proof + how to upload (one PUT, or multipart parts)
+GET    /api/v1/proofs/resume?fingerprint=...   my open video upload for this file, or 404
+POST   /api/v1/proofs/{id}/parts        {numbers} -> fresh part URLs
+PUT    /api/v1/proofs/{id}/parts/{number}   {etag}: report a finished part -> 204
+POST   /api/v1/proofs/{id}/complete     check the file -> the proof (ready); safe to repeat
+DELETE /api/v1/proofs/{id}              mine, only on its own day -> 204
+
+POST   /api/v1/media/session            sets the CloudFront cookies for the crew's media
+                                        -> {expires_at}; a no-op locally (expires_at null)
 ```
 
 ## Changing the contract

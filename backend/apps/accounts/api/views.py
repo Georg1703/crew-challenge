@@ -17,7 +17,7 @@ from .serializers import CsrfOut, LoginIn
 
 
 class CsrfView(APIView):
-    """GET /api/v1/auth/csrf - sets the csrftoken cookie; call it before the first POST."""
+    """GET /api/v1/auth/csrf - sets the crew_csrftoken cookie; call it before the first POST."""
 
     authentication_classes: list[type[BaseAuthentication]] = []
     permission_classes = [AllowAny]
