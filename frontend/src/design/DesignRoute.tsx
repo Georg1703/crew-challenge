@@ -29,6 +29,7 @@ import {
   OptionList,
   ProgressBar,
   ProgressRing,
+  ProofAddTile,
   ProofTile,
   ProofViewer,
   type RingSegment,
@@ -532,6 +533,11 @@ export function DesignRoute() {
           <ProofTile kind="photo" src={PICTURES[2]} state="failed" label="Could not upload" />
           <ProofTile kind="video" label="Video, no poster yet" />
           <ProofTile kind="photo" label="Photo, no thumbnail" />
+          <ProofAddTile
+            accept="image/*,video/*"
+            label="Add a photo or video"
+            onPick={(file) => toast(`Picked ${file.name}`, "info")}
+          />
         </div>
         <List label="Activity">
           <FeedItem
@@ -591,9 +597,10 @@ export function DesignRoute() {
               { to: "/me", label: "Me", icon: "user" },
             ]}
             action={{
-              label: "Check in",
+              label: `Check in. Uploading proof, ${Math.round(upload * 100)}%`,
               icon: "check",
               count: 2,
+              progress: upload,
               onClick: () => toast("The check-in sheet opens", "info"),
             }}
           />

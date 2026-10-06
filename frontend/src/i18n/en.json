@@ -150,7 +150,15 @@
     "not_taking_part": "You're not taking part in this challenge today.",
     "not_due_today": "This challenge asks for nothing today.",
     "nothing_to_undo": "There's nothing to undo today.",
-    "not_a_participant": "Only the people taking part can do this."
+    "not_a_participant": "Only the people taking part can do this.",
+    "not_checked_in": "Check in first, then add proof.",
+    "too_many_proofs": "A day takes at most 5 proofs.",
+    "upload_closed": "This upload has ended. Pick the file again to start over.",
+    "upload_incomplete": "The file is not fully uploaded yet. Try again.",
+    "upload_size_mismatch": "The uploaded file is not the one that was picked. Pick it again.",
+    "proof_not_found": "This proof no longer exists.",
+    "upload_not_found": "This upload no longer exists. Pick the file again.",
+    "upload_failed": "The file could not be uploaded. Check your connection and try again."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -513,7 +521,6 @@
       "future": "to come",
       "outside": "not taking part"
     },
-    "proofLater": "You'll be able to add the proof here soon.",
     "amountTitle": "How much?",
     "amountLabel": "How many {{unit}}",
     "amountAdd": "Add",
@@ -546,5 +553,34 @@
     },
     "sheetTitle": "What do you check in?",
     "tabLabel": "Check in"
+  },
+  "proofs": {
+    "add": "Add a photo or video",
+    "nudge": "Add a photo or video as proof for today.",
+    "kind": {
+      "photo": "Photo",
+      "video": "Video"
+    },
+    "tile": {
+      "ready": "{{kind}}. Tap to open",
+      "uploading": "{{kind}}, {{percent}}% uploaded. Tap to pause",
+      "paused": "{{kind}}, paused. Tap to go on",
+      "waiting": "{{kind}}, not finished. Pick the same file again to go on",
+      "processing": "{{kind}}, being prepared",
+      "failed": "{{kind}} could not be uploaded. Tap to try again",
+      "failedSaved": "{{kind}} could not be uploaded"
+    },
+    "remove": "Remove this proof",
+    "removed": "Proof removed",
+    "pickAgain": "Pick the same video again to go on from where it stopped.",
+    "bigTitle": "Upload {{size}} GB?",
+    "bigBody": "This video is large and may use a lot of mobile data. It keeps going while you use the app.",
+    "bigUpload": "Upload it",
+    "viewer": {
+      "label": "Proofs",
+      "previous": "Previous proof",
+      "next": "Next proof"
+    },
+    "uploading": "Check in. Uploading proof, {{percent}}%"
   }
 }

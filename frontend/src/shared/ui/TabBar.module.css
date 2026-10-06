@@ -89,3 +89,27 @@
   line-height: var(--leading-caption);
   box-shadow: var(--ring-todo);
 }
+
+/* Upload progress, drawn in the button's border. */
+.progress {
+  position: absolute;
+  inset: calc(var(--space-1) * -1);
+  width: calc(100% + var(--space-2));
+  height: calc(100% + var(--space-2));
+  pointer-events: none;
+}
+
+.progressTrack,
+.progressFill {
+  fill: none;
+  stroke-width: 4;
+}
+
+.progressTrack {
+  stroke: var(--color-surface-sunken);
+}
+
+.progressFill {
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+}

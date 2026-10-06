@@ -2,13 +2,14 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 
 import { useMe } from "@/features/auth";
-import { CheckInSheet, useCheckInAction } from "@/features/checkins";
+import { CheckInSheet, useCheckInAction, useMediaSession } from "@/features/checkins";
 import { TabBar } from "@/shared/ui";
 
 export function AppShell() {
   const { t } = useTranslation();
   const me = useMe();
   const checkIn = useCheckInAction(Boolean(me.data?.member));
+  useMediaSession(me.data?.member?.id);
   return (
     <>
       <Outlet />

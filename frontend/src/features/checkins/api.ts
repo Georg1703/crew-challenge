@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, call, type components } from "@/api";
+import { api, call, isApiError, type components } from "@/api";
 
 export type Today = components["schemas"]["TodayOut"];
 export type TodayChallenge = components["schemas"]["TodayChallengeOut"];
 export type Board = components["schemas"]["BoardOut"];
+export type Proof = components["schemas"]["ProofOut"];
+export type ProofUpload = components["schemas"]["ProofUploadOut"];
+export type ProofStart = components["schemas"]["ProofStartInRequest"];
 
 export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
@@ -107,5 +110,66 @@ export function useUndoCheckIn() {
       ),
     onSuccess: (card) => card && replace(card),
     onSettled: () => queryClient.invalidateQueries({ queryKey: checkinsKey }),
+  });
+}
+
+/** Proof calls for the upload engine, which runs outside React (see uploads/engine.ts). */
+export const proofApi = {
+  start: (challengeId: string, day: string, body: ProofStart) =>
+    call(
+      api.POST("/api/v1/challenges/{challenge_id}/check-ins/{day}/proofs", {
+        params: { path: { challenge_id: challengeId, day } },
+        body,
+      }),
+    ),
+  /** My unfinished video upload for this file, or null. */
+  resume: async (fingerprint: string): Promise<ProofUpload | null> => {
+    try {
+      return await call(api.GET("/api/v1/proofs/resume", { params: { query: { fingerprint } } }));
+    } catch (error) {
+      if (isApiError(error) && error.status === 404) return null;
+      throw error;
+    }
+  },
+  signPart: async (proofId: string, number: number) => {
+    const signed = await call(
+      api.POST("/api/v1/proofs/{proof_id}/parts", {
+        params: { path: { proof_id: proofId } },
+        body: { numbers: [number] },
+      }),
+    );
+    const part = signed.parts[0];
+    if (!part) throw new Error(`No URL for part ${number}.`);
+    return part.url;
+  },
+  reportPart: (proofId: string, number: number, etag: string) =>
+    call(
+      api.PUT("/api/v1/proofs/{proof_id}/parts/{number}", {
+        params: { path: { proof_id: proofId, number } },
+        body: { etag },
+      }),
+    ),
+  complete: (proofId: string) =>
+    call(
+      api.POST("/api/v1/proofs/{proof_id}/complete", { params: { path: { proof_id: proofId } } }),
+    ),
+  remove: (proofId: string) =>
+    call(api.DELETE("/api/v1/proofs/{proof_id}", { params: { path: { proof_id: proofId } } })),
+};
+
+const MEDIA_SESSION_MS = 12 * 60 * 60 * 1000; // the cookies last 24 h; renew at half
+
+/**
+ * The CloudFront cookies that let this browser load the crew's photos and videos (production).
+ * Asked again for another crew, and when the app comes back after half their life. Locally a
+ * no-op on the server.
+ */
+export function useMediaSession(memberId: string | undefined) {
+  useQuery({
+    queryKey: ["media", "session", memberId],
+    queryFn: () => call(api.POST("/api/v1/media/session")),
+    enabled: Boolean(memberId),
+    staleTime: MEDIA_SESSION_MS,
+    refetchInterval: MEDIA_SESSION_MS,
   });
 }

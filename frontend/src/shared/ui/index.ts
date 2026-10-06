@@ -15,7 +15,7 @@ export { IconTile, List, ListRow } from "./ListRow";
 export { OptionList, type Option } from "./OptionList";
 export { ProgressBar } from "./ProgressBar";
 export { ProgressRing, type RingSegment } from "./ProgressRing";
-export { ProofTile, type ProofKind, type ProofTileState } from "./ProofTile";
+export { ProofAddTile, ProofTile, type ProofKind, type ProofTileState } from "./ProofTile";
 export { ProofViewer, type ViewerItem } from "./ProofViewer";
 export { QrCode } from "./QrCode";
 export { Screen, Stack } from "./Screen";

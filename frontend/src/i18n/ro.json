@@ -150,7 +150,15 @@
     "not_taking_part": "Nu participi azi la provocarea asta.",
     "not_due_today": "Provocarea asta nu cere nimic azi.",
     "nothing_to_undo": "Nu e nimic de anulat azi.",
-    "not_a_participant": "Doar cei care participă pot face asta."
+    "not_a_participant": "Doar cei care participă pot face asta.",
+    "not_checked_in": "Bifează întâi, apoi adaugă dovada.",
+    "too_many_proofs": "O zi poate avea cel mult 5 dovezi.",
+    "upload_closed": "Încărcarea s-a încheiat. Alege din nou fișierul ca s-o iei de la capăt.",
+    "upload_incomplete": "Fișierul nu e încărcat complet. Încearcă din nou.",
+    "upload_size_mismatch": "Fișierul încărcat nu e cel ales. Alege-l din nou.",
+    "proof_not_found": "Dovada nu mai există.",
+    "upload_not_found": "Încărcarea nu mai există. Alege din nou fișierul.",
+    "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -513,7 +521,6 @@
       "future": "urmează",
       "outside": "nu participi"
     },
-    "proofLater": "Dovada o vei putea adăuga aici în curând.",
     "amountTitle": "Cât adaugi?",
     "amountLabel": "Câte {{unit}}",
     "amountAdd": "Adaugă",
@@ -546,5 +553,34 @@
     },
     "sheetTitle": "Ce bifezi acum?",
     "tabLabel": "Bifează"
+  },
+  "proofs": {
+    "add": "Adaugă o poză sau un video",
+    "nudge": "Adaugă o poză sau un video ca dovadă pentru azi.",
+    "kind": {
+      "photo": "Poză",
+      "video": "Video"
+    },
+    "tile": {
+      "ready": "{{kind}}. Atinge pentru a deschide",
+      "uploading": "{{kind}}, {{percent}}% încărcat. Atinge ca să pui pauză",
+      "paused": "{{kind}}, în așteptare. Atinge ca să continui",
+      "waiting": "{{kind}}, neterminat. Alege din nou același fișier ca să continui",
+      "processing": "{{kind}}, se pregătește",
+      "failed": "{{kind}}: nu s-a putut încărca. Atinge ca să încerci din nou",
+      "failedSaved": "{{kind}}: nu s-a putut încărca"
+    },
+    "remove": "Șterge dovada",
+    "removed": "Dovadă ștearsă",
+    "pickAgain": "Alege din nou același video ca să continui de unde s-a oprit.",
+    "bigTitle": "Încarci {{size}} GB?",
+    "bigBody": "Videoul e mare și poate folosi multe date mobile. Se încarcă în timp ce folosești aplicația.",
+    "bigUpload": "Încarcă-l",
+    "viewer": {
+      "label": "Dovezi",
+      "previous": "Dovada anterioară",
+      "next": "Dovada următoare"
+    },
+    "uploading": "Bifează. Se încarcă dovada, {{percent}}%"
   }
 }

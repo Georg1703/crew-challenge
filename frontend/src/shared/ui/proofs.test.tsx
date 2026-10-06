@@ -1,13 +1,15 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
+import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DayBar, DayBars } from "./DayBars";
 import { FeedItem, type FeedProof } from "./FeedItem";
 import { List } from "./ListRow";
-import { ProofTile } from "./ProofTile";
+import { ProofAddTile, ProofTile } from "./ProofTile";
 import { ProofViewer, type ViewerItem } from "./ProofViewer";
+import { TabBar } from "./TabBar";
 import { WeekStrip } from "./WeekStrip";
 
 interface FakePlayer {
@@ -244,3 +246,41 @@ describe("proof dots", () => {
     expect(container.querySelectorAll(".dot")).toHaveLength(2);
   });
 });
+
+describe("ProofAddTile", () => {
+  it("opens the picker for its kinds and hands over the file, ready for the same file again", async () => {
+    const onPick = vi.fn();
+    const { container } = render(
+      <ProofAddTile accept="video/*" label="Add a video" onPick={onPick} />,
+    );
+    const input = container.querySelector("input") as HTMLInputElement;
+    const file = new File(["v"], "clip.mp4", { type: "video/mp4" });
+
+    expect(input).toHaveAttribute("accept", "video/*");
+    expect(screen.getByRole("button", { name: "Add a video" })).toBeInTheDocument();
+    await userEvent.upload(input, file);
+
+    expect(onPick).toHaveBeenCalledWith(file);
+    expect(input.value).toBe("");
+  });
+});
+
+describe("TabBar action progress", () => {
+  it("draws a ring only while something runs", () => {
+    const action = { label: "Check in", icon: "check" as const, onClick: () => undefined };
+    const { container, rerender } = renderScreenless(
+      <TabBar label="Nav" tabs={[]} action={action} />,
+    );
+    expect(container.querySelector(".progress")).toBeNull();
+
+    rerender(<TabBar label="Nav" tabs={[]} action={{ ...action, progress: 0.3 }} />);
+    expect(container.querySelector(".progress")).not.toBeNull();
+  });
+});
+
+/** TabBar renders NavLinks, which need a router. */
+function renderScreenless(element: React.ReactElement) {
+  const wrap = (child: React.ReactElement) => <MemoryRouter>{child}</MemoryRouter>;
+  const result = render(wrap(element));
+  return { ...result, rerender: (next: React.ReactElement) => result.rerender(wrap(next)) };
+}

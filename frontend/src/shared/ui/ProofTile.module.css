@@ -141,3 +141,17 @@ button.face:focus-visible {
   color: var(--color-bg);
   box-shadow: var(--ring-gap);
 }
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+.add:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}

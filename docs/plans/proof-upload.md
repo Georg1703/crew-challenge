@@ -33,9 +33,11 @@ Priorities, in order: efficiency (fast on a phone, cheap to run), user experienc
    its latest activity (the check-in or its newest proof), with the proofs' thumbnails. 30 per page,
    cursor paging. Refreshes on focus and every 60 s while visible.
 7. **New dependencies** (each with its reason in the PR): `zustand` (the upload manager outlives
-   screens), `@uppy/core` + `@uppy/aws-s3` (multipart engine: parallel parts, retries, resume),
-   `hls.js` (HLS on Android/desktop; lazy-loaded, Safari plays HLS natively), `idb-keyval`
-   (resume data in IndexedDB, 600 bytes).
+   screens), `@uppy/core` + `@uppy/aws-s3` v5 (multipart engine: parallel parts, retries, resume;
+   v6 was rewritten to drive S3 from the browser one part at a time, which does not fit an API
+   that owns the upload), `hls.js` (HLS on Android/desktop; lazy-loaded, Safari plays HLS
+   natively). Decided in stage 6: no IndexedDB (`idb-keyval` dropped); resume asks the server,
+   which records every part.
 
 This replaces one line of `docs/architecture/overview.md` ("the phone creates a check-in
 (`uploading`)"): the check-in exists first, and the proof attaches to it. Updated in commit 3.

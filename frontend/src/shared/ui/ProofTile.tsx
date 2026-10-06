@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { cx } from "@/shared/lib/cx";
 import { motion, useSpring } from "@/shared/motion";
 
@@ -116,6 +118,48 @@ function Mark({
       <span className={styles.badge}>
         <Icon name={icon} size={16} />
       </span>
+    </span>
+  );
+}
+
+/**
+ * The "+" tile: opens the phone's picker (camera or library) for one file of the `accept` types
+ * ("image/*", "video/*", or both).
+ */
+export function ProofAddTile({
+  accept,
+  label,
+  onPick,
+  disabled = false,
+}: {
+  accept: string;
+  label: string;
+  onPick: (file: File) => void;
+  disabled?: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <span className={styles.tile}>
+      <button
+        type="button"
+        className={cx(styles.face, styles.add)}
+        onClick={() => input.current?.click()}
+        aria-label={label}
+        disabled={disabled}
+      >
+        <Icon name="plus" />
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept={accept}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = ""; // the same file can be picked again (to resume)
+          if (file) onPick(file);
+        }}
+      />
     </span>
   );
 }

@@ -20,6 +20,8 @@ export interface TabAction {
   onClick: () => void;
   /** Shown in a small bubble when above zero, for example check-ins left today. */
   count?: number;
+  /** 0 to 1: a thin ring around the button while something runs (uploads). Say it in `label`. */
+  progress?: number;
   /** Placed after this many tabs (default: the middle). */
   after?: number;
 }
@@ -47,6 +49,21 @@ export function TabBar({
         transition={spring}
       >
         <Icon name={action.icon} size={28} />
+        {action.progress !== undefined && (
+          <svg viewBox="0 0 64 64" className={styles.progress} aria-hidden="true">
+            <circle cx="32" cy="32" r="30" className={styles.progressTrack} />
+            <motion.circle
+              cx="32"
+              cy="32"
+              r="30"
+              transform="rotate(-90 32 32)"
+              className={styles.progressFill}
+              initial={false}
+              animate={{ pathLength: Math.min(Math.max(action.progress, 0), 1) }}
+              transition={spring}
+            />
+          </svg>
+        )}
         {action.count ? (
           <motion.span
             key={action.count}

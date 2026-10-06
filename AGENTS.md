@@ -94,7 +94,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   django-celery-beat, boto3, pywebpush. Tooling: uv, ruff, mypy + django-stubs, pytest-django,
   factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
-  TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3
+  TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3 (v5)
   (after v1: @rive-app/react-canvas, canvas-confetti). CSS Modules + tokens in `src/styles/tokens.css`.
 - **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
 - **Auth:** Django session cookie + CSRF. No JWT.
@@ -143,9 +143,10 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   5 GiB max part, 10,000 parts max. Validate size <= 20 GB server-side.
 - 4 parallel parts, 6 retries with exponential backoff, auto re-sign expired URLs,
   pause on `offline`, resume on `online`.
-- Report each completed part (number + ETag) to the API. Also keep `upload_id`, file fingerprint
-  (name + size + lastModified) and completed parts in IndexedDB. Resume = user re-picks the same
-  file, fingerprint matches, only missing parts are uploaded.
+- Report each completed part (number + ETag) to the API, which keeps them with the upload. Resume =
+  user re-picks the same file, its fingerprint (name + size + lastModified) finds the open upload
+  (`GET /api/v1/proofs/resume`), only missing parts are uploaded. No browser storage for this: it
+  may be evicted on iOS, and the server already has it.
 - The upload manager is a global store outside routes: the user is never blocked from using the
   app while an upload runs. Progress shows in the tab bar.
 - Request a Screen Wake Lock during uploads (tolerate rejection). Warn before > 2 GB on phones.

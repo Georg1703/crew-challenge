@@ -17,6 +17,7 @@ import {
 import { useCheckIn, useUndoCheckIn, type TodayChallenge } from "../api";
 import styles from "../checkins.module.css";
 import { AmountSheet } from "./AmountSheet";
+import { ProofRow } from "./ProofRow";
 
 const QUICK_AMOUNTS = [1, 5, 10] as const;
 
@@ -169,8 +170,13 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
         }))}
       />
 
-      {card.proof_required && card.state === "done" && (
-        <p className={styles.meta}>{t("checkins.proofLater")}</p>
+      {card.proof_kind !== "none" && (card.state === "done" || card.state === "partial") && (
+        <>
+          {card.proof_required && card.proofs.length === 0 && (
+            <p className={styles.meta}>{t("proofs.nudge")}</p>
+          )}
+          <ProofRow card={card} day={day} />
+        </>
       )}
 
       {typing && <AmountSheet unit={card.unit} onClose={() => setTyping(false)} onAdd={record} />}

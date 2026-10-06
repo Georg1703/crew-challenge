@@ -137,8 +137,9 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A button when it opens something; an optional remove button (today only) |
 | `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline, muted until tapped (HLS, with hls.js loaded only where needed) |
 | `FeedItem` | One check-in in the crew feed, inside a `List`: avatar, what and when, up to three proofs and "+N" |
+| `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kinds a challenge takes |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
-| `TabBar`, `Icon` | Main navigation, with an optional raised action (check in) and its count; the shared icon set (Lucide shapes, stroke 1.75) |
+| `TabBar`, `Icon` | Main navigation, with an optional raised action (check in), its count and, while proofs upload, a thin progress ring; the shared icon set (Lucide shapes, stroke 1.75) |
 
 Rules:
 - A feature needs something new? Add or extend a component in `shared/ui` (with all its states),

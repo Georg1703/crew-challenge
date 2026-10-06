@@ -9,14 +9,14 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | React Router (data routers) | Routing, route-level code splitting |
 | TanStack Query | All server state: fetching, caching, optimistic updates |
 | openapi-fetch + openapi-typescript | Typed API client generated from `contracts/openapi.yaml` |
-| Zustand | Client-only state that outlives a screen (the upload manager) |
+| Zustand | Client-only state that outlives a screen (the upload manager's uploads in flight) |
 | Motion | UI animation (springs, layout, gestures) |
 | Rive (`@rive-app/react-canvas`) | After v1: character animation (trees, flame, wheel) |
 | canvas-confetti | After v1: celebrations |
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
 | hls.js | HLS playback outside Safari; loaded on demand by `ProofViewer` only |
-| Uppy core + @uppy/aws-s3 | Multipart upload engine, no Uppy UI |
+| Uppy core + @uppy/aws-s3, v5 | The bytes of an upload: parallel parts, retries, pause and resume, no Uppy UI. Pinned to v5: v6 drives S3 itself (it would create and complete uploads in the browser, one part at a time), while our API owns the upload |
 
 Do not add a library that overlaps one of these.
 
@@ -41,6 +41,7 @@ src/
 |   |-- crew/               # members list, invite sheet
 |   |-- home/               # garden (placeholder: greeting + members)
 |   `-- me/                 # profile, language, logout
+|-- features/checkins/uploads/   # the upload manager: store.ts (Zustand), engine.ts (Uppy), media.ts
 |-- shared/
 |   |-- ui/                 # the design system's components (docs/design-system.md)
 |   |-- motion/             # presets.ts + the only import point for animation
