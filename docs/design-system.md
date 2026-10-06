@@ -52,7 +52,7 @@ A new token needs a reason: add it to `tokens.css` and, for colors and sizes, to
 | ink-muted | `--color-text-muted` | Secondary lines, hints, labels, inactive tabs |
 | ink-disabled | `--color-text-disabled` | Placeholders and disabled labels only, never information |
 | primary | `--color-accent` (+ `-pressed`, `-soft`), `--color-on-accent` | The one main action per screen; `-soft` highlights at most one card |
-| success | `--color-success`, `--color-success-soft` | Done, checked in, the active tab |
+| success | `--color-success`, `--color-success-soft`, `--color-success-line` | Done, checked in, the active tab; `-line` borders a card on `-soft` (a streak milestone) |
 | warning | `--color-warning`, `--color-warning-soft` | Attention: offline, paused, large file |
 | danger | `--color-danger`, `--color-danger-soft` | Errors, missed days, destructive actions |
 | focus | `--color-focus-ring` | Keyboard focus outline (2px) |
@@ -60,6 +60,7 @@ A new token needs a reason: add it to `tokens.css` and, for colors and sizes, to
 | avatar-1..5 | `--color-avatar-1` .. `-5`, `--color-on-avatar` | Member colors, white initials |
 | code | `--color-code-bg`, `--color-code-fg` | QR codes: dark on white in both themes |
 | media | `--color-media-bg`, `--color-on-media`, `--color-media-scrim` | Behind photos and videos (proof tiles, the viewer): the same near-black in both themes; marks over them are white on the scrim |
+| media pending | `--media-pending` | Stripes in the surface colors on a video being converted (`ProofTile`, `ProofMosaic`) |
 
 Every text color reaches 4.5:1 on its background in both themes (enforced by
 `src/design/tokens.test.ts`). Status colors are never decoration.
@@ -86,7 +87,8 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 
 - Radius: `--radius-md` 12px for buttons and inputs (about 23% of a 52px button),
   `--radius-lg` 16px for cards and lists, `--radius-xl` 24px for sheet tops, `--radius-sm` 8px for
-  small cells and thumbnails, `--radius-xs` 2px only for the bars of `DayBars`,
+  small cells and thumbnails, `--radius-media-inner` 4px between the proofs of a `ProofMosaic` (its
+  outer corners keep the card's), `--radius-xs` 2px only for the bars of `DayBars` and `MiniWeek`,
   `--radius-full` for avatars and pills. No other values (enforced).
 - Space: 4px grid, `--space-1` .. `--space-12`. Screen gutter `--space-5`, sections `--space-6`
   apart, card padding `--space-4` (enforced for margin, padding and gap). `--space-hair` (2px) only
@@ -96,7 +98,9 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 - Sizes: `--tap-min` 44px (every control), `--button-height` 52px, `--button-height-sm` 44px,
   `--input-height` 48px, `--avatar-sm/md/lg` 28/40/64px, `--tabbar-height` 64px,
   `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`),
-  `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens).
+  `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens),
+  `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
+  `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`).
   `--ring-current` marks today in a week strip.
 - Layers: `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
 

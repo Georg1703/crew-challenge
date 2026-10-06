@@ -14,6 +14,7 @@ export const colorTokens = [
   "on-accent",
   "success",
   "success-soft",
+  "success-line",
   "warning",
   "warning-soft",
   "danger",
@@ -42,7 +43,7 @@ export const textTokens = [
   "number",
 ] as const;
 export const spaceTokens = ["1", "2", "3", "4", "5", "6", "8", "10", "12"] as const;
-export const radiusTokens = ["sm", "md", "lg", "xl", "full"] as const;
+export const radiusTokens = ["media-inner", "sm", "md", "lg", "xl", "full"] as const;
 export const shadowTokens = ["card", "sheet"] as const;
 export const sizeTokens = [
   "tap-min",
@@ -55,4 +56,7 @@ export const sizeTokens = [
   "tabbar-height",
   "day-bar-height",
   "proof-tile-size",
+  "story-avatar-size",
+  "story-avatar-size-lg",
+  "mini-bar-height",
 ] as const;
