@@ -1,0 +1,154 @@
+# Production stack on the Lightsail host, in /opt/cc. Only infra/scripts/deploy.sh starts it:
+#   TAG=<git sha> docker compose -f compose.prod.yaml --project-directory /opt/cc up -d --wait
+# Local development uses compose.yaml. Same backend image (target "prod"), built by GitHub
+# Actions and pulled from GHCR; the web image is Caddy with the built app (frontend/Dockerfile).
+#
+# Configuration: /opt/cc/.env (root:deploy, mode 640), see .env.example and
+# docs/architecture/environments.md. Files next to it:
+#   cloudfront-private.pem   signs media cookies; owned by uid 10001 (the app user), mode 400
+#
+# Release steps (deploy.sh): pull, `run --rm migrate`, `run --rm static`, `up -d --wait`.
+# The "release" profile keeps those one-off containers out of `up`.
+
+name: crew-challenges
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-app: &app
+  image: ${IMAGE_PREFIX:-ghcr.io/georg1703/crew-challenge}-backend:${TAG:?TAG must be the git sha to run}
+  env_file:
+    - path: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.production
+    DATABASE_URL: postgres://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:?}
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    CELERY_RESULT_BACKEND: redis://redis:6379/2
+    CACHE_URL: redis://redis:6379/3
+    CLOUDFRONT_PRIVATE_KEY_PATH: /run/secrets/cloudfront-private.pem
+  volumes:
+    - ./cloudfront-private.pem:/run/secrets/cloudfront-private.pem:ro
+  restart: unless-stopped
+  logging: *logging
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+
+  # One-off (deploy.sh): migrations, before the new app containers start. They must stay
+  # compatible with the release still running (add first, remove in a later release).
+  migrate:
+    <<: *app
+    profiles: ["release"]
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # One-off (deploy.sh): copies this release's Django static files (admin) where Caddy reads them.
+  static:
+    <<: *app
+    profiles: ["release"]
+    user: root
+    command: ["sh", "-c", "rm -rf /out/* && cp -a /app/staticfiles/. /out/"]
+    volumes:
+      - static:/out
+    restart: "no"
+
+  backend:
+    <<: *app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Through Django's host check, as Caddy sends it.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os, urllib.request as u; u.urlopen(u.Request('http://localhost:8000/api/health', headers={'Host': os.environ['APP_DOMAIN']}), timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    stop_grace_period: 30s
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "config", "worker", "--loglevel", "info", "--concurrency", "2"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping --destination celery@$$HOSTNAME --timeout 10"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 60s
+
+  beat:
+    <<: *app
+    # Schedules live in the database (django-celery-beat).
+    command: ["celery", "-A", "config", "beat", "--loglevel", "info", "--pidfile="]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    image: ${IMAGE_PREFIX:-ghcr.io/georg1703/crew-challenge}-web:${TAG:?TAG must be the git sha to run}
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data # certificates: keep this volume
+      - caddy_config:/config
+      - static:/srv/static:ro
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  pgdata:
+  static:
+  caddy_data:
+  caddy_config:

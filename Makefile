@@ -133,13 +133,20 @@ check-repo: ## Repo-level checks: docs links, referenced paths, ASCII, required 
 	@$(PYTHON) tools/check_repo.py
 
 .PHONY: check-compose
-check-compose: ## Validate compose.yaml (skipped when Docker is not installed)
+check-compose: ## Validate compose.yaml and compose.prod.yaml (skipped without Docker)
 ifeq ($(HAS_COMPOSE),)
 	$(call skip,compose check)
 else
 	@if command -v docker >/dev/null; then \
 		$(COMPOSE) --profile tunnel config --quiet && echo "OK: compose.yaml is valid"; \
 	else echo "SKIP: compose check: docker not installed"; fi
+	@if command -v docker >/dev/null; then \
+		tmp=$$(mktemp -d) && \
+		printf 'POSTGRES_DB=x\nPOSTGRES_USER=x\nPOSTGRES_PASSWORD=x\nAPP_DOMAIN=example.com\n' > $$tmp/.env && \
+		TAG=check docker compose -f compose.prod.yaml --project-directory $$tmp --profile release \
+			config --quiet && echo "OK: compose.prod.yaml is valid"; \
+		status=$$?; rm -rf $$tmp; exit $$status; \
+	fi
 endif
 
 .PHONY: check-backend
