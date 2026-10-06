@@ -9,7 +9,7 @@ export { DayBar, DayBars, DayBarsAxis } from "./DayBars";
 export { DayMark, type DayState } from "./DayMark";
 export { ChallengeChip } from "./ChallengeChip";
 export { DayDivider } from "./DayDivider";
-export { FeedItem } from "./FeedItem";
+export { FeedCard } from "./FeedCard";
 export { HoldButton } from "./HoldButton";
 export { Icon, type IconName } from "./Icon";
 export { IconPicker } from "./IconPicker";

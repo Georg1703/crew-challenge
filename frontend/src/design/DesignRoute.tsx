@@ -21,7 +21,7 @@ import {
   DayDivider,
   DayMark,
   type DayState,
-  FeedItem,
+  FeedCard,
   HoldButton,
   Icon,
   IconPicker,
@@ -584,29 +584,75 @@ export function DesignRoute() {
             />
           ))}
         </div>
-        <List label="Activity">
-          <FeedItem
-            name="Ana"
-            seed="ana"
-            text="Ana checked in Walk"
+        <Stack gap="sm">
+          <FeedCard
+            person={{ id: "ana", name: "Ana", seed: "ana" }}
+            ring="done"
+            text="Ana checked in"
+            challenge={{ icon: "activity", label: "Walk" }}
             time="5 min ago"
             proofs={[...PICTURES, ...PICTURES].slice(0, 5).map((src, i) => ({
               key: String(i),
               kind: i === 1 ? "video" : "photo",
               state: i === 2 ? "processing" : "ready",
               src,
+              duration: i === 1 ? "0:42" : undefined,
               label: `Proof ${i + 1}`,
             }))}
             onOpenProof={(i) => setViewer(Math.min(i, VIEWER.length - 1))}
             moreLabel="2 more proofs"
+            week={{
+              label: "Last 7 days: 6 done, today done",
+              days: (["done", "done", "missed", "done", "done", "done", "done"] as DayState[]).map(
+                (state, i) => ({ key: String(i), state, today: i === 6 }),
+              ),
+            }}
+            facts={["5 days in a row", "day 12 of 30", "5 proofs"]}
           />
-          <FeedItem
-            name="Bogdan"
-            seed="bogdan"
-            text="Bogdan read 20 pages"
+          <FeedCard
+            person={{ id: "bogdan", name: "Bogdan", seed: "bogdan" }}
+            ring="todo"
+            text="Bogdan read"
+            challenge={{ icon: "book", label: "Read" }}
             time="yesterday 21:40"
+            amount={{
+              value: "+12 pages",
+              detail: "20 today",
+              progress: { value: 20, max: 30, label: "20 of 30 pages" },
+            }}
           />
-        </List>
+          <FeedCard
+            people={{
+              members: [
+                { id: "ana", name: "Ana", seed: "ana" },
+                { id: "dan", name: "Dan", seed: "dan" },
+              ],
+              label: "Ana and Dan",
+            }}
+            text="Ana and Dan checked in"
+            challenge={{ icon: "droplet", label: "Water" }}
+            time="08:10"
+          />
+          <FeedCard
+            person={{ id: "ana", name: "Ana", seed: "ana" }}
+            tone="success"
+            text="Ana kept it up"
+            challenge={{ icon: "activity", label: "Walk" }}
+            highlight={{ value: "7", text: "days in a row" }}
+          />
+          <FeedCard
+            people={{
+              members: STORIES.map((story) => ({
+                id: story.seed,
+                name: story.name,
+                seed: story.seed,
+              })),
+              label: "The whole crew",
+            }}
+            tone="success"
+            text="The whole crew finished the day"
+          />
+        </Stack>
         <ProofViewer
           items={VIEWER}
           index={viewer ?? 0}

@@ -4,7 +4,7 @@ import type { FeedProof, ViewerItem } from "@/shared/ui";
 
 import type { Proof } from "./api";
 
-/** FeedItem shows three proofs, then "+N". */
+/** A ProofMosaic shows three proofs, the third with "+N". */
 export const SHOWN_PROOFS = 3;
 
 /** A proof the crew can see (processing or ready) as a tile; `who` names it for screen readers. */

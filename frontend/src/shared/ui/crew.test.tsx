@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ChallengeChip } from "./ChallengeChip";
 import { DayDivider } from "./DayDivider";
+import { FeedCard } from "./FeedCard";
 import { MiniWeek } from "./MiniWeek";
 import { ProofMosaic, type FeedProof } from "./ProofMosaic";
 import { ProofTile } from "./ProofTile";
@@ -138,5 +139,71 @@ describe("DayDivider, StatGroup, ChallengeChip", () => {
     expect(screen.getByText("days in a row")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("Read")).toBeInTheDocument();
+  });
+});
+
+describe("FeedCard", () => {
+  const ana = { id: "1", name: "Ana", seed: "ana" };
+
+  it("shows proofs as a mosaic, the challenge, and the footer facts", async () => {
+    const onOpenProof = vi.fn();
+    render(
+      <FeedCard
+        person={ana}
+        ring="done"
+        text="Ana checked in"
+        challenge={{ icon: "activity", label: "Walk" }}
+        time="5 min ago"
+        proofs={proofs(5)}
+        onOpenProof={onOpenProof}
+        moreLabel="2 more proofs"
+        week={{
+          label: "Last 7 days",
+          days: Array.from({ length: 7 }, (_, i) => ({ key: String(i), state: "done" as const })),
+        }}
+        facts={["7 days in a row", "day 5 of 30"]}
+      />,
+    );
+    expect(screen.getByRole("article")).toHaveTextContent("Ana checked in");
+    expect(screen.getByText("Walk")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Last 7 days" })).toBeInTheDocument();
+    expect(screen.getByText("day 5 of 30")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "2 more proofs" }));
+    expect(onOpenProof).toHaveBeenLastCalledWith(3);
+  });
+
+  it("shows an amount with a bar to the target", () => {
+    render(
+      <FeedCard
+        person={ana}
+        text="Ana read"
+        amount={{
+          value: "+12 pages",
+          detail: "20 today",
+          progress: { value: 20, max: 30, label: "20 of 30 pages" },
+        }}
+      />,
+    );
+    expect(screen.getByText("+12 pages")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "20 of 30 pages" })).toBeInTheDocument();
+  });
+
+  it("shows a milestone's number and a group's avatars", () => {
+    render(
+      <>
+        <FeedCard
+          person={ana}
+          tone="success"
+          text="Ana"
+          highlight={{ value: "7", text: "days in a row" }}
+        />
+        <FeedCard
+          people={{ members: [ana, { id: "2", name: "Dan", seed: "dan" }], label: "Ana and Dan" }}
+          text="Ana and Dan checked in Walk"
+        />
+      </>,
+    );
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Ana and Dan" })).toBeInTheDocument();
   });
 });

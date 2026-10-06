@@ -5,9 +5,6 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DayBar, DayBars, DayBarsAxis } from "./DayBars";
-import { FeedItem } from "./FeedItem";
-import type { FeedProof } from "./ProofMosaic";
-import { List } from "./ListRow";
 import { ProofAddTile, ProofTile } from "./ProofTile";
 import { ProofViewer, type ViewerItem } from "./ProofViewer";
 import { Sheet } from "./Sheet";
@@ -88,39 +85,6 @@ describe("ProofTile", () => {
     render(<ProofTile kind="video" state="processing" label="Video, being prepared" />);
     expect(screen.getByRole("img", { name: "Video, being prepared" })).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();
-  });
-});
-
-describe("FeedItem", () => {
-  it("shows three proofs, then +N that opens the fourth", async () => {
-    const onOpenProof = vi.fn();
-    const proofs: FeedProof[] = Array.from({ length: 5 }, (_, i) => ({
-      key: String(i),
-      kind: "photo",
-      state: "ready",
-      src: `/${i}.jpg`,
-      label: `Proof ${i + 1}`,
-    }));
-    render(
-      <List label="Activity">
-        <FeedItem
-          name="Ana"
-          seed="ana"
-          text="Ana checked in Walk"
-          time="5 min ago"
-          proofs={proofs}
-          onOpenProof={onOpenProof}
-          moreLabel="2 more proofs"
-        />
-      </List>,
-    );
-
-    expect(screen.getAllByRole("button", { name: /^Proof/ })).toHaveLength(3);
-    await userEvent.click(screen.getByRole("button", { name: "Proof 2" }));
-    expect(onOpenProof).toHaveBeenLastCalledWith(1);
-    await userEvent.click(screen.getByRole("button", { name: "2 more proofs" }));
-    expect(onOpenProof).toHaveBeenLastCalledWith(3);
-    expect(screen.getByRole("button", { name: "2 more proofs" })).toHaveTextContent("+2");
   });
 });
 

@@ -6,12 +6,12 @@ import { formatDayLong, formatNumber } from "@/shared/lib/format";
 import {
   Banner,
   Button,
-  FeedItem,
+  FeedCard,
   Icon,
-  List,
   ProofViewer,
   Sheet,
   Skeleton,
+  Stack,
   type ViewerItem,
 } from "@/shared/ui";
 
@@ -76,15 +76,14 @@ export function DaySheet({
       {sheet.isPending && <Skeleton lines={3} />}
       {sheet.error && <Banner tone="danger" title={errorMessage(t, sheet.error)} />}
       {sheet.data && (
-        <List label={formatDayLong(day, i18n.language)}>
+        <Stack gap="sm">
           {sheet.data.map((row) => {
             const who = row.member.display_name;
             const state = t(`checkins.states.${row.state}`);
             return (
-              <FeedItem
+              <FeedCard
                 key={row.member.id}
-                name={who}
-                seed={row.member.avatar_seed}
+                person={{ id: row.member.id, name: who, seed: row.member.avatar_seed }}
                 text={who}
                 time={
                   row.total === null
@@ -102,7 +101,7 @@ export function DaySheet({
               />
             );
           })}
-        </List>
+        </Stack>
       )}
       <ProofViewer
         items={viewing?.items ?? []}

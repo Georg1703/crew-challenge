@@ -6,10 +6,10 @@ import { formatNumber, formatWhen } from "@/shared/lib/format";
 import {
   Banner,
   Button,
-  FeedItem,
-  List,
+  FeedCard,
   ProofViewer,
   Skeleton,
+  Stack,
   type ViewerItem,
 } from "@/shared/ui";
 
@@ -46,15 +46,14 @@ export function CrewFeed({ timeZone }: { timeZone: string }) {
       {feed.isError && <Banner tone="danger" title={errorMessage(t, feed.error)} />}
       {feed.data && items.length === 0 && <p className={styles.muted}>{t("feed.empty")}</p>}
       {items.length > 0 && (
-        <List label={t("feed.title")}>
+        <Stack gap="sm">
           {items.map((item) => {
             const who = item.member.display_name;
             const caption = `${who}, ${item.challenge.title}`;
             return (
-              <FeedItem
+              <FeedCard
                 key={item.id}
-                name={who}
-                seed={item.member.avatar_seed}
+                person={{ id: item.member.id, name: who, seed: item.member.avatar_seed }}
                 text={says(item, t, i18n.language)}
                 time={formatWhen(item.activity_at, i18n.language, timeZone)}
                 proofs={item.proofs.map((p) => shownTile(p, t, who))}
@@ -65,7 +64,7 @@ export function CrewFeed({ timeZone }: { timeZone: string }) {
               />
             );
           })}
-        </List>
+        </Stack>
       )}
       {feed.hasNextPage && (
         <Button
