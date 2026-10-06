@@ -43,8 +43,10 @@ RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app 
 WORKDIR /app
 COPY --from=deps-prod /opt/venv /opt/venv
 COPY --chown=app:app . .
-# collectstatic needs a placeholder secret; the real one comes from the environment at runtime.
+# collectstatic loads the production settings, which refuse to start without a secret and a
+# public https address. Placeholders here; the real values come from the environment at runtime.
 RUN DJANGO_SECRET_KEY=build-only-placeholder-$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n') \
+    APP_PUBLIC_URL=https://build.invalid \
     python manage.py collectstatic --noinput
 USER app
 EXPOSE 8000
