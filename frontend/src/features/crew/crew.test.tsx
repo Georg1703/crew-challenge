@@ -6,7 +6,7 @@ import { api } from "@/api";
 import { fail, ok, renderScreen } from "@/test/render";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 
-import { CrewRoute } from ".";
+import { CrewRoute, MembersRoute } from ".";
 
 const invite = {
   id: "44444444-4444-4444-4444-444444444444",
@@ -63,14 +63,17 @@ describe("crew screen", () => {
     const stories = await screen.findByRole("list", { name: "Today in the crew" });
     const items = within(stories).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual(["BYou-", "AAna1/2"]);
-    expect(within(stories).getByRole("img", { name: "Ana: 1 of 2 today" })).toBeInTheDocument();
-    expect(within(stories).getByRole("img", { name: "Bogdan: nothing due today" })).toBeTruthy();
+    expect(within(stories).getByRole("link", { name: "Ana: 1 of 2 today" })).toHaveAttribute(
+      "href",
+      `/crew/members/${ana.id}`,
+    );
+    expect(within(stories).getByRole("link", { name: "Bogdan: nothing due today" })).toBeTruthy();
     expect(screen.queryByRole("list", { name: "Proposals" })).not.toBeInTheDocument();
   });
 
   it("lists members in join order and marks you", async () => {
     mockGets(meAs(bogdan));
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
 
     const list = await screen.findByRole("list", { name: "Crew members" });
     const rows = within(list).getAllByRole("listitem");
@@ -91,7 +94,7 @@ describe("crew screen", () => {
         { member: person(bogdan), done: 0, needed: 1, challenges: [] },
       ],
     );
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
 
     const list = await screen.findByRole("list", { name: "Crew members" });
     expect(within(list).getByRole("img", { name: "Ana: 2 of 2 today" })).toBeInTheDocument();
@@ -101,7 +104,7 @@ describe("crew screen", () => {
 
   it("only admins see the invite button and the invites they sent", async () => {
     mockGets(meAs(bogdan), [invite]);
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
     await screen.findByRole("list", { name: "Crew members" });
     expect(screen.queryByRole("button", { name: "Invite someone" })).not.toBeInTheDocument();
     expect(screen.queryByText("Invites sent")).not.toBeInTheDocument();
@@ -114,7 +117,7 @@ describe("crew screen", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
 
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
     await userEvent.click(await screen.findByRole("button", { name: "Invite someone" }));
 
     const sheet = await screen.findByRole("dialog", { name: "Invite someone" });
@@ -136,7 +139,7 @@ describe("crew screen", () => {
         ok({ ...invite, url: "https://crew.example/join/first" }, 201)) as never)
       .mockImplementationOnce((() =>
         ok({ ...invite, url: "https://crew.example/join/second" }, 201)) as never);
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Invite someone" }));
     let sheet = await screen.findByRole("dialog", { name: "Invite someone" });
@@ -157,7 +160,7 @@ describe("crew screen", () => {
   it("an admin cancels a pending invite after confirming", async () => {
     mockGets(meAs(ana), [invite]);
     const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
 
     const pending = await screen.findByRole("list", { name: "Unused invites" });
     expect(within(pending).getByText("Link K7P4QDX2MN")).toBeInTheDocument();
@@ -179,7 +182,7 @@ describe("crew screen", () => {
   it("puts the invite back when cancelling fails", async () => {
     mockGets(meAs(ana), [invite]);
     vi.spyOn(api, "DELETE").mockImplementation((() => fail(409, { code: "invite_used" })) as never);
-    renderScreen(<CrewRoute />);
+    renderScreen(<MembersRoute />);
 
     const pending = await screen.findByRole("list", { name: "Unused invites" });
     await userEvent.click(within(pending).getByRole("button", { name: "Cancel" }));

@@ -41,6 +41,14 @@ export const routes: RouteObject[] = [
             lazy: () => import("@/features/crew").then((m) => ({ Component: m.CrewRoute })),
           },
           {
+            path: "crew/members",
+            lazy: () => import("@/features/crew").then((m) => ({ Component: m.MembersRoute })),
+          },
+          {
+            path: "crew/members/:id",
+            lazy: () => import("@/features/crew").then((m) => ({ Component: m.MemberRoute })),
+          },
+          {
             path: "challenges",
             lazy: () =>
               import("@/features/challenges").then((m) => ({ Component: m.ChallengesRoute })),

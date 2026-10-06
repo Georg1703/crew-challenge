@@ -65,7 +65,6 @@
     "membersLabel": "Membrii echipei",
     "you": "tu",
     "admin": "Admin",
-    "member": "Membru",
     "todayRow": "{{name}}: azi {{done}} din {{needed}}",
     "todaySubtitle": "{{role}} · azi {{done}} din {{needed}}",
     "invite": "Invită pe cineva",
@@ -115,8 +114,26 @@
       "todayTotal": "{{total}} azi",
       "dayTotal": "{{total}} în ziua aceea",
       "ofTarget": "{{total}} din {{target}} {{unit}}",
-      "week": "Ultimele 7 zile: {{done}} bifate"
-    }
+      "week": "Ultimele 7 zile: {{done}} bifate",
+      "fresh_one": "{{count}} dovadă nouă",
+      "fresh_few": "{{count}} dovezi noi",
+      "fresh_other": "{{count}} de dovezi noi"
+    },
+    "members": {
+      "title": "Membri",
+      "open": "Membri și invitații"
+    },
+    "memberPage": {
+      "title": "Membru",
+      "streak": "zile la rând",
+      "longest": "cea mai lungă serie",
+      "month": "din {{month}}",
+      "monthOf": "{{title}} luna aceasta",
+      "none": "Nicio provocare pe care o vezi luna aceasta.",
+      "proofs": "Dovezi",
+      "noProofs": "Încă nicio dovadă luna aceasta."
+    },
+    "member": "Membru"
   },
   "me": {
     "title": "Eu",
@@ -188,7 +205,8 @@
     "upload_size_mismatch": "Fișierul încărcat nu e cel ales. Alege-l din nou.",
     "proof_not_found": "Dovada nu mai există.",
     "upload_not_found": "Încărcarea nu mai există. Alege din nou fișierul.",
-    "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou."
+    "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou.",
+    "member_not_found": "Persoana nu face parte din echipa ta."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",

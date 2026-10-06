@@ -13,15 +13,19 @@ const NOTHING_DUE = "-";
 /**
  * Everyone's day at a glance: a ring per member split by today's challenges, you first, then
  * whoever has done the most, then in join order. Someone with nothing due gets a plain ring.
+ * Each opens the member's page; a count says how many proofs you have not seen yet.
  */
 export function CrewStories({
   members,
   meId,
   today = [],
+  fresh = {},
 }: {
   members: Member[];
   meId?: string;
   today?: CrewDay[];
+  /** New proofs per member since you last looked. */
+  fresh?: Record<string, number>;
 }) {
   const { t } = useTranslation();
   const byMember = new Map(today.map((row) => [row.member.id, row]));
@@ -55,11 +59,14 @@ export function CrewStories({
               title={member.id === meId ? t("crew.journal.you") : name}
               subtitle={due ? `${day.done}/${day.needed}` : NOTHING_DUE}
               complete={due && day.done >= day.needed}
-              label={
+              fresh={fresh[member.id] ?? 0}
+              to={`/crew/members/${member.id}`}
+              label={[
                 due
                   ? t("crew.todayRow", { name, done: day.done, needed: day.needed })
-                  : t("crew.journal.nothingDue", { name })
-              }
+                  : t("crew.journal.nothingDue", { name }),
+                ...(fresh[member.id] ? [t("crew.journal.fresh", { count: fresh[member.id] })] : []),
+              ].join(", ")}
             />
           </li>
         );

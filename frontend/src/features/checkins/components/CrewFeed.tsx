@@ -49,7 +49,16 @@ function divider(entry: JournalDay, t: T, language: string, today: string) {
 }
 
 /** The crew's journal on Echipa: day by day, a card per moment, latest first. */
-export function CrewFeed({ timeZone, members }: { timeZone: string; members: Member[] }) {
+export function CrewFeed({
+  timeZone,
+  members,
+  onOpenProofOf,
+}: {
+  timeZone: string;
+  members: Member[];
+  /** A member's proof was opened (their new-proofs count resets). */
+  onOpenProofOf?: (memberId: string) => void;
+}) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
   const feed = useFeed();
@@ -119,9 +128,10 @@ export function CrewFeed({ timeZone, members }: { timeZone: string; members: Mem
             : undefined
         }
         proofs={item.proofs.map((p) => shownTile(p, t, who))}
-        onOpenProof={(index) =>
-          setViewing({ items: item.proofs.map((p) => viewerItem(p, caption)), index })
-        }
+        onOpenProof={(index) => {
+          onOpenProofOf?.(item.member.id);
+          setViewing({ items: item.proofs.map((p) => viewerItem(p, caption)), index });
+        }}
         moreLabel={t("feed.more", { count: item.proofs.length - SHOWN_PROOFS })}
         week={
           alone

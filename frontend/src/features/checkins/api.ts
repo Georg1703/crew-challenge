@@ -10,12 +10,27 @@ export type ProofUpload = components["schemas"]["ProofUploadOut"];
 export type ProofStart = components["schemas"]["ProofStartInRequest"];
 export type FeedItem = components["schemas"]["FeedItemOut"];
 export type DaySheetRow = components["schemas"]["DaySheetRowOut"];
+export type MemberProgress = components["schemas"]["MemberProgressOut"];
 
 export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
 const boardKey = (id: string, month: string) => [...checkinsKey, "board", id, month] as const;
 const feedKey = [...checkinsKey, "feed"] as const;
 const dayKey = (id: string, day: string) => [...checkinsKey, "day", id, day] as const;
+const memberKey = (id: string, month: string) => [...checkinsKey, "member", id, month] as const;
+
+/** A member's month on the challenges you can see: streaks, days and proofs by day. */
+export function useMemberProgress(id: string, month = "") {
+  return useQuery({
+    queryKey: memberKey(id, month),
+    queryFn: () =>
+      call(
+        api.GET("/api/v1/members/{member_id}/progress", {
+          params: { path: { member_id: id }, query: month ? { month } : {} },
+        }),
+      ),
+  });
+}
 
 /** My challenges today and the crew's progress. Refetched when the app comes back to the front. */
 export function useToday({ enabled = true }: { enabled?: boolean } = {}) {

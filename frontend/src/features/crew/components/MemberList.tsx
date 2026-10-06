@@ -6,7 +6,10 @@ import { Avatar, List, ListRow, StatusPill } from "@/shared/ui";
 
 type CrewDay = Today["crew"][number];
 
-/** Members in the order they joined; who has something due today gets the today ring and "2 of 3". */
+/**
+ * Members in the order they joined, each a link to their page; who has something due today gets
+ * the today ring and "2 of 3".
+ */
 export function MemberList({
   members,
   meId,
@@ -28,6 +31,7 @@ export function MemberList({
         return (
           <ListRow
             key={member.id}
+            to={`/crew/members/${member.id}`}
             leading={
               <Avatar
                 name={member.display_name}

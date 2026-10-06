@@ -65,7 +65,6 @@
     "membersLabel": "Crew members",
     "you": "you",
     "admin": "Admin",
-    "member": "Member",
     "todayRow": "{{name}}: {{done}} of {{needed}} today",
     "todaySubtitle": "{{role}} · {{done}} of {{needed}} today",
     "invite": "Invite someone",
@@ -115,8 +114,26 @@
       "todayTotal": "{{total}} today",
       "dayTotal": "{{total}} that day",
       "ofTarget": "{{total}} of {{target}} {{unit}}",
-      "week": "Last 7 days: {{done}} done"
-    }
+      "week": "Last 7 days: {{done}} done",
+      "fresh_one": "{{count}} new proof",
+      "fresh_few": "{{count}} new proofs",
+      "fresh_other": "{{count}} new proofs"
+    },
+    "members": {
+      "title": "Members",
+      "open": "Members and invites"
+    },
+    "memberPage": {
+      "title": "Member",
+      "streak": "days in a row",
+      "longest": "longest streak",
+      "month": "of {{month}}",
+      "monthOf": "{{title}} this month",
+      "none": "No challenges you can see this month.",
+      "proofs": "Proofs",
+      "noProofs": "No proofs this month yet."
+    },
+    "member": "Member"
   },
   "me": {
     "title": "Me",
@@ -188,7 +205,8 @@
     "upload_size_mismatch": "The uploaded file is not the one that was picked. Pick it again.",
     "proof_not_found": "This proof no longer exists.",
     "upload_not_found": "This upload no longer exists. Pick the file again.",
-    "upload_failed": "The file could not be uploaded. Check your connection and try again."
+    "upload_failed": "The file could not be uploaded. Check your connection and try again.",
+    "member_not_found": "This member is not in your crew."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",

@@ -43,6 +43,7 @@ describe("translations", () => {
       "proof_not_found",
       "upload_not_found",
       "upload_failed",
+      "member_not_found",
     ];
     for (const code of codes) expect(Object.keys(ro.errors)).toContain(code);
   });
