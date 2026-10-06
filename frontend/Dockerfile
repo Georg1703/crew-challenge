@@ -37,5 +37,7 @@ RUN pnpm build
 FROM caddy:2-alpine AS web
 COPY --from=caddy Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/dist /srv/app
-RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+# Checks the Caddyfile at build time. APP_DOMAIN is a placeholder here; the real host name comes
+# from the environment when the container starts (compose.prod.yaml).
+RUN APP_DOMAIN=build.invalid caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 EXPOSE 80 443 443/udp
