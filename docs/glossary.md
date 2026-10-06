@@ -26,7 +26,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Due day | `days.is_due` | A day a daily or chosen-weekday challenge asks for. Challenges asked a number of times per week or period have no due days, only a quota. |
 | Proof | `Proof` | What backs a check-in: a `photo` or `video` (v1), at most 5 a day, added after checking in. Status: `uploading`, `processing`, `ready`, `failed`. Removable only on its own day. Later also for a served punishment. |
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
-| Rendition | `hls_key`, `poster_key` | Processed versions of a video for playback (HLS 720p/360p + poster image). |
+| Rendition | `Transcode` (`hls_key`, `poster_key`) | Processed versions of a video for playback (HLS 720p/360p + poster image), made by a MediaConvert job that Celery polls. |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for a proof's upload to finish (`Upload.expires_at`). |
 | Streak | `days.streak` | Per challenge: due days in a row without a miss (daily, weekdays) or weeks in a row with the quota met (times a week). Today never breaks it. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |

@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from .models import Upload
+from .models import Transcode, Upload
 
 
 @admin.register(Upload)
@@ -15,3 +15,10 @@ class UploadAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
         return Upload.all_objects.all()  # deleted files too
+
+
+@admin.register(Transcode)
+class TranscodeAdmin(admin.ModelAdmin):
+    list_display = ("upload", "status", "job_id", "created_at", "updated_at")
+    list_filter = ("status",)
+    raw_id_fields = ("upload",)

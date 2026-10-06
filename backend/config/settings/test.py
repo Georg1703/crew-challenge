@@ -27,7 +27,9 @@ CELERY_RESULT_BACKEND = "cache+memory://"
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 OBJECT_STORAGE_BACKEND = "memory"
+TRANSCODER_BACKEND = "memory"
 MEDIA_BUCKET = "cc-test-media"
+MEDIA_CDN_DOMAIN = ""
 AWS_PROFILE = None
 
 LOGGING = {"version": 1, "disable_existing_loggers": False}

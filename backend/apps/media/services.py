@@ -1,4 +1,4 @@
-"""Upload rules: start, sign, record parts, complete, delete.
+"""Upload rules: start, sign, record parts, complete, delete; transcode finished videos.
 
 The browser sends bytes straight to the media bucket with presigned URLs; these services only
 start, sign, check and finish uploads. Small files (photos) take one PUT; big ones (videos) are
@@ -9,7 +9,7 @@ picking the same file again uploads only the missing parts.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from django.db import transaction
@@ -24,12 +24,21 @@ from integrations.storage import (
     get_object_storage,
 )
 from integrations.storage import UploadNotFound as MultipartGone
+from integrations.transcoding import (
+    DONE,
+    FAILED,
+    HLS_PLAYLIST,
+    POSTER_PREFIX,
+    get_transcoder,
+)
+from integrations.transcoding import TranscodeError as TranscodeError  # raised by transcode()
 
-from .models import GiB, Upload
+from .models import GiB, Transcode, Upload
 
 MAX_SIZE = 20 * GiB
 MAX_SINGLE_SIZE = 5 * GiB  # S3's limit for one PUT
 MAX_ETAG_LENGTH = 100
+TRANSCODE_TIMEOUT = timedelta(hours=2)
 
 
 class UploadNotFound(NotFound):
@@ -190,4 +199,43 @@ def delete_upload(*, upload_id: UUID) -> None:
     if upload.mode == Upload.Mode.MULTIPART and upload.status == Upload.Status.UPLOADING:
         storage.abort_multipart(key=upload.key, upload_id=upload.upload_id)
     storage.delete(key=upload.key)
+    if Transcode.objects.filter(upload=upload).exists():
+        # ponytail: a job still running may write after this; cancel it if leftovers ever matter.
+        storage.delete_prefix(prefix=upload.renditions_prefix)
     upload.delete()
+
+
+def transcode(*, upload_id: UUID) -> Transcode | None:
+    """Start the job that makes a finished video's renditions, or check the one running.
+
+    Call it as often as you like: one job per upload, ever. None when transcoding is off (the
+    video plays as uploaded). A job still running after 2 hours is given up. Raises
+    TranscodeError when the service cannot be reached; try again later.
+    """
+    transcoder = get_transcoder()
+    if transcoder is None:
+        return None
+    with transaction.atomic():
+        upload = _get(upload_id, lock=True)  # two pollers never start two jobs
+        if upload.status != Upload.Status.COMPLETE:
+            raise UploadIncomplete()
+        job = Transcode.objects.filter(upload=upload).first()
+        if job is None:
+            job_id = transcoder.start(input_key=upload.key, output_prefix=upload.renditions_prefix)
+            return Transcode.objects.create(crew_id=upload.crew_id, upload=upload, job_id=job_id)
+        if job.status != Transcode.Status.RUNNING:
+            return job
+        state = transcoder.check(job_id=job.job_id)
+        if state.state == DONE:
+            prefix = upload.renditions_prefix
+            posters = get_object_storage().list_keys(prefix=prefix + POSTER_PREFIX)
+            job.status = Transcode.Status.DONE
+            job.hls_key = prefix + HLS_PLAYLIST
+            job.poster_key = posters[0] if posters else ""
+        elif state.state == FAILED or clock.now() >= job.created_at + TRANSCODE_TIMEOUT:
+            job.status = Transcode.Status.FAILED
+            job.error = (state.error or "Gave up after 2 hours.")[:500]
+        else:
+            return job
+        job.save(update_fields=["status", "hls_key", "poster_key", "error", "updated_at"])
+    return job

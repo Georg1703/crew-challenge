@@ -22,8 +22,8 @@ Priorities, in order: efficiency (fast on a phone, cheap to run), user experienc
 3. **Videos are uploaded as they are** (multipart, resumable, up to 20 GB, per AGENTS), with a
    poster frame grabbed on the phone so the feed shows something at once. MediaConvert makes HLS
    (360p + 720p) and a poster in the background; the original stays as the fallback.
-4. **MediaConvert is polled, not called back.** A Celery task checks the job every 20 s (then
-   backs off) until it is done or failed. No EventBridge/SNS/webhook to set up or secure.
+4. **MediaConvert is polled, not called back.** A Celery job checks every 20 s until it is done
+   or failed. No EventBridge/SNS/webhook to set up or secure.
    Remove `MEDIACONVERT_WEBHOOK_SECRET` from `.env.example` and the settings (no longer used).
 5. **Viewing.** Production: private bucket behind CloudFront with signed cookies scoped to the
    crew's folder (one cookie set covers photos and every HLS segment), on a subdomain of the app
@@ -70,8 +70,9 @@ URLs). Import-linter: `media` sits below `checkins`; only `integrations/*` impor
   `ready`, a video goes `processing` and a MediaConvert job is queued.
 - `resume_proof(fingerprint)`: the open upload with that fingerprint and its recorded parts.
 - `delete_proof(by, proof_id)`: today only, your own; soft delete, and aborts or deletes the files.
-- Celery: `poll_transcode(transcode_id)` (idempotent, retries with backoff, gives up after 2 h),
-  `expire_uploads` every 15 min (uploading past the 24 h grace -> abort + `failed`).
+- Celery: `finish_videos` every 20 s and after each video completes (starts or checks each
+  processing video's job, idempotent, gives up after 2 h), `expire_proofs` every 15 min
+  (uploading past the 24 h grace -> abort + `failed`).
 
 ## API
 
@@ -134,9 +135,15 @@ Done for dev (by the owner, `infra/aws/README.md`): bucket CORS, lifecycle, `cc-
 `cc-mediaconvert-dev` role. Production documents (`infra/aws/prod/`) come with stage 3, next to
 the code that uses them (cookie scope, key pair id and job settings must match that code).
 
-Proposed (confirm in stage 3): the MediaConvert job settings (HLS 360p/720p + poster) live in
+Decided in stage 3: the MediaConvert job settings (HLS 360p/720p + poster) live in
 `integrations/transcoding` as code instead of a console job template: versioned and reviewed with
 the code, tested against the in-memory fake, nothing to keep in sync in the console.
+
+Stage 3 details: one Celery beat job (`finish_videos`, every 20 s, and right after each video
+completes) starts or checks every processing video's job, so a lost task never strands a video.
+A failed or stuck (2 h) job still shows the video with its original. The poster's file name is
+found by listing the output folder. Renditions are cut to a box (640 and 1280 px on the long side,
+never upscaled), so portrait and landscape phone videos both stay sharp.
 
 ## Edge cases
 
@@ -164,7 +171,7 @@ stages come first, so the frontend builds on a finished API.
 |---|---|---|
 | 1. Upload backbone | `feat(backend): add uploads with presigned parts and resume` | `apps/media`: `Upload`, start (one PUT or multipart), sign, record parts, complete with a size check, delete. Storage adapter: presigned PUT, delete. `make upload-smoke` checks the S3 side. No API yet. |
 | 2. Proofs on check-ins | `feat(backend): attach proofs to check-ins` | `Proof`; start / parts / complete / resume / delete endpoints; 5 max, kinds and types, today only, 24 h grace; expiry job; `proofs` / `proof_days` on today and the board; thumbnails by presigned GET (the local half of the media link adapter). Photos work end to end in the API. |
-| 3. Videos and production media | `docs(infra): add the s3, cloudfront and mediaconvert setup for proofs`, `feat(backend): transcode videos and sign media links` | Production `infra/aws/` documents; `Transcode` + `poll_transcode`; CloudFront signed cookies + `POST /media/session`; `overview.md` and `.env.example` without the webhook. |
+| 3. Videos and production media | `docs(infra): add the s3, cloudfront and mediaconvert setup for proofs`, `feat(backend): transcode videos and sign media links` | Production `infra/aws/` documents; `Transcode` + `finish_videos`; CloudFront signed cookies + `POST /media/session`; `overview.md` and `.env.example` without the webhook. |
 | 4. Feed and day view | `feat(backend): add the crew feed and the day view` | `GET /feed`, `GET /challenges/{id}/days/{day}`. |
 | 5. Shared UI | `feat(frontend): add proof tile, viewer and feed item to shared ui` | `ProofTile`, `ProofViewer`, `FeedItem`, the dot; on `/design` and in `docs/design-system.md`. |
 | 6. Uploading | `feat(frontend): upload proofs from the check-in card` | Upload manager (Zustand, Uppy), photo shrink + thumbnail, resume, wake lock, offline pause, progress on the tab bar. |

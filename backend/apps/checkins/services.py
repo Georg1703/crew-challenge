@@ -7,6 +7,7 @@ A proof started today may still finish uploading up to `UPLOAD_GRACE` after the 
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -21,11 +22,14 @@ from apps.challenges.models import Challenge, Participant
 from apps.core import clock
 from apps.core.errors import Conflict, DomainError, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Member
+from apps.media import selectors as media_links
 from apps.media import services as media
-from apps.media.models import MiB, Upload
+from apps.media.models import MiB, Transcode, Upload, crew_folder
 
 from . import days
 from .models import CheckIn, CheckInEntry, Proof
+
+logger = logging.getLogger(__name__)
 
 AMOUNT_MAX = Decimal(1_000_000)
 UPLOAD_GRACE = timedelta(hours=24)
@@ -191,7 +195,7 @@ def _upload(proof: Proof) -> ProofUpload:
 def _own(by: Member, proof_id: UUID) -> Proof:
     proof = (
         Proof.objects.filter(pk=proof_id, check_in__member=by)
-        .select_related("check_in", "original", "thumb")
+        .select_related("check_in", "original__transcode", "thumb")
         .first()
     )
     if proof is None:
@@ -252,7 +256,7 @@ def start_proof(
         if taken.count() >= MAX_PROOFS:
             raise TooManyProofs()
         proof_id = uuid.uuid4()
-        folder = f"crews/{by.crew_id}/proofs/{proof_id}"
+        folder = f"{crew_folder(by.crew_id)}proofs/{proof_id}"
         expires_at = clock.deadline_utc(day, by.crew.timezone) + UPLOAD_GRACE
         original = media.start_upload(
             crew=by.crew,
@@ -309,9 +313,10 @@ def record_part(*, by: Member, proof_id: UUID, number: int, etag: str) -> None:
 
 
 def complete_proof(*, by: Member, proof_id: UUID) -> Proof:
-    """Check the uploaded file; the proof is then ready. Calling it again is safe.
+    """Check the uploaded file. A photo is then ready; a video is processing until its renditions
+    are made (see `finish_videos`), or ready at once when transcoding is off. Safe to repeat.
 
-    A missing or broken thumbnail is dropped: the original stands in for it.
+    A missing or broken thumbnail is dropped: the original (or the video's poster) stands in.
     """
     proof = _own(by, proof_id)
     if proof.status != Proof.Status.UPLOADING:
@@ -327,9 +332,13 @@ def complete_proof(*, by: Member, proof_id: UUID) -> Proof:
         except DomainError:
             media.delete_upload(upload_id=proof.thumb_id)
             proof.thumb = None
-    # ponytail: videos are ready as uploaded (played as is); stage 3 sends them to transcoding.
-    proof.status = Proof.Status.READY
+    transcode = proof.kind == Proof.Kind.VIDEO and media_links.transcoding()
+    proof.status = Proof.Status.PROCESSING if transcode else Proof.Status.READY
     proof.save(update_fields=["status", "thumb", "updated_at"])
+    if transcode:
+        from . import tasks  # tasks import services
+
+        transaction.on_commit(tasks.finish_videos.delay)  # start now; beat also checks every 20 s
     return proof
 
 
@@ -341,6 +350,29 @@ def delete_proof(*, by: Member, proof_id: UUID) -> None:
         raise DayClosed("That day has ended; its proofs are kept.")
     _discard(proof)
     proof.delete()
+
+
+def finish_videos() -> int:
+    """Start or check the transcoding of every processing video; show the finished ones.
+
+    Runs every 20 seconds and after each completed video; safe to run twice. A failed or given-up
+    job still shows the video: the original plays where the browser can play it.
+    """
+    finished = 0
+    for proof in Proof.objects.filter(status=Proof.Status.PROCESSING):
+        try:
+            job = media.transcode(upload_id=proof.original_id)
+        except media.TranscodeError:
+            logger.exception("Transcoding of proof %s could not be started or checked", proof.pk)
+            continue
+        if job is not None and job.status == Transcode.Status.RUNNING:
+            continue
+        if job is not None and job.status == Transcode.Status.FAILED:
+            logger.warning("Transcoding of proof %s failed: %s", proof.pk, job.error)
+        proof.status = Proof.Status.READY
+        proof.save(update_fields=["status", "updated_at"])
+        finished += 1
+    return finished
 
 
 def expire_proofs() -> int:

@@ -48,8 +48,13 @@ class ProofOut(serializers.Serializer):
     kind = serializers.ChoiceField(choices=Proof.Kind.choices)
     status = serializers.ChoiceField(choices=Proof.Status.choices)
     url = serializers.CharField(allow_null=True, help_text="The file, once fully uploaded.")
+    hls_url = serializers.CharField(
+        allow_null=True,
+        help_text="A video's HLS playlist once transcoded (production only); else play `url`.",
+    )
     thumb_url = serializers.CharField(
-        allow_null=True, help_text="A small JPEG, when the phone made one; else use `url`."
+        allow_null=True,
+        help_text="A small JPEG from the phone, or a video's poster; else show `url`.",
     )
     created_at = serializers.DateTimeField()
 

@@ -4,6 +4,7 @@ import pytest
 import time_machine
 
 from apps.challenges import services as challenges
+from apps.checkins import services
 from apps.media.models import MiB
 from tests.factories import AdminFactory, MemberFactory
 
@@ -144,7 +145,7 @@ def test_photo_proof_over_http(browser, setup, object_storage):
     assert browser.delete(f"/api/v1/proofs/{proof_id}").status_code == 204
 
 
-def test_video_proof_resumes_over_http(browser, setup, object_storage):
+def test_video_proof_resumes_over_http(browser, setup, object_storage, transcoder):
     _, member, read = setup
     browser.force_login(member.user)
     check_in = {"day": "2026-11-10", "amount": 5}
@@ -172,7 +173,20 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage):
     resumed = browser.get("/api/v1/proofs/resume?fingerprint=a.mp4|10|1").json()
     assert resumed["parts"] == [{"number": 1, "etag": etag}]
     assert browser.get("/api/v1/proofs/resume?fingerprint=b").status_code == 404
-    assert browser.post(f"/api/v1/proofs/{proof_id}/complete").json()["status"] == "ready"
+    done = browser.post(f"/api/v1/proofs/{proof_id}/complete").json()
+    assert (done["status"], done["hls_url"]) == ("processing", None)  # renditions on their way
+
+    services.finish_videos()  # starts the job
+    prefix = upload.key.rsplit(".", 1)[0]
+    object_storage.put_object(
+        key=f"{prefix}/poster.0000000.jpg", data=b"jpg", content_type="image/jpeg"
+    )
+    transcoder.finish(next(iter(transcoder.jobs)))
+    services.finish_videos()
+    shown = browser.get("/api/v1/today").json()["challenges"][0]["proofs"][0]
+    assert shown["status"] == "ready"
+    assert "poster" in shown["thumb_url"]  # no thumbnail from the phone: the poster stands in
+    assert shown["hls_url"] is None  # locally the original plays
 
 
 def test_proof_input_is_checked(browser, setup):

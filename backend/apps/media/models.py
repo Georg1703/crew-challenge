@@ -6,12 +6,19 @@ picks the key, the mode and the deadline. Business rules live in services.py.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from django.db import models
 
-from apps.crews.models import CrewScopedSoftDeleteModel
+from apps.crews.models import CrewScopedModel, CrewScopedSoftDeleteModel
 
 MiB = 1024 * 1024
 GiB = 1024 * MiB
+
+
+def crew_folder(crew_id: UUID) -> str:
+    """Every key of a crew starts here; one CloudFront cookie set opens exactly this folder."""
+    return f"crews/{crew_id}/"
 
 
 class Upload(CrewScopedSoftDeleteModel):
@@ -52,3 +59,27 @@ class Upload(CrewScopedSoftDeleteModel):
     @property
     def part_count(self) -> int:
         return -(-self.size // self.part_size)  # rounded up
+
+    @property
+    def renditions_prefix(self) -> str:
+        """Where a video's HLS renditions and poster go: next to it, named after it."""
+        return f"{self.key.rsplit('.', 1)[0]}/"
+
+
+class Transcode(CrewScopedModel):
+    """The HLS renditions and poster of one finished video, made by a job that Celery polls."""
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+
+    upload = models.OneToOneField(Upload, on_delete=models.CASCADE, related_name="transcode")
+    job_id = models.CharField(max_length=100)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.RUNNING)
+    hls_key = models.CharField(max_length=255, blank=True, help_text="The master playlist.")
+    poster_key = models.CharField(max_length=255, blank=True)
+    error = models.CharField(max_length=500, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.upload} ({self.status})"

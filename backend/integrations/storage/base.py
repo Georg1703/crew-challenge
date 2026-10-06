@@ -95,6 +95,14 @@ class ObjectStorage(ABC):
     def delete(self, *, key: str) -> None:
         """Remove an object. Safe to call when it does not exist."""
 
+    @abstractmethod
+    def list_keys(self, *, prefix: str) -> list[str]:
+        """Keys of the objects under a prefix, sorted."""
+
+    @abstractmethod
+    def delete_prefix(self, *, prefix: str) -> None:
+        """Remove every object under a prefix (a video's renditions). Safe when there are none."""
+
 
 def validate_part_number(part_number: int) -> None:
     if not MIN_PART_NUMBER <= part_number <= MAX_PART_NUMBER:

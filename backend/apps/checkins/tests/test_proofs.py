@@ -1,14 +1,17 @@
+import logging
 from datetime import UTC, date, datetime
 
 import pytest
 import time_machine
+from django.test import override_settings
 
 from apps.challenges import services as challenges
 from apps.checkins import selectors, services, tasks
 from apps.checkins.models import CheckIn, Proof
 from apps.core.errors import ValidationFailed
 from apps.media import services as media
-from apps.media.models import MiB, Upload
+from apps.media.models import MiB, Transcode, Upload
+from integrations.transcoding import get_transcoder
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -129,7 +132,7 @@ def test_video_resumes_from_the_parts_it_reported(object_storage, walk):
     )
     services.record_part(by=bogdan, proof_id=plan.proof.pk, number=2, etag=last)
     done = services.complete_proof(by=bogdan, proof_id=plan.proof.pk)
-    assert done.status == Proof.Status.READY
+    assert done.status == Proof.Status.PROCESSING  # transcoding next
 
 
 def test_proof_needs_todays_check_in(walk):
@@ -291,3 +294,80 @@ def test_the_board_marks_days_with_proof(object_storage, walk):
         "Ana": [],
         "Bogdan": [DAY],
     }
+
+
+@pytest.fixture
+def sent_video(object_storage, walk):
+    """Bogdan checked in and sent every part of a 10-byte video; it is not completed yet."""
+    _, bogdan, challenge = walk
+    check_in(bogdan, challenge)
+    plan = video(bogdan, challenge, size=10)
+    original = plan.proof.original
+    etag = object_storage.upload_part(
+        key=original.key, upload_id=original.upload_id, part_number=1, data=b"x" * 10
+    )
+    services.record_part(by=bogdan, proof_id=plan.proof.pk, number=1, etag=etag)
+    return bogdan, plan.proof
+
+
+def test_a_video_is_ready_once_its_renditions_are_made(transcoder, sent_video):
+    bogdan, proof = sent_video
+    services.complete_proof(by=bogdan, proof_id=proof.pk)
+
+    assert services.finish_videos() == 0  # the job starts
+    (job_id,) = transcoder.jobs
+    assert services.finish_videos() == 0  # still running
+    transcoder.finish(job_id)
+
+    assert services.finish_videos() == 1
+    assert services.finish_videos() == 0
+    proof.refresh_from_db()
+    assert proof.status == Proof.Status.READY
+    assert Transcode.objects.get().status == Transcode.Status.DONE
+
+
+def test_a_failed_job_still_shows_the_video(transcoder, sent_video, caplog):
+    bogdan, proof = sent_video
+    services.complete_proof(by=bogdan, proof_id=proof.pk)
+    services.finish_videos()
+    transcoder.finish(next(iter(transcoder.jobs)), error="Unsupported codec")
+
+    with caplog.at_level(logging.WARNING):
+        assert services.finish_videos() == 1
+
+    assert Proof.objects.get(pk=proof.pk).status == Proof.Status.READY  # the original plays
+    assert "Unsupported codec" in caplog.text
+
+
+def test_an_unreachable_transcoder_is_tried_again_later(transcoder, sent_video, caplog):
+    bogdan, proof = sent_video
+    services.complete_proof(by=bogdan, proof_id=proof.pk)
+    services.finish_videos()
+    transcoder.jobs.clear()  # the service no longer knows the job
+
+    assert services.finish_videos() == 0
+
+    assert Proof.objects.get(pk=proof.pk).status == Proof.Status.PROCESSING
+    assert "could not be started or checked" in caplog.text
+
+
+def test_completing_a_video_starts_its_job_at_once(
+    transcoder, sent_video, django_capture_on_commit_callbacks
+):
+    bogdan, proof = sent_video
+
+    with django_capture_on_commit_callbacks(execute=True):
+        services.complete_proof(by=bogdan, proof_id=proof.pk)
+
+    assert len(transcoder.jobs) == 1
+    assert tasks.finish_videos.delay().get() == 0  # the beat run finds it still running
+
+
+def test_without_transcoding_a_video_is_ready_at_once(sent_video):
+    bogdan, proof = sent_video
+    get_transcoder.cache_clear()
+
+    with override_settings(TRANSCODER_BACKEND="off"):
+        done = services.complete_proof(by=bogdan, proof_id=proof.pk)
+
+    assert done.status == Proof.Status.READY

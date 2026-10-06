@@ -14,7 +14,8 @@ Both run the same backend Docker image; only configuration differs.
 | Database | Postgres 17 container, named volume | Postgres 17 container on the instance SSD; nightly `pg_dump` to `cc-prod-backups` (14 days) |
 | Redis | container | container |
 | Media storage | real S3 bucket `cc-dev-media`; tests use an in-memory fake | S3 bucket `cc-prod-media` + CloudFront |
-| Transcoding | MediaConvert, from the dev bucket | MediaConvert |
+| Transcoding | off by default: videos play as uploaded; `TRANSCODER_BACKEND=mediaconvert` to try it on the dev bucket | MediaConvert, polled by Celery every 20 s |
+| Media viewing | presigned URLs from the dev bucket (no HLS) | CloudFront on `media.<app host>`, signed cookies per crew, HLS |
 | AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in the root-only `/opt/cc/.env` |
 | Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, `chmod 600` |
 | HTTPS | not needed (localhost is a secure context) | Caddy with automatic Let's Encrypt certificates |
@@ -120,8 +121,8 @@ Created by hand in the AWS console by the owner. The JSON documents pasted into 
 | S3 `cc-dev-media` | Local development uploads |
 | S3 `cc-prod-media` | Production originals and HLS renditions |
 | S3 `cc-prod-backups` | Nightly database dumps, 14-day expiry |
-| CloudFront distribution | Media playback with signed cookies |
-| MediaConvert role | Lets MediaConvert read and write the media bucket |
+| CloudFront distribution `media.<app host>` | Media playback with signed cookies (key group `cc-media`; certificate in `us-east-1`) |
+| MediaConvert roles `cc-mediaconvert-dev` / `-prod` | Let MediaConvert read and write each media bucket |
 | IAM user `cc-prod-app` | Server credentials: media + backups buckets, MediaConvert, pass role |
 | IAM user or profile `cc-dev` | Your local credentials: dev bucket + MediaConvert in dev only |
 | DNS record | Your domain -> the static IP |

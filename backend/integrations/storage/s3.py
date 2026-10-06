@@ -150,6 +150,28 @@ class S3ObjectStorage(ObjectStorage):
         with _translate_errors():
             self.client.delete_object(Bucket=self.bucket, Key=key)  # S3 answers 204 when missing
 
+    def _pages(self, prefix: str) -> Iterator[list[str]]:
+        """Keys under a prefix, in S3's (sorted) order, at most 1000 per page."""
+        paginator = self.client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            yield [item["Key"] for item in page.get("Contents", [])]
+
+    def list_keys(self, *, prefix: str) -> list[str]:
+        with _translate_errors():
+            return [key for page in self._pages(prefix) for key in page]
+
+    def delete_prefix(self, *, prefix: str) -> None:
+        with _translate_errors():
+            for keys in self._pages(prefix):  # a page fits one delete_objects call (1000 keys)
+                if not keys:
+                    continue
+                response = self.client.delete_objects(
+                    Bucket=self.bucket,
+                    Delete={"Objects": [{"Key": k} for k in keys], "Quiet": True},
+                )
+                if response.get("Errors"):  # S3 answers 200 even when some keys failed
+                    raise StorageError(f"Could not delete {response['Errors'][0]}")
+
 
 def _error_code(exc: ClientError) -> str:
     return str(exc.response.get("Error", {}).get("Code", ""))

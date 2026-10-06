@@ -18,9 +18,8 @@ flowchart LR
   DJ --> RD[("Redis")]
   RD --> CW["Celery worker + beat"]
   PWA -->|"multipart PUT, presigned"| S3[("S3 media bucket")]
-  CW -->|"start job"| MC["MediaConvert"]
+  CW -->|"start job, poll state"| MC["MediaConvert"]
   MC -->|"HLS + poster"| S3
-  MC -.->|"job state webhook"| CADDY
   PWA -->|"HLS playback, signed cookies"| CF["CloudFront"]
   CF --> S3
   CW -->|"Web Push"| PWA
@@ -38,8 +37,9 @@ See [API conventions](api-conventions.md).
 **Proof upload.** After checking in, the phone adds proof to the check-in. A photo (shrunk on
 the phone) goes up with one presigned PUT; a video as an S3 multipart upload: parts go directly to
 S3 with presigned URLs and each part's ETag is reported, so a closed app can resume. On complete
-Django verifies the object's size and a Celery task starts a MediaConvert job. MediaConvert calls
-back when renditions are ready. Uploads that miss their grace are expired by a Celery job.
+Django verifies the object's size and a Celery task starts a MediaConvert job, then polls it
+every 20 seconds until the renditions are ready. Uploads that miss their grace are expired by a
+Celery job. The crew watches through CloudFront, which one set of signed cookies opens per crew.
 
 **Midnight judgment.** Celery beat runs idempotent jobs in each crew's time zone: mark missed
 days, expire stuck uploads, reset streaks, create pending spins, send push notifications.
@@ -67,6 +67,7 @@ days, expire stuck uploads, reset streaks, create pending spins, send push notif
 | Real S3 dev bucket instead of an emulator | Multipart uploads depend on CORS and `ETag` details that emulators get wrong |
 | One Lightsail instance with Docker Compose, Postgres in a container with nightly backups | About $20/month; moving to a managed database later is a dump, a restore, and one setting |
 | MediaConvert for video | Video bytes never touch the small app server; quality does not depend on its size |
+| MediaConvert jobs polled by Celery, settings in code | Nothing public to secure (no webhook); the job settings are reviewed and versioned with the code |
 | AWS resources created by hand, JSON kept in `infra/aws/` | Small one-time setup; no infrastructure tool to maintain |
 | PWA instead of native apps | One codebase for iPhone and Android, no app store; iOS limits are designed around |
 | "Crew" as the name of a group | Works for families, friends, and teams; `Group` clashes with Django |

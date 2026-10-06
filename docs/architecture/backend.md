@@ -23,9 +23,11 @@ backend/
 |   |-- crews/              # Crew, Member, Invite, switching crews
 |   |-- challenges/         # Challenge (soft deleted), Participant, Vote
 |   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: due days, day states, streaks
-|   `-- media/              # Upload: files sent straight to S3 (one PUT or multipart); knows no challenges
+|   `-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |-- integrations/
-|   `-- storage/            # ObjectStorage ABC (presigned PUT, multipart, head, delete), S3, in-memory, factory
+|   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
+|   |-- transcoding/        # Transcoder ABC, MediaConvert (job settings in code), in-memory, factory
+|   `-- cdn/                # CloudFront URLs and signed cookies (production); None locally
 |-- tests/
 |   `-- factories/          # factory-boy factories, one module per app
 `-- conftest.py             # fixtures for every test: api_client, user, auth_client, object_storage

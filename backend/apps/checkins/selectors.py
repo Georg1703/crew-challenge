@@ -52,7 +52,7 @@ def todays_proofs(*, member: Member, day: date) -> dict[UUID, list[Proof]]:
     """The member's proofs on `day` per challenge, every status (uploads in flight too)."""
     result: dict[UUID, list[Proof]] = defaultdict(list)
     rows = Proof.objects.filter(check_in__member=member, check_in__day=day).select_related(
-        "check_in", "original", "thumb"
+        "check_in", "original__transcode", "thumb"
     )
     for proof in rows:
         result[proof.check_in.challenge_id].append(proof)

@@ -71,8 +71,8 @@ class Command(BaseCommand):
             except UploadNotFound:
                 self.stdout.write(self.style.SUCCESS("OK: abort, twice"))
         finally:
-            for key in (small, big):
-                storage.delete(key=key)
-        if storage.head(key=small) or storage.head(key=big):
+            storage.delete(key=small)
+            storage.delete_prefix(prefix=f"{prefix}/")
+        if storage.list_keys(prefix=f"{prefix}/"):
             raise CommandError("Delete left objects behind")
-        self.stdout.write(self.style.SUCCESS("OK: delete; the bucket works for uploads"))
+        self.stdout.write(self.style.SUCCESS("OK: delete, list and delete by prefix"))

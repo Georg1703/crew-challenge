@@ -42,12 +42,14 @@ def _day(raw: str) -> date:
 
 
 def proof_data(proof: Proof) -> dict[str, Any]:
+    hls_url, poster_url = media.renditions(proof.original)
     return {
         "id": proof.pk,
         "kind": proof.kind,
         "status": proof.status,
         "url": media.url(proof.original),
-        "thumb_url": media.url(proof.thumb),
+        "hls_url": hls_url,
+        "thumb_url": media.url(proof.thumb) or poster_url,
         "created_at": proof.created_at,
     }
 

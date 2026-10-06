@@ -126,6 +126,13 @@ class InMemoryObjectStorage(ObjectStorage):
     def delete(self, *, key: str) -> None:
         self.objects.pop(key, None)
 
+    def list_keys(self, *, prefix: str) -> list[str]:
+        return sorted(k for k in self.objects if k.startswith(prefix))
+
+    def delete_prefix(self, *, prefix: str) -> None:
+        for key in self.list_keys(prefix=prefix):
+            del self.objects[key]
+
     # --- internals ---------------------------------------------------------------------------
     def _pending(self, key: str, upload_id: str) -> _PendingUpload:
         upload = self.uploads.get(upload_id)

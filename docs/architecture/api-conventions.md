@@ -139,6 +139,9 @@ POST   /api/v1/proofs/{id}/parts        {numbers} -> fresh part URLs
 PUT    /api/v1/proofs/{id}/parts/{number}   {etag}: report a finished part -> 204
 POST   /api/v1/proofs/{id}/complete     check the file -> the proof (ready); safe to repeat
 DELETE /api/v1/proofs/{id}              mine, only on its own day -> 204
+
+POST   /api/v1/media/session            sets the CloudFront cookies for the crew's media
+                                        -> {expires_at}; a no-op locally (expires_at null)
 ```
 
 ## Changing the contract

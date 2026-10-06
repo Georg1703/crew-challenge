@@ -81,6 +81,17 @@ def test_abort_is_idempotent_and_forgets_the_upload(storage):
         storage.list_parts(key=KEY, upload_id=upload_id)
 
 
+def test_list_and_delete_by_prefix(storage):
+    for key in ("v/hls.m3u8", "v/hls_360p_00001.ts", "v2/hls.m3u8"):
+        storage.put_object(key=key, data=b"x", content_type="application/octet-stream")
+
+    assert storage.list_keys(prefix="v/") == ["v/hls.m3u8", "v/hls_360p_00001.ts"]
+    storage.delete_prefix(prefix="v/")
+    storage.delete_prefix(prefix="v/")  # nothing left: still fine
+
+    assert list(storage.objects) == ["v2/hls.m3u8"]
+
+
 def test_head_of_missing_object_is_none(storage):
     assert storage.head(key="originals/missing.mp4") is None
 

@@ -371,6 +371,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Set the cookies that let this browser load the crew's photos and videos.
+         *
+         *     Call it when the app starts, after switching crews, and before `expires_at`.
+         */
+        post: operations["media_session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proofs/{proof_id}": {
         parameters: {
             query?: never;
@@ -729,6 +750,13 @@ export interface components {
          * @enum {string}
          */
         MediaKindEnum: "photo" | "video";
+        MediaSessionOut: {
+            /**
+             * Format: date-time
+             * @description Ask again before this. Null when media needs no cookies (local development).
+             */
+            expires_at: string | null;
+        };
         MemberOut: {
             /** Format: uuid */
             id: string;
@@ -849,7 +877,9 @@ export interface components {
             status: components["schemas"]["ProofStatusEnum"];
             /** @description The file, once fully uploaded. */
             url: string | null;
-            /** @description A small JPEG, when the phone made one; else use `url`. */
+            /** @description A video's HLS playlist once transcoded (production only); else play `url`. */
+            hls_url: string | null;
+            /** @description A small JPEG from the phone, or a video's poster; else show `url`. */
             thumb_url: string | null;
             /** Format: date-time */
             created_at: string;
@@ -1605,6 +1635,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    media_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaSessionOut"];
                 };
             };
         };

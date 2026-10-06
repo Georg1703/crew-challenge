@@ -5,11 +5,16 @@ from collections.abc import Iterator
 
 import psycopg
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.core.cache import cache
+from django.test import override_settings
 from rest_framework.test import APIClient
 
+from integrations.cdn import CloudFront, get_cdn
 from integrations.storage import InMemoryObjectStorage, get_object_storage
+from integrations.transcoding import InMemoryTranscoder, get_transcoder
 from tests.factories import UserFactory
 
 
@@ -85,3 +90,42 @@ def object_storage() -> Iterator[InMemoryObjectStorage]:
     assert isinstance(storage, InMemoryObjectStorage)
     yield storage
     get_object_storage.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def transcoder() -> Iterator[InMemoryTranscoder]:
+    """Fresh in-memory transcoder for every test: jobs run until the test finishes them."""
+    get_transcoder.cache_clear()
+    fake = get_transcoder()
+    assert isinstance(fake, InMemoryTranscoder)
+    yield fake
+    get_transcoder.cache_clear()
+
+
+@pytest.fixture(scope="session")
+def cloudfront_key() -> rsa.RSAPrivateKey:
+    """One RSA key for every test that signs CloudFront cookies (2048-bit keys are slow to make)."""
+    return rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+
+@pytest.fixture
+def cdn(tmp_path, cloudfront_key) -> Iterator[CloudFront]:
+    """Media through CloudFront at media.crew.example, as in production."""
+    path = tmp_path / "cloudfront.pem"
+    path.write_bytes(
+        cloudfront_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    get_cdn.cache_clear()
+    with override_settings(
+        MEDIA_CDN_DOMAIN="media.crew.example",
+        CLOUDFRONT_KEY_PAIR_ID="K2ABC",
+        CLOUDFRONT_PRIVATE_KEY_PATH=str(path),
+    ):
+        cloudfront = get_cdn()
+        assert cloudfront is not None
+        yield cloudfront
+    get_cdn.cache_clear()

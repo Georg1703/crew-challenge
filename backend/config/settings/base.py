@@ -180,6 +180,15 @@ AWS_PROFILE = env("AWS_PROFILE", default="") or None
 MEDIA_BUCKET = env("MEDIA_BUCKET", default="cc-dev-media")
 # "s3" in every real environment; "memory" in tests (see integrations/storage).
 OBJECT_STORAGE_BACKEND = env("OBJECT_STORAGE_BACKEND", default="s3")
+# Videos: "mediaconvert" in production (and locally to try it), "off" plays them as uploaded,
+# "memory" in tests (see integrations/transcoding).
+TRANSCODER_BACKEND = env("TRANSCODER_BACKEND", default="off")
+MEDIACONVERT_ROLE_ARN = env("MEDIACONVERT_ROLE_ARN", default="")
+# Production media through CloudFront with signed cookies (media.<app host>); empty locally,
+# where media is read with presigned URLs (see integrations/cdn).
+MEDIA_CDN_DOMAIN = env("MEDIA_CDN_DOMAIN", default="")
+CLOUDFRONT_KEY_PAIR_ID = env("CLOUDFRONT_KEY_PAIR_ID", default="")
+CLOUDFRONT_PRIVATE_KEY_PATH = env("CLOUDFRONT_PRIVATE_KEY_PATH", default="")
 
 # --- Logging --------------------------------------------------------------------------------
 LOGGING = {
