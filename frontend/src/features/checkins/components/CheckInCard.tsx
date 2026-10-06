@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 import { ChallengeIcon } from "@/features/challenges";
 import { errorMessage } from "@/i18n/errors";
+import { cx } from "@/shared/lib/cx";
 import { formatNumber } from "@/shared/lib/format";
 import { tap } from "@/shared/lib/haptics";
 import {
   Button,
   Card,
   HoldButton,
+  Icon,
   ProgressBar,
   StatusPill,
   WeekStrip,
@@ -28,7 +31,16 @@ function weekday(day: string): number {
 }
 
 /** One of my challenges today: check in (hold, or add a number), the week, the streak. */
-export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }) {
+export function CheckInCard({
+  card,
+  day,
+  linked = false,
+}: {
+  card: TodayChallenge;
+  day: string;
+  /** The head opens the challenge's page (on Today; not in the check-in sheet). */
+  linked?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const checkIn = useCheckIn();
@@ -69,17 +81,27 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
     );
 
   const target = card.target_scope === "per_check_in" ? card.target_value : null;
+  const head = (
+    <>
+      <ChallengeIcon icon={card.icon} tone={card.state === "done" ? "neutral" : "accent"} />
+      <h2 className={styles.cardTitle}>{card.title}</h2>
+      {card.streak !== null && card.streak > 0 && (
+        <StatusPill tone="success">{t("checkins.streak", { n: card.streak })}</StatusPill>
+      )}
+    </>
+  );
   const total = card.total ?? 0;
 
   return (
     <Card className={styles.card}>
-      <div className={styles.cardHead}>
-        <ChallengeIcon icon={card.icon} tone={card.state === "done" ? "neutral" : "accent"} />
-        <h2 className={styles.cardTitle}>{card.title}</h2>
-        {card.streak !== null && card.streak > 0 && (
-          <StatusPill tone="success">{t("checkins.streak", { n: card.streak })}</StatusPill>
-        )}
-      </div>
+      {linked ? (
+        <Link to={`/challenges/${card.id}`} className={cx(styles.cardHead, styles.cardLink)}>
+          {head}
+          <Icon name="chevronRight" size={20} />
+        </Link>
+      ) : (
+        <div className={styles.cardHead}>{head}</div>
+      )}
 
       {quantity ? (
         <div className={styles.amounts}>

@@ -101,6 +101,18 @@ describe("today", () => {
     expect(screen.queryByRole("img", { name: /^Ana:/ })).not.toBeInTheDocument();
   });
 
+  it("opens a challenge's page from its card head", async () => {
+    mockToday(today([walk]));
+    renderRoutes([
+      { path: "/", element: <TodayCheckIns /> },
+      { path: "/challenges/:id", element: <p>Challenge page</p> },
+    ]);
+
+    await userEvent.click(await screen.findByRole("link", { name: /Walk/ }));
+
+    expect(await screen.findByText("Challenge page")).toBeInTheDocument();
+  });
+
   it("checks in at once and offers undo", async () => {
     let data = today([walk]);
     mockToday(() => data);

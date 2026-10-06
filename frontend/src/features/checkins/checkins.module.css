@@ -42,6 +42,15 @@
   gap: var(--space-3);
 }
 
+/* The head as a link to the challenge's page: only the head, so a tap beside a check-in control
+   never leaves the screen. */
+.cardLink {
+  min-height: var(--tap-min);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
 .cardTitle {
   flex: 1;
   min-width: 0;

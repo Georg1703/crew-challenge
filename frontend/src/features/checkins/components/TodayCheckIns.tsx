@@ -29,7 +29,7 @@ export function TodayCheckIns() {
     <div className={styles.stack}>
       <DayRing today={today.data} />
       {challenges.map((card) => (
-        <CheckInCard key={card.id} card={card} day={day} />
+        <CheckInCard key={card.id} card={card} day={day} linked />
       ))}
     </div>
   );
