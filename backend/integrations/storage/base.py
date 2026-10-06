@@ -96,6 +96,14 @@ class ObjectStorage(ABC):
         """Remove an object. Safe to call when it does not exist."""
 
     @abstractmethod
+    def put(self, *, key: str, data: bytes, content_type: str) -> None:
+        """Store a small file from the server (demo data); the app's files come from browsers."""
+
+    @abstractmethod
+    def copy(self, *, source: str, key: str) -> None:
+        """Copy an object inside the bucket, without moving its bytes through the server."""
+
+    @abstractmethod
     def list_keys(self, *, prefix: str) -> list[str]:
         """Keys of the objects under a prefix, sorted."""
 

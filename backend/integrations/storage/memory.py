@@ -16,6 +16,7 @@ from .base import (
     InvalidPart,
     ObjectInfo,
     ObjectStorage,
+    StorageError,
     UploadedPart,
     UploadNotFound,
     sorted_parts,
@@ -132,6 +133,14 @@ class InMemoryObjectStorage(ObjectStorage):
 
     def delete(self, *, key: str) -> None:
         self.objects.pop(key, None)
+
+    def put(self, *, key: str, data: bytes, content_type: str) -> None:
+        self.put_object(key=key, data=data, content_type=content_type)
+
+    def copy(self, *, source: str, key: str) -> None:
+        if source not in self.objects:
+            raise StorageError(f"No object {source!r} to copy.")
+        self.objects[key] = self.objects[source]
 
     def list_keys(self, *, prefix: str) -> list[str]:
         return sorted(k for k in self.objects if k.startswith(prefix))

@@ -14,6 +14,7 @@ from integrations.storage import (
     InMemoryObjectStorage,
     InvalidPart,
     S3ObjectStorage,
+    StorageError,
     UploadedPart,
     UploadNotFound,
     get_object_storage,
@@ -148,6 +149,17 @@ def test_factory_rejects_unknown_backend():
     get_object_storage.cache_clear()
     with override_settings(OBJECT_STORAGE_BACKEND="ftp"), pytest.raises(ImproperlyConfigured):
         get_object_storage()
+
+
+def test_put_and_copy_store_files_from_the_server(storage):
+    storage.put(key="demo/a.png", data=b"png", content_type="image/png")
+    storage.copy(source="demo/a.png", key="demo/b.png")
+
+    info = storage.head(key="demo/b.png")
+    assert info is not None
+    assert (info.size, info.content_type) == (3, "image/png")
+    with pytest.raises(StorageError):
+        storage.copy(source="demo/missing.png", key="demo/c.png")
 
 
 def test_debug_urls_point_at_the_dev_view_which_stands_in_for_s3():

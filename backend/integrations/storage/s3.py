@@ -150,6 +150,16 @@ class S3ObjectStorage(ObjectStorage):
         with _translate_errors():
             self.client.delete_object(Bucket=self.bucket, Key=key)  # S3 answers 204 when missing
 
+    def put(self, *, key: str, data: bytes, content_type: str) -> None:
+        with _translate_errors():
+            self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+    def copy(self, *, source: str, key: str) -> None:
+        with _translate_errors():  # one request up to 5 GB, which every proof is under
+            self.client.copy_object(
+                Bucket=self.bucket, Key=key, CopySource={"Bucket": self.bucket, "Key": source}
+            )
+
     def _pages(self, prefix: str) -> Iterator[list[str]]:
         """Keys under a prefix, in S3's (sorted) order, at most 1000 per page."""
         paginator = self.client.get_paginator("list_objects_v2")
