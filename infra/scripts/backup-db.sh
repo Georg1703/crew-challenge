@@ -13,6 +13,7 @@
 set -euo pipefail
 
 CC=/opt/cc
+cd "$CC" # docker compose reads the current directory; sudo -u deploy keeps the caller's
 # shellcheck source=/dev/null
 . "$CC/deploy.conf" # IMAGE_PREFIX
 

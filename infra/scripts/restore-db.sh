@@ -27,6 +27,8 @@ env_value() { sed -n "s/^$1=//p" "$CC/.env" | tail -n 1; }
 
 file="${1:-}"
 [ -f "$file" ] || usage
+file="$(realpath "$file")"
+cd "$CC" # docker compose reads the current directory; sudo -u deploy keeps the caller's
 target=""
 if [ "${2:-}" = "--into" ]; then
   target="${3:-}"
