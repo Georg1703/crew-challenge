@@ -5,6 +5,11 @@
   aspect-ratio: 1;
 }
 
+.tile.filled {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 .face {
   position: relative;
   display: block;
@@ -21,6 +26,10 @@
 
 button.face {
   cursor: pointer;
+}
+
+.filled .face {
+  border-radius: var(--radius-media-inner);
 }
 
 button.face:active {
@@ -57,6 +66,15 @@ button.face:focus-visible {
 
 .failed .face {
   border: 2px solid var(--color-danger);
+}
+
+.processing.empty .face {
+  background: var(--media-pending);
+}
+
+/* The clock alone says it: no kind icon under it. */
+.processing.empty .placeholder {
+  visibility: hidden;
 }
 
 .mark {
@@ -154,4 +172,19 @@ button.face:focus-visible {
 .add:disabled {
   color: var(--color-text-disabled);
   cursor: default;
+}
+
+.duration {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-media-scrim);
+  color: var(--color-on-media);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-caption);
+  pointer-events: none;
 }

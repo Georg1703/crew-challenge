@@ -1,14 +1,7 @@
 import { Avatar } from "./Avatar";
 import styles from "./FeedItem.module.css";
-import { ProofTile, type ProofKind, type ProofTileState } from "./ProofTile";
-
-export type FeedProof = {
-  key: string;
-  kind: ProofKind;
-  state: ProofTileState;
-  src?: string | null;
-  label: string;
-};
+import type { FeedProof } from "./ProofMosaic";
+import { ProofTile } from "./ProofTile";
 
 const SHOWN = 3;
 

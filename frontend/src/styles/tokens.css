@@ -154,6 +154,7 @@
   --ring-current: var(--ring-gap), 0 0 0 4px var(--color-focus-ring);
 
   /* ---------- Semantic: layering ---------- */
+  --z-sticky: 1; /* a day's divider over the cards scrolling under it */
   --z-tabbar: 10;
   --z-sheet: 20;
   --z-viewer: 25; /* above a sheet it opens from, under toasts */

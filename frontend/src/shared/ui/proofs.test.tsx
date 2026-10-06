@@ -5,7 +5,8 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DayBar, DayBars, DayBarsAxis } from "./DayBars";
-import { FeedItem, type FeedProof } from "./FeedItem";
+import { FeedItem } from "./FeedItem";
+import type { FeedProof } from "./ProofMosaic";
 import { List } from "./ListRow";
 import { ProofAddTile, ProofTile } from "./ProofTile";
 import { ProofViewer, type ViewerItem } from "./ProofViewer";

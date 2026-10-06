@@ -12,11 +12,13 @@ import {
   Banner,
   Button,
   Card,
+  ChallengeChip,
   CheckList,
   ChipGroup,
   DayBar,
   DayBars,
   DayBarsAxis,
+  DayDivider,
   DayMark,
   type DayState,
   FeedItem,
@@ -26,10 +28,12 @@ import {
   IconTile,
   List,
   ListRow,
+  MiniWeek,
   OptionList,
   ProgressBar,
   ProgressRing,
   ProofAddTile,
+  ProofMosaic,
   ProofTile,
   ProofViewer,
   type RingSegment,
@@ -40,9 +44,12 @@ import {
   Skeleton,
   Spinner,
   Stack,
+  StatGroup,
   StatusPill,
   StepProgress,
   Stepper,
+  StoryAvatar,
+  type StorySegment,
   TabBar,
   TextArea,
   TextField,
@@ -70,6 +77,19 @@ const VIEWER: ViewerItem[] = PICTURES.map((src, i) => ({
   src,
   caption: `Ana, Walk, Monday 5 October (${i + 1})`,
 }));
+
+const STORIES: {
+  name: string;
+  seed: string;
+  segments: StorySegment[];
+  subtitle: string;
+  fresh: number;
+}[] = [
+  { name: "You", seed: "you", segments: ["done", "done"], subtitle: "2/2", fresh: 0 },
+  { name: "Ana", seed: "ana", segments: ["done", "started", "todo"], subtitle: "1/3", fresh: 3 },
+  { name: "Bogdan", seed: "bogdan", segments: ["todo"], subtitle: "0/1", fresh: 12 },
+  { name: "Dan", seed: "dan", segments: [], subtitle: "-", fresh: 0 },
+];
 
 export function DesignRoute() {
   const [theme, setTheme] = useState<Theme>("system");
@@ -531,6 +551,14 @@ export function DesignRoute() {
           <ProofTile kind="video" src={PICTURES[0]} state="paused" label="Waiting to upload" />
           <ProofTile kind="video" src={PICTURES[1]} state="processing" label="Being prepared" />
           <ProofTile kind="photo" src={PICTURES[2]} state="failed" label="Could not upload" />
+          <ProofTile kind="video" state="processing" label="Being prepared, no poster yet" />
+          <ProofTile
+            kind="video"
+            src={PICTURES[0]}
+            duration="0:42"
+            label="Video, 42 seconds"
+            onOpen={() => setViewer(0)}
+          />
           <ProofTile kind="video" label="Video, no poster yet" />
           <ProofTile kind="photo" label="Photo, no thumbnail" />
           <ProofAddTile
@@ -538,6 +566,23 @@ export function DesignRoute() {
             label="Add a photo or video"
             onPick={(file) => toast(`Picked ${file.name}`, "info")}
           />
+        </div>
+        <div className={styles.mosaics}>
+          {[1, 2, 3, 5].map((count) => (
+            <ProofMosaic
+              key={count}
+              proofs={[...PICTURES, ...PICTURES].slice(0, count).map((src, i) => ({
+                key: String(i),
+                kind: i === 1 ? "video" : "photo",
+                state: count === 3 && i === 2 ? "processing" : "ready",
+                src: count === 3 && i === 2 ? null : src,
+                duration: i === 1 ? "1:05" : undefined,
+                label: `Proof ${i + 1} of ${count}`,
+              }))}
+              onOpen={(i) => setViewer(Math.min(i, VIEWER.length - 1))}
+              moreLabel={`${count - 3} more proofs`}
+            />
+          ))}
         </div>
         <List label="Activity">
           <FeedItem
@@ -573,6 +618,59 @@ export function DesignRoute() {
           previousLabel="Previous proof"
           nextLabel="Next proof"
         />
+      </Section>
+
+      <Section title="Crew">
+        <div className={styles.stories}>
+          {STORIES.map((story) => (
+            <StoryAvatar
+              key={story.seed}
+              name={story.name}
+              seed={story.seed}
+              segments={story.segments}
+              title={story.name}
+              subtitle={story.subtitle}
+              complete={story.segments.length > 0 && story.segments.every((s) => s === "done")}
+              fresh={story.fresh}
+              label={`${story.name}, ${story.subtitle}`}
+              to="/design"
+            />
+          ))}
+        </div>
+        <StoryAvatar
+          name="Ana Pop"
+          seed="ana"
+          size="lg"
+          segments={["done", "started"]}
+          label="Ana Pop, 1 of 2 today"
+        />
+        <div className={styles.row}>
+          {(
+            [
+              ["done", "done", "missed", "done", "done", "not_due", "todo"],
+              ["done", "missed", "missed", "done", "outside", "outside", "done"],
+            ] as DayState[][]
+          ).map((week, w) => (
+            <MiniWeek
+              key={w}
+              label={`Last 7 days: ${week.join(", ")}`}
+              days={week.map((state, i) => ({ key: String(i), state, today: i === 6 }))}
+            />
+          ))}
+        </div>
+        <DayDivider title="Today" summary="5 check-ins, 9 proofs" />
+        <DayDivider title="Yesterday" />
+        <StatGroup
+          stats={[
+            { key: "streak", value: "12", label: "days in a row", tone: "success" },
+            { key: "best", value: "21", label: "longest" },
+            { key: "month", value: "86%", label: "this month" },
+          ]}
+        />
+        <div className={styles.row}>
+          <ChallengeChip icon="activity" label="Walk" />
+          <ChallengeChip icon="book" label="A very long challenge name that runs out of room" />
+        </div>
       </Section>
 
       <Section title="Segmented control">

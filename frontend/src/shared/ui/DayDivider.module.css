@@ -1,0 +1,30 @@
+/* Sticks under the top of the screen while its day scrolls by. */
+.divider {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  background: var(--color-bg);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.summary {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-small);
+}

@@ -102,7 +102,7 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
   `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
   `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`).
   `--ring-current` marks today in a week strip.
-- Layers: `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
+- Layers: `--z-sticky` (a `DayDivider` over the cards under it), `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
 
 ## Components (`frontend/src/shared/ui`)
 
@@ -138,9 +138,15 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
 | `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday, with a small dot under the days with proof |
 | `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows. With `onPick` the day numbers become buttons (named by `labels`) and a tap on a row picks the day under the finger |
-| `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A button when it opens something; an optional remove button (today only) |
+| `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A ready video shows its length in a pill; a video being prepared with no poster shows calm stripes. A button when it opens something; an optional remove button (today only); `fill` fills a mosaic cell instead of staying square |
+| `ProofMosaic` | A check-in's proofs laid out by count: one in a 4:3 box, two side by side, three or more as one big and two small with "+N" over the third. Tapping a tile opens the viewer at that proof |
 | `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline, muted until tapped (HLS, with hls.js loaded only where needed) |
 | `FeedItem` | One check-in in the crew feed (or one person in a day sheet), inside a `List`: avatar, a line, a quieter line, up to three proofs and "+N" |
+| `StoryAvatar` | A member with today's ring split into one segment per challenge due today (done green, started faint green, to do grey; nothing due: a plain grey ring), their name and "2/2" under it, and a count of new proofs. A link to the member's page; `lg` at the top of that page |
+| `MiniWeek` | The last seven days as small bars with the shapes of `DayBars`, today outlined; read as one summary |
+| `DayDivider` | A day in the crew's journal: its name, a line and what happened; sticks to the top while that day scrolls |
+| `StatGroup` | Up to three numbers in one card, divided, each with a short label under it; a number can be success green |
+| `ChallengeChip` | A challenge named inside a card: its icon in a small accent circle and its title, cut with an ellipsis |
 | `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kinds a challenge takes |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation, with an optional raised action (check in), its count and, while proofs upload, a thin progress ring; the shared icon set (Lucide shapes, stroke 1.75) |

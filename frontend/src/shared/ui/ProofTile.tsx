@@ -18,6 +18,7 @@ export type ProofTileState = "ready" | "uploading" | "paused" | "processing" | "
  * One proof as a square thumbnail. Its state reads by shape, not only color: a ring filling while
  * it uploads, a pause mark while it waits, a clock while a video is prepared, an alert when it
  * failed, a play mark on a ready video. It fills its grid cell (`--proof-tile-size` caps tracks).
+ * A video being prepared without a poster shows calm stripes (`--media-pending`).
  * With `onOpen` it is a button (view it, or pause and retry while uploading: the caller decides);
  * with `onRemove` it gets a remove button in the corner. Say the state in `label`.
  */
@@ -30,6 +31,8 @@ export function ProofTile({
   onOpen,
   onRemove,
   removeLabel,
+  duration,
+  fill = false,
 }: {
   kind: ProofKind;
   state?: ProofTileState;
@@ -41,6 +44,10 @@ export function ProofTile({
   onOpen?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
+  /** A video's length, already formatted ("0:42"); shown in a pill at the bottom right. */
+  duration?: string;
+  /** Fill the cell's height instead of staying square (inside a `ProofMosaic`). */
+  fill?: boolean;
 }) {
   const face = (
     <>
@@ -52,10 +59,11 @@ export function ProofTile({
         </span>
       )}
       <Mark kind={kind} state={state} progress={progress} />
+      {duration && state === "ready" && <span className={styles.duration}>{duration}</span>}
     </>
   );
   return (
-    <span className={cx(styles.tile, styles[state])}>
+    <span className={cx(styles.tile, styles[state], fill && styles.filled, !src && styles.empty)}>
       {onOpen ? (
         <button type="button" className={styles.face} onClick={onOpen} aria-label={label}>
           {face}
