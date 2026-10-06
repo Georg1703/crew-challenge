@@ -20,6 +20,12 @@
       "Resource": "arn:aws:s3:::<PROD_BUCKET>"
     },
     {
+      "Sid": "BackupsPutOnly",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:AbortMultipartUpload"],
+      "Resource": "arn:aws:s3:::<BACKUPS_BUCKET>/db/*"
+    },
+    {
       "Sid": "MediaConvertJobs",
       "Effect": "Allow",
       "Action": ["mediaconvert:CreateJob", "mediaconvert:GetJob"],

@@ -131,15 +131,25 @@ check: check-repo check-compose check-backend check-frontend check-contract ## E
 check-repo: ## Repo-level checks: docs links, referenced paths, ASCII, required files
 	@out=$$($(PYTHON) -m unittest discover -s tools/tests 2>&1) || { echo "$$out"; echo "ERROR: tool tests failed"; exit 1; }; echo "OK: tool tests passed"
 	@$(PYTHON) tools/check_repo.py
+	@if command -v shellcheck >/dev/null; then \
+		shellcheck -x infra/scripts/*.sh && echo "OK: shell scripts pass shellcheck"; \
+	else echo "SKIP: shellcheck not installed"; fi
 
 .PHONY: check-compose
-check-compose: ## Validate compose.yaml (skipped when Docker is not installed)
+check-compose: ## Validate compose.yaml and compose.prod.yaml (skipped without Docker)
 ifeq ($(HAS_COMPOSE),)
 	$(call skip,compose check)
 else
 	@if command -v docker >/dev/null; then \
 		$(COMPOSE) --profile tunnel config --quiet && echo "OK: compose.yaml is valid"; \
 	else echo "SKIP: compose check: docker not installed"; fi
+	@if command -v docker >/dev/null; then \
+		tmp=$$(mktemp -d) && \
+		printf 'POSTGRES_DB=x\nPOSTGRES_USER=x\nPOSTGRES_PASSWORD=x\nAPP_DOMAIN=example.com\n' > $$tmp/.env && \
+		TAG=check docker compose -f compose.prod.yaml --project-directory $$tmp --profile release \
+			config --quiet && echo "OK: compose.prod.yaml is valid"; \
+		status=$$?; rm -rf $$tmp; exit $$status; \
+	fi
 endif
 
 .PHONY: check-backend

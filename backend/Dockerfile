@@ -38,7 +38,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE=config.settings.production
-RUN groupadd --system app && useradd --system --gid app --home /app app
+# A fixed id, so the host can hand files to it (the CloudFront key: chown 10001, chmod 400).
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app --home /app app
 WORKDIR /app
 COPY --from=deps-prod /opt/venv /opt/venv
 COPY --chown=app:app . .

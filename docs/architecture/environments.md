@@ -16,8 +16,8 @@ Both run the same backend Docker image; only configuration differs.
 | Media storage | real S3 bucket `cc-dev-media`; tests use an in-memory fake | S3 bucket `cc-prod-media` + CloudFront |
 | Transcoding | off by default: videos play as uploaded; `TRANSCODER_BACKEND=mediaconvert` to try it on the dev bucket | MediaConvert, polled by Celery every 20 s |
 | Media viewing | presigned URLs from the dev bucket (no HLS) | CloudFront on `media.<app host>`, signed cookies per crew, HLS |
-| AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in the root-only `/opt/cc/.env` |
-| Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, `chmod 600` |
+| AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in `/opt/cc/.env` |
+| Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, owned by `deploy`, `chmod 600` |
 | HTTPS | not needed (localhost is a secure context) | Caddy with automatic Let's Encrypt certificates |
 | Phone testing | `make tunnel` (temporary HTTPS URL) | real domain |
 | Settings module | `config.settings.local` | `config.settings.production` |
@@ -88,8 +88,22 @@ real adapter like the browser does and checks those details; the bucket setup is
 - Lightsail Linux instance, 2 GB RAM / 2 vCPU / 60 GB SSD plan, Ubuntu 24.04, static IP.
 - Firewall: 80 and 443 open; 22 open with key-only SSH (password login disabled, fail2ban on).
   GitHub Actions connects with a dedicated deploy key that can only run `deploy.sh`.
-- `infra/scripts/bootstrap-host.sh` installs Docker, creates `/opt/cc`, a `deploy` user, and a
-  nightly backup cron. It is pasted as the instance's launch script.
+- `infra/scripts/bootstrap-host.sh` (run once over SSH with sudo, safe to repeat) installs updates,
+  Docker, fail2ban and a 2 GB swap file, turns off password and root login, creates the `deploy`
+  user (docker group, so effectively root: guard its key) and `/opt/cc`, and enables the nightly
+  backup timer. Its argument is the public deploy key, allowed only to run `deploy.sh`.
+- Layout of `/opt/cc` (owned by `deploy`):
+
+  | Path | What |
+  |---|---|
+  | `.env` | Production settings and secrets (mode 600); template in `infra/aws/README.md` |
+  | `cloudfront-private.pem` | Signs media cookies; owned by uid 10001 (the app user in the image), mode 400 |
+  | `deploy.conf` | Where release files and images come from (repo, image prefix) |
+  | `bin/` | `deploy.sh`, `backup-db.sh`, `restore-db.sh`; replaced by every successful deploy |
+  | `releases/<sha>/` | Each release's `compose.prod.yaml` and scripts (last 5 kept) |
+  | `current_sha` | The release running now |
+  | `backups/`, `last-backup` | The last 3 dumps, and the date of the last good one |
+
 - Automatic Lightsail snapshots are optional extra protection for the whole disk.
 
 ## Deploy flow
@@ -106,9 +120,35 @@ flowchart LR
   H -->|no| RB["deploy.sh previous sha"]
 ```
 
-- `deploy.sh` is idempotent and stores the current sha in `/opt/cc/current_sha`.
-- Migrations run in a one-off container before new app containers start, and must stay compatible
-  with the previous release (add first, remove in a later release).
+- `.github/workflows/deploy.yml` runs after CI passes on a push to `main` (or by hand, with a sha,
+  to redeploy or go back). Images: `ghcr.io/<owner>/crew-challenge-backend` and `-web`, tag = sha.
+- `deploy.sh <sha>` fetches that sha's `compose.prod.yaml` and scripts, pulls, migrates in a
+  one-off container, copies Django's static files for Caddy, starts everything (`up --wait`), and
+  checks `/api/health` through Caddy. On failure it starts the previous sha again. It stores the
+  running sha in `/opt/cc/current_sha` and ends with the date of the last backup.
+- Migrations are not undone on a rollback, so they must stay compatible with the previous
+  release (add first, remove in a later release).
+- Only one deploy runs at a time (a lock on the server, a concurrency group in GitHub Actions).
+
+## Backups
+
+The database is the only state that exists nowhere else; this policy is not to be weakened.
+
+- Every night at 03:30 Europe/Chisinau the systemd timer `cc-backup` runs `backup-db.sh`:
+  `pg_dump` (custom format, compressed) from the Postgres container, checked with
+  `pg_restore --list`, uploaded to `s3://<backups bucket>/db/YYYY-MM-DD.dump`. A night missed while
+  the server was off runs at the next boot.
+- The backups bucket's lifecycle rule deletes each file 14 days after upload (whole bucket; plus
+  aborting incomplete multipart uploads after 7 days), so the last 14 nights always exist.
+- The server's IAM user may only `PutObject` into `db/` of that bucket: no list, read or delete.
+  A broken or compromised server can add backups but cannot erase them.
+- The last 3 dumps also stay in `/opt/cc/backups`; `/opt/cc/last-backup` has the last good date,
+  printed by every deploy. Logs: `journalctl -u cc-backup`.
+- Restore with `restore-db.sh <file> --into <scratch db>` to test (the app keeps running), or
+  without `--into` to replace the live database (it asks you to type the domain). Test a restore
+  before the crew starts using the app, and after any Postgres major upgrade.
+- Not in these backups: photos and videos (in the media bucket). Versioning on the media bucket
+  is the option if that ever needs protection.
 
 ## AWS resources
 
@@ -120,7 +160,7 @@ Created by hand in the AWS console by the owner. The JSON documents pasted into 
 | Lightsail instance + static IP | Runs the app |
 | S3 `cc-dev-media` | Local development uploads |
 | S3 `cc-prod-media` | Production originals and HLS renditions |
-| S3 `cc-prod-backups` | Nightly database dumps, 14-day expiry |
+| S3 `cc-prod-backups` | Nightly database dumps, 14-day expiry; the server may only add files |
 | CloudFront distribution `media.<app host>` | Media playback with signed cookies (key group `cc-media`; certificate in `us-east-1`) |
 | MediaConvert roles `cc-mediaconvert-dev` / `-prod` | Let MediaConvert read and write each media bucket |
 | IAM user `cc-prod-app` | Server credentials: media + backups buckets, MediaConvert, pass role |
