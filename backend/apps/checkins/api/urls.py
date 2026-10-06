@@ -16,6 +16,12 @@ urlpatterns = [
     ),
     path("challenges/<uuid:challenge_id>/board", views.BoardView.as_view(), name="challenge-board"),
     path(
+        "challenges/<uuid:challenge_id>/days/<str:day>",
+        views.DaySheetView.as_view(),
+        name="challenge-day-sheet",
+    ),
+    path("feed", views.FeedView.as_view(), name="feed"),
+    path(
         "challenges/<uuid:challenge_id>/check-ins/<str:day>/proofs",
         views.ProofsView.as_view(),
         name="check-in-proofs",

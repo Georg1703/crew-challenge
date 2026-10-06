@@ -24,9 +24,11 @@ def at(moment: str):
     return time_machine.travel(moment, tick=False)
 
 
-def scheduled(admin, by, month: date, **shape):
+def scheduled(admin, by, month: date, participant_ids=None, **shape):
     challenge = challenges.propose_challenge(
-        by=by, shape={"title": "Walk", "frequency": "daily", **shape}
+        by=by,
+        shape={"title": "Walk", "frequency": "daily", **shape},
+        participant_ids=participant_ids,
     )
     challenges.schedule_challenge(
         by=admin, challenge_id=challenge.pk, period_kind="month", period_start=month

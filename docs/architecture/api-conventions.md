@@ -130,6 +130,9 @@ POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today ->
 DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's last entry -> today's card
                                         (the last one takes the day's proofs with it)
 GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
+GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
+GET    /api/v1/feed?cursor=...          the crew's check-ins with proofs, latest activity first
+                                        (30 per page, challenges you can see)
 
 POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   {kind, content_type, size, fingerprint?,
                                         thumb_size?}: add proof to today's check-in -> 201

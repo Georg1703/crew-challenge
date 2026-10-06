@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.challenges.api.serializers import PersonOut
 from apps.challenges.models import ICONS, Challenge
 from apps.checkins.days import DayState
-from apps.checkins.models import Proof
+from apps.checkins.models import CheckIn, Proof
 from apps.media.models import Upload
 
 DAY_STATES = (
@@ -59,14 +59,17 @@ class ProofOut(serializers.Serializer):
     created_at = serializers.DateTimeField()
 
 
-class TodayChallengeOut(serializers.Serializer):
-    """One of my challenges today: what to show on its card and in the ring."""
-
+class ChallengeBriefOut(serializers.Serializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
     icon = serializers.ChoiceField(choices=ICONS)
     measure = serializers.ChoiceField(choices=Challenge.Measure.choices)
     unit = serializers.CharField()
+
+
+class TodayChallengeOut(ChallengeBriefOut):
+    """One of my challenges today: what to show on its card and in the ring."""
+
     frequency = serializers.ChoiceField(choices=Challenge.Frequency.choices)
     times = serializers.IntegerField(allow_null=True)
     target_scope = serializers.ChoiceField(choices=Challenge.TargetScope.choices)
@@ -182,3 +185,25 @@ class PartsOut(serializers.Serializer):
 
 class PartIn(serializers.Serializer):
     etag = serializers.CharField(max_length=100, help_text="The ETag header S3 answered with.")
+
+
+class DaySheetRowOut(serializers.Serializer):
+    member = PersonOut()
+    state = serializers.ChoiceField(choices=DAY_STATES)
+    total = serializers.FloatField(allow_null=True, help_text="The day's total (numbers only).")
+    proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
+
+
+class FeedItemOut(serializers.Serializer):
+    """One check-in: who, on what, which day, and its proofs."""
+
+    id = serializers.UUIDField(help_text="The check-in.")
+    member = PersonOut()
+    challenge = ChallengeBriefOut()
+    day = serializers.DateField()
+    status = serializers.ChoiceField(choices=CheckIn.Status.choices)
+    total = serializers.FloatField(allow_null=True, help_text="The day's total (numbers only).")
+    activity_at = serializers.DateTimeField(
+        help_text="The later of the check-in's last change and its newest proof; the feed's order."
+    )
+    proofs = ProofOut(many=True, help_text="Processing and ready proofs.")

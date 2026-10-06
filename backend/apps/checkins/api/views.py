@@ -11,6 +11,7 @@ from apps.checkins import selectors, services
 from apps.checkins.models import Proof
 from apps.core import clock
 from apps.core.errors import ValidationFailed
+from apps.core.pagination import CursorPagination
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.media import selectors as media
@@ -19,6 +20,8 @@ from apps.media.models import Upload
 from .serializers import (
     BoardOut,
     CheckInIn,
+    DaySheetRowOut,
+    FeedItemOut,
     PartIn,
     PartsIn,
     PartsOut,
@@ -71,10 +74,6 @@ def upload_data(plan: services.ProofUpload) -> dict[str, Any]:
     }
 
 
-def _person(member: Member) -> dict[str, Any]:
-    return {"id": member.pk, "display_name": member.display_name, "avatar_seed": member.avatar_seed}
-
-
 def card_data(card: selectors.Card) -> dict[str, Any]:
     c = card.challenge
     return {
@@ -115,8 +114,7 @@ class TodayView(APIView):
                     "deadline": today.deadline,
                     "challenges": [card_data(c) for c in today.cards],
                     "crew": [
-                        {"member": _person(r.member), "done": r.done, "needed": r.needed}
-                        for r in today.crew
+                        {"member": r.member, "done": r.done, "needed": r.needed} for r in today.crew
                     ],
                 }
             ).data
@@ -178,7 +176,7 @@ class BoardView(APIView):
                     "days": board.days,
                     "rows": [
                         {
-                            "member": _person(r.member),
+                            "member": r.member,
                             "states": r.states,
                             "streak": r.streak,
                             "proof_days": r.proof_days,
@@ -270,3 +268,56 @@ class ProofView(APIView):
         """Remove my proof and its files (only on its own day)."""
         services.delete_proof(by=_member(request), proof_id=proof_id)
         return Response(status=204)
+
+
+class DaySheetView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(responses=DaySheetRowOut(many=True), operation_id="challenges_day_sheet")
+    def get(self, request: Request, challenge_id: UUID, day: str) -> Response:
+        """Everyone's state, total and proofs on one day (`day` is YYYY-MM-DD), in join order."""
+        member = _member(request)
+        rows = selectors.day_sheet(member=member, challenge_id=challenge_id, day=_day(day))
+        if rows is None:
+            raise services.ChallengeNotFound()
+        data = [
+            {
+                "member": r.member,
+                "state": r.state,
+                "total": r.total,
+                "proofs": [proof_data(p) for p in r.proofs],
+            }
+            for r in rows
+        ]
+        return Response(DaySheetRowOut(data, many=True).data)
+
+
+class FeedPagination(CursorPagination):
+    page_size = 30
+    ordering = "-activity_at"
+
+
+class FeedView(APIView):
+    permission_classes = [IsCrewMember]
+    pagination_class = FeedPagination  # also gives the schema its {results, next} and cursor
+
+    @extend_schema(responses=FeedItemOut(many=True), operation_id="feed_list")
+    def get(self, request: Request) -> Response:
+        """The crew's check-ins with their proofs, latest activity first."""
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(selectors.feed(member=_member(request)), request, self)
+        assert page is not None  # always paginated
+        items = [
+            {
+                "id": c.pk,
+                "member": c.member,
+                "challenge": c.challenge,
+                "day": c.day,
+                "status": c.status,
+                "total": c.amount,
+                "activity_at": c.activity_at,  # type: ignore[attr-defined]
+                "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
+            }
+            for c in page
+        ]
+        return paginator.get_paginated_response(FeedItemOut(items, many=True).data)

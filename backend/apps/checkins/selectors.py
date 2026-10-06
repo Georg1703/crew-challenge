@@ -1,4 +1,6 @@
-"""Check-in reads: a member's day (the ring, the cards, the crew) and a challenge's month board."""
+"""Check-in reads: a member's day (the ring, the cards, the crew), a challenge's month board and
+one day of it (the day sheet), and the crew's feed.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +9,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
+
+from django.db.models import OuterRef, Prefetch, QuerySet, Subquery
+from django.db.models.functions import Greatest
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
@@ -162,21 +167,37 @@ class Board:
     rows: list[BoardRow]
 
 
-def board(*, member: Member, challenge_id: UUID, month: date) -> Board | None:
-    """Every participant's month for a challenge the member can see, one state per day."""
+Everyone = list[tuple[Participant, days.Span, days.Record]]
+
+
+def _crewboard(member: Member, challenge_id: UUID) -> tuple[Challenge, date, Everyone] | None:
+    """A scheduled challenge the member can see, today, and everyone in it with their record.
+
+    The one gate for the board and the day sheet.
+    """
     challenge = challenges.get_challenge(member=member, challenge_id=challenge_id)
     if challenge is None or challenge.state != Challenge.State.CHOSEN:
         return None
+    people = challenges.participants(challenges=[challenge]).get(challenge.pk, [])
+    loaded = records(challenge_ids=[challenge.pk], member_ids=[p.member_id for p in people])
+    everyone = [
+        (p, days.span(challenge, p.left_on), loaded.get((challenge.pk, p.member_id), days.Record()))
+        for p in people
+    ]
+    return challenge, clock.crew_today(member.crew), everyone
+
+
+def board(*, member: Member, challenge_id: UUID, month: date) -> Board | None:
+    """Every participant's month for a challenge the member can see, one state per day."""
+    found = _crewboard(member, challenge_id)
+    if found is None:
+        return None
+    challenge, today, everyone = found
     first = month.replace(day=1)
     next_month = (first + timedelta(days=32)).replace(day=1)
     month_days = [first + timedelta(days=n) for n in range((next_month - first).days)]
-    today = clock.crew_today(member.crew)
-    people = challenges.participants(challenges=[challenge]).get(challenge.pk, [])
-    loaded = records(challenge_ids=[challenge.pk], member_ids=[p.member_id for p in people])
     rows = []
-    for participant in people:
-        record = loaded.get((challenge.pk, participant.member_id), days.Record())
-        part = days.span(challenge, participant.left_on)
+    for participant, part, record in everyone:
         rows.append(
             BoardRow(
                 member=participant.member,
@@ -186,3 +207,53 @@ def board(*, member: Member, challenge_id: UUID, month: date) -> Board | None:
             )
         )
     return Board(days=month_days, rows=rows)
+
+
+@dataclass
+class DaySheetRow:
+    member: Member
+    state: str
+    total: Decimal | None
+    proofs: list[Proof]  # the ones the crew can see
+
+
+def day_sheet(*, member: Member, challenge_id: UUID, day: date) -> list[DaySheetRow] | None:
+    """Everyone's state, total and proofs on one day of a challenge the member can see."""
+    found = _crewboard(member, challenge_id)
+    if found is None:
+        return None
+    challenge, today, everyone = found
+    shown: dict[UUID, list[Proof]] = defaultdict(list)
+    for proof in Proof.objects.filter(
+        check_in__challenge=challenge, check_in__day=day, status__in=SHOWN
+    ).select_related("check_in", "original__transcode", "thumb"):
+        shown[proof.check_in.member_id].append(proof)
+    return [
+        DaySheetRow(
+            member=participant.member,
+            state=days.state(challenge, part, record, day, today),
+            total=record.amounts.get(day),
+            proofs=shown.get(participant.member_id, []),
+        )
+        for participant, part, record in everyone
+    ]
+
+
+def feed(*, member: Member) -> QuerySet[CheckIn]:
+    """The crew's check-ins on challenges the member can see, with the proofs the crew can see.
+
+    Derived, nothing stored: `activity_at` is the later of the check-in's last change and its
+    newest shown proof. Order and page it with `-activity_at` (see api FeedPagination).
+    """
+    newest_proof = (
+        Proof.objects.filter(check_in=OuterRef("pk"), status__in=SHOWN)
+        .order_by("-updated_at")
+        .values("updated_at")[:1]
+    )
+    shown = Proof.objects.filter(status__in=SHOWN).select_related("original__transcode", "thumb")
+    return (
+        CheckIn.objects.filter(challenge__in=challenges.visible(member=member))
+        .annotate(activity_at=Greatest("updated_at", Subquery(newest_proof)))
+        .select_related("member", "challenge")
+        .prefetch_related(Prefetch("proofs", queryset=shown, to_attr="shown_proofs"))
+    )

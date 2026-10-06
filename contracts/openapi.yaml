@@ -271,6 +271,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProofUploadOut'
           description: ''
+  /api/v1/challenges/{challenge_id}/days/{day}:
+    get:
+      operationId: challenges_day_sheet
+      description: Everyone's state, total and proofs on one day (`day` is YYYY-MM-DD),
+        in join order.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: day
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DaySheetRowOut'
+          description: ''
   /api/v1/challenges/{challenge_id}/participants:
     put:
       operationId: challenges_participants
@@ -472,6 +502,34 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/feed:
+    get:
+      operationId: feed_list
+      description: The crew's check-ins with their proofs, latest activity first.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - feed
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeedItemOutList'
+          description: ''
   /api/v1/invites/{code}:
     get:
       operationId: invites_retrieve
@@ -853,6 +911,26 @@ components:
       - proof_days
       - states
       - streak
+    ChallengeBriefOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        icon:
+          $ref: '#/components/schemas/IconEnum'
+        measure:
+          $ref: '#/components/schemas/MeasureEnum'
+        unit:
+          type: string
+      required:
+      - icon
+      - id
+      - measure
+      - title
+      - unit
     ChallengeInRequest:
       type: object
       description: The creator's choices. Combinations are checked in services.clean_shape.
@@ -1072,6 +1150,14 @@ components:
           description: 'For challenges that record a number: how much to add.'
       required:
       - day
+    CheckInStatusEnum:
+      enum:
+      - done
+      - in_progress
+      type: string
+      description: |-
+        * `done` - Done
+        * `in_progress` - In progress (a number below the day's target)
     CrewDayOut:
       type: object
       properties:
@@ -1137,6 +1223,28 @@ components:
       required:
       - day
       - state
+    DaySheetRowOut:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        state:
+          $ref: '#/components/schemas/DayStateEnum'
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: The day's total (numbers only).
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Processing and ready proofs.
+      required:
+      - member
+      - proofs
+      - state
+      - total
     DayStateEnum:
       enum:
       - done
@@ -1157,6 +1265,47 @@ components:
         * `not_due` - not_due
         * `future` - future
         * `outside` - outside
+    FeedItemOut:
+      type: object
+      description: 'One check-in: who, on what, which day, and its proofs.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The check-in.
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        day:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/CheckInStatusEnum'
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: The day's total (numbers only).
+        activity_at:
+          type: string
+          format: date-time
+          description: The later of the check-in's last change and its newest proof;
+            the feed's order.
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Processing and ready proofs.
+      required:
+      - activity_at
+      - challenge
+      - day
+      - id
+      - member
+      - proofs
+      - status
+      - total
     FrequencyEnum:
       enum:
       - daily
@@ -1382,6 +1531,19 @@ components:
     NullEnum:
       enum:
       - null
+    PaginatedFeedItemOutList:
+      type: object
+      required:
+      - results
+      - next
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedItemOut'
+        next:
+          type: string
+          nullable: true
     PartInRequest:
       type: object
       properties:

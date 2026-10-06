@@ -85,7 +85,7 @@ POST   /api/v1/proofs/{id}/complete                     -> proof (ready or proce
 GET    /api/v1/proofs/resume?fingerprint=...            -> proof + uploaded parts, or 404
 DELETE /api/v1/proofs/{id}                              today only, your own -> 204
 GET    /api/v1/challenges/{id}/days/{day}               everyone's state, amount and proofs
-GET    /api/v1/feed?before=...                          the crew's recent check-ins with proofs
+GET    /api/v1/feed?cursor=...                          the crew's recent check-ins with proofs
 POST   /api/v1/media/session                            sets the CloudFront cookies (no-op locally)
 ```
 
@@ -120,7 +120,9 @@ swipe), `FeedItem`, and the dot in `DayBars` / `WeekStrip`.
 - A photo proof: ~0.5 MB up, two PUTs, two API calls. Visible to the crew as soon as it lands.
 - A video: parts of 16/64 MiB, 4 in parallel, 6 retries; the API is called once per part (ETag).
 - Thumbnails everywhere (480 px); full images and HLS only in the viewer. hls.js only loads there.
-- Feed: one query with `select_related` + one prefetch for proofs; indexed by (crew, created_at).
+- Feed: one query with `select_related` + one prefetch for proofs. Built in stage 4: the order is
+  computed per request (no index needed at a family's scale; a test checks a fuller page costs no
+  more queries). Paging uses the shared cursor pagination (`?cursor=`, as every list does).
 - Nothing in the service worker cache (network-only for media, per AGENTS).
 
 ## Infra (written as JSON for the owner to apply; never applied by an agent)

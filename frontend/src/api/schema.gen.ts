@@ -159,6 +159,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges/{challenge_id}/days/{day}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Everyone's state, total and proofs on one day (`day` is YYYY-MM-DD), in join order. */
+        get: operations["challenges_day_sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/{challenge_id}/participants": {
         parameters: {
             query?: never;
@@ -280,6 +297,23 @@ export interface paths {
         post?: never;
         /** @description Admin: cancel an invite nobody has used yet. */
         delete: operations["crew_invites_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The crew's check-ins with their proofs, latest activity first. */
+        get: operations["feed_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -543,6 +577,14 @@ export interface components {
             /** @description Days of the month with proof. */
             proof_days: string[];
         };
+        ChallengeBriefOut: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            icon: components["schemas"]["IconEnum"];
+            measure: components["schemas"]["MeasureEnum"];
+            unit: string;
+        };
         /** @description The creator's choices. Combinations are checked in services.clean_shape. */
         ChallengeInRequest: {
             title: string;
@@ -629,6 +671,12 @@ export interface components {
              */
             amount?: string | null;
         };
+        /**
+         * @description * `done` - Done
+         *     * `in_progress` - In progress (a number below the day's target)
+         * @enum {string}
+         */
+        CheckInStatusEnum: "done" | "in_progress";
         CrewDayOut: {
             member: components["schemas"]["PersonOut"];
             done: number;
@@ -656,6 +704,17 @@ export interface components {
             day: string;
             state: components["schemas"]["DayStateEnum"];
         };
+        DaySheetRowOut: {
+            member: components["schemas"]["PersonOut"];
+            state: components["schemas"]["DayStateEnum"];
+            /**
+             * Format: double
+             * @description The day's total (numbers only).
+             */
+            total: number | null;
+            /** @description Processing and ready proofs. */
+            proofs: components["schemas"]["ProofOut"][];
+        };
         /**
          * @description * `done` - done
          *     * `partial` - partial
@@ -668,6 +727,31 @@ export interface components {
          * @enum {string}
          */
         DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
+        /** @description One check-in: who, on what, which day, and its proofs. */
+        FeedItemOut: {
+            /**
+             * Format: uuid
+             * @description The check-in.
+             */
+            id: string;
+            member: components["schemas"]["PersonOut"];
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            /** Format: date */
+            day: string;
+            status: components["schemas"]["CheckInStatusEnum"];
+            /**
+             * Format: double
+             * @description The day's total (numbers only).
+             */
+            total: number | null;
+            /**
+             * Format: date-time
+             * @description The later of the check-in's last change and its newest proof; the feed's order.
+             */
+            activity_at: string;
+            /** @description Processing and ready proofs. */
+            proofs: components["schemas"]["ProofOut"][];
+        };
         /**
          * @description * `daily` - Every day
          *     * `weekdays` - Chosen days of the week
@@ -777,6 +861,10 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        PaginatedFeedItemOutList: {
+            results: components["schemas"]["FeedItemOut"][];
+            next: string | null;
+        };
         PartInRequest: {
             /** @description The ETag header S3 answered with. */
             etag: string;
@@ -1295,6 +1383,28 @@ export interface operations {
             };
         };
     };
+    challenges_day_sheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                challenge_id: string;
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaySheetRowOut"][];
+                };
+            };
+        };
+    };
     challenges_participants: {
         parameters: {
             query?: never;
@@ -1500,6 +1610,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    feed_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFeedItemOutList"];
+                };
             };
         };
     };
