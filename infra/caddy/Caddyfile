@@ -1,0 +1,69 @@
+# Production web server: HTTPS (automatic Let's Encrypt certificates), the built app, and the
+# one-origin proxy to Django. Baked into the web image (frontend/Dockerfile, target "web").
+#
+# Environment (compose.prod.yaml): APP_DOMAIN, the app's host name (e.g. sohus.fun).
+# Certificates are kept in the caddy_data volume; losing it means asking Let's Encrypt again.
+#
+# Routes:
+#   /api/*, /admin*   -> Django (gunicorn) at backend:8000
+#   /static/*         -> Django's collected static files (admin, DRF), shared volume
+#   everything else   -> the app; unknown paths get index.html (client-side routes)
+{
+	admin off
+}
+
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "geolocation=(), microphone=(self), camera=(self)"
+		-Server
+	}
+
+	@django path /api/* /admin /admin/*
+	handle @django {
+		reverse_proxy backend:8000 {
+			# Uploads go straight to S3; requests here are small. Fail fast if Django is down.
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
+	handle /static/* {
+		root * /srv
+		header Cache-Control "public, max-age=86400"
+		file_server
+	}
+
+	# Vite puts a content hash in every file name under /assets: cache them for a year. A missing
+	# asset is a 404, never index.html (a stale page asking for an old file must fail loudly).
+	handle /assets/* {
+		root * /srv/app
+		@found file
+		header @found Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Everything else (index.html, sw.js, the manifest, icons) is checked on every load, so a new
+	# release reaches phones at once (the app then offers "Update").
+	handle {
+		root * /srv/app
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
