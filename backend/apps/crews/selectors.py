@@ -38,6 +38,11 @@ def list_members(*, crew: Crew) -> list[Member]:
     return list(Member.objects.for_crew(crew).select_related("user").order_by("created_at", "id"))
 
 
+def get_member(*, crew: Crew, member_id: UUID) -> Member | None:
+    """One member of this crew, or None (also for another crew's member)."""
+    return Member.objects.for_crew(crew).filter(pk=member_id).first()
+
+
 def get_invite(*, code: str) -> Invite | None:
     return (
         Invite.objects.select_related("crew", "created_by")

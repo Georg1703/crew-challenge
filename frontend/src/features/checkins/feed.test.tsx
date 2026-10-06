@@ -23,6 +23,7 @@ const photo = (id: string): Proof => ({
   hls_url: null,
   thumb_url: `/media/${id}-thumb.jpg`,
   created_at: "2026-11-10T08:00:00Z",
+  duration: null,
 });
 
 const walked: FeedItem = {

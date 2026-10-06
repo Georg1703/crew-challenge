@@ -160,3 +160,30 @@ def test_ring_segments():
     assert days.settled_today(weekly, NOV, record(done=[9, 10]), today) is True
     assert days.settled_today(weekly, NOV, record(done=[8, 9]), d(9)) is True  # quota met
     assert days.settled_today(challenge(), days.Span(d(1), d(5)), record(), today) is None
+
+
+def test_longest_streak_of_fixed_days():
+    c = challenge()
+    assert days.longest_streak(c, NOV, record(done=[1, 2, 3, 5, 6]), d(10)) == 3
+    assert days.longest_streak(c, NOV, record(done=[7, 8, 9]), d(10)) == 3  # today still open
+    assert days.longest_streak(c, NOV, record(done=[8, 9, 10]), d(10)) == 3
+    assert days.longest_streak(c, NOV, record(), d(10)) == 0
+    left = days.Span(d(1), d(4))  # left on the 4th: later days do not count
+    assert days.longest_streak(c, left, record(done=[3, 4, 5, 6, 7]), d(10)) == 2
+    weekdays = challenge(frequency="weekdays", weekdays=0b0010101)  # Mon, Wed, Fri
+    assert days.longest_streak(weekdays, NOV, record(done=[2, 4, 6, 9]), d(10)) == 4
+
+
+def test_longest_streak_crosses_the_clock_change():
+    autumn = challenge(start_date=date(2026, 10, 20), end_date=date(2026, 11, 5))
+    part = days.Span(date(2026, 10, 20), date(2026, 11, 5))
+    done = {date(2026, 10, n) for n in range(23, 32)} | {d(1)}  # 23 Oct - 1 Nov, over 25 Oct
+    assert days.longest_streak(autumn, part, days.Record(done=done), d(3)) == 10
+
+
+def test_longest_streak_of_weeks_and_none_for_counts():
+    c = challenge(frequency="times_per_week", times=3)
+    r = record(done=[1, 2, 3, 4, 16, 17, 18])  # weeks 1-2 met, week 3 missed, week 4 met
+    assert days.longest_streak(c, NOV, r, d(20)) == 2
+    assert days.longest_streak(c, NOV, record(done=[1]), d(3)) == 1  # this week still open
+    assert days.longest_streak(challenge(frequency="once"), NOV, r, d(20)) is None

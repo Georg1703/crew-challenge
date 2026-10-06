@@ -29,6 +29,7 @@ const saved = (id: string, kind: Proof["kind"], status: Proof["status"]): Proof 
   hls_url: null,
   thumb_url: kind === "photo" ? `/media/${id}-thumb.jpg` : null,
   created_at: "2026-11-10T08:00:00Z",
+  duration: null,
 });
 
 const walk: TodayChallenge = {

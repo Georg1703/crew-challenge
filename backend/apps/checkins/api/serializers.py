@@ -57,6 +57,9 @@ class ProofOut(serializers.Serializer):
         help_text="A small JPEG from the phone, or a video's poster; else show `url`.",
     )
     created_at = serializers.DateTimeField()
+    duration = serializers.IntegerField(
+        allow_null=True, help_text="A video's length in seconds, when the phone could read it."
+    )
 
 
 class ChallengeBriefOut(serializers.Serializer):
@@ -130,6 +133,12 @@ class BoardOut(serializers.Serializer):
 
 class ProofStartIn(serializers.Serializer):
     kind = serializers.ChoiceField(choices=Proof.Kind.choices)
+    duration = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="A video's length in whole seconds, from the file's metadata.",
+    )
     content_type = serializers.CharField(
         max_length=100, help_text="The file's type, e.g. video/mp4."
     )
@@ -246,3 +255,36 @@ class FeedItemOut(serializers.Serializer):
     day_summary = DaySummaryOut(
         help_text="The crew's whole day (the same on every item of that day), for its divider."
     )
+
+
+class MemberChallengeOut(serializers.Serializer):
+    challenge = ChallengeBriefOut()
+    states = serializers.ListField(
+        child=serializers.ChoiceField(choices=DAY_STATES), help_text="One per day of the month."
+    )
+    proof_days = serializers.ListField(child=serializers.DateField())
+    streak = serializers.IntegerField(allow_null=True)
+    today = serializers.ChoiceField(choices=DAY_STATES, help_text="Today's state.")
+
+
+class ProofDayOut(serializers.Serializer):
+    day = serializers.DateField()
+    challenge = ChallengeBriefOut()
+    proofs = ProofOut(many=True)
+
+
+class MemberProgressOut(serializers.Serializer):
+    """A member's month, on the challenges you can see."""
+
+    member = PersonOut()
+    days = serializers.ListField(child=serializers.DateField(), help_text="The month's days.")
+    streak = serializers.IntegerField(help_text="Their best current streak.")
+    longest_streak = serializers.IntegerField()
+    month_done = serializers.IntegerField(
+        help_text="Due days done this month so far (daily and weekday challenges)."
+    )
+    month_due = serializers.IntegerField(
+        help_text="Due days this month so far; today counts once done."
+    )
+    challenges = MemberChallengeOut(many=True)
+    proof_days = ProofDayOut(many=True, help_text="Their proofs this month, latest day first.")

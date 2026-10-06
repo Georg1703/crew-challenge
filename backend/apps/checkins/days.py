@@ -151,6 +151,38 @@ def streak(challenge: Challenge, part: Span, record: Record, today: date) -> int
     return None
 
 
+def longest_streak(challenge: Challenge, part: Span, record: Record, today: date) -> int | None:
+    """The longest run so far of due days (or met weeks) in a row, up to today.
+
+    Today, or this week, still open is not a break. None for challenges without streaks.
+    """
+    end = min(today, part.last)
+    best = run = 0
+    if is_fixed(challenge):
+        day = part.first
+        while day <= end:
+            if is_due(challenge, day):
+                if day in record.done:
+                    run += 1
+                    best = max(best, run)
+                elif day != today:
+                    run = 0
+            day += timedelta(days=1)
+        return best
+    if challenge.frequency == Challenge.Frequency.TIMES_PER_WEEK:
+        (monday, sunday), (current, _) = week_of(part.first), week_of(end)
+        while monday <= current:
+            quota = week_quota(challenge, part, monday)
+            if done_between(record, part, monday, sunday) >= quota > 0:
+                run += 1
+                best = max(best, run)
+            elif monday != current:
+                run = 0
+            monday, sunday = monday + timedelta(days=7), sunday + timedelta(days=7)
+        return best
+    return None
+
+
 @dataclass(frozen=True)
 class Progress:
     """Toward a count of days (`days`) or a total (`amount`)."""

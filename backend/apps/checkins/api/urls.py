@@ -22,6 +22,11 @@ urlpatterns = [
     ),
     path("feed", views.FeedView.as_view(), name="feed"),
     path(
+        "members/<uuid:member_id>/progress",
+        views.MemberProgressView.as_view(),
+        name="member-progress",
+    ),
+    path(
         "challenges/<uuid:challenge_id>/check-ins/<str:day>/proofs",
         views.ProofsView.as_view(),
         name="check-in-proofs",

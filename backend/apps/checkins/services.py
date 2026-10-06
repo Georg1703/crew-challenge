@@ -36,6 +36,7 @@ UPLOAD_GRACE = timedelta(hours=24)
 MAX_PROOFS = 5  # per check-in, not counting failed ones
 PHOTO_MAX_SIZE = 50 * MiB  # phones send ~0.5 MB after shrinking; this is for originals
 THUMB_MAX_SIZE = 2 * MiB
+VIDEO_MAX_SECONDS = 3 * 60 * 60  # a video's length, as the phone reads it
 KINDS: dict[str, set[str]] = {
     Challenge.ProofKind.PHOTO: {Proof.Kind.PHOTO},
     Challenge.ProofKind.VIDEO: {Proof.Kind.VIDEO},
@@ -55,6 +56,11 @@ EXTENSIONS: dict[str, dict[str, str]] = {  # allowed content types, the extensio
 class ChallengeNotFound(NotFound):
     code = "challenge_not_found"
     message = "This challenge does not exist."
+
+
+class MemberNotFound(NotFound):
+    code = "member_not_found"
+    message = "This member is not in your crew."
 
 
 class DayClosed(Conflict):
@@ -226,10 +232,12 @@ def start_proof(
     size: int,
     fingerprint: str = "",
     thumb_size: int | None = None,
+    duration: int | None = None,
 ) -> ProofUpload:
     """Add proof to today's check-in: a photo takes one PUT, a video a resumable multipart upload.
 
-    `thumb_size` announces a small JPEG made on the phone (a video's poster frame).
+    `thumb_size` announces a small JPEG made on the phone (a video's poster frame); `duration`
+    is a video's length in seconds, read on the phone (kept for videos only).
     """
     challenge = _participant(by, challenge_id, day).challenge
     if kind not in KINDS.get(challenge.proof_kind, set()):
@@ -244,6 +252,8 @@ def start_proof(
         raise ValidationFailed(fields={"size": ["A photo can be at most 50 MB."]})
     if thumb_size is not None and not 0 < thumb_size <= THUMB_MAX_SIZE:
         raise ValidationFailed(fields={"thumb_size": ["A thumbnail can be at most 2 MB."]})
+    if duration is not None and not 0 < duration <= VIDEO_MAX_SECONDS:
+        raise ValidationFailed(fields={"duration": ["A video can be at most 3 hours long."]})
     with transaction.atomic():
         check_in = (
             CheckIn.objects.select_for_update()  # one start at a time counts the proofs
@@ -278,7 +288,13 @@ def start_proof(
                 expires_at=expires_at,
             )
         proof = Proof.objects.create(
-            id=proof_id, crew=by.crew, check_in=check_in, kind=kind, original=original, thumb=thumb
+            id=proof_id,
+            crew=by.crew,
+            check_in=check_in,
+            kind=kind,
+            original=original,
+            thumb=thumb,
+            duration=duration if kind == Proof.Kind.VIDEO else None,
         )
     return _upload(proof)
 

@@ -87,6 +87,9 @@ class Proof(CrewScopedSoftDeleteModel):
         related_name="+",
         help_text="A small JPEG made on the phone (a video's poster frame).",
     )
+    duration = models.PositiveIntegerField(
+        null=True, blank=True, help_text="A video's length in seconds, read on the phone."
+    )
 
     class Meta(CrewScopedSoftDeleteModel.Meta):
         ordering = ("created_at",)

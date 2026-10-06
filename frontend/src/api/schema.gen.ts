@@ -426,6 +426,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/{member_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A member's month: streaks, each challenge's days and their proofs by day. */
+        get: operations["members_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proofs/{proof_id}": {
         parameters: {
             query?: never;
@@ -891,12 +908,48 @@ export interface components {
              */
             expires_at: string | null;
         };
+        MemberChallengeOut: {
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            /** @description One per day of the month. */
+            states: components["schemas"]["DayStateEnum"][];
+            proof_days: string[];
+            streak: number | null;
+            /**
+             * @description Today's state.
+             *
+             *     * `done` - done
+             *     * `partial` - partial
+             *     * `todo` - todo
+             *     * `open` - open
+             *     * `missed` - missed
+             *     * `not_due` - not_due
+             *     * `future` - future
+             *     * `outside` - outside
+             */
+            today: components["schemas"]["DayStateEnum"];
+        };
         MemberOut: {
             /** Format: uuid */
             id: string;
             display_name: string;
             role: string;
             avatar_seed: string;
+        };
+        /** @description A member's month, on the challenges you can see. */
+        MemberProgressOut: {
+            member: components["schemas"]["PersonOut"];
+            /** @description The month's days. */
+            days: string[];
+            /** @description Their best current streak. */
+            streak: number;
+            longest_streak: number;
+            /** @description Due days done this month so far (daily and weekday challenges). */
+            month_done: number;
+            /** @description Due days this month so far; today counts once done. */
+            month_due: number;
+            challenges: components["schemas"]["MemberChallengeOut"][];
+            /** @description Their proofs this month, latest day first. */
+            proof_days: components["schemas"]["ProofDayOut"][];
         };
         MemberSummaryOut: {
             display_name: string;
@@ -1010,6 +1063,12 @@ export interface components {
             /** Format: double */
             goal: number;
         };
+        ProofDayOut: {
+            /** Format: date */
+            day: string;
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            proofs: components["schemas"]["ProofOut"][];
+        };
         /**
          * @description * `none` - No proof
          *     * `photo` - Photo
@@ -1031,9 +1090,13 @@ export interface components {
             thumb_url: string | null;
             /** Format: date-time */
             created_at: string;
+            /** @description A video's length in seconds, when the phone could read it. */
+            duration: number | null;
         };
         ProofStartInRequest: {
             kind: components["schemas"]["MediaKindEnum"];
+            /** @description A video's length in whole seconds, from the file's metadata. */
+            duration?: number | null;
             /** @description The file's type, e.g. video/mp4. */
             content_type: string;
             /** @description Bytes. */
@@ -1848,6 +1911,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaSessionOut"];
+                };
+            };
+        };
+    };
+    members_progress: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; default this month. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberProgressOut"];
                 };
             };
         };

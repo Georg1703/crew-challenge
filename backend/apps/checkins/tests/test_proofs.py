@@ -373,3 +373,24 @@ def test_without_transcoding_a_video_is_ready_at_once(sent_video):
         done = services.complete_proof(by=bogdan, proof_id=proof.pk)
 
     assert done.status == Proof.Status.READY
+
+
+def test_a_videos_length_comes_from_the_phone(walk, browser):
+    _, bogdan, challenge = walk
+    check_in(bogdan, challenge)
+    browser.force_login(bogdan.user)
+    url = f"/api/v1/challenges/{challenge.pk}/check-ins/2026-11-10/proofs"
+    shape = {"kind": "video", "content_type": "video/mp4", "size": 20 * MiB, "duration": 42}
+    started = browser.post(url, shape, content_type="application/json")
+    too_long = browser.post(
+        url, {**shape, "duration": 3 * 3600 + 1}, content_type="application/json"
+    )
+    photo_with_one = services.start_proof(
+        by=bogdan, challenge_id=challenge.pk, day=DAY, kind="photo",
+        content_type="image/jpeg", size=4, duration=5,
+    )  # fmt: skip
+
+    assert started.status_code == 201
+    assert started.json()["proof"]["duration"] == 42
+    assert too_long.json()["error"]["fields"]["duration"]
+    assert photo_with_one.proof.duration is None  # photos have no length

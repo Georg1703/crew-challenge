@@ -22,6 +22,7 @@ from .serializers import (
     CheckInIn,
     DaySheetRowOut,
     FeedItemOut,
+    MemberProgressOut,
     PartIn,
     PartsIn,
     PartsOut,
@@ -54,6 +55,7 @@ def proof_data(proof: Proof) -> dict[str, Any]:
         "hls_url": hls_url,
         "thumb_url": media.url(proof.thumb) or poster_url,
         "created_at": proof.created_at,
+        "duration": proof.duration,
     }
 
 
@@ -159,6 +161,14 @@ class UndoView(APIView):
         return _card_response(request, challenge_id)
 
 
+def _month(request: Request, member: Member) -> date:
+    raw = request.query_params.get("month")
+    try:
+        return date.fromisoformat(f"{raw}-01") if raw else clock.crew_today(member.crew)
+    except ValueError as exc:
+        raise ValidationFailed(fields={"month": ["Use YYYY-MM."]}) from exc
+
+
 class BoardView(APIView):
     permission_classes = [IsCrewMember]
 
@@ -170,12 +180,9 @@ class BoardView(APIView):
     def get(self, request: Request, challenge_id: UUID) -> Response:
         """Every participant's month, one state per day."""
         member = _member(request)
-        raw = request.query_params.get("month")
-        try:
-            month = date.fromisoformat(f"{raw}-01") if raw else clock.crew_today(member.crew)
-        except ValueError as exc:
-            raise ValidationFailed(fields={"month": ["Use YYYY-MM."]}) from exc
-        board = selectors.board(member=member, challenge_id=challenge_id, month=month)
+        board = selectors.board(
+            member=member, challenge_id=challenge_id, month=_month(request, member)
+        )
         if board is None:
             raise services.ChallengeNotFound()
         return Response(
@@ -346,3 +353,51 @@ class FeedView(APIView):
             for c in page
         ]
         return paginator.get_paginated_response(FeedItemOut(items, many=True).data)
+
+
+class MemberProgressView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("month", str, description="YYYY-MM; default this month.")],
+        responses=MemberProgressOut,
+        operation_id="members_progress",
+    )
+    def get(self, request: Request, member_id: UUID) -> Response:
+        """A member's month: streaks, each challenge's days and their proofs by day."""
+        viewer = _member(request)
+        found = selectors.member_progress(
+            viewer=viewer, member_id=member_id, month=_month(request, viewer)
+        )
+        if found is None:
+            raise services.MemberNotFound()
+        return Response(
+            MemberProgressOut(
+                {
+                    "member": found.member,
+                    "days": found.days,
+                    "streak": found.streak,
+                    "longest_streak": found.longest_streak,
+                    "month_done": found.month_done,
+                    "month_due": found.month_due,
+                    "challenges": [
+                        {
+                            "challenge": c.challenge,
+                            "states": c.states,
+                            "proof_days": c.proof_days,
+                            "streak": c.streak,
+                            "today": c.today,
+                        }
+                        for c in found.challenges
+                    ],
+                    "proof_days": [
+                        {
+                            "day": p.day,
+                            "challenge": p.challenge,
+                            "proofs": [proof_data(proof) for proof in p.proofs],
+                        }
+                        for p in found.proof_days
+                    ],
+                }
+            ).data
+        )

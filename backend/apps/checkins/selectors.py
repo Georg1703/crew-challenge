@@ -16,6 +16,7 @@ from django.db.models.functions import Greatest
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
 from apps.core import clock
+from apps.crews import selectors as crews
 from apps.crews.models import Member
 
 from . import days
@@ -400,4 +401,109 @@ def day_summaries(*, member: Member, on: set[date]) -> dict[date, DaySummary]:
                 day in loaded.get((p.challenge_id, p.member_id), days.Record()).done for p in due
             ),
         )
+    return result
+
+
+@dataclass
+class ChallengeMonth:
+    """One challenge on a member's page: their month, days with proof, streak, today."""
+
+    challenge: Challenge
+    states: list[str]
+    proof_days: list[date]
+    streak: int | None
+    today: str
+
+
+@dataclass
+class ProofDay:
+    day: date
+    challenge: Challenge
+    proofs: list[Proof]
+
+
+@dataclass
+class MemberProgress:
+    member: Member
+    days: list[date]
+    streak: int  # the best current streak among their challenges
+    longest_streak: int
+    month_done: int  # due days done this month, up to today (daily and weekday challenges)
+    month_due: int
+    challenges: list[ChallengeMonth]
+    proof_days: list[ProofDay]  # latest day first
+
+
+def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberProgress | None:
+    """A member's month on the challenges the viewer can see; None for another crew's member."""
+    person = crews.get_member(crew=viewer.crew, member_id=member_id)
+    if person is None:
+        return None
+    today = clock.crew_today(viewer.crew)
+    first = month.replace(day=1)
+    last = (first + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    month_days = [first + timedelta(days=n) for n in range((last - first).days + 1)]
+    parts = list(
+        Participant.objects.filter(
+            member=person,
+            challenge__in=challenges.visible(member=viewer),
+            challenge__state=Challenge.State.CHOSEN,
+            challenge__start_date__lte=last,
+            challenge__end_date__gte=first,
+        )
+        .filter(Q(left_on__isnull=True) | Q(left_on__gte=first))
+        .select_related("challenge")
+        .order_by("challenge__start_date", "challenge__title", "challenge_id")
+    )
+    loaded = records(challenge_ids=[p.challenge_id for p in parts], member_ids=[person.pk])
+    result = MemberProgress(
+        member=person,
+        days=month_days,
+        streak=0,
+        longest_streak=0,
+        month_done=0,
+        month_due=0,
+        challenges=[],
+        proof_days=[],
+    )
+    for participant in parts:
+        challenge = participant.challenge
+        part = days.span(challenge, participant.left_on)
+        record = loaded.get((challenge.pk, person.pk), days.Record())
+        streak = days.streak(challenge, part, record, today)
+        result.streak = max(result.streak, streak or 0)
+        result.longest_streak = max(
+            result.longest_streak, days.longest_streak(challenge, part, record, today) or 0
+        )
+        if days.is_fixed(challenge):
+            due = [d for d in part.days(first, min(last, today)) if days.is_due(challenge, d)]
+            open_today = today in due and today not in record.done
+            result.month_due += len(due) - int(open_today)
+            result.month_done += sum(1 for d in due if d in record.done)
+        result.challenges.append(
+            ChallengeMonth(
+                challenge=challenge,
+                states=[days.state(challenge, part, record, d, today) for d in month_days],
+                proof_days=[d for d in month_days if d in record.proof_days],
+                streak=streak,
+                today=days.state(challenge, part, record, today, today),
+            )
+        )
+    by_challenge = {p.challenge_id: p.challenge for p in parts}
+    grouped: dict[tuple[date, UUID], list[Proof]] = defaultdict(list)
+    for proof in (
+        Proof.objects.filter(
+            check_in__member=person,
+            check_in__challenge_id__in=list(by_challenge),
+            check_in__day__range=(first, last),
+            status__in=SHOWN,
+        )
+        .select_related("check_in", "original__transcode", "thumb")
+        .order_by("-check_in__day", "check_in__challenge__title", "created_at")
+    ):
+        grouped[(proof.check_in.day, proof.check_in.challenge_id)].append(proof)
+    result.proof_days = [
+        ProofDay(day=day, challenge=by_challenge[challenge_id], proofs=proofs)
+        for (day, challenge_id), proofs in grouped.items()
+    ]
     return result

@@ -684,6 +684,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/MediaSessionOut'
           description: ''
+  /api/v1/members/{member_id}/progress:
+    get:
+      operationId: members_progress
+      description: 'A member''s month: streaks, each challenge''s days and their proofs
+        by day.'
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: YYYY-MM; default this month.
+      tags:
+      - members
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberProgressOut'
+          description: ''
   /api/v1/proofs/{proof_id}:
     delete:
       operationId: proofs_delete
@@ -1577,6 +1605,44 @@ components:
             development).
       required:
       - expires_at
+    MemberChallengeOut:
+      type: object
+      properties:
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayStateEnum'
+          description: One per day of the month.
+        proof_days:
+          type: array
+          items:
+            type: string
+            format: date
+        streak:
+          type: integer
+          nullable: true
+        today:
+          allOf:
+          - $ref: '#/components/schemas/DayStateEnum'
+          description: |-
+            Today's state.
+
+            * `done` - done
+            * `partial` - partial
+            * `todo` - todo
+            * `open` - open
+            * `missed` - missed
+            * `not_due` - not_due
+            * `future` - future
+            * `outside` - outside
+      required:
+      - challenge
+      - proof_days
+      - states
+      - streak
+      - today
     MemberOut:
       type: object
       properties:
@@ -1594,6 +1660,47 @@ components:
       - display_name
       - id
       - role
+    MemberProgressOut:
+      type: object
+      description: A member's month, on the challenges you can see.
+      properties:
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+          description: The month's days.
+        streak:
+          type: integer
+          description: Their best current streak.
+        longest_streak:
+          type: integer
+        month_done:
+          type: integer
+          description: Due days done this month so far (daily and weekday challenges).
+        month_due:
+          type: integer
+          description: Due days this month so far; today counts once done.
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberChallengeOut'
+        proof_days:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofDayOut'
+          description: Their proofs this month, latest day first.
+      required:
+      - challenges
+      - days
+      - longest_streak
+      - member
+      - month_done
+      - month_due
+      - proof_days
+      - streak
     MemberSummaryOut:
       type: object
       properties:
@@ -1835,6 +1942,22 @@ components:
       - done
       - goal
       - kind
+    ProofDayOut:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+      required:
+      - challenge
+      - day
+      - proofs
     ProofKindEnum:
       enum:
       - none
@@ -1874,8 +1997,13 @@ components:
         created_at:
           type: string
           format: date-time
+        duration:
+          type: integer
+          nullable: true
+          description: A video's length in seconds, when the phone could read it.
       required:
       - created_at
+      - duration
       - hls_url
       - id
       - kind
@@ -1887,6 +2015,10 @@ components:
       properties:
         kind:
           $ref: '#/components/schemas/MediaKindEnum'
+        duration:
+          type: integer
+          nullable: true
+          description: A video's length in whole seconds, from the file's metadata.
         content_type:
           type: string
           minLength: 1
