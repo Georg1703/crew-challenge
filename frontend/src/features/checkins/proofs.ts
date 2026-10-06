@@ -16,6 +16,7 @@ export function shownTile(proof: Proof, t: TFunction, who: string): FeedProof {
     kind: proof.kind,
     state: processing ? "processing" : "ready",
     src: proof.thumb_url ?? (proof.kind === "photo" ? proof.url : null),
+    full: proof.kind === "photo" ? proof.url : null, // a video keeps its poster
     duration: proof.duration === null ? undefined : formatDuration(proof.duration),
     label: t(processing ? "feed.proofProcessing" : "feed.proof", {
       kind: t(`proofs.kind.${proof.kind}`),

@@ -89,6 +89,18 @@ describe("ProofMosaic", () => {
     expect(onOpen.mock.calls).toEqual([[1], [3]]);
   });
 
+  it.each([
+    [1, ["full"]],
+    [2, ["full", "full"]],
+    [3, ["full", "thumb", "thumb"]],
+  ])("shows the full photo in the big tiles of %i proofs", (count, shown) => {
+    const pictures = proofs(count).map((p) => ({ ...p, src: "thumb", full: "full" }));
+    const { container } = render(<ProofMosaic proofs={pictures} onOpen={() => {}} />);
+    expect([...container.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual(
+      shown,
+    );
+  });
+
   it("renders nothing without proofs", () => {
     const { container } = render(<ProofMosaic proofs={[]} />);
     expect(container).toBeEmptyDOMElement();
