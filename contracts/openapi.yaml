@@ -1158,6 +1158,34 @@ components:
       description: |-
         * `done` - Done
         * `in_progress` - In progress (a number below the day's target)
+    CrewChallengeOut:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        state:
+          allOf:
+          - $ref: '#/components/schemas/CrewChallengeOutStateEnum'
+          description: |-
+            Started: a number below the day's target.
+
+            * `done` - done
+            * `started` - started
+            * `todo` - todo
+      required:
+      - challenge_id
+      - state
+    CrewChallengeOutStateEnum:
+      enum:
+      - done
+      - started
+      - todo
+      type: string
+      description: |-
+        * `done` - done
+        * `started` - started
+        * `todo` - todo
     CrewDayOut:
       type: object
       properties:
@@ -1167,7 +1195,13 @@ components:
           type: integer
         needed:
           type: integer
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrewChallengeOut'
+          description: One per segment of their ring today.
       required:
+      - challenges
       - done
       - member
       - needed
@@ -1265,6 +1299,22 @@ components:
         * `not_due` - not_due
         * `future` - future
         * `outside` - outside
+    DaySummaryOut:
+      type: object
+      properties:
+        check_ins:
+          type: integer
+        proofs:
+          type: integer
+          description: Processing and ready proofs.
+        crew_done:
+          type: boolean
+          description: Everyone finished everything due that day (daily and weekday
+            challenges).
+      required:
+      - check_ins
+      - crew_done
+      - proofs
     FeedItemOut:
       type: object
       description: 'One check-in: who, on what, which day, and its proofs.'
@@ -1327,12 +1377,18 @@ components:
           - $ref: '#/components/schemas/MilestoneOut'
           nullable: true
           description: Set when this check-in made the streak reach 3, 7, 14 or 30.
+        day_summary:
+          allOf:
+          - $ref: '#/components/schemas/DaySummaryOut'
+          description: The crew's whole day (the same on every item of that day),
+            for its divider.
       required:
       - activity_at
       - challenge
       - day
       - day_count
       - day_index
+      - day_summary
       - id
       - last_amount
       - member

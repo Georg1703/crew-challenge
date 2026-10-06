@@ -41,6 +41,7 @@ const walked: FeedItem = {
   last_amount: null,
   target: null,
   milestone: null,
+  day_summary: { check_ins: 1, proofs: 0, crew_done: false },
 };
 const read: FeedItem = {
   id: "c2",
@@ -58,6 +59,7 @@ const read: FeedItem = {
   last_amount: 4,
   target: 20,
   milestone: null,
+  day_summary: { check_ins: 1, proofs: 0, crew_done: false },
 };
 
 afterEach(() => {

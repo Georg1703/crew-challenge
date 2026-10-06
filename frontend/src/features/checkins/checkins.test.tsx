@@ -70,8 +70,8 @@ const today = (challenges: TodayChallenge[], deadline = "2026-11-10T22:00:00Z"):
   deadline,
   challenges,
   crew: [
-    { member: person(ana), done: 2, needed: 2 },
-    { member: person(bogdan), done: 0, needed: 2 },
+    { member: person(ana), done: 2, needed: 2, challenges: [] },
+    { member: person(bogdan), done: 0, needed: 2, challenges: [] },
   ],
 });
 

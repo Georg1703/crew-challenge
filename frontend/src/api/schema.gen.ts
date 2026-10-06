@@ -677,10 +677,31 @@ export interface components {
          * @enum {string}
          */
         CheckInStatusEnum: "done" | "in_progress";
+        CrewChallengeOut: {
+            /** Format: uuid */
+            challenge_id: string;
+            /**
+             * @description Started: a number below the day's target.
+             *
+             *     * `done` - done
+             *     * `started` - started
+             *     * `todo` - todo
+             */
+            state: components["schemas"]["CrewChallengeOutStateEnum"];
+        };
+        /**
+         * @description * `done` - done
+         *     * `started` - started
+         *     * `todo` - todo
+         * @enum {string}
+         */
+        CrewChallengeOutStateEnum: "done" | "started" | "todo";
         CrewDayOut: {
             member: components["schemas"]["PersonOut"];
             done: number;
             needed: number;
+            /** @description One per segment of their ring today. */
+            challenges: components["schemas"]["CrewChallengeOut"][];
         };
         CrewDetailOut: {
             /** Format: uuid */
@@ -727,6 +748,13 @@ export interface components {
          * @enum {string}
          */
         DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
+        DaySummaryOut: {
+            check_ins: number;
+            /** @description Processing and ready proofs. */
+            proofs: number;
+            /** @description Everyone finished everything due that day (daily and weekday challenges). */
+            crew_done: boolean;
+        };
         /** @description One check-in: who, on what, which day, and its proofs. */
         FeedItemOut: {
             /**
@@ -771,6 +799,8 @@ export interface components {
             target: number | null;
             /** @description Set when this check-in made the streak reach 3, 7, 14 or 30. */
             milestone: components["schemas"]["MilestoneOut"] | null;
+            /** @description The crew's whole day (the same on every item of that day), for its divider. */
+            day_summary: components["schemas"]["DaySummaryOut"];
         };
         /**
          * @description * `daily` - Every day

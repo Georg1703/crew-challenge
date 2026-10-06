@@ -91,10 +91,18 @@ class TodayChallengeOut(ChallengeBriefOut):
     )
 
 
+class CrewChallengeOut(serializers.Serializer):
+    challenge_id = serializers.UUIDField()
+    state = serializers.ChoiceField(
+        choices=["done", "started", "todo"], help_text="Started: a number below the day's target."
+    )
+
+
 class CrewDayOut(serializers.Serializer):
     member = PersonOut()
     done = serializers.IntegerField()
     needed = serializers.IntegerField()
+    challenges = CrewChallengeOut(many=True, help_text="One per segment of their ring today.")
 
 
 class TodayOut(serializers.Serializer):
@@ -194,6 +202,14 @@ class DaySheetRowOut(serializers.Serializer):
     proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
 
 
+class DaySummaryOut(serializers.Serializer):
+    check_ins = serializers.IntegerField()
+    proofs = serializers.IntegerField(help_text="Processing and ready proofs.")
+    crew_done = serializers.BooleanField(
+        help_text="Everyone finished everything due that day (daily and weekday challenges)."
+    )
+
+
 class MilestoneOut(serializers.Serializer):
     kind = serializers.ChoiceField(choices=["streak"])
     n = serializers.IntegerField(help_text="Days in a row: 3, 7, 14 or 30.")
@@ -226,4 +242,7 @@ class FeedItemOut(serializers.Serializer):
     )
     milestone = MilestoneOut(
         allow_null=True, help_text="Set when this check-in made the streak reach 3, 7, 14 or 30."
+    )
+    day_summary = DaySummaryOut(
+        help_text="The crew's whole day (the same on every item of that day), for its divider."
     )

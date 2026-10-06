@@ -200,3 +200,61 @@ def test_milestones_come_at_7_14_and_30_days(crew):
     hits = sorted(c.day.day for c in page if details[c.pk].milestone)
     assert hits == [3, 7, 14, 30]
     assert selectors.feed_details([]) == {}
+
+
+def test_each_feed_item_carries_its_days_summary(object_storage, crew, browser):
+    ana, bogdan, cristina, walk, read = crew
+    with at("2026-11-09 08:00Z"):  # everyone walks and Ana and Bogdan read on the 9th
+        for member in (ana, bogdan, cristina):
+            check_in(member, walk, day=date(2026, 11, 9))
+        for member in (ana, bogdan):
+            check_in(member, read, day=date(2026, 11, 9))
+    with at("2026-11-10 08:00Z"):  # on the 10th only Bogdan walks, with a photo
+        check_in(bogdan, walk)
+        shown_photo(object_storage, bogdan, walk)
+        photo(bogdan, walk)  # uploading: not counted
+        browser.force_login(cristina.user)
+        hers = browser.get("/api/v1/feed").json()["results"]
+        browser.force_login(ana.user)
+        all_of_it = browser.get("/api/v1/feed").json()["results"]
+
+    def summaries(results):
+        return {i["day"]: i["day_summary"] for i in results}
+
+    assert summaries(all_of_it) == {
+        "2026-11-10": {"check_ins": 1, "proofs": 1, "crew_done": False},
+        "2026-11-09": {"check_ins": 5, "proofs": 0, "crew_done": True},
+    }
+    assert summaries(hers)["2026-11-09"] == {"check_ins": 3, "proofs": 0, "crew_done": True}
+    assert selectors.day_summaries(member=ana, on=set()) == {}
+
+
+def test_a_day_with_nothing_due_is_never_the_crews_whole_day(crew):
+    ana, bogdan, _, _, _ = crew
+    with at("2026-10-10 12:00Z"):
+        weekly = scheduled(
+            ana, bogdan, date(2026, 12, 1), title="Gym", frequency="times_per_week", times=2
+        )
+    with at("2026-12-01 08:00Z"):
+        check_in(bogdan, weekly, day=date(2026, 12, 1))
+        summary = selectors.day_summaries(member=ana, on={date(2026, 12, 1)})
+    assert summary[date(2026, 12, 1)].crew_done is False
+
+
+def test_today_says_each_persons_state_per_challenge(crew, browser):
+    ana, bogdan, cristina, walk, read = crew
+    with at("2026-10-10 12:00Z"):
+        pages = scheduled(
+            ana, bogdan, date(2026, 11, 1), [ana.pk], title="Pages", measure="quantity",
+            unit="pages", target_scope="per_check_in", target_value="30",
+        )  # fmt: skip
+    with at("2026-11-10 08:00Z"):
+        check_in(bogdan, walk)
+        services.check_in(by=bogdan, challenge_id=pages.pk, day=DAY, amount=Decimal(5))
+        browser.force_login(ana.user)
+        crew_today = browser.get("/api/v1/today").json()["crew"]
+
+    bogdans = next(r for r in crew_today if r["member"]["display_name"] == "Bogdan")
+    states = {c["challenge_id"]: c["state"] for c in bogdans["challenges"]}
+    assert states == {str(walk.pk): "done", str(read.pk): "todo", str(pages.pk): "started"}
+    assert (bogdans["done"], bogdans["needed"]) == (1, 3)

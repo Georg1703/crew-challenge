@@ -71,8 +71,8 @@ describe("crew screen", () => {
       meAs(bogdan),
       [],
       [
-        { member: person(ana), done: 2, needed: 2 },
-        { member: person(bogdan), done: 0, needed: 1 },
+        { member: person(ana), done: 2, needed: 2, challenges: [] },
+        { member: person(bogdan), done: 0, needed: 1, challenges: [] },
       ],
     );
     renderScreen(<CrewRoute />);

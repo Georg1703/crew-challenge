@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from django.db.models import OuterRef, Prefetch, QuerySet, Subquery
+from django.db.models import Count, OuterRef, Prefetch, Q, QuerySet, Subquery
 from django.db.models.functions import Greatest
 
 from apps.challenges import selectors as challenges
@@ -87,6 +87,15 @@ class CrewDay:
     member: Member
     done: int
     needed: int
+    challenges: list[tuple[UUID, str]] = field(default_factory=list)  # (id, SEGMENT state)
+
+
+class Segment:
+    """One challenge in a member's ring today, as the crew sees it."""
+
+    DONE = "done"
+    STARTED = "started"  # a number below the day's target
+    TODO = "todo"
 
 
 @dataclass
@@ -139,6 +148,14 @@ def today(*, member: Member) -> Today:
         )
         row.needed += 1
         row.done += int(card.settled)
+        segment = (
+            Segment.DONE
+            if card.settled
+            else Segment.STARTED
+            if day in record.partial
+            else Segment.TODO
+        )
+        row.challenges.append((participant.challenge_id, segment))
     result.crew = list(crew.values())
     return result
 
@@ -319,6 +336,68 @@ def feed_details(check_ins: list[CheckIn]) -> dict[UUID, FeedDetail]:
                 streak
                 if days.is_fixed(challenge) and day in record.done and streak in MILESTONES
                 else None
+            ),
+        )
+    return result
+
+
+@dataclass
+class DaySummary:
+    check_ins: int
+    proofs: int  # the ones the crew can see
+    crew_done: bool  # everyone finished everything due that day (fixed-day challenges)
+
+
+def day_summaries(*, member: Member, on: set[date]) -> dict[date, DaySummary]:
+    """What the crew did on each of `on`, on challenges the member can see. Constant queries."""
+    if not on:
+        return {}
+    seen = challenges.visible(member=member)
+    check_ins = dict(
+        CheckIn.objects.filter(challenge__in=seen, day__in=on)
+        .order_by()
+        .values("day")
+        .annotate(n=Count("id"))
+        .values_list("day", "n")
+    )
+    proofs = dict(
+        Proof.objects.filter(check_in__challenge__in=seen, check_in__day__in=on, status__in=SHOWN)
+        .order_by()
+        .values("check_in__day")
+        .annotate(n=Count("id"))
+        .values_list("check_in__day", "n")
+    )
+    first, last = min(on), max(on)
+    people = list(
+        Participant.objects.filter(
+            challenge__in=seen,
+            challenge__state=Challenge.State.CHOSEN,
+            challenge__start_date__lte=last,
+            challenge__end_date__gte=first,
+        )
+        .filter(Q(left_on__isnull=True) | Q(left_on__gte=first))
+        .select_related("challenge")
+    )
+    loaded = records(
+        challenge_ids=list({p.challenge_id for p in people}),
+        member_ids=list({p.member_id for p in people}),
+        proof_days=False,
+    )
+    result = {}
+    for day in on:
+        due = [
+            p
+            for p in people
+            if days.is_fixed(p.challenge)
+            and days.is_due(p.challenge, day)
+            and day in days.span(p.challenge, p.left_on)
+        ]
+        result[day] = DaySummary(
+            check_ins=check_ins.get(day, 0),
+            proofs=proofs.get(day, 0),
+            crew_done=bool(due)
+            and all(
+                day in loaded.get((p.challenge_id, p.member_id), days.Record()).done for p in due
             ),
         )
     return result
