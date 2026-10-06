@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { ChallengeIcon } from "@/features/challenges";
 import { errorMessage } from "@/i18n/errors";
+import { formatNumber } from "@/shared/lib/format";
 import { tap } from "@/shared/lib/haptics";
 import {
   Button,
@@ -20,11 +21,6 @@ import { AmountSheet } from "./AmountSheet";
 import { ProofRow } from "./ProofRow";
 
 const QUICK_AMOUNTS = [1, 5, 10] as const;
-
-/** Number with at most two decimals, in the UI language. */
-function format(value: number, language: string): string {
-  return new Intl.NumberFormat(language, { maximumFractionDigits: 2 }).format(value);
-}
 
 /** Weekday index, Monday = 0, of a crew-local date ("2026-11-10"). */
 function weekday(day: string): number {
@@ -50,7 +46,10 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
           toast(
             amount === null
               ? t("checkins.checkedIn")
-              : t("checkins.added", { amount: format(amount, i18n.language), unit: card.unit }),
+              : t("checkins.added", {
+                  amount: formatNumber(amount, i18n.language),
+                  unit: card.unit,
+                }),
             "success",
             {
               label: t("checkins.undo"),
@@ -88,12 +87,12 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
             <span className={styles.totalNumber}>
               {target
                 ? t("checkins.totalOf", {
-                    total: format(total, i18n.language),
-                    goal: format(target, i18n.language),
+                    total: formatNumber(total, i18n.language),
+                    goal: formatNumber(target, i18n.language),
                     unit: card.unit,
                   })
                 : t("checkins.totalToday", {
-                    total: format(total, i18n.language),
+                    total: formatNumber(total, i18n.language),
                     unit: card.unit,
                   })}
             </span>
@@ -106,8 +105,8 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
               value={total}
               max={target}
               label={t("checkins.totalOf", {
-                total: format(total, i18n.language),
-                goal: format(target, i18n.language),
+                total: formatNumber(total, i18n.language),
+                goal: formatNumber(target, i18n.language),
                 unit: card.unit,
               })}
             />
@@ -151,8 +150,8 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
           {t(
             `checkins.progress.${card.progress.kind}.${card.frequency === "times_per_week" || card.target_scope === "per_week" ? "week" : "period"}`,
             {
-              done: format(card.progress.done, i18n.language),
-              goal: format(card.progress.goal, i18n.language),
+              done: formatNumber(card.progress.done, i18n.language),
+              goal: formatNumber(card.progress.goal, i18n.language),
               unit: card.unit,
             },
           )}
@@ -164,9 +163,10 @@ export function CheckInCard({ card, day }: { card: TodayChallenge; day: string }
         days={card.week.map((d) => ({
           key: d.day,
           letter: t(`challenges.days.short.${weekday(d.day)}`),
-          name: `${t(`challenges.days.long.${weekday(d.day)}`)}: ${t(`checkins.states.${d.state}`)}`,
+          name: `${t(`challenges.days.long.${weekday(d.day)}`)}: ${t(`checkins.states.${d.state}`)}${card.proof_days.includes(d.day) ? t("checkins.withProof") : ""}`,
           state: d.state,
           today: d.day === day,
+          proof: card.proof_days.includes(d.day),
         }))}
       />
 

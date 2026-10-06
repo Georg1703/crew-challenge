@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, call, isApiError, type components } from "@/api";
 
@@ -8,10 +8,14 @@ export type Board = components["schemas"]["BoardOut"];
 export type Proof = components["schemas"]["ProofOut"];
 export type ProofUpload = components["schemas"]["ProofUploadOut"];
 export type ProofStart = components["schemas"]["ProofStartInRequest"];
+export type FeedItem = components["schemas"]["FeedItemOut"];
+export type DaySheetRow = components["schemas"]["DaySheetRowOut"];
 
 export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
 const boardKey = (id: string, month: string) => [...checkinsKey, "board", id, month] as const;
+const feedKey = [...checkinsKey, "feed"] as const;
+const dayKey = (id: string, day: string) => [...checkinsKey, "day", id, day] as const;
 
 /** My challenges today and the crew's progress. Refetched when the app comes back to the front. */
 export function useToday({ enabled = true }: { enabled?: boolean } = {}) {
@@ -31,6 +35,38 @@ export function useBoard(id: string, month: string) {
           params: { path: { challenge_id: id }, query: { month } },
         }),
       ),
+  });
+}
+
+const FEED_REFRESH_MS = 60_000;
+
+/**
+ * The crew's check-ins with their proofs, latest activity first, 30 a page. Refreshed when the app
+ * comes back to the front and every minute while it is open (a finished upload refreshes it too:
+ * it lives under the check-ins key).
+ */
+export function useFeed() {
+  return useInfiniteQuery({
+    queryKey: feedKey,
+    queryFn: ({ pageParam }) =>
+      call(api.GET("/api/v1/feed", { params: { query: pageParam ? { cursor: pageParam } : {} } })),
+    initialPageParam: "",
+    getNextPageParam: (page) => page.next ?? undefined,
+    refetchInterval: FEED_REFRESH_MS,
+  });
+}
+
+/** Everyone's state, total and proofs on one day of a challenge (the day sheet). */
+export function useDaySheet(id: string, day: string | null) {
+  return useQuery({
+    queryKey: dayKey(id, day ?? ""),
+    queryFn: () =>
+      call(
+        api.GET("/api/v1/challenges/{challenge_id}/days/{day}", {
+          params: { path: { challenge_id: id, day: day ?? "" } },
+        }),
+      ),
+    enabled: day !== null,
   });
 }
 

@@ -546,13 +546,20 @@
         "done": "done",
         "missed": "missed",
         "todo": "today, to do",
-        "future": "coming up"
+        "future": "coming up",
+        "proof": "with proof"
       },
       "previous": "Previous month",
-      "next": "Next month"
+      "next": "Next month",
+      "withProof": "days with proof: {{count}}"
     },
     "sheetTitle": "What do you check in?",
-    "tabLabel": "Check in"
+    "tabLabel": "Check in",
+    "day": {
+      "previous": "Previous day",
+      "next": "Next day"
+    },
+    "withProof": ", with proof"
   },
   "proofs": {
     "add": "Add a photo or video",
@@ -582,5 +589,16 @@
       "next": "Next proof"
     },
     "uploading": "Check in. Uploading proof, {{percent}}%"
+  },
+  "feed": {
+    "title": "Activity",
+    "empty": "Check-ins and proofs from the crew will show here.",
+    "checked": "{{name}} checked in {{title}}",
+    "held": "{{name}} held on: {{title}}",
+    "amount": "{{name}}: {{total}} {{unit}} · {{title}}",
+    "older": "Show older",
+    "proof": "{{kind}} by {{name}}",
+    "proofProcessing": "{{kind}} by {{name}}, being prepared",
+    "more": "{{count}} more"
   }
 }

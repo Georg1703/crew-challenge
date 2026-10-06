@@ -116,7 +116,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring), a row of up to five members then "+N" |
-| `Sheet` | Bottom sheets for a short task (invite, check in, confirm). Title, close button, one primary action |
+| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it |
 | `Banner` | A message that stays true until it changes (wrong password, offline, your turn). Inline; `floating` only for app-wide notices |
 | `Toast` (`useToast`) | A short confirmation after an action, above the tab bar; optionally one action ("Undo") for 5 seconds |
 | `QrCode` | A scannable code for a link |
@@ -133,10 +133,10 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ProgressRing` | Today's ring: one segment per thing to do, full / half / empty; closes with the center popping to "done" |
 | `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
 | `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday, with a small dot under the days with proof |
-| `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows |
+| `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows. With `onPick` the day numbers become buttons (named by `labels`) and a tap on a row picks the day under the finger |
 | `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A button when it opens something; an optional remove button (today only) |
 | `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline, muted until tapped (HLS, with hls.js loaded only where needed) |
-| `FeedItem` | One check-in in the crew feed, inside a `List`: avatar, what and when, up to three proofs and "+N" |
+| `FeedItem` | One check-in in the crew feed (or one person in a day sheet), inside a `List`: avatar, a line, a quieter line, up to three proofs and "+N" |
 | `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kinds a challenge takes |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation, with an optional raised action (check in), its count and, while proofs upload, a thin progress ring; the shared icon set (Lucide shapes, stroke 1.75) |

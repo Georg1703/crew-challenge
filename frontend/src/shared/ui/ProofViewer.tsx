@@ -84,13 +84,16 @@ export function ProofViewer({
 
   useEffect(() => {
     if (!open) return;
+    // Capture phase: the viewer sits above a sheet it may open from; it closes alone.
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      else if (event.key === "ArrowRight") go(1);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      } else if (event.key === "ArrowRight") go(1);
       else if (event.key === "ArrowLeft") go(-1);
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, [open, onClose, go]);
 
   return (

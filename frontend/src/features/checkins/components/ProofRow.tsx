@@ -16,6 +16,7 @@ import {
 
 import { checkinsKey, proofApi, type Proof, type TodayChallenge } from "../api";
 import styles from "../checkins.module.css";
+import { viewerItem } from "../proofs";
 import { cancel, retry, toggle, upload } from "../uploads/engine";
 import { useUploads } from "../uploads/store";
 
@@ -144,14 +145,7 @@ export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
       )}
 
       <ProofViewer
-        items={viewable.map((p) => ({
-          key: p.id,
-          kind: p.kind,
-          src: p.url ?? "",
-          hlsSrc: p.hls_url,
-          poster: p.thumb_url,
-          caption: card.title,
-        }))}
+        items={viewable.map((p) => viewerItem(p, card.title))}
         index={viewing ?? 0}
         onIndexChange={setViewing}
         open={viewing !== null}

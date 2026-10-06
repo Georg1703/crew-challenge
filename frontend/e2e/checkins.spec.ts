@@ -95,5 +95,5 @@ test("hold to check in, undo, and see the crew's month", async ({ browser }) => 
   await dan.goto("/challenges");
   await dan.getByRole("link").filter({ hasText: WALK }).first().click();
   await expect(dan.getByRole("heading", { name: "Cum merge fiecare" })).toBeVisible();
-  await expect(dan.getByRole("img", { name: /^Dan: \d+ bifate, \d+ ratate$/ })).toBeVisible();
+  await expect(dan.getByRole("img", { name: /^Dan: \d+ bifate, \d+ ratate/ })).toBeVisible();
 });

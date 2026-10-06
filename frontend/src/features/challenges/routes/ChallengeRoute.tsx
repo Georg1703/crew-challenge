@@ -257,6 +257,8 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
       {running && challenge.start_date && challenge.end_date && (
         <ChallengeBoard
           challengeId={challenge.id}
+          title={challenge.title}
+          unit={challenge.unit}
           startDate={challenge.start_date}
           endDate={challenge.end_date}
           timeZone={timeZone}

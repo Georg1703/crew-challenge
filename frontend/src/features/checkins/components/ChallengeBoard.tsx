@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/i18n/errors";
 import { cx } from "@/shared/lib/cx";
-import { formatDay, monthAndYear, todayIn } from "@/shared/lib/format";
+import { formatDay, formatDayLong, monthAndYear, todayIn } from "@/shared/lib/format";
 import {
   Avatar,
   Banner,
@@ -20,6 +20,7 @@ import {
 
 import { useBoard, type Board } from "../api";
 import styles from "../checkins.module.css";
+import { DaySheet } from "./DaySheet";
 
 const LEGEND = ["done", "missed", "todo", "future"] as const;
 const LEFT_TODAY: DayState[] = ["todo", "partial"];
@@ -43,10 +44,13 @@ function count(states: DayState[], state: DayState): number {
 
 /**
  * A scheduled challenge's month: where the month is, the crew's totals, and a row of day bars per
- * person (most days done first), with their streak and whether today is still open.
+ * person (most days done first), with their streak and whether today is still open. A dot marks a
+ * day with proof; tapping a day (its number, or the bars) opens that day for everyone.
  */
 export function ChallengeBoard({
   challengeId,
+  title = "",
+  unit = "",
   startDate,
   endDate,
   timeZone,
@@ -55,6 +59,8 @@ export function ChallengeBoard({
   leftOn = {},
 }: {
   challengeId: string;
+  title?: string;
+  unit?: string;
   startDate: string;
   endDate: string;
   timeZone: string;
@@ -70,6 +76,13 @@ export function ChallengeBoard({
   const last = monthKey(endDate);
   const initial = monthKey(today) < first ? first : monthKey(today) > last ? last : monthKey(today);
   const [month, setMonth] = useState(initial);
+  const [sheetDay, setSheetDay] = useState<string | null>(null); // kept while the sheet closes
+  const [dayOpen, setDayOpen] = useState(false);
+  const openDay = (picked: string | undefined) => {
+    if (!picked) return;
+    setSheetDay(picked);
+    setDayOpen(true);
+  };
   const board = useBoard(challengeId, month);
   const monthTitle = monthAndYear(`${month}-01`, i18n.language);
 
@@ -132,6 +145,7 @@ export function ChallengeBoard({
             meId={meId}
             fixedDays={fixedDays}
             leftOn={leftOn}
+            onPick={(index) => openDay(board.data.days[index])}
           />
         )}
         <ul className={styles.legend}>
@@ -141,8 +155,24 @@ export function ChallengeBoard({
               <span className={styles.meta}>{t(`checkins.board.legend.${state}`)}</span>
             </li>
           ))}
+          <li className={styles.legendItem}>
+            <DayBar state="done" proof />
+            <span className={styles.meta}>{t("checkins.board.legend.proof")}</span>
+          </li>
         </ul>
       </section>
+      {sheetDay && board.data && (
+        <DaySheet
+          challengeId={challengeId}
+          title={title}
+          unit={unit}
+          days={board.data.days.filter((d) => d <= today)}
+          day={sheetDay}
+          open={dayOpen}
+          onDay={setSheetDay}
+          onClose={() => setDayOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -176,12 +206,14 @@ function Rows({
   meId,
   fixedDays,
   leftOn,
+  onPick,
 }: {
   board: Board;
   today: string;
   meId?: string;
   fixedDays: boolean;
   leftOn: Record<string, string>;
+  onPick: (index: number) => void;
 }) {
   const { t, i18n } = useTranslation();
   const index = board.days.indexOf(today);
@@ -200,6 +232,8 @@ function Rows({
         <DayBarsAxis
           days={board.days.map((d) => Number(d.slice(8, 10)))}
           todayIndex={index >= 0 ? index : undefined}
+          onPick={(i) => (board.days[i] ?? "") <= today && onPick(i)}
+          labels={board.days.map((d) => formatDayLong(d, i18n.language))}
         />
       </div>
       {rows.map(({ row, done, missed }) => {
@@ -241,7 +275,16 @@ function Rows({
             </div>
             <DayBars
               states={row.states}
-              label={t("checkins.board.rowLabel", { name, done, missed })}
+              proofs={board.days.map((d) => row.proof_days.includes(d))}
+              label={[
+                t("checkins.board.rowLabel", { name, done, missed }),
+                row.proof_days.length
+                  ? t("checkins.board.withProof", { count: row.proof_days.length })
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              onPick={(i) => (board.days[i] ?? "") <= today && onPick(i)}
             />
           </div>
         );

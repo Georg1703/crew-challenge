@@ -97,3 +97,22 @@
   color: var(--color-accent);
   font-weight: var(--weight-bold);
 }
+
+.pickable {
+  cursor: pointer;
+}
+
+/* A day number that opens the day: tall enough to tap, as narrow as the day. */
+.dayButton {
+  min-height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dayButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-xs);
+}

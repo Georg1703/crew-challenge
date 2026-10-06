@@ -35,13 +35,28 @@ export function DayBars({
   states,
   label,
   proofs,
+  onPick,
 }: {
   states: DayState[];
   label: string;
   proofs?: boolean[];
+  /** A tap picks the day under the finger (pointer only; `DayBarsAxis` buttons are the keyboard way). */
+  onPick?: (index: number) => void;
 }) {
   return (
-    <span className={styles.days} role="img" aria-label={label}>
+    <span
+      className={cx(styles.days, onPick && styles.pickable)}
+      role="img"
+      aria-label={label}
+      onClick={
+        onPick &&
+        ((event) => {
+          const box = event.currentTarget.getBoundingClientRect();
+          const at = Math.floor(((event.clientX - box.left) / (box.width || 1)) * states.length);
+          onPick(Math.min(Math.max(at, 0), states.length - 1));
+        })
+      }
+    >
       <span className={styles.bars}>
         {states.map((state, i) => (
           <span key={i} className={cx(styles.bar, styles[cssName(state)])} />
@@ -60,17 +75,42 @@ export function DayBars({
   );
 }
 
-/** The day numbers above a set of `DayBars`: the first, every fifth, the last and today. */
-export function DayBarsAxis({ days, todayIndex }: { days: number[]; todayIndex?: number }) {
+/**
+ * The day numbers above a set of `DayBars`: the first, every fifth, the last and today. With
+ * `onPick` every day is a button named by `labels` ("Monday 5 October"), so a day can be opened.
+ */
+export function DayBarsAxis({
+  days,
+  todayIndex,
+  onPick,
+  labels,
+}: {
+  days: number[];
+  todayIndex?: number;
+  onPick?: (index: number) => void;
+  labels?: string[];
+}) {
   const last = days.length - 1;
   return (
-    <span className={styles.axis} aria-hidden="true">
+    <span className={styles.axis} aria-hidden={onPick ? undefined : true}>
       {days.map((day, i) => {
         const today = i === todayIndex;
         const shown = today || i === 0 || i === last || (day % 5 === 0 && last - i > 1);
-        return (
-          <span key={day} className={cx(styles.number, today && styles.today)}>
-            {shown ? day : null}
+        const number = shown ? day : null;
+        const className = cx(styles.number, today && styles.today);
+        return onPick ? (
+          <button
+            key={day}
+            type="button"
+            className={cx(className, styles.dayButton)}
+            aria-label={labels?.[i] ?? String(day)}
+            onClick={() => onPick(i)}
+          >
+            {number}
+          </button>
+        ) : (
+          <span key={day} className={className}>
+            {number}
           </span>
         );
       })}

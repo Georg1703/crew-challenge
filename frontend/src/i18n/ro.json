@@ -546,13 +546,20 @@
         "done": "bifat",
         "missed": "ratat",
         "todo": "azi, de bifat",
-        "future": "urmează"
+        "future": "urmează",
+        "proof": "cu dovadă"
       },
       "previous": "Luna dinainte",
-      "next": "Luna următoare"
+      "next": "Luna următoare",
+      "withProof": "zile cu dovadă: {{count}}"
     },
     "sheetTitle": "Ce bifezi acum?",
-    "tabLabel": "Bifează"
+    "tabLabel": "Bifează",
+    "day": {
+      "previous": "Ziua anterioară",
+      "next": "Ziua următoare"
+    },
+    "withProof": ", cu dovadă"
   },
   "proofs": {
     "add": "Adaugă o poză sau un video",
@@ -582,5 +589,16 @@
       "next": "Dovada următoare"
     },
     "uploading": "Bifează. Se încarcă dovada, {{percent}}%"
+  },
+  "feed": {
+    "title": "Activitate",
+    "empty": "Bifările și dovezile echipei apar aici.",
+    "checked": "{{name}} a bifat {{title}}",
+    "held": "{{name}} a rezistat: {{title}}",
+    "amount": "{{name}}: {{total}} {{unit}} · {{title}}",
+    "older": "Arată mai vechi",
+    "proof": "{{kind}} de la {{name}}",
+    "proofProcessing": "{{kind}} de la {{name}}, se pregătește",
+    "more": "încă {{count}}"
   }
 }

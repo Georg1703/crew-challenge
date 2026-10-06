@@ -4,11 +4,12 @@ import { useState } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DayBar, DayBars } from "./DayBars";
+import { DayBar, DayBars, DayBarsAxis } from "./DayBars";
 import { FeedItem, type FeedProof } from "./FeedItem";
 import { List } from "./ListRow";
 import { ProofAddTile, ProofTile } from "./ProofTile";
 import { ProofViewer, type ViewerItem } from "./ProofViewer";
+import { Sheet } from "./Sheet";
 import { TabBar } from "./TabBar";
 import { WeekStrip } from "./WeekStrip";
 
@@ -284,3 +285,50 @@ function renderScreenless(element: React.ReactElement) {
   const result = render(wrap(element));
   return { ...result, rerender: (next: React.ReactElement) => result.rerender(wrap(next)) };
 }
+
+describe("picking a day", () => {
+  it("makes each day number a named button", async () => {
+    const onPick = vi.fn();
+    render(<DayBarsAxis days={[1, 2, 3]} onPick={onPick} labels={["Mon 1", "Tue 2", "Wed 3"]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Tue 2" }));
+    expect(onPick).toHaveBeenCalledWith(1);
+  });
+
+  it("picks the day under the finger on a row of bars", () => {
+    const onPick = vi.fn();
+    render(<DayBars states={["done", "done", "done", "done"]} label="Ana" onPick={onPick} />);
+    const row = screen.getByRole("img", { name: "Ana" });
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue({ left: 0, width: 400 } as DOMRect);
+
+    fireEvent.click(row, { clientX: 250 });
+    expect(onPick).toHaveBeenCalledWith(2);
+  });
+});
+
+describe("a viewer opened from a sheet", () => {
+  it("closes alone on Escape; the sheet stays", async () => {
+    const closeSheet = vi.fn();
+    const closeViewer = vi.fn();
+    render(
+      <Sheet open onClose={closeSheet} title="Monday" closeLabel="Close sheet">
+        <ProofViewer
+          items={[PHOTO]}
+          index={0}
+          onIndexChange={() => undefined}
+          open
+          onClose={closeViewer}
+          label="Proofs"
+          closeLabel="Close"
+          previousLabel="Previous"
+          nextLabel="Next"
+        />
+      </Sheet>,
+    );
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(closeViewer).toHaveBeenCalledOnce();
+    expect(closeSheet).not.toHaveBeenCalled();
+  });
+});

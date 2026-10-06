@@ -234,11 +234,12 @@ describe("month board", () => {
           (_, i) => `${options.params.query.month}-${String(i + 1).padStart(2, "0")}`,
         ),
         rows: [
-          { member: person(bogdan), states: states(3), streak: 0 },
+          { member: person(bogdan), states: states(3), streak: 0, proof_days: [] },
           {
             member: person(ana),
             states: [...states(9).slice(0, 9), "todo", ...states(9).slice(10)],
             streak: 9,
+            proof_days: [],
           },
         ],
       })) as never);

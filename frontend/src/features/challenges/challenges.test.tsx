@@ -449,6 +449,7 @@ describe("one challenge", () => {
               member: person(bogdan),
               states: days.map((_, i) => (i < 9 ? "done" : i === 9 ? "todo" : "future")),
               streak: 9,
+              proof_days: [],
             },
           ],
         });
