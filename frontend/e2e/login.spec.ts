@@ -22,11 +22,10 @@ test("a member logs in, sees today's challenges and finds the crew in its tab", 
   await page.getByRole("link", { name: "Echipa" }).click();
   await expect(page).toHaveURL(/\/crew$/);
   await expect(page.getByRole("heading", { name: "Demo Crew" })).toBeVisible();
-  await expect(page.getByText(/Propuneri pentru|Încă nu e nicio provocare pentru/)).toBeVisible();
-  for (const name of ["Ana", "Bogdan", "Cristina", "Dan"]) {
-    await expect(
-      page.getByRole("listitem").filter({ has: page.getByText(name, { exact: true }) }),
-    ).toBeVisible();
+  const stories = page.getByRole("list", { name: "Azi în echipă" });
+  for (const name of ["Tu", "Bogdan", "Cristina", "Dan"]) {
+    await expect(stories.getByText(name, { exact: true })).toBeVisible();
   }
+  await page.getByRole("button", { name: "Membri și invitații" }).click();
   await expect(page.getByRole("button", { name: "Invită pe cineva" })).toBeVisible();
 });

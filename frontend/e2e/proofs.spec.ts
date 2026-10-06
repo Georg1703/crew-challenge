@@ -61,7 +61,7 @@ test("add a photo to today's check-in and see it in the crew feed", async ({ bro
     await page.keyboard.press("Escape");
 
     await page.goto("/crew");
-    await expect(page.getByText(`Cristina a bifat ${WALK}`).first()).toBeVisible();
+    await expect(page.getByText("Cristina a bifat").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Poză de la Cristina" }).first()).toBeVisible();
   } finally {
     await send(page, "delete", undo);

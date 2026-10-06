@@ -23,9 +23,10 @@ async function logIn(page: Page, username: string) {
   await expect(page).not.toHaveURL(/\/login/);
 }
 
-/** As a logged-in admin: open Crew, open the invite sheet, return the invite's path. */
+/** As a logged-in admin: open the members screen, open the invite sheet, return its path. */
 async function inviteLink(page: Page): Promise<string> {
   await page.goto("/crew");
+  await page.getByRole("button", { name: "Membri și invitații" }).click();
   await page.getByRole("button", { name: "Invită pe cineva" }).click();
   const sheet = page.getByRole("dialog", { name: "Invită pe cineva" });
   await expect(sheet.getByRole("img", { name: "Cod QR pentru invitație" })).toBeVisible();
@@ -162,7 +163,7 @@ test("a taken username shows under the username field", async ({ page, browser }
 
 test("members who are not admins cannot invite", async ({ page }) => {
   await logIn(page, "bogdan");
-  await page.goto("/crew");
+  await page.goto("/crew/members");
   await expect(page.getByRole("list", { name: "Membrii echipei" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Invită pe cineva" })).toHaveCount(0);
 });

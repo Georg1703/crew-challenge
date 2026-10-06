@@ -87,9 +87,10 @@ test("hold to check in, undo, and see the crew's month", async ({ browser }) => 
   await expect(sheet.getByRole("heading", { name: WALK })).toBeVisible();
   await sheet.getByRole("button", { name: "Închide" }).click();
 
-  // Echipa shows each member's day.
+  // Echipa shows each member's day as a ring that opens their page.
   await dan.goto("/crew");
-  await expect(dan.getByRole("img", { name: /^Dan: azi \d+ din \d+$/ })).toBeVisible();
+  const stories = dan.getByRole("list", { name: "Azi în echipă" });
+  await expect(stories.getByRole("link", { name: /^Dan: azi \d+ din \d+/ })).toBeVisible();
 
   // The challenge page has the crew's month.
   await dan.goto("/challenges");
