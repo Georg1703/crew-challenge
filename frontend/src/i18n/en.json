@@ -614,6 +614,8 @@
   },
   "proofs": {
     "add": "Add a photo or video",
+    "addPhoto": "Add a photo",
+    "addVideo": "Add a video",
     "nudge": "Add a photo or video as proof for today.",
     "kind": {
       "photo": "Photo",

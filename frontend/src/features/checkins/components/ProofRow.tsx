@@ -25,10 +25,15 @@ const UNDO_MS = 5000; // as long as the toast with "Undo" stays
 const GiB = 1024 ** 3;
 const ASK_ABOVE = 2 * GiB; // on a phone, a bigger video asks first
 
-const ACCEPT: Record<string, string> = {
-  photo: "image/*",
-  video: "video/*",
-  photo_or_video: "image/*,video/*",
+/** What "+" picks for each proof kind; photo or video asks first (see ProofAddTile). */
+const PICKERS = {
+  photo: { accept: "image/*", icon: "image", label: "proofs.addPhoto" },
+  video: { accept: "video/*", icon: "video", label: "proofs.addVideo" },
+} as const;
+const KINDS: Record<string, (keyof typeof PICKERS)[]> = {
+  photo: ["photo"],
+  video: ["video"],
+  photo_or_video: ["photo", "video"],
 };
 
 /** A saved proof's tile: an upload that never finished shows as waiting for the file again. */
@@ -138,8 +143,12 @@ export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
       ))}
       {counted < MAX_PROOFS && (
         <ProofAddTile
-          accept={ACCEPT[card.proof_kind] ?? "image/*"}
+          choices={(KINDS[card.proof_kind] ?? ["photo"]).map((k) => ({
+            ...PICKERS[k],
+            label: t(PICKERS[k].label),
+          }))}
           label={t("proofs.add")}
+          closeLabel={t("common.close")}
           onPick={(file) => (file.size > ASK_ABOVE && onPhone() ? setBig(file) : send(file))}
         />
       )}

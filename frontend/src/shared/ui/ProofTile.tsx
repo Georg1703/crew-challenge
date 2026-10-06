@@ -1,10 +1,12 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { cx } from "@/shared/lib/cx";
 import { motion, useSpring } from "@/shared/motion";
 
+import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import styles from "./ProofTile.module.css";
+import { Sheet } from "./Sheet";
 
 export type ProofKind = "photo" | "video";
 
@@ -130,44 +132,84 @@ function Mark({
   );
 }
 
+/** One kind of file the "+" tile can pick: `accept` is "image/*" or "video/*". */
+export interface ProofChoice {
+  label: string;
+  accept: string;
+  icon: IconName;
+}
+
 /**
- * The "+" tile: opens the phone's picker (camera or library) for one file of the `accept` types
- * ("image/*", "video/*", or both).
+ * The "+" tile: opens the phone's picker (camera or library) for one file. With one choice it
+ * opens at once; with several (photo or video) a sheet titled `label` asks first, so each picker
+ * takes one type: Chrome on Android hides videos from a picker that takes images too.
  */
 export function ProofAddTile({
-  accept,
+  choices,
   label,
+  closeLabel,
   onPick,
   disabled = false,
 }: {
-  accept: string;
+  choices: ProofChoice[];
   label: string;
+  closeLabel: string;
   onPick: (file: File) => void;
   disabled?: boolean;
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const [asking, setAsking] = useState(false);
+  const pick = (index: number) => inputs.current[index]?.click();
   return (
-    <span className={styles.tile}>
-      <button
-        type="button"
-        className={cx(styles.face, styles.add)}
-        onClick={() => input.current?.click()}
-        aria-label={label}
-        disabled={disabled}
-      >
-        <Icon name="plus" />
-      </button>
-      <input
-        ref={input}
-        type="file"
-        accept={accept}
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = ""; // the same file can be picked again (to resume)
-          if (file) onPick(file);
-        }}
-      />
-    </span>
+    <>
+      <span className={styles.tile}>
+        <button
+          type="button"
+          className={cx(styles.face, styles.add)}
+          onClick={() => (choices.length > 1 ? setAsking(true) : pick(0))}
+          aria-label={label}
+          disabled={disabled}
+        >
+          <Icon name="plus" />
+        </button>
+        {choices.map((choice, i) => (
+          <input
+            key={choice.accept}
+            ref={(element) => {
+              inputs.current[i] = element;
+            }}
+            type="file"
+            accept={choice.accept}
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = ""; // the same file can be picked again (to resume)
+              if (file) onPick(file);
+            }}
+          />
+        ))}
+      </span>
+      {choices.length > 1 && (
+        <Sheet open={asking} onClose={() => setAsking(false)} title={label} closeLabel={closeLabel}>
+          <div className={styles.choices}>
+            {choices.map((choice, i) => (
+              <Button
+                key={choice.accept}
+                variant="secondary"
+                size="lg"
+                fullWidth
+                icon={<Icon name={choice.icon} />}
+                onClick={() => {
+                  pick(i); // inside the tap: browsers open pickers only from a user gesture
+                  setAsking(false);
+                }}
+              >
+                {choice.label}
+              </Button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+    </>
   );
 }

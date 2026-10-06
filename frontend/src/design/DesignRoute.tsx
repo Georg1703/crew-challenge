@@ -562,8 +562,12 @@ export function DesignRoute() {
           <ProofTile kind="video" label="Video, no poster yet" />
           <ProofTile kind="photo" label="Photo, no thumbnail" />
           <ProofAddTile
-            accept="image/*,video/*"
+            choices={[
+              { label: "Add a photo", accept: "image/*", icon: "image" },
+              { label: "Add a video", accept: "video/*", icon: "video" },
+            ]}
             label="Add a photo or video"
+            closeLabel="Close"
             onPick={(file) => toast(`Picked ${file.name}`, "info")}
           />
         </div>

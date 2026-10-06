@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { MemoryRouter } from "react-router";
@@ -214,20 +214,47 @@ describe("proof dots", () => {
 });
 
 describe("ProofAddTile", () => {
-  it("opens the picker for its kinds and hands over the file, ready for the same file again", async () => {
+  const VIDEO = { label: "Add a video", accept: "video/*", icon: "video" as const };
+  const PHOTO = { label: "Add a photo", accept: "image/*", icon: "image" as const };
+
+  it("opens the picker for its one kind and hands over the file, ready for the same file again", async () => {
     const onPick = vi.fn();
     const { container } = render(
-      <ProofAddTile accept="video/*" label="Add a video" onPick={onPick} />,
+      <ProofAddTile choices={[VIDEO]} label="Add a video" closeLabel="Close" onPick={onPick} />,
     );
     const input = container.querySelector("input") as HTMLInputElement;
+    const opened = vi.spyOn(input, "click");
     const file = new File(["v"], "clip.mp4", { type: "video/mp4" });
 
     expect(input).toHaveAttribute("accept", "video/*");
-    expect(screen.getByRole("button", { name: "Add a video" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Add a video" }));
+    expect(opened).toHaveBeenCalled();
     await userEvent.upload(input, file);
 
     expect(onPick).toHaveBeenCalledWith(file);
     expect(input.value).toBe("");
+  });
+
+  it("asks photo or video first, then opens a picker for that one kind", async () => {
+    const onPick = vi.fn();
+    const { container } = render(
+      <ProofAddTile
+        choices={[PHOTO, VIDEO]}
+        label="Add a photo or video"
+        closeLabel="Close"
+        onPick={onPick}
+      />,
+    );
+    const videos = container.querySelector('input[accept="video/*"]') as HTMLInputElement;
+    const opened = vi.spyOn(videos, "click");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add a photo or video" }));
+    const sheet = await screen.findByRole("dialog", { name: "Add a photo or video" });
+    await userEvent.click(within(sheet).getByRole("button", { name: "Add a video" }));
+
+    expect(opened).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(container.querySelector('input[accept="image/*,video/*"]')).toBeNull(); // never mixed
   });
 });
 

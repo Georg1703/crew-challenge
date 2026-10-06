@@ -87,11 +87,12 @@ describe("proofs on today's card", () => {
     expect(await screen.findByRole("button", { name: "Photo. Tap to open" })).toBeInTheDocument();
     // Processing, but its original already plays: it opens too.
     expect(screen.getByRole("button", { name: "Video, being prepared" })).toBeInTheDocument();
-    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
-    expect(input).toHaveAttribute("accept", "image/*,video/*");
+    // One picker per kind: Chrome on Android hides videos from a picker that takes images too.
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="file"]');
+    expect([...inputs].map((i) => i.accept)).toEqual(["image/*", "video/*"]);
 
     const file = new File(["jpg"], "walk.jpg", { type: "image/jpeg" });
-    await userEvent.upload(input as HTMLInputElement, file);
+    await userEvent.upload(inputs[0] as HTMLInputElement, file);
 
     expect(upload).toHaveBeenCalledWith(
       expect.objectContaining({ challengeId: "walk", day: "2026-11-10", file }),
@@ -175,7 +176,10 @@ describe("proofs on today's card", () => {
     const big = new File(["v"], "trip.mp4", { type: "video/mp4" });
     Object.defineProperty(big, "size", { value: 3.1 * GiB });
 
-    await userEvent.upload(container.querySelector('input[type="file"]') as HTMLInputElement, big);
+    await userEvent.upload(
+      container.querySelector('input[accept="video/*"]') as HTMLInputElement,
+      big,
+    );
     expect(upload).not.toHaveBeenCalled();
     expect(await screen.findByText("Upload 3.1 GB?")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Upload it" }));

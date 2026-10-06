@@ -48,7 +48,7 @@ test("add a photo to today's check-in and see it in the crew feed", async ({ bro
       .filter({ has: page.getByRole("heading", { name: WALK }) })
       .last();
     await card
-      .locator('input[type="file"]')
+      .locator('input[accept="image/*"]')
       .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
 
     // Saved: the tile now shows the copy read back from storage, not the one on the phone.

@@ -614,6 +614,8 @@
   },
   "proofs": {
     "add": "Adaugă o poză sau un video",
+    "addPhoto": "Adaugă o poză",
+    "addVideo": "Adaugă un video",
     "nudge": "Adaugă o poză sau un video ca dovadă pentru azi.",
     "kind": {
       "photo": "Poză",

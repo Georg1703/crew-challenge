@@ -147,7 +147,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `DayDivider` | A day in the crew's journal: its name, a line and what happened; sticks to the top while that day scrolls |
 | `StatGroup` | Up to three numbers in one card, divided, each with a short label under it; a number can be success green |
 | `ChallengeChip` | A challenge named inside a card: its icon in a small accent circle and its title, cut with an ellipsis |
-| `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kinds a challenge takes |
+| `ProofAddTile` | The "+" tile beside proof tiles: opens the phone's picker (camera or library) for the kind a challenge takes. When it takes a photo or a video, a sheet asks which first, so each picker takes one type (Chrome on Android hides videos from a picker that also takes images) |
 | `Skeleton`, `Spinner` | Loading content (skeleton) and loading actions or whole pages (spinner) |
 | `TabBar`, `Icon` | Main navigation, with an optional raised action (check in), its count and, while proofs upload, a thin progress ring; the shared icon set (Lucide shapes, stroke 1.75) |
 
