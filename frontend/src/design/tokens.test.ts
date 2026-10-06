@@ -100,3 +100,11 @@ describe("design tokens", () => {
     for (const name of colorTokens) expect(defined).toHaveProperty(`--color-${name}`);
   });
 });
+
+describe("text fields", () => {
+  it("are at least 16px, or iPhone Safari zooms in on focus and the page scrolls sideways", () => {
+    const size = declarations(blockAfter(":root {"))["--text-input"] ?? "";
+    expect(size).toMatch(/rem$/);
+    expect(parseFloat(size)).toBeGreaterThanOrEqual(1);
+  });
+});

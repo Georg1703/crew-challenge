@@ -38,6 +38,7 @@ export const textTokens = [
   "title-m",
   "title-s",
   "body",
+  "input",
   "small",
   "caption",
   "number",

@@ -75,7 +75,8 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 | title-l | `--text-title-l` 28 / `--leading-title-l` 34, bold, `--tracking-title` | The one screen title (`h1`) |
 | title-m | `--text-title-m` 20 / 26, bold | Sheet titles, section titles (`h2`) |
 | title-s | `--text-title-s` 17 / 22, bold | Card titles (`h3`) |
-| body | `--text-body` 15 / 22 | Running text, inputs |
+| body | `--text-body` 15 / 22 | Running text |
+| input | `--text-input` 16 / `--leading-input` 22 | What you type in a text field: iPhone Safari zooms into anything smaller and stays zoomed |
 | body-strong | `--text-body` 15 / 22, bold | Button labels, list row titles |
 | small | `--text-small` 13 / 18 | Secondary lines, hints, metadata |
 | caption | `--text-caption` 12 / 16, bold | Field labels, pills, tab labels |

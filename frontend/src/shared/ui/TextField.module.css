@@ -19,8 +19,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: var(--text-body);
-  line-height: var(--leading-body);
+  font-size: var(--text-input);
+  line-height: var(--leading-input);
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
