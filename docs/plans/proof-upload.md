@@ -109,7 +109,7 @@ extra request.
    while processing a soft "Se pregateste" overlay. Tap an item: the viewer.
 4. **The day sheet**: tap a day on the board (or a feed item) -> "Luni, 5 octombrie": each person
    with their state and their proofs. Tap a proof: full-screen viewer, swipe between proofs,
-   video plays inline (HLS, muted until tapped), pinch to zoom photos.
+   video plays inline (HLS, with sound), pinch to zoom photos.
 5. **The dot**: a small dot under a day in `DayBars` and `WeekStrip` when there is at least one
    proof. Readable by shape, not color.
 

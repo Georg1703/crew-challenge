@@ -147,14 +147,48 @@ describe("ProofViewer", () => {
     expect(photo.style.transform).toContain("scale(2)");
   });
 
-  it("plays the original video inline and muted when there is no playlist", () => {
+  it("plays the original video inline, with sound, when there is no playlist", () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     render(<Viewer items={[VIDEO]} />);
     const video = screen.getByLabelText("Bogdan, Walk") as HTMLVideoElement;
 
     expect(video.src).toMatch(/\/b\.mp4$/);
-    expect(video.muted).toBe(true);
+    expect(video.muted).toBe(false);
+    expect(play).toHaveBeenCalledOnce();
     expect(video).toHaveAttribute("playsinline");
     expect(players).toHaveLength(0);
+  });
+
+  it("plays muted when the browser refuses sound", async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockRejectedValueOnce(new DOMException("No sound", "NotAllowedError"))
+      .mockResolvedValue();
+    render(<Viewer items={[VIDEO]} />);
+    const video = screen.getByLabelText("Bogdan, Walk") as HTMLVideoElement;
+
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+    expect(video.muted).toBe(true);
+  });
+
+  it("keeps the next videos muted after the person mutes one, until they unmute", () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const other = { ...VIDEO, key: "c", src: "/c.mp4", caption: "Ana, Walk" };
+    const { rerender } = render(<Viewer items={[VIDEO]} />);
+    const playing = (label: string, muted: boolean) => {
+      const video = screen.getByLabelText(label) as HTMLVideoElement;
+      Object.defineProperty(video, "paused", { configurable: true, value: false });
+      video.muted = muted;
+      fireEvent(video, new Event("volumechange"));
+    };
+
+    playing("Bogdan, Walk", true);
+    rerender(<Viewer items={[other]} />);
+    expect((screen.getByLabelText("Ana, Walk") as HTMLVideoElement).muted).toBe(true);
+
+    playing("Ana, Walk", false);
+    rerender(<Viewer items={[{ ...VIDEO, key: "d", src: "/d.mp4", caption: "Elena, Walk" }]} />);
+    expect((screen.getByLabelText("Elena, Walk") as HTMLVideoElement).muted).toBe(false);
   });
 
   it("plays the playlist natively where the browser can (Safari)", () => {

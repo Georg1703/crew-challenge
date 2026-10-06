@@ -175,7 +175,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - Every tap responds within 100 ms (optimistic updates with TanStack Query, rollback on error).
 - Animate only `transform` and `opacity`; target 60 fps on a mid-range Android phone.
 - Lazy-load hls.js (and the Rive runtime after v1); code-split routes; first load < 2 s on 4G.
-- Honor `prefers-reduced-motion`. Sounds only after user interaction and off by default.
+- Honor `prefers-reduced-motion`. UI sounds only after user interaction and off by default
+  (a proof video opened with a tap plays with sound).
 - Romanian (default) and English from the start; no hard-coded UI strings.
 - The look is defined by the design system in `docs/design-system.md`: tokens, `shared/ui`
   components and motion presets only. Read it before any UI work; `make check` enforces it.

@@ -32,7 +32,7 @@ const SLIDE = {
 /**
  * Proofs full screen, one at a time: swipe, the arrows or the arrow keys move between them;
  * Escape or the close button leaves. Photos zoom with a pinch or a double tap; videos play
- * inline, muted until tapped, from the HLS playlist when there is one (hls.js loads only where
+ * inline with sound, from the HLS playlist when there is one (hls.js loads only where
  * the browser cannot play HLS itself, and the original plays if the playlist fails).
  */
 export function ProofViewer({
@@ -173,6 +173,22 @@ export function ProofViewer({
   );
 }
 
+/** Whether videos play with sound; muting one keeps the next ones muted until unmuted. */
+let withSound = true;
+
+/**
+ * Starts a video with sound: opening the viewer is a tap, which browsers accept for sound. If one
+ * still refuses (iOS sometimes does after hls.js loads), it plays muted and the controls unmute.
+ */
+function start(video: HTMLVideoElement) {
+  video.muted = !withSound;
+  void video.play()?.catch(() => {
+    if (video.muted) return;
+    video.muted = true;
+    void video.play()?.catch(() => undefined);
+  });
+}
+
 /** Plays HLS where possible (natively, or with hls.js loaded on demand), else the original. */
 function Video({ item }: { item: ViewerItem }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -183,6 +199,7 @@ function Video({ item }: { item: ViewerItem }) {
     if (!video) return;
     if (!hlsSrc || video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsSrc ?? src;
+      start(video);
       return;
     }
     let player: { destroy: () => void } | undefined;
@@ -191,6 +208,7 @@ function Video({ item }: { item: ViewerItem }) {
       if (gone) return;
       if (!Hls.isSupported()) {
         video.src = src;
+        start(video);
         return;
       }
       // Playlists and segments come from CloudFront with the crew's signed cookies.
@@ -206,6 +224,7 @@ function Video({ item }: { item: ViewerItem }) {
       });
       hls.loadSource(hlsSrc);
       hls.attachMedia(video);
+      start(video);
       player = hls;
     });
     return () => {
@@ -222,9 +241,11 @@ function Video({ item }: { item: ViewerItem }) {
       aria-label={item.caption}
       controls
       playsInline
-      muted
-      autoPlay
       preload="metadata"
+      onVolumeChange={(event) => {
+        // Only a person changes it while it plays; the fallback above mutes before playing.
+        if (!event.currentTarget.paused) withSound = !event.currentTarget.muted;
+      }}
     />
   );
 }
