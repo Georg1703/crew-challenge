@@ -1,0 +1,16 @@
+/* A card's reactions: chips on the left, the react button at the end of the row. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.anchor {
+  position: relative;
+  margin-left: auto;
+}
+
+.emoji {
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+}

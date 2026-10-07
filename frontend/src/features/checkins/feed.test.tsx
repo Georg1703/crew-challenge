@@ -136,10 +136,13 @@ describe("the crew journal", () => {
   });
 
   it("shows older days on request", async () => {
-    const get = vi
-      .spyOn(api, "GET")
-      .mockImplementation(((_path: string, options: { params: { query: { cursor?: string } } }) =>
-        options.params.query.cursor === "c2"
+    const get = vi.spyOn(api, "GET").mockImplementation(((
+      path: string,
+      options: { params: { query: { cursor?: string } } },
+    ) =>
+      path !== "/api/v1/feed"
+        ? ok({}) // who is asking (reactions)
+        : options.params.query.cursor === "c2"
           ? ok({ results: [read], next: null })
           : ok({ results: [walked], next: "c2" })) as never);
     renderRoutes([
@@ -149,8 +152,22 @@ describe("the crew journal", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Show older" }));
 
     expect(await screen.findByText("Ana added")).toBeInTheDocument();
-    expect(get).toHaveBeenLastCalledWith("/api/v1/feed", { params: { query: { cursor: "c2" } } });
+    expect(get).toHaveBeenCalledWith("/api/v1/feed", { params: { query: { cursor: "c2" } } });
     expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
+  });
+
+  it("lets the crew react to cards of their own, not to grouped check-ins", async () => {
+    showFeed([
+      {
+        ...walked,
+        reactions: { groups: [{ emoji: "\u{1F525}", member_ids: [ana.id] }], mine: null },
+      },
+      plainWalk("w1", bogdan, "2026-11-10T07:00:00Z"),
+      plainWalk("w2", ana, "2026-11-10T06:00:00Z"),
+    ]);
+
+    expect(await screen.findByRole("button", { name: "\u{1F525}, from Ana" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "React" })).toHaveLength(1);
   });
 
   it("says what will appear while the crew has done nothing yet", async () => {

@@ -1,6 +1,8 @@
 /* Reaction chips under a card: soft pills, the viewer's in the accent, avatars overlapping. */
 .chips {
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin: 0;

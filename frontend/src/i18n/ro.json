@@ -206,7 +206,9 @@
     "proof_not_found": "Dovada nu mai există.",
     "upload_not_found": "Încărcarea nu mai există. Alege din nou fișierul.",
     "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou.",
-    "member_not_found": "Persoana nu face parte din echipa ta."
+    "member_not_found": "Persoana nu face parte din echipa ta.",
+    "target_not_found": "Aici nu se mai poate reacționa.",
+    "invalid_emoji": "Alege un singur emoji."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -649,5 +651,46 @@
     "proof": "{{kind}} de la {{name}}",
     "proofProcessing": "{{kind}} de la {{name}}, se pregătește",
     "more": "încă {{count}}"
+  },
+  "reactions": {
+    "react": "Reacționează",
+    "more": "Alte emoji",
+    "who": "Cine a reacționat",
+    "you": "tine",
+    "youName": "Tu",
+    "chip": "{{emoji}}, de la {{names}}",
+    "count_one": "{{count}} reacție",
+    "count_few": "{{count}} reacții",
+    "count_other": "{{count}} de reacții",
+    "pick": "Alege un emoji",
+    "pickerFailed": "Emoji-urile nu s-au încărcat.",
+    "picker": {
+      "search": "Caută",
+      "noResults": "Nimic găsit",
+      "noResultsHint": "Încearcă alt cuvânt",
+      "addCustom": "Adaugă",
+      "categories": {
+        "activity": "Activități",
+        "custom": "Ale tale",
+        "flags": "Steaguri",
+        "foods": "Mâncare și băuturi",
+        "frequent": "Folosite des",
+        "nature": "Animale și natură",
+        "objects": "Obiecte",
+        "people": "Fețe și oameni",
+        "places": "Călătorii și locuri",
+        "search": "Rezultate",
+        "symbols": "Simboluri"
+      },
+      "skins": {
+        "choose": "Nuanța pielii",
+        "1": "Implicită",
+        "2": "Deschisă",
+        "3": "Medie deschisă",
+        "4": "Medie",
+        "5": "Medie închisă",
+        "6": "Închisă"
+      }
+    }
   }
 }
