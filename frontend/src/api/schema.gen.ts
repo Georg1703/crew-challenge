@@ -545,6 +545,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reactions/{target}/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description React with one emoji; another one replaces yours. Returns the target's reactions. */
+        put: operations["reactions_set"];
+        post?: never;
+        /** @description Take your reaction back. Returns the target's reactions. */
+        delete: operations["reactions_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/today": {
         parameters: {
             query?: never;
@@ -818,6 +836,8 @@ export interface components {
             milestone: components["schemas"]["MilestoneOut"] | null;
             /** @description The crew's whole day (the same on every item of that day), for its divider. */
             day_summary: components["schemas"]["DaySummaryOut"];
+            /** @description Reactions; only single cards (a proof, a number or a milestone) take new ones. */
+            reactions: components["schemas"]["ReactionSummaryOut"];
         };
         /**
          * @description * `daily` - Every day
@@ -1136,6 +1156,21 @@ export interface components {
             parts: components["schemas"]["PartOut"][];
             /** @description PUT the thumbnail here, Content-Type image/jpeg. */
             thumb_put_url: string | null;
+        };
+        ReactionGroupOut: {
+            emoji: string;
+            /** @description Who used it, in the order they did. */
+            member_ids: string[];
+        };
+        ReactionInRequest: {
+            emoji: string;
+        };
+        /** @description A target's reactions. Embedded wherever a reactable thing is shown. */
+        ReactionSummaryOut: {
+            /** @description In the order each emoji was first used. */
+            groups: components["schemas"]["ReactionGroupOut"][];
+            /** @description Your reaction, if any. */
+            mine: string | null;
         };
         ScheduleInRequest: {
             period_kind: components["schemas"]["PeriodKindEnum"];
@@ -2067,6 +2102,55 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PoolOut"];
                 };
+            };
+        };
+    };
+    reactions_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "check_in";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactionInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReactionSummaryOut"];
+                };
+            };
+        };
+    };
+    reactions_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "check_in";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

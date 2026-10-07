@@ -43,6 +43,7 @@ const walked: FeedItem = {
   target: null,
   milestone: null,
   day_summary: { check_ins: 3, proofs: 5, crew_done: false },
+  reactions: { groups: [], mine: null },
 };
 const read: FeedItem = {
   id: "c2",
@@ -61,6 +62,7 @@ const read: FeedItem = {
   target: 20,
   milestone: null,
   day_summary: { check_ins: 1, proofs: 0, crew_done: false },
+  reactions: { groups: [], mine: null },
 };
 
 afterEach(() => {

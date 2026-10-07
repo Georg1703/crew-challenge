@@ -280,6 +280,17 @@ def feed(*, member: Member) -> QuerySet[CheckIn]:
     )
 
 
+def reactable_check_in(member: Member, check_in_id: UUID) -> CheckIn | None:
+    """A check-in the member sees in the feed as a card of its own (a proof, a number or a
+    milestone), so it can get reactions; plain check-ins are said together and get none."""
+    check_in = feed(member=member).filter(pk=check_in_id).first()
+    if check_in is None:
+        return None
+    if check_in.shown_proofs or check_in.challenge.measure == Challenge.Measure.QUANTITY:  # type: ignore[attr-defined]
+        return check_in
+    return check_in if feed_details([check_in])[check_in.pk].milestone is not None else None
+
+
 MILESTONES = (3, 7, 14, 30)  # days in a row worth a card of their own
 
 

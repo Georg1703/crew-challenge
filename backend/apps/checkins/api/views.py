@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import date
 from typing import Any
 from uuid import UUID
@@ -16,6 +17,7 @@ from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.media import selectors as media
 from apps.media.models import Upload
+from apps.reactions import selectors as reactions
 
 from .serializers import (
     BoardOut,
@@ -338,6 +340,7 @@ class FeedView(APIView):
         member = _member(request)
         details = selectors.feed_details(page)
         summaries = selectors.day_summaries(member=member, on={c.day for c in page})
+        reacted = reactions.summaries(member=member, target="check_in", ids=[c.pk for c in page])
         items = [
             {
                 "id": c.pk,
@@ -350,6 +353,7 @@ class FeedView(APIView):
                 "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
                 **feed_detail_data(details[c.pk]),
                 "day_summary": vars(summaries[c.day]),
+                "reactions": asdict(reacted[c.pk]),
             }
             for c in page
         ]
