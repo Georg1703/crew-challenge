@@ -130,3 +130,8 @@
   gap: var(--space-3);
   overflow-x: auto;
 }
+
+.reactAnchor {
+  position: relative;
+  margin-left: auto;
+}

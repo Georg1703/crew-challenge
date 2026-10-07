@@ -40,7 +40,7 @@ export function ProofMosaic({
   const more = proofs.length - shown.length;
   const layout = shown.length === 1 ? styles.one : shown.length === 2 ? styles.two : styles.three;
   return (
-    <div className={cx(styles.mosaic, layout)}>
+    <div className={cx(styles.mosaic, layout)} data-stage="">
       {shown.map((proof, i) => (
         <span key={proof.key} className={cx(styles.cell, i === 0 && styles.first)}>
           <ProofTile

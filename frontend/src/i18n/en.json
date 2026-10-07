@@ -206,7 +206,9 @@
     "proof_not_found": "This proof no longer exists.",
     "upload_not_found": "This upload no longer exists. Pick the file again.",
     "upload_failed": "The file could not be uploaded. Check your connection and try again.",
-    "member_not_found": "This member is not in your crew."
+    "member_not_found": "This member is not in your crew.",
+    "target_not_found": "You can't react to this any more.",
+    "invalid_emoji": "Pick one emoji."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -649,5 +651,46 @@
     "proof": "{{kind}} by {{name}}",
     "proofProcessing": "{{kind}} by {{name}}, being prepared",
     "more": "{{count}} more"
+  },
+  "reactions": {
+    "react": "React",
+    "more": "More emojis",
+    "who": "Who reacted",
+    "you": "you",
+    "youName": "You",
+    "chip": "{{emoji}}, from {{names}}",
+    "count_one": "{{count}} reaction",
+    "count_few": "{{count}} reactions",
+    "count_other": "{{count}} reactions",
+    "pick": "Pick an emoji",
+    "pickerFailed": "The emojis did not load.",
+    "picker": {
+      "search": "Search",
+      "noResults": "Nothing found",
+      "noResultsHint": "Try another word",
+      "addCustom": "Add",
+      "categories": {
+        "activity": "Activity",
+        "custom": "Yours",
+        "flags": "Flags",
+        "foods": "Food and drink",
+        "frequent": "Used often",
+        "nature": "Animals and nature",
+        "objects": "Objects",
+        "people": "Smileys and people",
+        "places": "Travel and places",
+        "search": "Results",
+        "symbols": "Symbols"
+      },
+      "skins": {
+        "choose": "Skin tone",
+        "1": "Default",
+        "2": "Light",
+        "3": "Medium light",
+        "4": "Medium",
+        "5": "Medium dark",
+        "6": "Dark"
+      }
+    }
   }
 }

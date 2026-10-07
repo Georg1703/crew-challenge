@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
+import { Reactions } from "@/features/reactions";
 import { errorMessage } from "@/i18n/errors";
 import { formatDayLong, formatList, formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
 import {
@@ -16,7 +17,7 @@ import {
   type ViewerItem,
 } from "@/shared/ui";
 
-import { useFeed, type FeedItem as Item } from "../api";
+import { useFeed, usePatchFeedReactions, type FeedItem as Item } from "../api";
 import styles from "../checkins.module.css";
 import { journal, type JournalCard, type JournalDay } from "../journal";
 import { SHOWN_PROOFS, shownTile, viewerItem } from "../proofs";
@@ -62,11 +63,13 @@ export function CrewFeed({
   const { t, i18n } = useTranslation();
   const language = i18n.language;
   const feed = useFeed();
+  const patchReactions = usePatchFeedReactions();
   const [viewing, setViewing] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const items = feed.data?.pages.flatMap((page) => page.results) ?? [];
   const today = todayIn(timeZone);
 
-  function itemCard(item: Item) {
+  /** A check-in's card; `reactable` when it is a card of its own (the server's rule too). */
+  function itemCard(item: Item, reactable = false) {
     const who = item.member.display_name;
     const caption = `${who}, ${item.challenge.title}`;
     const unit = item.challenge.unit;
@@ -150,12 +153,23 @@ export function CrewFeed({
             ? [`${milestone} ${t("crew.journal.inARow", { count: milestone })}`, ...facts.slice(1)]
             : facts
         }
+        reactions={
+          reactable ? (
+            <Reactions
+              target="check_in"
+              id={item.id}
+              summary={item.reactions}
+              people={members}
+              onChange={(summary) => patchReactions(item.id, summary)}
+            />
+          ) : undefined
+        }
       />
     );
   }
 
   function card(entry: JournalCard) {
-    if (entry.kind === "item") return itemCard(entry.item);
+    if (entry.kind === "item") return itemCard(entry.item, true);
     if (entry.kind === "crew") {
       return (
         <FeedCard

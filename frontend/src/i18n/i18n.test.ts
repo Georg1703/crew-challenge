@@ -38,6 +38,8 @@ describe("translations", () => {
       "not_checked_in",
       "too_many_proofs",
       "upload_closed",
+      "target_not_found",
+      "invalid_emoji",
       "upload_incomplete",
       "upload_size_mismatch",
       "proof_not_found",

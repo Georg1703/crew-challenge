@@ -29,7 +29,7 @@ export function Avatar({
 }: {
   name: string;
   seed: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   /** Today's ring: checked in (`done`) or not yet (`todo`). Say it in `label` too. */
   ring?: "done" | "todo";
   /** Accessible name; defaults to `name`. */

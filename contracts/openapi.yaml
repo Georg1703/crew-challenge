@@ -847,6 +847,68 @@ paths:
               schema:
                 $ref: '#/components/schemas/PoolOut'
           description: ''
+  /api/v1/reactions/{target}/{target_id}:
+    put:
+      operationId: reactions_set
+      description: React with one emoji; another one replaces yours. Returns the target's
+        reactions.
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - check_in
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionSummaryOut'
+          description: ''
+    delete:
+      operationId: reactions_clear
+      description: Take your reaction back. Returns the target's reactions.
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - check_in
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reactions
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/today:
     get:
       operationId: today_retrieve
@@ -1410,6 +1472,11 @@ components:
           - $ref: '#/components/schemas/DaySummaryOut'
           description: The crew's whole day (the same on every item of that day),
             for its divider.
+        reactions:
+          allOf:
+          - $ref: '#/components/schemas/ReactionSummaryOut'
+          description: Reactions; only single cards (a proof, a number or a milestone)
+            take new ones.
       required:
       - activity_at
       - challenge
@@ -1422,6 +1489,7 @@ components:
       - member
       - milestone
       - proofs
+      - reactions
       - status
       - streak
       - target
@@ -2102,6 +2170,45 @@ components:
       - proof
       - put_url
       - thumb_put_url
+    ReactionGroupOut:
+      type: object
+      properties:
+        emoji:
+          type: string
+        member_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who used it, in the order they did.
+      required:
+      - emoji
+      - member_ids
+    ReactionInRequest:
+      type: object
+      properties:
+        emoji:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+      - emoji
+    ReactionSummaryOut:
+      type: object
+      description: A target's reactions. Embedded wherever a reactable thing is shown.
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReactionGroupOut'
+          description: In the order each emoji was first used.
+        mine:
+          type: string
+          nullable: true
+          description: Your reaction, if any.
+      required:
+      - groups
+      - mine
     ScheduleInRequest:
       type: object
       properties:

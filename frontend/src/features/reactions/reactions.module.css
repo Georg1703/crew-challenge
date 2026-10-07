@@ -1,0 +1,24 @@
+/* A card's reactions: the chips, then the react button. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.anchor {
+  position: relative;
+}
+
+/* A small icon button: the icon is quiet, the tap area keeps --tap-min. */
+.anchor .react {
+  min-width: var(--tap-min);
+  padding: 0;
+  color: var(--color-text-muted);
+}
+
+.emoji {
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+}

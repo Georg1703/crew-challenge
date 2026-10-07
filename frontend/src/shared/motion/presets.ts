@@ -32,6 +32,33 @@ export const variants = {
 /** Delay between children of a staggered list, in seconds. */
 export const staggerStep = 0.06;
 
+/**
+ * A picked reaction flying into place: from the finger it grows big over the card's middle, wiggles
+ * left and right, then shrinks into its chip. Fast: about 0.6 s in all.
+ */
+export const emojiFlight = {
+  /** To the middle of the card, growing. */
+  out: { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] },
+  /** The wiggle in the middle. */
+  hold: { duration: 0.24, ease: "easeInOut" },
+  /** Into the chip, shrinking. */
+  back: { duration: 0.2, ease: [0.4, 0, 0.6, 1] },
+  /** Its size as it leaves the finger, over the card, and as it lands (x the flying emoji). */
+  start: 0.65,
+  peak: 3.2,
+  land: 0.5,
+  /** The wiggle: degrees left and right while it is big (it leans left on the way out). */
+  wiggle: [-12, 12, -8, 0],
+} satisfies {
+  out: Transition;
+  hold: Transition;
+  back: Transition;
+  start: number;
+  peak: number;
+  land: number;
+  wiggle: number[];
+};
+
 /** Scale applied while a pressable element is held down. */
 export const pressScale = 0.96;
 

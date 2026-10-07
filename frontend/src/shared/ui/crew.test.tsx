@@ -200,6 +200,16 @@ describe("FeedCard", () => {
     expect(screen.getByRole("progressbar", { name: "20 of 30 pages" })).toBeInTheDocument();
   });
 
+  it("has one stage for a flying reaction: the photos, over an amount", () => {
+    const amount = { value: "+12 pages", progress: { value: 20, max: 30, label: "20 of 30" } };
+    const { container } = render(
+      <FeedCard person={ana} text="Ana read" amount={amount} proofs={proofs(1)} />,
+    );
+    const stages = container.querySelectorAll("[data-stage]");
+    expect(stages).toHaveLength(1);
+    expect(stages[0]).not.toContainElement(screen.getByRole("progressbar"));
+  });
+
   it("shows a milestone's number and a group's avatars", () => {
     render(
       <>

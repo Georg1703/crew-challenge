@@ -6,6 +6,7 @@ Missed days are not stored: a due day before today without a `done` check-in is 
 
 from __future__ import annotations
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from apps.challenges.models import Challenge
@@ -30,6 +31,10 @@ class CheckIn(CrewScopedModel):
         null=True,
         blank=True,
         help_text="The day's total for challenges that record a number; empty otherwise.",
+    )
+    # Reactions point here by a generic key; this deletes them with the check-in.
+    reactions = GenericRelation(
+        "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
     )
 
     class Meta:

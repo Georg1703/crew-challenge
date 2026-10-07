@@ -1,0 +1,20 @@
+/* The emoji picker fills its sheet; Emoji Mart draws inside .host (its own shadow root). */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: var(--emoji-picker-height);
+}
+
+.host {
+  display: flex;
+}
+
+.host > * {
+  flex: 1;
+  height: var(--emoji-picker-height);
+}
+
+.host[hidden] {
+  display: none;
+}

@@ -5,6 +5,7 @@ from apps.challenges.models import ICONS, Challenge
 from apps.checkins.days import DayState
 from apps.checkins.models import CheckIn, Proof
 from apps.media.models import Upload
+from apps.reactions.api.serializers import ReactionSummaryOut
 
 DAY_STATES = (
     DayState.DONE,
@@ -254,6 +255,9 @@ class FeedItemOut(serializers.Serializer):
     )
     day_summary = DaySummaryOut(
         help_text="The crew's whole day (the same on every item of that day), for its divider."
+    )
+    reactions = ReactionSummaryOut(
+        help_text="Reactions; only single cards (a proof, a number or a milestone) take new ones."
     )
 
 

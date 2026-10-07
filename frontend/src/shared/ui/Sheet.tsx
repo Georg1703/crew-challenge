@@ -1,9 +1,29 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { AnimatePresence, motion, useSpring } from "@/shared/motion";
 
 import { Icon } from "./Icon";
 import styles from "./Sheet.module.css";
+
+const Settled = createContext(true);
+
+/**
+ * False while the sheet slides in (true outside a sheet). Heavy content waits for it: the slide is
+ * drawn frame by frame on the main thread, so building a big view during it stutters.
+ */
+export function useSheetSettled(): boolean {
+  return useContext(Settled);
+}
+
+const slide = { open: { y: 0 }, closed: { y: "100%" } };
 
 /** A bottom sheet dialog: slides up, closes on backdrop tap, Escape, or the close button. */
 export function Sheet({
@@ -22,6 +42,7 @@ export function Sheet({
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const spring = useSpring("gentle");
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -56,10 +77,12 @@ export function Sheet({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            variants={slide}
+            initial="closed"
+            animate="open"
+            exit="closed"
             transition={spring}
+            onAnimationComplete={(name) => setSettled(name === "open")}
           >
             <div className={styles.handle} aria-hidden="true" />
             <header className={styles.header}>
@@ -75,7 +98,7 @@ export function Sheet({
                 <Icon name="close" />
               </button>
             </header>
-            {children}
+            <Settled.Provider value={settled}>{children}</Settled.Provider>
           </motion.div>
         </div>
       )}

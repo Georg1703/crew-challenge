@@ -61,6 +61,10 @@ const ICONS = {
   close: [["path", { d: "M18 6 6 18M6 6l12 12" }]],
   check: [["path", { d: "M20 6 9 17l-5-5" }]],
   plus: [["path", { d: "M5 12h14M12 5v14" }]],
+  smilePlus: [
+    ["path", { d: "M22 11v1a10 10 0 1 1-9-10" }],
+    ["path", { d: "M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01M16 5h6M19 2v6" }],
+  ],
   chevronRight: [["path", { d: "m9 18 6-6-6-6" }]],
   chevronLeft: [["path", { d: "m15 18-6-6 6-6" }]],
   logout: [

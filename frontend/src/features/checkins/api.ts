@@ -1,4 +1,11 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { api, call, isApiError, type components } from "@/api";
 
@@ -69,6 +76,32 @@ export function useFeed() {
     getNextPageParam: (page) => page.next ?? undefined,
     refetchInterval: FEED_REFRESH_MS,
   });
+}
+
+type FeedPages = InfiniteData<components["schemas"]["PaginatedFeedItemOutList"], string>;
+
+/** Put a check-in's new reactions into the cached feed (the reactions feature calls it). */
+export function usePatchFeedReactions() {
+  const client = useQueryClient();
+  return useCallback(
+    (id: string, reactions: FeedItem["reactions"]) => {
+      void client.cancelQueries({ queryKey: feedKey }); // a refresh in flight would undo it
+      client.setQueryData<FeedPages>(feedKey, (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((page) => ({
+                ...page,
+                results: page.results.map((item) =>
+                  item.id === id ? { ...item, reactions } : item,
+                ),
+              })),
+            }
+          : data,
+      );
+    },
+    [client],
+  );
 }
 
 /** Everyone's state, total and proofs on one day of a challenge (the day sheet). */

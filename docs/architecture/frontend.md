@@ -16,6 +16,7 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
 | hls.js | HLS playback outside Safari; loaded on demand by `ProofViewer` only |
+| Emoji Mart (`emoji-mart` + `@emoji-mart/data`) | The full emoji picker (`EmojiPicker`): one lazy chunk, not precached. Core only: `@emoji-mart/react` stops at React 18, so `EmojiPicker` is our own wrapper |
 | Uppy core + @uppy/aws-s3, v5 | The bytes of an upload: parallel parts, retries, pause and resume, no Uppy UI. Pinned to v5: v6 drives S3 itself (it would create and complete uploads in the browser, one part at a time), while our API owns the upload |
 
 Do not add a library that overlaps one of these.

@@ -6,8 +6,9 @@ import { useReducedMotion, type Transition } from "motion/react";
 
 import { reducedTransition, springs, type SpringName } from "./presets";
 
-export { AnimatePresence, MotionConfig, motion, useReducedMotion } from "motion/react";
+export { AnimatePresence, MotionConfig, motion, useAnimate, useReducedMotion } from "motion/react";
 export {
+  emojiFlight,
   holdToConfirm,
   pressScale,
   springs,

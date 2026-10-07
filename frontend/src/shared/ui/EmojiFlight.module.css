@@ -1,0 +1,17 @@
+/* The flying emoji: a fixed box centred on its x/y, above every layer, never in the way. */
+.flyer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  width: calc(var(--space-6) * 2);
+  height: calc(var(--space-6) * 2);
+  margin: calc(var(--space-6) * -1) 0 0 calc(var(--space-6) * -1);
+  font-size: var(--text-number); /* drawn big, so it stays sharp at its largest */
+  line-height: var(--leading-number);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}

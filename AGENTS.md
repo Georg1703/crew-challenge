@@ -7,10 +7,11 @@ the owner's family.
 Read this file before changing anything. Then read the nested `AGENTS.md` of the area you touch.
 
 ## First version (v1) scope
-v1 ships four things: inviting members, flexible challenge creation, the daily check-in (you and
-your crew), and proof upload (photo or video). Everything below marked **after v1** stays in the
-docs as the long-term direction but must not be built yet: growing trees and the garden, streak
-flames as artwork, the Wheel of Doom, confetti and Rive animations, reactions, and Web Push.
+v1 ships five things: inviting members, flexible challenge creation, the daily check-in (you and
+your crew), proof upload (photo or video), and simple reactions on the crew's journal (one emoji
+per person). Everything below marked **after v1** stays in the docs as the long-term direction but
+must not be built yet: growing trees and the garden, streak flames as artwork, the Wheel of Doom,
+confetti and Rive animations, custom reaction sets and reaction notifications, and Web Push.
 If a task seems to need one of these, stop and ask.
 
 - How the system is built, and why: `docs/architecture/`
@@ -26,7 +27,10 @@ If a task seems to need one of these, stop and ask.
 4. Follow `docs/architecture/`. If a task seems to need a different approach, stop and ask first.
    When an approach changes, update the docs in the same change.
 5. Use names from `docs/glossary.md` in code, API fields, and UI keys.
-6. Done means: `make check` passes and the task's acceptance criteria are met.
+6. When planning, look for what can be generic (a model, an endpoint, a component, a hook) so the
+   next feature reuses it, and for what can be simpler. Do it where it pays off now or clearly
+   soon, say why in the plan, and do not build for imagined needs.
+7. Done means: `make check` passes and the task's acceptance criteria are met.
 
 ## Repository map
 | Path | What lives there |
@@ -97,6 +101,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3 (v5)
   (after v1: @rive-app/react-canvas, canvas-confetti). CSS Modules + tokens in `src/styles/tokens.css`.
 - **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
+- **Emoji:** Emoji Mart (`emoji-mart` + `@emoji-mart/data`, core only, loaded on demand).
 - **Auth:** Django session cookie + CSRF. No JWT.
 
 ## Architecture rules
