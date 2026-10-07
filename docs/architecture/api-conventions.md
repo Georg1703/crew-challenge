@@ -39,7 +39,7 @@ crew (set when joining), falling back to the user's oldest membership.
 | Ids | UUID strings | `"3f1c..."` |
 | Instants | ISO 8601 UTC | `"2026-11-03T21:04:11Z"` |
 | Crew-local dates | `YYYY-MM-DD` | `"2026-11-03"` |
-| Money / counts | integers | `"goal_target": 2` |
+| Money / counts | integers | `"vote_count": 3` |
 | Enums | lowercase strings | `"status": "uploading"` |
 
 ## Lists
@@ -68,11 +68,11 @@ Every error, from any layer, has this shape:
 
 | HTTP | When | Typical `code` |
 |---|---|---|
-| 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken` (with `fields`); `invalid_credentials` |
+| 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken`, `invalid_emoji`, `period_too_far` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_invited`, `not_taking_part`, `permission_denied` |
-| 404 | Not found or not in your crew | `not_found`, `invite_not_found`, `proof_not_found`, `upload_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_signed_in`, `pool_full`, `not_a_proposal`, `challenge_started`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_a_participant`, `not_taking_part`, `not_your_proposal`, `permission_denied` |
+| 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `target_not_found`, `upload_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 

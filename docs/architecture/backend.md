@@ -78,35 +78,17 @@ flowchart TB
 
 ### import-linter contracts
 
-```toml
-[tool.importlinter]
-root_packages = ["apps", "integrations", "config"]
+`make check` runs import-linter; the contracts live in `[tool.importlinter]` in
+`backend/pyproject.toml`, which is the source of truth. In short:
 
-[[tool.importlinter.contracts]]
-name = "Services and selectors do not depend on the API layer"
-type = "forbidden"
-source_modules = ["apps.*.services", "apps.*.selectors", "apps.*.models"]
-forbidden_modules = ["apps.*.api"]
-
-[[tool.importlinter.contracts]]
-name = "Only integrations talk to external SDKs"
-type = "forbidden"
-source_modules = ["apps"]
-forbidden_modules = ["boto3", "botocore", "pywebpush"]
-allow_indirect_imports = true  # apps reach them only through integrations/* adapters
-
-[[tool.importlinter.contracts]]
-name = "Core does not depend on domain apps"
-type = "forbidden"
-source_modules = ["apps.core"]
-forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.checkins", "apps.media", "apps.reactions", "apps.doom", "apps.notifications"]
-
-[[tool.importlinter.contracts]]
-name = "Reactions know their targets only through the registry (targets register themselves)"
-type = "forbidden"
-source_modules = ["apps.reactions"]
-forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media"]
-```
+- services, selectors and models never import the API layer or DRF;
+- only `integrations/*` import `boto3`, `botocore` and `pywebpush`, and integrations import no
+  app;
+- `apps.core` imports no domain app;
+- the apps build on each other in one direction: accounts, then crews, then challenges, then
+  check-ins; nothing lower imports something higher;
+- media knows files, not challenges or check-ins; reactions know their targets only through the
+  registry (no challenges, check-ins or media).
 
 ## Generic building blocks
 
