@@ -149,12 +149,11 @@ def test_feed_items_of_number_challenges_say_the_last_amount_and_the_days_target
             title="Pages",
             measure="quantity",
             unit="pages",
-            target_scope="per_check_in",
-            target_value="30",
+            day_min="30",
         )
         km = scheduled(
             ana, bogdan, date(2026, 11, 1), title="Km", measure="quantity", unit="km",
-            frequency="times_per_week", times=3,
+            window="week", need_value=3,
         )  # fmt: skip
     with at("2026-11-10 08:00Z"):
         services.check_in(by=bogdan, challenge_id=pages.pk, day=DAY, amount=Decimal(8))
@@ -214,9 +213,7 @@ def test_each_feed_item_carries_its_days_summary(object_storage, crew, browser):
 def test_a_day_with_nothing_due_is_never_the_crews_whole_day(crew):
     ana, bogdan, _, _, _ = crew
     with at("2026-10-10 12:00Z"):
-        weekly = scheduled(
-            ana, bogdan, date(2026, 12, 1), title="Gym", frequency="times_per_week", times=2
-        )
+        weekly = scheduled(ana, bogdan, date(2026, 12, 1), title="Gym", window="week", need_value=2)
     with at("2026-12-01 08:00Z"):
         check_in(bogdan, weekly, day=date(2026, 12, 1))
         summary = selectors.day_summaries(member=ana, on={date(2026, 12, 1)})
@@ -228,7 +225,7 @@ def test_today_says_each_persons_state_per_challenge(crew, browser):
     with at("2026-10-10 12:00Z"):
         pages = scheduled(
             ana, bogdan, date(2026, 11, 1), [ana.pk], title="Pages", measure="quantity",
-            unit="pages", target_scope="per_check_in", target_value="30",
+            unit="pages", day_min="30",
         )  # fmt: skip
     with at("2026-11-10 08:00Z"):
         check_in(bogdan, walk)

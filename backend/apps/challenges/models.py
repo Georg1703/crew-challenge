@@ -48,18 +48,14 @@ class Challenge(CrewScopedSoftDeleteModel):
         QUANTITY = "quantity", "A number with a unit"
         ABSTAIN = "abstain", "Held it (did not do something)"
 
-    class Frequency(models.TextChoices):
-        DAILY = "daily", "Every day"
-        WEEKDAYS = "weekdays", "Chosen days of the week"
-        TIMES_PER_WEEK = "times_per_week", "A number of times a week"
-        TIMES_PER_PERIOD = "times_per_period", "A number of times in the period"
-        ONCE = "once", "Once, by the end"
+    class Window(models.TextChoices):
+        DAY = "day", "Each day"
+        WEEK = "week", "Each week, Monday to Sunday"
+        PERIOD = "period", "The whole period"
 
-    class TargetScope(models.TextChoices):
-        NONE = "none", "No target"
-        PER_CHECK_IN = "per_check_in", "Each check-in"
-        PER_WEEK = "per_week", "Each week"
-        PER_PERIOD = "per_period", "The whole period"
+    class NeedKind(models.TextChoices):
+        COUNT = "count", "A number of check-ins"
+        AMOUNT = "amount", "A total amount"
 
     class ProofKind(models.TextChoices):
         NONE = "none", "No proof"
@@ -75,15 +71,30 @@ class Challenge(CrewScopedSoftDeleteModel):
     icon = models.CharField(max_length=20, default="star")
     measure = models.CharField(max_length=10, choices=Measure.choices, default=Measure.CHECK)
     unit = models.CharField(max_length=20, blank=True)
-    frequency = models.CharField(max_length=20, choices=Frequency.choices, default=Frequency.DAILY)
-    weekdays = models.PositiveSmallIntegerField(
-        default=0, help_text="Bit mask of chosen days: Monday = 1, Tuesday = 2, ... Sunday = 64."
+    window = models.CharField(
+        max_length=10,
+        choices=Window.choices,
+        default=Window.DAY,
+        help_text="The unit that is judged (apps/challenges/windows.py).",
     )
-    times = models.PositiveSmallIntegerField(null=True, blank=True)
-    target_scope = models.CharField(
-        max_length=20, choices=TargetScope.choices, default=TargetScope.NONE
+    on_days = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Weekdays that count, as a bit mask (Monday = 1 ... Sunday = 64); 0 = every day.",
     )
-    target_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    need_kind = models.CharField(max_length=10, choices=NeedKind.choices, default=NeedKind.COUNT)
+    need_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=1,
+        help_text="What each window needs: a number of check-ins, or a total.",
+    )
+    day_min = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="The least amount for a day's check-in to count (numbers only).",
+    )
     proof_kind = models.CharField(max_length=20, choices=ProofKind.choices, default=ProofKind.NONE)
     proof_required = models.BooleanField(default=False)
     state = models.CharField(max_length=12, choices=State.choices, default=State.PROPOSED)
@@ -125,6 +136,26 @@ class Challenge(CrewScopedSoftDeleteModel):
                 )
                 & ~models.Q(period_kind=""),
                 name="challenge_period_matches_state",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(need_value__gt=0), name="challenge_need_above_zero"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(need_kind="count") | models.Q(measure="quantity"),
+                name="challenge_a_total_needs_numbers",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(day_min__isnull=True)
+                | models.Q(measure="quantity", need_kind="count"),
+                name="challenge_a_day_minimum_needs_counted_numbers",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(window="day") | models.Q(need_kind="count", need_value=1),
+                name="challenge_a_day_needs_one_check_in",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(on_days=0) | models.Q(window="day"),
+                name="challenge_chosen_days_only_per_day",
             ),
         ]
 

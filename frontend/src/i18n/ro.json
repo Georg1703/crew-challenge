@@ -319,22 +319,23 @@
       "icon": "Iconița",
       "rules": "Regulile, pe scurt",
       "rulesHint": "Ce contează și ce nu. Opțional.",
-      "frequency": "Cât de des",
-      "weekdays": "Zilele",
+      "often": "Cât de des",
+      "onDays": "Zilele",
       "times": "De câte ori",
       "fewer": "Mai puțin",
       "more": "Mai mult",
+      "total": "Total ({{unit}})",
+      "dayMin": "Cel puțin la fiecare bifă ({{unit}})",
+      "dayMinHint": "Opțional. Ziua contează când numerele ajung la atât.",
       "measure": "La fiecare bifă",
       "unit": "Unitatea",
       "unitHint": "De exemplu km, pagini, minute.",
-      "target": "Ținta",
-      "targetValue": "Cât ({{unit}})",
       "proof": "Dovada",
       "proofRequired": "Dovada e obligatorie",
       "proofRequiredHint": "Fără ea bifa nu contează."
     },
     "options": {
-      "frequency": {
+      "often": {
         "daily": {
           "title": "În fiecare zi",
           "description": "O bifă pe zi, toată luna"
@@ -354,6 +355,14 @@
         "once": {
           "title": "O singură dată",
           "description": "Un obiectiv, până la final"
+        },
+        "total_per_week": {
+          "title": "Un total pe săptămână",
+          "description": "Numerele se adună, de luni până duminică"
+        },
+        "total_per_period": {
+          "title": "Un total pe lună",
+          "description": "Numerele se adună până la final"
         }
       },
       "measure": {
@@ -369,12 +378,6 @@
           "title": "M-am abținut",
           "description": "Pentru „fără zahăr”, „fără telefon”"
         }
-      },
-      "target": {
-        "none": "Fără țintă",
-        "per_check_in": "La fiecare bifă",
-        "per_week": "Pe săptămână",
-        "per_period": "Pe toată luna"
       },
       "proof": {
         "none": {
@@ -400,17 +403,14 @@
       "weekdays": "În zilele: {{days}}",
       "oncePerWeek": "O dată pe săptămână",
       "timesPerWeek": "De {{n}} ori pe săptămână",
-      "oncePerPeriod": "O dată în lună",
       "timesPerPeriod": "De {{n}} ori în lună",
       "once": "O dată, până la final",
+      "totalPerWeek": "{{value}} {{unit}} pe săptămână",
+      "totalPerPeriod": "{{value}} {{unit}} în toată luna",
+      "dayMin": "Cel puțin {{value}} {{unit}} la fiecare bifă",
       "check": "Doar bifă",
       "quantity": "Un număr ({{unit}})",
       "abstain": "Te abții",
-      "target": {
-        "per_check_in": "Cel puțin {{value}} {{unit}} la fiecare bifă",
-        "per_week": "{{value}} {{unit}} pe săptămână",
-        "per_period": "{{value}} {{unit}} în toată luna"
-      },
       "proof": {
         "none": "Fără dovadă",
         "photo": "Poză",
@@ -465,9 +465,9 @@
     },
     "errors": {
       "title": "Dă-i un nume provocării.",
-      "weekdays": "Alege cel puțin o zi.",
+      "onDays": "Alege cel puțin o zi.",
       "unit": "Scrie unitatea, de exemplu km.",
-      "targetValue": "Scrie un număr mai mare ca zero."
+      "number": "Scrie un număr mai mare ca zero."
     },
     "today": {
       "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",

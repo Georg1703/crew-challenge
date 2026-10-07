@@ -74,10 +74,10 @@ class ChallengeBriefOut(serializers.Serializer):
 class TodayChallengeOut(ChallengeBriefOut):
     """One of my challenges today: what to show on its card and in the ring."""
 
-    frequency = serializers.ChoiceField(choices=Challenge.Frequency.choices)
-    times = serializers.IntegerField(allow_null=True)
-    target_scope = serializers.ChoiceField(choices=Challenge.TargetScope.choices)
-    target_value = serializers.FloatField(allow_null=True)
+    window = serializers.ChoiceField(choices=Challenge.Window.choices)
+    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
+    need_value = serializers.FloatField()
+    day_min = serializers.FloatField(allow_null=True)
     proof_kind = serializers.ChoiceField(choices=Challenge.ProofKind.choices)
     proof_required = serializers.BooleanField()
     end_date = serializers.DateField()
@@ -216,7 +216,7 @@ class DaySummaryOut(serializers.Serializer):
     check_ins = serializers.IntegerField()
     proofs = serializers.IntegerField(help_text="Processing and ready proofs.")
     crew_done = serializers.BooleanField(
-        help_text="Everyone finished everything due that day (daily and weekday challenges)."
+        help_text="Everyone finished everything due that day (challenges judged day by day)."
     )
 
 
@@ -248,7 +248,7 @@ class FeedItemOut(serializers.Serializer):
         allow_null=True, help_text="The last amount added (numbers only)."
     )
     target = serializers.FloatField(
-        allow_null=True, help_text="The day's target, when the challenge sets one per day."
+        allow_null=True, help_text="The least amount a check-in needs (day_min), if there is one."
     )
     milestone = MilestoneOut(
         allow_null=True, help_text="Set when this check-in made the streak reach 3, 7, 14 or 30."
@@ -285,7 +285,7 @@ class MemberProgressOut(serializers.Serializer):
     streak = serializers.IntegerField(help_text="Their best current streak.")
     longest_streak = serializers.IntegerField()
     month_done = serializers.IntegerField(
-        help_text="Due days done this month so far (daily and weekday challenges)."
+        help_text="Due days done this month so far (challenges judged day by day)."
     )
     month_due = serializers.IntegerField(
         help_text="Due days this month so far; today counts once done."

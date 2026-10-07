@@ -1043,29 +1043,39 @@ components:
           type: string
           default: ''
           maxLength: 20
-        frequency:
-          $ref: '#/components/schemas/FrequencyEnum'
-        weekdays:
+        window:
+          allOf:
+          - $ref: '#/components/schemas/WindowEnum'
+          description: |-
+            The unit that is judged.
+
+            * `day` - Each day
+            * `week` - Each week, Monday to Sunday
+            * `period` - The whole period
+        on_days:
           type: array
           items:
             type: integer
             maximum: 6
             minimum: 0
-          description: 'For frequency=weekdays: 0 = Monday ... 6 = Sunday.'
+          description: 'Day windows only: the weekdays that count, 0 = Monday ...
+            6 = Sunday; empty = every day.'
           maxItems: 7
-        times:
-          type: integer
-          minimum: 1
-          nullable: true
-        target_scope:
-          allOf:
-          - $ref: '#/components/schemas/TargetScopeEnum'
-          default: none
-        target_value:
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        need_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: 'What each window needs: check-ins (1 for a day), or a total
+            (numbers only).'
+        day_min:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           nullable: true
+          description: 'Numbers counted in check-ins: the least amount for a check-in
+            to count.'
         proof_kind:
           allOf:
           - $ref: '#/components/schemas/ProofKindEnum'
@@ -1082,9 +1092,11 @@ components:
           description: 'Who takes part (the creator is always in). Create: default
             the whole crew. Edit: leave out to keep the list.'
       required:
-      - frequency
       - measure
+      - need_kind
+      - need_value
       - title
+      - window
     ChallengeOut:
       type: object
       properties:
@@ -1101,18 +1113,22 @@ components:
           $ref: '#/components/schemas/MeasureEnum'
         unit:
           type: string
-        frequency:
-          $ref: '#/components/schemas/FrequencyEnum'
-        weekdays:
+        window:
+          $ref: '#/components/schemas/WindowEnum'
+        on_days:
           type: array
           items:
             type: integer
-        times:
-          type: integer
-          nullable: true
-        target_scope:
-          $ref: '#/components/schemas/TargetScopeEnum'
-        target_value:
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        need_value:
+          type: number
+          format: double
+          maximum: 100000000
+          minimum: -100000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        day_min:
           type: number
           format: double
           maximum: 100000000
@@ -1191,13 +1207,16 @@ components:
       - chosen_by
       - created_at
       - created_by
+      - day_min
       - end_date
-      - frequency
       - icon
       - id
       - measure
       - mine
       - my_vote
+      - need_kind
+      - need_value
+      - on_days
       - participants
       - period_kind
       - period_start
@@ -1209,14 +1228,11 @@ components:
       - start_date
       - state
       - taking_part
-      - target_scope
-      - target_value
-      - times
       - title
       - unit
       - vote_count
       - voters
-      - weekdays
+      - window
     ChallengeStateEnum:
       enum:
       - proposed
@@ -1399,8 +1415,8 @@ components:
           description: Processing and ready proofs.
         crew_done:
           type: boolean
-          description: Everyone finished everything due that day (daily and weekday
-            challenges).
+          description: Everyone finished everything due that day (challenges judged
+            day by day).
       required:
       - check_ins
       - crew_done
@@ -1461,7 +1477,7 @@ components:
           type: number
           format: double
           nullable: true
-          description: The day's target, when the challenge sets one per day.
+          description: The least amount a check-in needs (day_min), if there is one.
         milestone:
           allOf:
           - $ref: '#/components/schemas/MilestoneOut'
@@ -1495,20 +1511,6 @@ components:
       - target
       - total
       - week
-    FrequencyEnum:
-      enum:
-      - daily
-      - weekdays
-      - times_per_week
-      - times_per_period
-      - once
-      type: string
-      description: |-
-        * `daily` - Every day
-        * `weekdays` - Chosen days of the week
-        * `times_per_week` - A number of times a week
-        * `times_per_period` - A number of times in the period
-        * `once` - Once, by the end
     IconEnum:
       enum:
       - dumbbell
@@ -1747,7 +1749,7 @@ components:
           type: integer
         month_done:
           type: integer
-          description: Due days done this month so far (daily and weekday challenges).
+          description: Due days done this month so far (challenges judged day by day).
         month_due:
           type: integer
           description: Due days this month so far; today counts once done.
@@ -1812,6 +1814,14 @@ components:
       - streak
       type: string
       description: '* `streak` - streak'
+    NeedKindEnum:
+      enum:
+      - count
+      - amount
+      type: string
+      description: |-
+        * `count` - A number of check-ins
+        * `amount` - A total amount
     NullEnum:
       enum:
       - null
@@ -2231,18 +2241,6 @@ components:
         * `valid` - valid
         * `expired` - expired
         * `used` - used
-    TargetScopeEnum:
-      enum:
-      - none
-      - per_check_in
-      - per_week
-      - per_period
-      type: string
-      description: |-
-        * `none` - No target
-        * `per_check_in` - Each check-in
-        * `per_week` - Each week
-        * `per_period` - The whole period
     TodayChallengeOut:
       type: object
       description: 'One of my challenges today: what to show on its card and in the
@@ -2259,14 +2257,14 @@ components:
           $ref: '#/components/schemas/MeasureEnum'
         unit:
           type: string
-        frequency:
-          $ref: '#/components/schemas/FrequencyEnum'
-        times:
-          type: integer
-          nullable: true
-        target_scope:
-          $ref: '#/components/schemas/TargetScopeEnum'
-        target_value:
+        window:
+          $ref: '#/components/schemas/WindowEnum'
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        need_value:
+          type: number
+          format: double
+        day_min:
           type: number
           format: double
           nullable: true
@@ -2325,11 +2323,13 @@ components:
             format: date
           description: Days of this week with proof.
       required:
+      - day_min
       - end_date
-      - frequency
       - icon
       - id
       - measure
+      - need_kind
+      - need_value
       - progress
       - proof_days
       - proof_kind
@@ -2338,13 +2338,11 @@ components:
       - settled
       - state
       - streak
-      - target_scope
-      - target_value
-      - times
       - title
       - total
       - unit
       - week
+      - window
     TodayOut:
       type: object
       properties:
@@ -2391,6 +2389,16 @@ components:
       - id
       - preferred_language
       - username
+    WindowEnum:
+      enum:
+      - day
+      - week
+      - period
+      type: string
+      description: |-
+        * `day` - Each day
+        * `week` - Each week, Monday to Sunday
+        * `period` - The whole period
   securitySchemes:
     cookieAuth:
       type: apiKey

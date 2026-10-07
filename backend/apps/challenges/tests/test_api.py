@@ -13,10 +13,9 @@ SHAPE = {
     "icon": "running",
     "measure": "quantity",
     "unit": "km",
-    "frequency": "times_per_week",
-    "times": 3,
-    "target_scope": "per_week",
-    "target_value": "20",
+    "window": "week",
+    "need_kind": "amount",
+    "need_value": "20",
     "proof_kind": "photo_or_video",
     "proof_required": False,
 }
@@ -62,8 +61,13 @@ def test_propose_vote_and_read_the_pool(browser, people):
         None,
         None,
     )
-    assert body["target_value"] == 20.0
-    assert body["times"] == 3
+    assert (body["window"], body["on_days"], body["need_kind"], body["need_value"]) == (
+        "week",
+        [],
+        "amount",
+        20.0,
+    )
+    assert body["day_min"] is None
     assert (body["vote_count"], body["my_vote"], body["mine"]) == (0, False, True)
 
     voted = client.put(f"/api/v1/challenges/{body['id']}/vote")

@@ -319,22 +319,23 @@
       "icon": "Icon",
       "rules": "The rules, in short",
       "rulesHint": "What counts and what doesn't. Optional.",
-      "frequency": "How often",
-      "weekdays": "Days",
+      "often": "How often",
+      "onDays": "Days",
       "times": "How many times",
       "fewer": "Fewer",
       "more": "More",
+      "total": "Total ({{unit}})",
+      "dayMin": "Each check-in at least ({{unit}})",
+      "dayMinHint": "Optional. The day counts once its numbers reach it.",
       "measure": "Each check-in",
       "unit": "Unit",
       "unitHint": "For example km, pages, minutes.",
-      "target": "Target",
-      "targetValue": "How much ({{unit}})",
       "proof": "Proof",
       "proofRequired": "Proof is required",
       "proofRequiredHint": "Without it the check-in doesn't count."
     },
     "options": {
-      "frequency": {
+      "often": {
         "daily": {
           "title": "Every day",
           "description": "One check-in a day, all month"
@@ -354,6 +355,14 @@
         "once": {
           "title": "Once",
           "description": "One goal, by the end"
+        },
+        "total_per_week": {
+          "title": "A total each week",
+          "description": "The numbers add up, Monday to Sunday"
+        },
+        "total_per_period": {
+          "title": "A total for the month",
+          "description": "The numbers add up by the end"
         }
       },
       "measure": {
@@ -369,12 +378,6 @@
           "title": "I held back",
           "description": "For “no sugar”, “no phone”"
         }
-      },
-      "target": {
-        "none": "No target",
-        "per_check_in": "Each check-in",
-        "per_week": "Per week",
-        "per_period": "For the whole month"
       },
       "proof": {
         "none": {
@@ -400,17 +403,14 @@
       "weekdays": "On {{days}}",
       "oncePerWeek": "Once a week",
       "timesPerWeek": "{{n}} times a week",
-      "oncePerPeriod": "Once in the month",
       "timesPerPeriod": "{{n}} times in the month",
       "once": "Once, by the end",
+      "totalPerWeek": "{{value}} {{unit}} a week",
+      "totalPerPeriod": "{{value}} {{unit}} in the month",
+      "dayMin": "At least {{value}} {{unit}} each check-in",
       "check": "Just a check-in",
       "quantity": "A number ({{unit}})",
       "abstain": "Holding back",
-      "target": {
-        "per_check_in": "At least {{value}} {{unit}} each check-in",
-        "per_week": "{{value}} {{unit}} a week",
-        "per_period": "{{value}} {{unit}} in the month"
-      },
       "proof": {
         "none": "No proof",
         "photo": "Photo",
@@ -465,9 +465,9 @@
     },
     "errors": {
       "title": "Give the challenge a name.",
-      "weekdays": "Choose at least one day.",
+      "onDays": "Choose at least one day.",
       "unit": "Write the unit, for example km.",
-      "targetValue": "Write a number above zero."
+      "number": "Write a number above zero."
     },
     "today": {
       "chooseTitle": "No challenge for {{month}} yet",

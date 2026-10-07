@@ -6,6 +6,7 @@ import time_machine
 
 from apps.challenges import selectors, services
 from apps.challenges.models import Challenge, Participant, Vote
+from apps.challenges.windows import windows
 from apps.core.errors import PermissionDenied, ValidationFailed
 from apps.crews import services as crews
 from tests.factories import AdminFactory, MemberFactory
@@ -17,17 +18,14 @@ PUSHUPS = {
     "icon": "dumbbell",
     "measure": "quantity",
     "unit": "push-ups",
-    "frequency": "daily",
-    "target_scope": "per_check_in",
-    "target_value": 50,
+    "day_min": 50,
     "proof_kind": "video",
     "proof_required": True,
 }
 NO_SUGAR = {
     "title": "No sugar on weekdays",
     "measure": "abstain",
-    "frequency": "weekdays",
-    "weekdays": [0, 1, 2, 3, 4],
+    "on_days": [0, 1, 2, 3, 4],
 }
 
 OCT = time_machine.travel("2026-10-10 12:00Z", tick=False)
@@ -54,10 +52,20 @@ def test_shapes_are_normalized():
     assert shape.title == "50 push-ups"
     assert shape.unit == "push-ups"
     assert shape.rules == "ok"
-    assert shape.target_value == Decimal("50")
+    assert (shape.window, shape.need_kind, shape.need_value, shape.day_min) == (
+        "day",
+        "count",
+        1,
+        Decimal("50"),
+    )
     weekdays = services.clean_shape(NO_SUGAR)
-    assert weekdays.weekdays == 0b11111
+    assert weekdays.on_days == 0b11111
     assert weekdays.unit == ""
+    km = services.clean_shape(
+        {"title": "Run", "measure": "quantity", "unit": "km", "window": "week"}
+        | {"need_kind": "amount", "need_value": "50.5"}
+    )
+    assert (km.window, km.need_kind, km.need_value) == ("week", "amount", Decimal("50.5"))
     no_proof = services.clean_shape({"title": "Read", "proof_kind": "none", "proof_required": True})
     assert no_proof.proof_required is False
 
@@ -68,17 +76,26 @@ def test_shapes_are_normalized():
         ({"title": "   "}, "title"),
         ({"icon": "rocket"}, "icon"),
         ({"unit": ""}, "unit"),
-        ({"measure": "check"}, "target_scope"),
-        ({"target_value": 0}, "target_value"),
-        ({"target_value": "abc"}, "target_value"),
-        ({"frequency": "weekdays", "weekdays": []}, "weekdays"),
-        ({"frequency": "weekdays", "weekdays": [7]}, "weekdays"),
-        ({"frequency": "times_per_week", "times": 8}, "times"),
-        ({"frequency": "times_per_period", "times": None}, "times"),
+        ({"measure": "check"}, "day_min"),  # a minimum needs numbers
+        ({"day_min": 0}, "day_min"),
+        ({"day_min": "abc"}, "day_min"),
+        ({"on_days": [7]}, "on_days"),
+        ({"window": "week", "on_days": [0]}, "on_days"),  # chosen days only for day windows
+        ({"need_value": 2}, "need_value"),  # a day asks for one check-in
+        ({"window": "week", "need_value": 8}, "need_value"),
+        ({"window": "week", "need_value": "2.5"}, "need_value"),
+        ({"window": "period", "need_value": 32}, "need_value"),
+        ({"window": "week", "need_kind": "amount", "need_value": 0, "day_min": None}, "need_value"),
+        ({"need_kind": "amount", "need_value": 20, "day_min": None}, "need_kind"),  # per day
+        (
+            {"measure": "check", "window": "week", "need_kind": "amount", "day_min": None},
+            "need_kind",
+        ),
+        ({"window": "week", "need_kind": "amount", "need_value": 20}, "day_min"),  # totals: no min
+        ({"need_kind": "weight"}, "need_kind"),
         ({"proof_kind": "audio"}, "proof_kind"),
         ({"measure": "dance"}, "measure"),
-        ({"frequency": "hourly"}, "frequency"),
-        ({"target_scope": "per_year"}, "target_scope"),
+        ({"window": "hourly"}, "window"),
         ({"rules": "x" * 501}, "rules"),
     ],
 )
@@ -101,7 +118,7 @@ def test_any_member_proposes_into_the_pool(crew):
     assert proposal.created_by == bogdan
     assert proposal.state == "proposed"
     assert (proposal.period_kind, proposal.period_start, proposal.start_date) == ("", None, None)
-    assert (proposal.measure, proposal.unit, proposal.target_value) == (
+    assert (proposal.measure, proposal.unit, proposal.day_min) == (
         "quantity",
         "push-ups",
         Decimal("50"),
@@ -163,10 +180,10 @@ def test_editing_resets_the_votes_and_only_the_creator_may(crew):
     with pytest.raises(services.NotYourProposal):
         services.edit_proposal(by=admin, challenge_id=proposal.pk, shape=PUSHUPS)
     edited = services.edit_proposal(
-        by=bogdan, challenge_id=proposal.pk, shape={**PUSHUPS, "target_value": 60}
+        by=bogdan, challenge_id=proposal.pk, shape={**PUSHUPS, "day_min": 60}
     )
     assert edited.revision == 2
-    assert edited.target_value == Decimal("60")
+    assert edited.day_min == Decimal("60")
     assert not Vote.objects.filter(challenge=proposal).exists()
     assert Vote.objects.filter(challenge=other).count() == 1  # other proposals keep theirs
 
@@ -418,18 +435,20 @@ def test_twelve_months_ahead_is_the_limit(crew):
     )
 
 
-def test_a_late_start_with_too_few_days_for_the_times_is_refused(crew):
+def test_a_period_shorter_than_the_count_is_refused_and_a_late_start_asks_for_less(crew):
     admin, bogdan, _ = crew
-    proposal = services.propose_challenge(
-        by=bogdan, shape={"title": "Swim", "frequency": "times_per_period", "times": 10}
+    swim = services.propose_challenge(
+        by=bogdan, shape={"title": "Swim", "window": "period", "need_value": 30}
     )
-    with (
-        time_machine.travel("2026-11-25 12:00Z", tick=False),
-        pytest.raises(services.TooFewDays),
-    ):
-        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
-    with time_machine.travel("2026-11-19 12:00Z", tick=False):  # 20 Nov - 30 Nov: 11 days
-        services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    with pytest.raises(services.TooFewDays):  # February 2027 has 28 days
+        services.schedule_challenge(
+            by=admin, challenge_id=swim.pk, period_kind="month", period_start=date(2027, 2, 1)
+        )
+    with time_machine.travel("2026-11-25 12:00Z", tick=False):  # 26-30 Nov: 5 of 30 days
+        chosen = services.schedule_challenge(challenge_id=swim.pk, **november(admin))
+    assert chosen.start_date is not None
+    assert chosen.end_date is not None
+    assert windows(chosen, chosen.start_date, chosen.end_date)[0].need == 5  # 30 x 5/30
 
 
 # --- taking part ---------------------------------------------------------------------------

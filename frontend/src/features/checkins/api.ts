@@ -121,8 +121,7 @@ export function useDaySheet(id: string, day: string | null) {
 /** What a check-in will most likely look like, so the card changes before the server answers. */
 export function predict(card: TodayChallenge, amount: number | null): TodayChallenge {
   const total = card.measure === "quantity" ? (card.total ?? 0) + (amount ?? 0) : null;
-  const target = card.target_scope === "per_check_in" ? card.target_value : null;
-  const done = total === null || (target ? total >= target : total > 0);
+  const done = total === null || (card.day_min ? total >= card.day_min : total > 0);
   const state = done ? "done" : "partial";
   return {
     ...card,

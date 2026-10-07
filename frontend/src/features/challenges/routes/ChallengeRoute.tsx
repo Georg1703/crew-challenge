@@ -29,7 +29,7 @@ import {
   type Challenge,
 } from "../api";
 import styles from "../challenges.module.css";
-import { describeFrequency, describeMeasure, describeProof, describeTarget } from "../describe";
+import { describeDayMin, describeMeasure, describeProof, describeRule } from "../describe";
 import { ChallengeIcon } from "../components/ChallengeIcon";
 import { PhasePill } from "../components/PhasePill";
 import { ParticipantsSheet } from "../components/ParticipantsSheet";
@@ -80,10 +80,10 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   const isAdmin = member?.role === "admin";
   const proposal = challenge.state === "proposed";
   const notStarted = challenge.phase === "upcoming";
-  const target = describeTarget(t, challenge, i18n.language);
+  const target = describeDayMin(t, challenge, i18n.language);
 
   const facts = [
-    describeFrequency(t, challenge),
+    describeRule(t, challenge, i18n.language),
     describeMeasure(t, challenge),
     describeProof(t, challenge),
   ];
@@ -263,7 +263,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
           endDate={challenge.end_date}
           timeZone={timeZone}
           meId={member?.id}
-          fixedDays={challenge.frequency === "daily" || challenge.frequency === "weekdays"}
+          fixedDays={challenge.window === "day"}
           leftOn={Object.fromEntries(
             challenge.participants.flatMap((p) => (p.left_on ? [[p.member.id, p.left_on]] : [])),
           )}

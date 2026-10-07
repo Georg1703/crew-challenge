@@ -80,7 +80,7 @@ export function CheckInCard({
       },
     );
 
-  const target = card.target_scope === "per_check_in" ? card.target_value : null;
+  const target = card.day_min;
   const head = (
     <>
       <ChallengeIcon icon={card.icon} tone={card.state === "done" ? "neutral" : "accent"} />
@@ -170,7 +170,7 @@ export function CheckInCard({
       {card.progress && (
         <p className={styles.meta}>
           {t(
-            `checkins.progress.${card.progress.kind}.${card.frequency === "times_per_week" || card.target_scope === "per_week" ? "week" : "period"}`,
+            `checkins.progress.${card.progress.kind}.${card.window === "week" ? "week" : "period"}`,
             {
               done: formatNumber(card.progress.done, i18n.language),
               goal: formatNumber(card.progress.goal, i18n.language),

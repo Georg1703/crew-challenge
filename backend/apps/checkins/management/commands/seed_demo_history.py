@@ -26,7 +26,7 @@ from django.db import transaction
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant, PeriodKind
-from apps.challenges.periods import week_of
+from apps.challenges.windows import windows
 from apps.checkins import days
 from apps.checkins.models import CheckIn, CheckInEntry, Proof
 from apps.core import clock
@@ -35,7 +35,7 @@ from apps.media.models import Upload, crew_folder
 from integrations.storage import ObjectStorage, get_object_storage
 
 C = Challenge
-MON, WED, FRI = 1, 4, 16  # Challenge.weekdays bits
+MON, WED, FRI = 1, 4, 16  # Challenge.on_days bits
 
 
 @dataclass
@@ -45,16 +45,16 @@ class Spec:
     title: str
     icon: str
     measure: str
-    frequency: str
+    window: str
     proof_kind: str
     began: int  # days before today
     who: list[int]
     streaks: list[int]  # due days in a row up to yesterday, one per member in `who`
     today: dict[int, int] = field(default_factory=dict)  # member -> proofs, for those done today
     unit: str = ""
-    weekdays: int = 0
-    times: int | None = None
-    target: int | None = None
+    on_days: int = 0
+    need: int = 1  # check-ins each window asks for
+    day_min: int | None = None
 
 
 SPECS = [
@@ -62,20 +62,20 @@ SPECS = [
         "Citit (demo)",
         "book",
         C.Measure.QUANTITY,
-        C.Frequency.DAILY,
+        C.Window.DAY,
         C.ProofKind.PHOTO,
         began=34,
         who=[0, 1, 2, 3, 4, 5],
         streaks=[30, 16, 9, 3, 22, 5],
         today={1: 5, 2: 2, 4: 1},
         unit="pagini",
-        target=20,
+        day_min=20,
     ),
     Spec(
         "F\u0103r\u0103 zah\u0103r (demo)",
         "sugar",
         C.Measure.ABSTAIN,
-        C.Frequency.DAILY,
+        C.Window.DAY,
         C.ProofKind.NONE,
         began=16,
         who=[0, 1, 2, 3],
@@ -86,24 +86,24 @@ SPECS = [
         "Alergare (demo)",
         "running",
         C.Measure.CHECK,
-        C.Frequency.WEEKDAYS,
+        C.Window.DAY,
         C.ProofKind.VIDEO,
         began=20,
         who=[0, 2, 4],
         streaks=[4, 2, 6],
-        weekdays=MON | WED | FRI,
+        on_days=MON | WED | FRI,
     ),
     Spec(
         "Sal\u0103 (demo)",
         "dumbbell",
         C.Measure.CHECK,
-        C.Frequency.TIMES_PER_WEEK,
+        C.Window.WEEK,
         C.ProofKind.PHOTO_OR_VIDEO,
         began=20,
         who=[0, 3, 5],
         streaks=[],
         today={3: 2},
-        times=3,
+        need=3,
     ),
 ]
 DAYS_LEFT = 24  # every demo challenge ends this many days after today
@@ -207,11 +207,10 @@ class Seeder:
             icon=spec.icon,
             measure=spec.measure,
             unit=spec.unit,
-            frequency=spec.frequency,
-            weekdays=spec.weekdays,
-            times=spec.times,
-            target_scope=C.TargetScope.PER_CHECK_IN if spec.target else C.TargetScope.NONE,
-            target_value=spec.target,
+            window=spec.window,
+            on_days=spec.on_days,
+            need_value=spec.need,
+            day_min=spec.day_min,
             proof_kind=spec.proof_kind,
             state=C.State.CHOSEN,
             period_kind=PeriodKind.CUSTOM,
@@ -229,18 +228,19 @@ class Seeder:
                 self.check_in(challenge, member, day, proofs=self.some_proofs(day))
             if i in spec.today:
                 self.check_in(challenge, member, self.today, proofs=spec.today[i])
-            elif i == 3 and spec.target:  # someone halfway through today
+            elif i == 3 and spec.day_min:  # someone halfway through today
                 self.check_in(challenge, member, self.today, proofs=0, partial=True)
 
     def history(self, challenge: Challenge, spec: Spec, n: int, start: date) -> list[date]:
         """The days before today this member was done: a streak up to yesterday, gaps before."""
+        yesterday = self.today - timedelta(days=1)
+        if not days.is_fixed(challenge):  # a few times a week: each window met, on any of its days
+            picked: list[date] = []
+            for window in windows(challenge, start, yesterday):
+                span = days.Span(window.first, window.last).days(window.first, window.last)
+                picked += self.random.sample(span, int(window.need))
+            return sorted(picked)
         past = [start + timedelta(days=d) for d in range((self.today - start).days)]
-        if not days.is_fixed(challenge):  # a few times a week: any days, up to the count
-            weeks: dict[date, list[date]] = {}
-            for day in past:
-                weeks.setdefault(week_of(day)[0], []).append(day)
-            picked = [self.random.sample(w, min(len(w), spec.times or 1)) for w in weeks.values()]
-            return sorted(day for week in picked for day in week)
         due = [day for day in past if days.is_due(challenge, day)]
         streak = spec.streaks[n] if n < len(spec.streaks) else 3
         if streak >= len(due):
@@ -285,7 +285,7 @@ class Seeder:
         when = self.at(day, self.random.randint(7, 21), self.random.randint(0, 59))
         amounts: list[Decimal | None] = [None]
         if challenge.measure == C.Measure.QUANTITY:
-            target = int(challenge.target_value or 10)
+            target = int(challenge.day_min or 10)
             amounts = (
                 [Decimal(target // 2)]
                 if partial

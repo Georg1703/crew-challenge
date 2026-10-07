@@ -3,11 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
+import { i18n } from "@/i18n";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsRow } from ".";
 import type { Challenge, Pool } from "./api";
+import { describeRule } from "./describe";
 import { monthOptions } from "./months";
 
 const person = (member: typeof ana) => ({
@@ -23,11 +25,11 @@ const pushUps: Challenge = {
   icon: "dumbbell",
   measure: "quantity",
   unit: "push-ups",
-  frequency: "daily",
-  weekdays: [],
-  times: null,
-  target_scope: "per_check_in",
-  target_value: 50,
+  window: "day",
+  on_days: [],
+  need_kind: "count",
+  need_value: 1,
+  day_min: 50,
   proof_kind: "video",
   proof_required: true,
   state: "proposed",
@@ -271,10 +273,6 @@ describe("proposing", () => {
     expect(screen.getByText("1 of 2 take part. Only they see the challenge.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    await screen.findByRole("heading", { name: "How often?" });
-    await userEvent.click(screen.getByRole("radio", { name: /A few times a week/ }));
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-
     await screen.findByRole("heading", { name: "What do you record?" });
     await userEvent.click(screen.getByRole("radio", { name: /A number/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -282,12 +280,21 @@ describe("proposing", () => {
     await userEvent.type(screen.getByLabelText("Unit"), "pages");
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
+    await screen.findByRole("heading", { name: "How often?" });
+    expect(screen.getByLabelText("Each check-in at least (pages)")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: /A total each week/ }));
+    expect(screen.queryByLabelText("Each check-in at least (pages)")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Write a number above zero.")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Total (pages)"), "50");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+
     await screen.findByRole("heading", { name: "What proof?" });
     await userEvent.click(screen.getByRole("radio", { name: /Quick, works for almost anything/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await screen.findByRole("heading", { name: "Check it" });
-    expect(screen.getByText("3 times a week")).toBeInTheDocument();
+    expect(screen.getByText("50 pages a week")).toBeInTheDocument();
     expect(screen.getByText("Bogdan")).toBeInTheDocument(); // who takes part
     await userEvent.click(screen.getByRole("button", { name: "Publish the proposal" }));
 
@@ -299,11 +306,11 @@ describe("proposing", () => {
         icon: "star",
         measure: "quantity",
         unit: "pages",
-        frequency: "times_per_week",
-        weekdays: [],
-        times: 3,
-        target_scope: "none",
-        target_value: null,
+        window: "week",
+        on_days: [],
+        need_kind: "amount",
+        need_value: "50",
+        day_min: null,
         proof_kind: "photo",
         proof_required: false,
         participant_ids: [bogdan.id],
@@ -424,10 +431,10 @@ describe("one challenge", () => {
       icon: "dumbbell",
       measure: "check",
       unit: "",
-      frequency: "daily",
-      times: null,
-      target_scope: "none",
-      target_value: null,
+      window: "day",
+      need_kind: "count",
+      need_value: 1,
+      day_min: null,
       proof_kind: "none",
       proof_required: false,
       end_date: "2026-11-30",
@@ -558,5 +565,26 @@ describe("proposals row", () => {
     row(ana, "2026-10-26T09:00:00Z", { chosen: [scheduled()] });
     expect(await screen.findByRole("link", { name: /1 proposal waits/ })).toBeInTheDocument();
     expect(screen.queryByText(/No challenge for November/)).toBeNull();
+  });
+});
+
+describe("a challenge's rule as a sentence", () => {
+  it("names counts, chosen days and totals", () => {
+    const say = (rule: Partial<Parameters<typeof describeRule>[1]>) =>
+      describeRule(
+        i18n.t,
+        { window: "day", on_days: [], need_kind: "count", need_value: 1, unit: "km", ...rule },
+        "en",
+      );
+    expect(say({})).toBe("Every day");
+    expect(say({ on_days: [0, 2, 4] })).toBe("On Mon, Wed, Fri");
+    expect(say({ window: "week", need_value: 1 })).toBe("Once a week");
+    expect(say({ window: "week", need_value: 3 })).toBe("3 times a week");
+    expect(say({ window: "period", need_value: 1 })).toBe("Once, by the end");
+    expect(say({ window: "period", need_value: "8" })).toBe("8 times in the month");
+    expect(say({ window: "week", need_kind: "amount", need_value: "12.5" })).toBe("12.5 km a week");
+    expect(say({ window: "period", need_kind: "amount", need_value: 1200 })).toBe(
+      "1,200 km in the month",
+    );
   });
 });

@@ -46,7 +46,7 @@ class Command(BaseCommand):
             created_by=admin,
             title=TITLE,
             icon="walk",
-            frequency=Challenge.Frequency.DAILY,
+            window=Challenge.Window.DAY,
             proof_kind=PROOF_KIND,
             state=Challenge.State.CHOSEN,
             period_kind="month",

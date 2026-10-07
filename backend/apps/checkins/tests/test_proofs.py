@@ -27,7 +27,7 @@ def at(moment: str):
 def scheduled(admin, by, month: date, participant_ids=None, **shape):
     challenge = challenges.propose_challenge(
         by=by,
-        shape={"title": "Walk", "frequency": "daily", **shape},
+        shape={"title": "Walk", **shape},
         participant_ids=participant_ids,
     )
     challenges.schedule_challenge(

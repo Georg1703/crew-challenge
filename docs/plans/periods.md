@@ -1,6 +1,7 @@
 # Plan: periods, windows and requirements
 
-Status: stage 1 implemented (branch `refactor/window-engine`); stages 0 and 2-5 to do. One branch and one pull request per stage, starting after `feat/reactions`
+Status: stages 1 and 2 implemented (branches `refactor/window-engine`,
+`refactor/challenge-rule-fields`); stages 0 and 3-5 to do. One branch and one pull request per stage, starting after `feat/reactions`
 is merged. Explainer with diagrams and worked examples (private, the owner's):
 https://claude.ai/artifact/1K7fg8iWqb2z6Zb1BwrQZx
 
@@ -160,7 +161,9 @@ Calendar helpers live in one place, `apps/challenges/periods.py`: `month_of`, `a
 4. **Proposals say how long they run**, and admins can schedule weeks and day ranges, not only
    months.
 5. **Short windows are explained** wherever the need shows.
-6. **Progress shows what was done, not capped:** a "once" challenge checked in on two days shows
+6. **The wizard asks "What do you record?" before "How often?"**, and for numbers "How often?"
+   offers weekly and whole-period totals; the per-check-in minimum is an optional field there.
+7. **Progress shows what was done, not capped:** a "once" challenge checked in on two days shows
    "2 of 1" (today it caps at 1; weekly counts were never capped).
 
 The production challenge (daily, monthly) is untouched by 1-3; stage 1's golden tests prove it.
@@ -175,8 +178,8 @@ what it removes; the checklist at the end must be empty when stage 5 merges.
 |---|---|---|---|
 | 0. Clean-up | `chore/challenges-dead-code` | Dead code and stale docs found while planning are gone | S |
 | 1. One engine | `refactor/window-engine` | `days.py` runs on windows built from today's fields; short weeks scale; API unchanged | M |
-| 2. Data model | `refactor/challenge-rule-fields` | All new fields (rule and period length), one data migration, old fields gone; the app looks the same | L |
-| 3. Weeks and day ranges | `feat/period-length` | Proposals say how long; admins schedule months, weeks or day ranges | M |
+| 2. Rule fields | `refactor/challenge-rule-fields` | The rule fields and their data migration; old fields leave the model (the database drops them in stage 3); the wizard asks for totals in "How often?" | L |
+| 3. Weeks and day ranges | `feat/period-length` | Proposals say how long; admins schedule months, weeks or day ranges; old columns dropped | M |
 | 4. Month windows | `feat/month-window` | "N times a month" and "a total per month" in periods of whole months | S |
 | 5. Showing windows | `feat/window-hints` | Short-window tag on Today, the list of windows on the challenge page, notes in the schedule and leave sheets | M |
 
@@ -227,33 +230,43 @@ Found while planning; each is unused today or describes something that doesn't e
 - Done when: the golden tests pass; `Frequency` appears only in `rule_of`, the model and the
   serializers.
 
-### Stage 2 - Data model (backend and frontend, nothing looks different)
+### Stage 2 - Rule fields (backend and frontend) - done
 
-All model changes happen here, so the table is migrated once.
+Two things found while building it changed the plan:
 
-- Migrations in `apps/challenges`: add the rule fields and `period_length`; fill them (the mapping
-  above, reversible); drop `frequency`, `times`, `target_scope`, `target_value`; rename `weekdays`
-  to `on_days`; `PeriodKind` becomes month / week / day (CUSTOM goes); new constraints.
-- Engine: `rule_of` goes; `windows.py` reads the fields.
-- Services: shape validation on the new fields, including "the window fits the period";
-  `schedule_challenge(by, challenge_id, period_start)` takes the kind from the challenge (still
-  months only until stage 3); `unschedule_challenge` keeps the kind and length (today it clears
-  `period_kind`). One pair of helpers converts the weekday mask to and from a list (today the
-  conversion is written in services, the challenge view, `days.py` and the seed).
-- API: `ChallengeIn` / `ChallengeOut` carry the new fields and `period_kind`, `period_length`;
-  `ScheduleIn` keeps only `period_start`; serializer help texts that say "daily and weekday"
-  (`FeedItemOut.target`, `DaySummaryOut.crew_done`, `month_done` / `month_due`) are reworded.
-  `make schema`.
-- Frontend: the wizard keeps its steps and choices and writes the new fields (always month, 1
-  until stage 3); `describe.ts` and the Today card read them; `useSchedule` sends only
-  `period_start`; `ChallengeBoard`'s `fixedDays` comes from `window`. The comma-to-dot amount
-  parsing written twice in `ProposeRoute.tsx` becomes one helper.
-- Seeds: `seed_demo_challenge`; `seed_demo_history` picks its days from `windows()` instead of its
-  own weekly-quota code; a smoke test runs it (it has none).
-- Removed: `Challenge.Frequency`, `Challenge.TargetScope`, `PeriodKind.CUSTOM`, `rule_of`,
-  `TIMES_MAX`, `_days_needed`, `PeriodKindNotAvailable` and `TooFewDays` with their error codes and
-  i18n keys (`errors.period_kind_not_available`, `errors.too_few_days`); test rows that send
-  `period_kind` or check `too_few_days`.
+- **Old columns leave in two releases** (`docs/recipes/new-migration.md`: migrations must work with
+  the previous release while it still serves). `0007_challenge_rules` adds `window`, `on_days`,
+  `need_kind`, `need_value`, `day_min` with their constraints and makes the old columns nullable;
+  `0008_fill_challenge_rules` fills the new fields (reversible) and removes the old ones from the
+  model only. The database drops them in stage 3. So the model has no dead fields.
+- **The period fields move to stage 3.** Proposals carrying `period_kind` now would break the
+  existing constraint while the old code still writes proposals; stage 3 migrates the table
+  anyway. `ScheduleIn` keeps `period_kind` and `PeriodKindNotAvailable` stays until then.
+
+What was done:
+
+- Engine: `rule_of` is gone; `windows.py` and `days.py` read the fields.
+- Services: shape validation on the new fields (a day window needs one check-in; up to 7 a week and
+  31 in the period; totals only with numbers and only per week or period; `day_min` only for
+  counted numbers; chosen days only per day). `TIMES_MAX` and `_days_needed` are gone.
+  `TooFewDays` stays, but checks the whole period (30 times in February): a late start now asks
+  for less instead of being refused.
+- API: `ChallengeIn` / `ChallengeOut` and the Today card carry `window`, `on_days`, `need_kind`,
+  `need_value`, `day_min`; `window`, `need_kind` and `need_value` are required, so a cached old
+  app gets an error instead of a silently different challenge. Help texts reworded. Contract and
+  client regenerated.
+- Wizard (owner's choice, 2026-10-07): "What do you record?" comes before "How often?"; for numbers,
+  "How often?" also offers "A total each week" and "A total for the month"; "Each check-in at
+  least" is an optional field there for counted numbers. One helper parses typed numbers.
+  `describe.ts`: `describeRule` and `describeDayMin`. i18n keys renamed to the new words
+  (`options.often`, `fields.often`, `fields.onDays`, `errors.onDays`, `errors.number`); the
+  target keys are gone.
+- Seeds: both on the new fields; `seed_demo_history` picks weekly days from `windows()` and has a
+  smoke test.
+- Tests: the migration's mapping (every old combination, and back); the real migration was run
+  forward and back on the dev database (9 challenges, old columns identical after going back).
+- Not done: a pair of weekday-mask helpers. Only one conversion each way is left (the shape check,
+  the challenge view), so helpers would not remove anything.
 - Production (the owner, before deploying): list the shapes in use, read-only:
 
   ```python
@@ -263,12 +276,14 @@ All model changes happen here, so the table is migrated once.
 
   Expected: the running challenge (`daily`) and pool proposals. Before and after the deploy, note
   the running challenge's board and streaks; they must match.
-- Done when: `grep -rnE "frequency|target_scope|times_per|TargetScope" backend/apps` finds only
-  migrations; the frontend compiles against a client without the old fields; nobody can tell the
-  difference in the app.
 
 ### Stage 3 - Weeks and day ranges
 
+- Fields and migration: `period_kind` (month / week / day, CUSTOM goes) and `period_length` on
+  proposals, a new period constraint, and the database drops `frequency`, `weekdays`, `times`,
+  `target_scope`, `target_value` (removed from the model in stage 2). `unschedule_challenge`
+  keeps the kind and length (today it clears `period_kind`). `ScheduleIn` keeps only
+  `period_start`; `PeriodKindNotAvailable` goes with its code and i18n key.
 - Wizard: a "How long does it run?" question in the "often" step (`Segmented` for the unit,
   `Stepper` for the number), the length on the review step, and the "fits the period" check.
 - `schedule_challenge`: months start on the 1st, weeks on a Monday, days on any date from tomorrow;
@@ -332,13 +347,14 @@ rows are gone before approving.
 | Goal glossary row, `goal_target` example | docs | 0 |
 | `FIXED`, `week_quota`, `done_between`, `week_of`, frequency branches (done) | `apps/checkins/days.py` | 1 |
 | Old weekly tests in `test_days.py` (done) | tests | 1 |
-| `rule_of` | `apps/challenges/windows.py` | 2 |
-| `Frequency`, `TargetScope`, `PeriodKind.CUSTOM`, old fields | model | 2 |
-| `TIMES_MAX`, `_days_needed` | `apps/challenges/services.py` | 2 |
-| `PeriodKindNotAvailable`, `TooFewDays`, their codes and i18n keys | services, i18n | 2 |
-| Weekly-quota code in `seed_demo_history` | seed | 2 |
-| Mask conversions in four places | services, views, days, seed | 2 |
-| `period_kind` in `ScheduleIn` and `useSchedule` | API, frontend | 2 |
+| `rule_of` (done) | `apps/challenges/windows.py` | 2 |
+| `Frequency`, `TargetScope`, old fields in the model (done) | model | 2 |
+| `TIMES_MAX`, `_days_needed` (done) | `apps/challenges/services.py` | 2 |
+| Target i18n keys, `oncePerPeriod` (done) | i18n | 2 |
+| Weekly-quota code in `seed_demo_history` (done) | seed | 2 |
+| Old columns in the database | migration | 3 |
+| `PeriodKind.CUSTOM`, `PeriodKindNotAvailable`, its code and i18n key | model, services, i18n | 3 |
+| `period_kind` in `ScheduleIn` and `useSchedule` | API, frontend | 3 |
 | Month bounds recomputed in four places | `apps/checkins` selectors and views, services | 3 |
 | `months.ts` and the frontend date-math copies | frontend | 3 |
 | "month" wording in schedule texts and period errors | i18n, services | 3 |

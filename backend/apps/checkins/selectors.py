@@ -337,14 +337,13 @@ def feed_details(check_ins: list[CheckIn]) -> dict[UUID, FeedDetail]:
         record = loaded.get(key, days.Record())
         streak = days.streak(challenge, part, record, day)
         week = [day - timedelta(days=n) for n in range(6, -1, -1)]
-        per_day = challenge.target_scope == Challenge.TargetScope.PER_CHECK_IN
         result[check_in.pk] = FeedDetail(
             streak=streak,
             day_index=(day - challenge.start_date).days + 1,
             day_count=(challenge.end_date - challenge.start_date).days + 1,
             week=[(d, days.state(challenge, part, record, d, day)) for d in week],
             last_amount=last_amounts.get(check_in.pk),
-            target=challenge.target_value if per_day else None,
+            target=challenge.day_min,
             milestone=(
                 streak
                 if days.is_fixed(challenge) and day in record.done and streak in MILESTONES

@@ -17,12 +17,10 @@ READ = {
     "title": "Read",
     "measure": "quantity",
     "unit": "pages",
-    "frequency": "daily",
-    "target_scope": "per_check_in",
-    "target_value": 20,
+    "day_min": 20,
 }
-WALK = {"title": "Walk", "frequency": "daily"}
-MONDAYS = {"title": "Gym", "frequency": "weekdays", "weekdays": [0]}
+WALK = {"title": "Walk"}
+MONDAYS = {"title": "Gym", "on_days": [0]}
 
 TUE = date(2026, 11, 10)  # a Tuesday
 

@@ -25,6 +25,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
 | Due day | `days.is_due` | A day a challenge judged day by day (daily or chosen weekdays) asks for. Challenges asked a number of times or a total per week or period have no due days: they are judged per window. |
 | Window | `windows.Window` | A stretch of days judged as one unit: a single day, a Monday-Sunday week, or the whole period (`apps/challenges/windows.py`). |
+| Requirement | `window`, `on_days`, `need_kind`, `need_value`, `day_min` | A challenge's rule: the window it is judged in, the weekdays that count (`on_days`, day windows only; empty = every day), what each window needs (`count` check-ins or an `amount` total) and, for counted numbers, the least amount a check-in needs (`day_min`). |
 | Need | `Window.need` | What one window asks for: a number of check-ins or a total amount. |
 | Short window | `Window.need` < `Window.full_need` | A window cut by the period's edges, a late start or leaving; it asks for less, in proportion to its days that count (rounded half up; amounts to one decimal). A window that would ask for nothing is not judged. |
 | Verdict | `days.Verdict` | How a window stands: `met` (reached its need, even before it ends), `failed` (ended below it), `open` (today is in it), `future`. A failed day window is a missed day. |

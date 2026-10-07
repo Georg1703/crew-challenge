@@ -62,7 +62,7 @@ class Record:
 
 def is_fixed(challenge: Challenge) -> bool:
     """Judged day by day (every day, or chosen days); the rest are judged over longer windows."""
-    return windows.rule_of(challenge).window == windows.DAY
+    return challenge.window == Challenge.Window.DAY
 
 
 def is_due(challenge: Challenge, day: date) -> bool:
@@ -75,8 +75,7 @@ def counts(challenge: Challenge, total: Decimal | None) -> bool:
     if challenge.measure != Challenge.Measure.QUANTITY:
         return True
     total = total or Decimal(0)
-    day_min = windows.rule_of(challenge).day_min
-    return total >= day_min if day_min else total > 0
+    return total >= challenge.day_min if challenge.day_min else total > 0
 
 
 @dataclass(frozen=True)
@@ -107,7 +106,7 @@ def judge(challenge: Challenge, window: Window, record: Record, today: date) -> 
         for d in Span(window.first, window.last).days(window.first, today)
         if windows.counts_on(challenge, d)
     ]
-    if windows.rule_of(challenge).need_kind == windows.AMOUNT:
+    if challenge.need_kind == Challenge.NeedKind.AMOUNT:
         done = sum((record.amounts.get(d, Decimal(0)) for d in seen), Decimal(0))
     else:
         done = Decimal(sum(1 for d in seen if d in record.done))
@@ -147,7 +146,7 @@ def streak(challenge: Challenge, part: Span, record: Record, today: date) -> int
     The window still open today is skipped, so it never breaks the streak. A challenge judged
     once over its whole period has progress instead (None).
     """
-    if windows.rule_of(challenge).window == windows.PERIOD:
+    if challenge.window == Challenge.Window.PERIOD:
         return None
     count = 0
     for verdict in reversed(_verdicts(challenge, part, record, today)):
@@ -160,7 +159,7 @@ def streak(challenge: Challenge, part: Span, record: Record, today: date) -> int
 
 def longest_streak(challenge: Challenge, part: Span, record: Record, today: date) -> int | None:
     """The longest run so far of met windows in a row. None when judged over the whole period."""
-    if windows.rule_of(challenge).window == windows.PERIOD:
+    if challenge.window == Challenge.Window.PERIOD:
         return None
     best = run = 0
     for verdict in _verdicts(challenge, part, record, today):
@@ -183,14 +182,13 @@ class Progress:
 
 def progress(challenge: Challenge, part: Span, record: Record, today: date) -> Progress | None:
     """Progress in today's window (a week or the whole period); None when judged day by day."""
-    rule = windows.rule_of(challenge)
-    if rule.window == windows.DAY:
+    if is_fixed(challenge):
         return None
     window = windows.window_at(challenge, part.first, part.last, today)
     if window is None:
         return None
     verdict = judge(challenge, window, record, today)
-    kind = "amount" if rule.need_kind == windows.AMOUNT else "days"
+    kind = "amount" if challenge.need_kind == Challenge.NeedKind.AMOUNT else "days"
     return Progress(kind, verdict.done, window.need)
 
 

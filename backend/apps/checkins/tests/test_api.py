@@ -15,9 +15,7 @@ READ = {
     "title": "Read",
     "measure": "quantity",
     "unit": "pages",
-    "frequency": "daily",
-    "target_scope": "per_check_in",
-    "target_value": 20,
+    "day_min": 20,
     "proof_kind": "photo_or_video",
 }
 

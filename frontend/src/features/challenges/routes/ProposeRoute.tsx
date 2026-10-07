@@ -24,22 +24,42 @@ import {
   useToast,
 } from "@/shared/ui";
 
-import { useChallenge, useEditChallenge, useProposeChallenge, type ChallengeInput } from "../api";
+import {
+  useChallenge,
+  useEditChallenge,
+  useProposeChallenge,
+  type Challenge,
+  type ChallengeInput,
+} from "../api";
 import styles from "../challenges.module.css";
 import { ParticipantPicker } from "../components/ParticipantPicker";
 import {
   CHALLENGE_ICONS,
   WEEKDAYS,
-  describeFrequency,
+  describeDayMin,
   describeMeasure,
   describeProof,
-  describeTarget,
+  describeRule,
   weekdayShort,
 } from "../describe";
 
-type Draft = Required<Omit<ChallengeInput, "target_value" | "times" | "participant_ids">> & {
+/** How often, as the wizard offers it: counted check-ins, or (numbers only) a total. */
+const COUNTED = ["daily", "weekdays", "times_per_week", "times_per_period", "once"] as const;
+const TOTALS = ["total_per_week", "total_per_period"] as const;
+type Often = (typeof COUNTED)[number] | (typeof TOTALS)[number];
+
+type Draft = Required<
+  Pick<
+    ChallengeInput,
+    "title" | "rules" | "icon" | "measure" | "unit" | "proof_kind" | "proof_required"
+  >
+> & {
+  often: Often;
+  on_days: number[];
   times: number;
-  target_value: string;
+  /** Numbers as typed ("12,5"), sent with a dot. */
+  total: string;
+  day_min: string;
   /** null: nobody changed the list yet, so the whole crew takes part. */
   participant_ids: string[] | null;
 };
@@ -50,17 +70,17 @@ const EMPTY: Draft = {
   icon: "star",
   measure: "check",
   unit: "",
-  frequency: "daily",
-  weekdays: [0, 1, 2, 3, 4],
+  often: "daily",
+  on_days: [0, 1, 2, 3, 4],
   times: 3,
-  target_scope: "none",
-  target_value: "",
+  total: "",
+  day_min: "",
   proof_kind: "none",
   proof_required: false,
   participant_ids: null,
 };
 
-const STEPS = ["what", "who", "often", "record", "proof", "review"] as const;
+const STEPS = ["what", "who", "record", "often", "proof", "review"] as const;
 type Step = (typeof STEPS)[number];
 
 /** Which step shows each field, to send people back to the field the server rejected. */
@@ -69,31 +89,76 @@ const FIELD_STEP: Record<string, Step> = {
   rules: "what",
   icon: "what",
   participant_ids: "who",
-  frequency: "often",
-  weekdays: "often",
-  times: "often",
   measure: "record",
   unit: "record",
-  target_scope: "record",
-  target_value: "record",
+  window: "often",
+  on_days: "often",
+  need_kind: "often",
+  need_value: "often",
+  day_min: "often",
   proof_kind: "proof",
   proof_required: "proof",
 };
 
+/** A typed number as the API takes it: "12,5" -> "12.5". */
+const decimal = (text: string) => text.trim().replace(",", ".");
+
+const isTotal = (often: Often) => often === "total_per_week" || often === "total_per_period";
+
+type Rule = Pick<ChallengeInput, "window" | "on_days" | "need_kind" | "need_value">;
+
+/** The window and need behind a choice in "How often?". */
+function rule(draft: Draft): Rule {
+  const counted = (window: Rule["window"], n: number): Rule => ({
+    window,
+    on_days: [],
+    need_kind: "count",
+    need_value: String(n),
+  });
+  const total = (window: Rule["window"]): Rule => ({
+    window,
+    on_days: [],
+    need_kind: "amount",
+    need_value: decimal(draft.total),
+  });
+  switch (draft.often) {
+    case "weekdays":
+      return { ...counted("day", 1), on_days: draft.on_days };
+    case "times_per_week":
+      return counted("week", draft.times);
+    case "times_per_period":
+      return counted("period", draft.times);
+    case "once":
+      return counted("period", 1);
+    case "total_per_week":
+      return total("week");
+    case "total_per_period":
+      return total("period");
+    default:
+      return counted("day", 1);
+  }
+}
+
+/** The choice in "How often?" for a stored challenge. */
+function oftenOf(c: Challenge): Often {
+  if (c.need_kind === "amount") return c.window === "week" ? "total_per_week" : "total_per_period";
+  if (c.window === "week") return "times_per_week";
+  if (c.window === "period") return c.need_value === 1 ? "once" : "times_per_period";
+  return c.on_days.length ? "weekdays" : "daily";
+}
+
 function toInput(draft: Draft): ChallengeInput {
   const quantity = draft.measure === "quantity";
-  const target = quantity ? draft.target_scope : "none";
+  const shape = rule(draft);
+  const dayMin = quantity && shape.need_kind === "count" && draft.day_min.trim();
   return {
     title: draft.title,
     rules: draft.rules,
     icon: draft.icon,
     measure: draft.measure,
     unit: quantity ? draft.unit : "",
-    frequency: draft.frequency,
-    weekdays: draft.frequency === "weekdays" ? draft.weekdays : [],
-    times: draft.frequency.startsWith("times_") ? draft.times : null,
-    target_scope: target,
-    target_value: target === "none" ? null : draft.target_value.replace(",", "."),
+    ...shape,
+    day_min: dayMin ? decimal(draft.day_min) : null,
     proof_kind: draft.proof_kind,
     proof_required: draft.proof_kind !== "none" && draft.proof_required,
     ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
@@ -133,11 +198,11 @@ function EditProposal({ id }: { id: string }) {
         icon: c.icon,
         measure: c.measure,
         unit: c.unit,
-        frequency: c.frequency,
-        weekdays: c.weekdays.length ? c.weekdays : EMPTY.weekdays,
-        times: c.times ?? EMPTY.times,
-        target_scope: c.target_scope,
-        target_value: c.target_value == null ? "" : String(c.target_value),
+        often: oftenOf(c),
+        on_days: c.on_days.length ? c.on_days : EMPTY.on_days,
+        times: c.need_kind === "count" && c.window !== "day" ? c.need_value : EMPTY.times,
+        total: c.need_kind === "amount" ? String(c.need_value) : "",
+        day_min: c.day_min == null ? "" : String(c.day_min),
         proof_kind: c.proof_kind,
         proof_required: c.proof_required,
         participant_ids: c.participants.map((p) => p.member.id),
@@ -164,6 +229,14 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const fieldError = (name: string) => localErrors[name] ?? apiError?.field(name);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
+  const quantity = draft.measure === "quantity";
+  /** Totals need numbers: another kind of record goes back to "every day". */
+  const setMeasure = (measure: Draft["measure"]) =>
+    setDraft((current) => ({
+      ...current,
+      measure,
+      often: measure !== "quantity" && isTotal(current.often) ? "daily" : current.often,
+    }));
   const people = crew.data?.members ?? [];
   const creatorId = me.data?.member?.id; // only the creator proposes or edits
 
@@ -171,12 +244,15 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const check = (current: Step): Record<string, string> => {
     const errors: Record<string, string> = {};
     if (current === "what" && !draft.title.trim()) errors.title = t("challenges.errors.title");
-    if (current === "often" && draft.frequency === "weekdays" && !draft.weekdays.length)
-      errors.weekdays = t("challenges.errors.weekdays");
-    if (current === "record" && draft.measure === "quantity") {
-      if (!draft.unit.trim()) errors.unit = t("challenges.errors.unit");
-      if (draft.target_scope !== "none" && !(Number(draft.target_value.replace(",", ".")) > 0))
-        errors.target_value = t("challenges.errors.targetValue");
+    if (current === "record" && quantity && !draft.unit.trim())
+      errors.unit = t("challenges.errors.unit");
+    if (current === "often") {
+      if (draft.often === "weekdays" && !draft.on_days.length)
+        errors.on_days = t("challenges.errors.onDays");
+      if (isTotal(draft.often) && !(Number(decimal(draft.total)) > 0))
+        errors.need_value = t("challenges.errors.number");
+      if (quantity && draft.day_min.trim() && !(Number(decimal(draft.day_min)) > 0))
+        errors.day_min = t("challenges.errors.number");
     }
     return errors;
   };
@@ -263,26 +339,49 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
               <Skeleton lines={4} />
             ))}
 
+          {step === "record" && (
+            <Stack>
+              <OptionList
+                label={t("challenges.fields.measure")}
+                value={draft.measure}
+                onChange={setMeasure}
+                options={(["check", "quantity", "abstain"] as const).map((value) => ({
+                  value,
+                  title: t(`challenges.options.measure.${value}.title`),
+                  description: t(`challenges.options.measure.${value}.description`),
+                }))}
+              />
+              {quantity && (
+                <TextField
+                  label={t("challenges.fields.unit")}
+                  hint={t("challenges.fields.unitHint")}
+                  maxLength={20}
+                  value={draft.unit}
+                  onChange={(e) => set("unit", e.target.value)}
+                  error={fieldError("unit")}
+                />
+              )}
+            </Stack>
+          )}
+
           {step === "often" && (
             <Stack>
               <OptionList
-                label={t("challenges.fields.frequency")}
-                value={draft.frequency}
-                onChange={(frequency) => set("frequency", frequency)}
-                options={(
-                  ["daily", "weekdays", "times_per_week", "times_per_period", "once"] as const
-                ).map((value) => ({
+                label={t("challenges.fields.often")}
+                value={draft.often}
+                onChange={(often) => set("often", often)}
+                options={(quantity ? [...COUNTED, ...TOTALS] : COUNTED).map((value) => ({
                   value,
-                  title: t(`challenges.options.frequency.${value}.title`),
-                  description: t(`challenges.options.frequency.${value}.description`),
+                  title: t(`challenges.options.often.${value}.title`),
+                  description: t(`challenges.options.often.${value}.description`),
                 }))}
               />
-              {draft.frequency === "weekdays" && (
+              {draft.often === "weekdays" && (
                 <ChipGroup
-                  label={t("challenges.fields.weekdays")}
-                  values={draft.weekdays}
-                  onChange={(days) => set("weekdays", [...days].sort())}
-                  error={fieldError("weekdays")}
+                  label={t("challenges.fields.onDays")}
+                  values={draft.on_days}
+                  onChange={(days) => set("on_days", [...days].sort())}
+                  error={fieldError("on_days")}
                   options={WEEKDAYS.map((day) => ({
                     value: day,
                     label: weekdayShort(t, day),
@@ -290,61 +389,36 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
                   }))}
                 />
               )}
-              {draft.frequency.startsWith("times_") && (
+              {(draft.often === "times_per_week" || draft.often === "times_per_period") && (
                 <Stepper
                   label={t("challenges.fields.times")}
                   value={draft.times}
                   min={1}
-                  max={draft.frequency === "times_per_week" ? 7 : 31}
+                  max={draft.often === "times_per_week" ? 7 : 31}
                   onChange={(times) => set("times", times)}
                   decreaseLabel={t("challenges.fields.fewer")}
                   increaseLabel={t("challenges.fields.more")}
                 />
               )}
-            </Stack>
-          )}
-
-          {step === "record" && (
-            <Stack>
-              <OptionList
-                label={t("challenges.fields.measure")}
-                value={draft.measure}
-                onChange={(measure) => set("measure", measure)}
-                options={(["check", "quantity", "abstain"] as const).map((value) => ({
-                  value,
-                  title: t(`challenges.options.measure.${value}.title`),
-                  description: t(`challenges.options.measure.${value}.description`),
-                }))}
-              />
-              {draft.measure === "quantity" && (
-                <>
+              {isTotal(draft.often) ? (
+                <TextField
+                  label={t("challenges.fields.total", { unit: draft.unit })}
+                  inputMode="decimal"
+                  value={draft.total}
+                  onChange={(e) => set("total", e.target.value)}
+                  error={fieldError("need_value")}
+                />
+              ) : (
+                quantity && (
                   <TextField
-                    label={t("challenges.fields.unit")}
-                    hint={t("challenges.fields.unitHint")}
-                    maxLength={20}
-                    value={draft.unit}
-                    onChange={(e) => set("unit", e.target.value)}
-                    error={fieldError("unit")}
+                    label={t("challenges.fields.dayMin", { unit: draft.unit })}
+                    hint={t("challenges.fields.dayMinHint")}
+                    inputMode="decimal"
+                    value={draft.day_min}
+                    onChange={(e) => set("day_min", e.target.value)}
+                    error={fieldError("day_min")}
                   />
-                  <OptionList
-                    label={t("challenges.fields.target")}
-                    value={draft.target_scope}
-                    onChange={(scope) => set("target_scope", scope)}
-                    columns={2}
-                    options={(["none", "per_check_in", "per_week", "per_period"] as const).map(
-                      (value) => ({ value, title: t(`challenges.options.target.${value}`) }),
-                    )}
-                  />
-                  {draft.target_scope !== "none" && (
-                    <TextField
-                      label={t("challenges.fields.targetValue", { unit: draft.unit })}
-                      inputMode="decimal"
-                      value={draft.target_value}
-                      onChange={(e) => set("target_value", e.target.value)}
-                      error={fieldError("target_value")}
-                    />
-                  )}
-                </>
+                )
               )}
             </Stack>
           )}
@@ -405,13 +479,8 @@ function Review({
 }) {
   const { t, i18n } = useTranslation();
   const input = toInput(draft);
-  const shape = {
-    ...input,
-    weekdays: input.weekdays ?? [],
-    times: input.times ?? null,
-    target_value: input.target_value == null ? null : Number(input.target_value),
-  };
-  const target = describeTarget(t, shape, i18n.language);
+  const shape = { ...input, on_days: input.on_days ?? [], day_min: input.day_min ?? null };
+  const dayMin = describeDayMin(t, shape, i18n.language);
   /** "The whole crew", a few names, or "18 of 20" when many. */
   const whoSummary = (ids: string[] | null, crew: { id: string; display_name: string }[]) => {
     const chosen = crew.filter((person) => !ids || ids.includes(person.id));
@@ -426,9 +495,9 @@ function Review({
   const facts: [string, string][] = [
     [t("challenges.facts.name"), draft.title.trim()],
     [t("challenges.facts.who"), whoSummary(draft.participant_ids, people)],
-    [t("challenges.facts.often"), describeFrequency(t, shape)],
     [t("challenges.facts.record"), describeMeasure(t, shape)],
-    ...(target ? [[t("challenges.facts.target"), target] as [string, string]] : []),
+    [t("challenges.facts.often"), describeRule(t, shape, i18n.language)],
+    ...(dayMin ? [[t("challenges.facts.target"), dayMin] as [string, string]] : []),
     [t("challenges.facts.proof"), describeProof(t, shape)],
   ];
   return (

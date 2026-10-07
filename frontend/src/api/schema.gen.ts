@@ -630,14 +630,27 @@ export interface components {
             measure: components["schemas"]["MeasureEnum"];
             /** @default  */
             unit: string;
-            frequency: components["schemas"]["FrequencyEnum"];
-            /** @description For frequency=weekdays: 0 = Monday ... 6 = Sunday. */
-            weekdays?: number[];
-            times?: number | null;
-            /** @default none */
-            target_scope: components["schemas"]["TargetScopeEnum"];
-            /** Format: decimal */
-            target_value?: string | null;
+            /**
+             * @description The unit that is judged.
+             *
+             *     * `day` - Each day
+             *     * `week` - Each week, Monday to Sunday
+             *     * `period` - The whole period
+             */
+            window: components["schemas"]["WindowEnum"];
+            /** @description Day windows only: the weekdays that count, 0 = Monday ... 6 = Sunday; empty = every day. */
+            on_days?: number[];
+            need_kind: components["schemas"]["NeedKindEnum"];
+            /**
+             * Format: decimal
+             * @description What each window needs: check-ins (1 for a day), or a total (numbers only).
+             */
+            need_value: string;
+            /**
+             * Format: decimal
+             * @description Numbers counted in check-ins: the least amount for a check-in to count.
+             */
+            day_min?: string | null;
             /** @default none */
             proof_kind: components["schemas"]["ProofKindEnum"];
             /** @default false */
@@ -653,12 +666,13 @@ export interface components {
             icon: components["schemas"]["IconEnum"];
             measure: components["schemas"]["MeasureEnum"];
             unit: string;
-            frequency: components["schemas"]["FrequencyEnum"];
-            weekdays: number[];
-            times: number | null;
-            target_scope: components["schemas"]["TargetScopeEnum"];
+            window: components["schemas"]["WindowEnum"];
+            on_days: number[];
+            need_kind: components["schemas"]["NeedKindEnum"];
             /** Format: double */
-            target_value: number | null;
+            need_value: number;
+            /** Format: double */
+            day_min: number | null;
             proof_kind: components["schemas"]["ProofKindEnum"];
             proof_required: boolean;
             state: components["schemas"]["ChallengeStateEnum"];
@@ -787,7 +801,7 @@ export interface components {
             check_ins: number;
             /** @description Processing and ready proofs. */
             proofs: number;
-            /** @description Everyone finished everything due that day (daily and weekday challenges). */
+            /** @description Everyone finished everything due that day (challenges judged day by day). */
             crew_done: boolean;
         };
         /** @description One check-in: who, on what, which day, and its proofs. */
@@ -829,7 +843,7 @@ export interface components {
             last_amount: number | null;
             /**
              * Format: double
-             * @description The day's target, when the challenge sets one per day.
+             * @description The least amount a check-in needs (day_min), if there is one.
              */
             target: number | null;
             /** @description Set when this check-in made the streak reach 3, 7, 14 or 30. */
@@ -839,15 +853,6 @@ export interface components {
             /** @description Reactions; only single cards (a proof, a number or a milestone) take new ones. */
             reactions: components["schemas"]["ReactionSummaryOut"];
         };
-        /**
-         * @description * `daily` - Every day
-         *     * `weekdays` - Chosen days of the week
-         *     * `times_per_week` - A number of times a week
-         *     * `times_per_period` - A number of times in the period
-         *     * `once` - Once, by the end
-         * @enum {string}
-         */
-        FrequencyEnum: "daily" | "weekdays" | "times_per_week" | "times_per_period" | "once";
         /**
          * @description * `dumbbell` - dumbbell
          *     * `running` - running
@@ -963,7 +968,7 @@ export interface components {
             /** @description Their best current streak. */
             streak: number;
             longest_streak: number;
-            /** @description Due days done this month so far (daily and weekday challenges). */
+            /** @description Due days done this month so far (challenges judged day by day). */
             month_done: number;
             /** @description Due days this month so far; today counts once done. */
             month_due: number;
@@ -992,6 +997,12 @@ export interface components {
          * @enum {string}
          */
         MilestoneOutKindEnum: "streak";
+        /**
+         * @description * `count` - A number of check-ins
+         *     * `amount` - A total amount
+         * @enum {string}
+         */
+        NeedKindEnum: "count" | "amount";
         /** @enum {unknown} */
         NullEnum: null;
         PaginatedFeedItemOutList: {
@@ -1187,14 +1198,6 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "valid" | "expired" | "used";
-        /**
-         * @description * `none` - No target
-         *     * `per_check_in` - Each check-in
-         *     * `per_week` - Each week
-         *     * `per_period` - The whole period
-         * @enum {string}
-         */
-        TargetScopeEnum: "none" | "per_check_in" | "per_week" | "per_period";
         /** @description One of my challenges today: what to show on its card and in the ring. */
         TodayChallengeOut: {
             /** Format: uuid */
@@ -1203,11 +1206,12 @@ export interface components {
             icon: components["schemas"]["IconEnum"];
             measure: components["schemas"]["MeasureEnum"];
             unit: string;
-            frequency: components["schemas"]["FrequencyEnum"];
-            times: number | null;
-            target_scope: components["schemas"]["TargetScopeEnum"];
+            window: components["schemas"]["WindowEnum"];
+            need_kind: components["schemas"]["NeedKindEnum"];
             /** Format: double */
-            target_value: number | null;
+            need_value: number;
+            /** Format: double */
+            day_min: number | null;
             proof_kind: components["schemas"]["ProofKindEnum"];
             proof_required: boolean;
             /** Format: date */
@@ -1266,6 +1270,13 @@ export interface components {
             username: string;
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
         };
+        /**
+         * @description * `day` - Each day
+         *     * `week` - Each week, Monday to Sunday
+         *     * `period` - The whole period
+         * @enum {string}
+         */
+        WindowEnum: "day" | "week" | "period";
     };
     responses: never;
     parameters: never;

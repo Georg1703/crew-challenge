@@ -31,10 +31,9 @@ from .models import ICONS, Challenge, Participant, PeriodKind, Vote
 TITLE_MAX = 60
 RULES_MAX = 500
 UNIT_MAX = 20
-TIMES_MAX = {
-    Challenge.Frequency.TIMES_PER_WEEK: 7,
-    Challenge.Frequency.TIMES_PER_PERIOD: 31,
-}
+AMOUNT_MAX = Decimal(10**8)
+# Check-ins a window can ask for: one a day, at most every day of a week or of the longest month.
+COUNT_MAX = {Challenge.Window.DAY: 1, Challenge.Window.WEEK: 7, Challenge.Window.PERIOD: 31}
 
 
 class PoolFull(Conflict):
@@ -84,7 +83,7 @@ class PeriodKindNotAvailable(ValidationFailed):
 
 class TooFewDays(Conflict):
     code = "too_few_days"
-    message = "The challenge asks for more times than the days it would run."
+    message = "The challenge asks for more times than the days in this period."
 
 
 class NotAParticipant(PermissionDenied):
@@ -109,11 +108,11 @@ class Shape:
     icon: str = "star"
     measure: str = Challenge.Measure.CHECK
     unit: str = ""
-    frequency: str = Challenge.Frequency.DAILY
-    weekdays: int = 0
-    times: int | None = None
-    target_scope: str = Challenge.TargetScope.NONE
-    target_value: Decimal | None = None
+    window: str = Challenge.Window.DAY
+    on_days: int = 0
+    need_kind: str = Challenge.NeedKind.COUNT
+    need_value: Decimal = Decimal(1)
+    day_min: Decimal | None = None
     proof_kind: str = Challenge.ProofKind.NONE
     proof_required: bool = False
 
@@ -144,36 +143,42 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
     if measure != Challenge.Measure.QUANTITY:
         unit = ""
 
-    frequency = raw.get("frequency", Challenge.Frequency.DAILY)
-    if frequency not in Challenge.Frequency.values:
-        bad("frequency", "Choose how often.")
-    weekdays = 0
-    if frequency == Challenge.Frequency.WEEKDAYS:
-        days = raw.get("weekdays") or []
-        if not days or any(not isinstance(d, int) or not 0 <= d <= 6 for d in days):
-            bad("weekdays", "Choose at least one day.")
-        else:
-            weekdays = sum(1 << d for d in set(days))
-    times = None
-    if frequency in TIMES_MAX:
-        times = raw.get("times")
-        limit = TIMES_MAX[frequency]
-        if not isinstance(times, int) or not 1 <= times <= limit:
-            bad("times", f"Choose 1-{limit}.")
+    window = raw.get("window", Challenge.Window.DAY)
+    if window not in Challenge.Window.values:
+        bad("window", "Choose how often.")
+    on_days = 0
+    days = raw.get("on_days") or []
+    if days and window != Challenge.Window.DAY:
+        bad("on_days", "Chosen days are only for a challenge judged each day.")
+    elif any(not isinstance(d, int) or not 0 <= d <= 6 for d in days):
+        bad("on_days", "Choose days from Monday (0) to Sunday (6).")
+    else:
+        on_days = sum(1 << d for d in set(days))
 
-    target_scope = raw.get("target_scope") or Challenge.TargetScope.NONE
-    target_value = None
-    if target_scope not in Challenge.TargetScope.values:
-        bad("target_scope", "Choose what the target counts.")
-    elif target_scope != Challenge.TargetScope.NONE:
-        if measure != Challenge.Measure.QUANTITY:
-            bad("target_scope", "Only a challenge that records a number can have a target.")
-        try:
-            target_value = Decimal(str(raw.get("target_value")))
-            if not target_value.is_finite() or target_value <= 0 or target_value >= 10**8:
-                raise InvalidOperation
-        except (InvalidOperation, ValueError):
-            bad("target_value", "Give a number above zero.")
+    numbers = measure == Challenge.Measure.QUANTITY
+    need_kind = raw.get("need_kind", Challenge.NeedKind.COUNT)
+    need_value = _positive(raw.get("need_value", 1))
+    if need_kind not in Challenge.NeedKind.values:
+        bad("need_kind", "Choose a number of check-ins or a total.")
+    elif need_kind == Challenge.NeedKind.AMOUNT:
+        if not numbers:
+            bad("need_kind", "Only a challenge that records a number can have a total.")
+        elif window == Challenge.Window.DAY:
+            bad("need_kind", "For each day, set the least amount a check-in needs instead.")
+        if need_value is None:
+            bad("need_value", "Give a number above zero.")
+    elif window in COUNT_MAX:
+        limit = COUNT_MAX[window]
+        if need_value is None or need_value != need_value.to_integral_value() or need_value > limit:
+            bad("need_value", f"Choose 1-{limit}." if limit > 1 else "Each day asks for 1.")
+
+    day_min = None
+    if raw.get("day_min") is not None:
+        day_min = _positive(raw.get("day_min"))
+        if not numbers or need_kind != Challenge.NeedKind.COUNT:
+            bad("day_min", "Only a challenge that counts number check-ins can set a minimum.")
+        elif day_min is None:
+            bad("day_min", "Give a number above zero.")
 
     proof_kind = raw.get("proof_kind") or Challenge.ProofKind.NONE
     if proof_kind not in Challenge.ProofKind.values:
@@ -188,14 +193,23 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         icon=icon,
         measure=measure,
         unit=unit,
-        frequency=frequency,
-        weekdays=weekdays,
-        times=times,
-        target_scope=target_scope,
-        target_value=target_value,
+        window=window,
+        on_days=on_days,
+        need_kind=need_kind,
+        need_value=need_value or Decimal(1),
+        day_min=day_min,
         proof_kind=proof_kind,
         proof_required=proof_required,
     )
+
+
+def _positive(value: Any) -> Decimal | None:
+    """A number above zero (and below AMOUNT_MAX), or None."""
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return number if number.is_finite() and 0 < number < AMOUNT_MAX else None
 
 
 def _apply(challenge: Challenge, shape: Shape) -> None:
@@ -354,12 +368,6 @@ def clear_vote(*, by: Member, challenge_id: UUID) -> None:
 MONTHS_AHEAD = 12
 
 
-def _days_needed(challenge: Challenge) -> int:
-    if challenge.frequency == Challenge.Frequency.TIMES_PER_PERIOD and challenge.times:
-        return challenge.times
-    return 1
-
-
 @transaction.atomic
 def schedule_challenge(
     *, by: Member, challenge_id: UUID, period_kind: str, period_start: date
@@ -392,8 +400,12 @@ def schedule_challenge(
         raise PeriodOver()
     if first > periods.add_months(periods.month_of(today)[0], MONTHS_AHEAD):
         raise PeriodTooFar(fields={"period_start": [PeriodTooFar.message]})
-    if (last - start).days + 1 < _days_needed(challenge):
-        raise TooFewDays()
+    counted_over_the_period = (
+        challenge.window == Challenge.Window.PERIOD
+        and challenge.need_kind == Challenge.NeedKind.COUNT
+    )
+    if counted_over_the_period and challenge.need_value > (last - first).days + 1:
+        raise TooFewDays()  # a late start asks for less (windows.py), a short month can't
 
     challenge.state = Challenge.State.CHOSEN
     challenge.period_kind = period_kind

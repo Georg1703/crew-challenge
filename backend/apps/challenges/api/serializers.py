@@ -18,20 +18,30 @@ class ChallengeIn(serializers.Serializer):
     icon = serializers.ChoiceField(choices=ICONS, default="star")
     measure = serializers.ChoiceField(choices=Challenge.Measure.choices)
     unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
-    frequency = serializers.ChoiceField(choices=Challenge.Frequency.choices)
-    weekdays = serializers.ListField(
+    window = serializers.ChoiceField(
+        choices=Challenge.Window.choices, help_text="The unit that is judged."
+    )
+    on_days = serializers.ListField(
         child=serializers.IntegerField(min_value=0, max_value=6),
         required=False,
         default=list,
         max_length=7,
-        help_text="For frequency=weekdays: 0 = Monday ... 6 = Sunday.",
+        help_text="Day windows only: the weekdays that count, 0 = Monday ... 6 = Sunday; "
+        "empty = every day.",
     )
-    times = serializers.IntegerField(required=False, allow_null=True, default=None, min_value=1)
-    target_scope = serializers.ChoiceField(
-        choices=Challenge.TargetScope.choices, default=Challenge.TargetScope.NONE
+    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
+    need_value = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="What each window needs: check-ins (1 for a day), or a total (numbers only).",
     )
-    target_value = serializers.DecimalField(
-        max_digits=10, decimal_places=2, required=False, allow_null=True, default=None
+    day_min = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Numbers counted in check-ins: the least amount for a check-in to count.",
     )
     proof_kind = serializers.ChoiceField(
         choices=Challenge.ProofKind.choices, default=Challenge.ProofKind.NONE
@@ -67,11 +77,11 @@ class ChallengeOut(serializers.Serializer):
     icon = serializers.ChoiceField(choices=ICONS)
     measure = serializers.ChoiceField(choices=Challenge.Measure.choices)
     unit = serializers.CharField()
-    frequency = serializers.ChoiceField(choices=Challenge.Frequency.choices)
-    weekdays = serializers.ListField(child=serializers.IntegerField())
-    times = serializers.IntegerField(allow_null=True)
-    target_scope = serializers.ChoiceField(choices=Challenge.TargetScope.choices)
-    target_value = serializers.DecimalField(
+    window = serializers.ChoiceField(choices=Challenge.Window.choices)
+    on_days = serializers.ListField(child=serializers.IntegerField())
+    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
+    need_value = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    day_min = serializers.DecimalField(
         max_digits=10, decimal_places=2, allow_null=True, coerce_to_string=False
     )
     proof_kind = serializers.ChoiceField(choices=Challenge.ProofKind.choices)
