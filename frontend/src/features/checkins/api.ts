@@ -17,6 +17,7 @@ export type ProofUpload = components["schemas"]["ProofUploadOut"];
 export type ProofStart = components["schemas"]["ProofStartInRequest"];
 export type FeedItem = components["schemas"]["FeedItemOut"];
 export type MemberProgress = components["schemas"]["MemberProgressOut"];
+export type Window = components["schemas"]["WindowOut"];
 
 export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
@@ -24,6 +25,9 @@ const boardKey = (id: string, month: string) => [...checkinsKey, "board", id, mo
 const feedKey = [...checkinsKey, "feed"] as const;
 const dayKey = (id: string, day: string) => [...checkinsKey, "day", id, day] as const;
 const memberKey = (id: string) => [...checkinsKey, "member", id] as const;
+type WindowsQuery = { start?: string; until?: string };
+const windowsKey = (id: string, query: WindowsQuery) =>
+  [...checkinsKey, "windows", id, query] as const;
 
 /** A member's month (this month) on the challenges you can see: streaks, days and proofs by day. */
 export function useMemberProgress(id: string) {
@@ -54,6 +58,23 @@ export function useBoard(id: string, month: string) {
           params: { path: { challenge_id: id }, query: { month } },
         }),
       ),
+  });
+}
+
+/**
+ * A challenge's weeks, months or whole period: what each asks for and, for a participant, how it
+ * stands. `start`: as if scheduled from that day; `until`: as if you left that day.
+ */
+export function useWindows(id: string, query: WindowsQuery = {}, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: windowsKey(id, query),
+    queryFn: () =>
+      call(
+        api.GET("/api/v1/challenges/{challenge_id}/windows", {
+          params: { path: { challenge_id: id }, query },
+        }),
+      ),
+    enabled,
   });
 }
 

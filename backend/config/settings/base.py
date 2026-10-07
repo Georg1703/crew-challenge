@@ -148,8 +148,8 @@ SPECTACULAR_SETTINGS = {
         "CheckInStatusEnum": "apps.checkins.models.CheckIn.Status",
         "ProofStatusEnum": "apps.checkins.models.Proof.Status",
         "UploadModeEnum": "apps.media.models.Upload.Mode",
-        # Names the contract had before proofs also brought a "kind" and a "status".
-        "KindEnum": ["days", "amount"],
+        "VerdictEnum": "apps.checkins.api.serializers.VERDICTS",
+        # The name the contract had before proofs also brought a "status".
         "StatusEnum": ["valid", "expired", "used"],
     },
 }

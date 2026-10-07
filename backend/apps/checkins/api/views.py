@@ -8,7 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.checkins import selectors, services
+from apps.checkins import days, selectors, services
 from apps.checkins.models import Proof
 from apps.core import clock
 from apps.core.errors import ValidationFailed
@@ -33,6 +33,7 @@ from .serializers import (
     ProofUploadOut,
     TodayChallengeOut,
     TodayOut,
+    WindowOut,
 )
 
 
@@ -40,11 +41,28 @@ def _member(request: Request) -> Member:
     return request.member  # type: ignore[attr-defined]
 
 
-def _day(raw: str) -> date:
+def _day(raw: str, name: str = "day") -> date:
     try:
         return date.fromisoformat(raw)
     except ValueError as exc:
-        raise ValidationFailed(fields={"day": ["Use YYYY-MM-DD."]}) from exc
+        raise ValidationFailed(fields={name: ["Use YYYY-MM-DD."]}) from exc
+
+
+def _optional_day(request: Request, name: str) -> date | None:
+    raw = request.query_params.get(name)
+    return _day(raw, name) if raw else None
+
+
+def window_data(judged: days.Judged) -> dict[str, Any]:
+    w, verdict = judged.window, judged.verdict
+    return {
+        "first": w.first,
+        "last": w.last,
+        "need": w.need,
+        "full_need": w.full_need,
+        "done": verdict.done if verdict else None,
+        "state": verdict.state if verdict else None,
+    }
 
 
 def proof_data(proof: Proof) -> dict[str, Any]:
@@ -98,7 +116,7 @@ def card_data(card: selectors.Card) -> dict[str, Any]:
         "total": card.total,
         "streak": card.streak,
         "week": [{"day": d, "state": s} for d, s in card.week],
-        "progress": card.progress.__dict__ if card.progress else None,
+        "current": window_data(card.current) if card.current else None,
         "settled": card.settled,
         "proofs": [proof_data(p) for p in card.proofs],
         "proof_days": card.proof_days,
@@ -170,6 +188,32 @@ def _month(request: Request, member: Member) -> date:
         return date.fromisoformat(f"{raw}-01") if raw else clock.crew_today(member.crew)
     except ValueError as exc:
         raise ValidationFailed(fields={"month": ["Use YYYY-MM."]}) from exc
+
+
+class WindowsView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "start", str, description="YYYY-MM-DD: as if scheduled from that day (no verdicts)."
+            ),
+            OpenApiParameter("until", str, description="YYYY-MM-DD: as if you left that day."),
+        ],
+        responses=WindowOut(many=True),
+        operation_id="challenges_windows",
+    )
+    def get(self, request: Request, challenge_id: UUID) -> Response:
+        """The challenge's weeks, months or whole period: what each asks for and how yours stand."""
+        found = selectors.challenge_windows(
+            member=_member(request),
+            challenge_id=challenge_id,
+            start=_optional_day(request, "start"),
+            until=_optional_day(request, "until"),
+        )
+        if found is None:
+            raise services.ChallengeNotFound()
+        return Response(WindowOut([window_data(j) for j in found], many=True).data)
 
 
 class BoardView(APIView):

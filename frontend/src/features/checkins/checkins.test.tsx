@@ -44,7 +44,7 @@ const walk: TodayChallenge = {
   total: null,
   streak: 1,
   week: week("todo"),
-  progress: null,
+  current: null,
   settled: false,
   proofs: [],
   proof_days: [],
@@ -98,6 +98,50 @@ describe("today", () => {
     expect(screen.getByRole("progressbar", { name: "12 / 20 pages" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Monday: done" })).toHaveLength(2);
     expect(screen.queryByRole("img", { name: /^Ana:/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the week so far, with a tag only when the week asks for less", async () => {
+    const swim: TodayChallenge = {
+      ...walk,
+      id: "swim",
+      title: "Swim",
+      window: "week",
+      need_value: 3,
+      streak: null,
+      current: {
+        first: "2026-11-12",
+        last: "2026-11-15",
+        need: 2,
+        full_need: 3,
+        done: 1,
+        state: "open",
+      },
+    };
+    const run: TodayChallenge = {
+      ...read,
+      id: "run",
+      title: "Run",
+      unit: "km",
+      day_min: null,
+      window: "week",
+      need_kind: "amount",
+      need_value: 50,
+      current: {
+        first: "2026-11-09",
+        last: "2026-11-15",
+        need: 50,
+        full_need: 50,
+        done: 12.5,
+        state: "open",
+      },
+    };
+    mockToday(today([swim, run]));
+    show();
+
+    expect(await screen.findByText("1 of 2 this week")).toBeInTheDocument();
+    expect(screen.getByText("Short week: Thu – Sun, 2 instead of 3")).toBeInTheDocument();
+    expect(screen.getByText("12.5 / 50 km this week")).toBeInTheDocument();
+    expect(screen.getAllByText(/^Short week/)).toHaveLength(1);
   });
 
   it("opens a challenge's page from its card head", async () => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { shortWindow, useWindows } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
 import { addDays, periodEnd } from "@/shared/lib/dates";
 import { formatDay, monthAndYear, monthName, todayIn } from "@/shared/lib/format";
@@ -22,7 +23,15 @@ export function ScheduleSheet({
 }: {
   challenge: Pick<
     Challenge,
-    "id" | "title" | "state" | "period_start" | "period_kind" | "period_length"
+    | "id"
+    | "title"
+    | "state"
+    | "period_start"
+    | "period_kind"
+    | "period_length"
+    | "window"
+    | "need_kind"
+    | "unit"
   >;
   timeZone: string;
   open: boolean;
@@ -43,6 +52,13 @@ export function ScheduleSheet({
   const firstWhole = options.find((option) => option.startsOn === option.periodStart);
   const value =
     picked ?? (kind === "day" ? tomorrow : (firstWhole?.periodStart ?? options[0]?.periodStart));
+  // Weeks or months the chosen start cuts short ask for less: say so before it is scheduled.
+  const preview = useWindows(challenge.id, value ? { start: value } : {}, {
+    enabled: Boolean(value) && challenge.window !== "day",
+  });
+  const shortNotes = (preview.data ?? []).flatMap(
+    (w) => shortWindow(t, w, challenge, i18n.language) ?? [],
+  );
   const day = (date: string) => formatDay(date, i18n.language);
   const when = (start: string) =>
     kind === "month"
@@ -105,6 +121,11 @@ export function ScheduleSheet({
           }))}
         />
       )}
+      {shortNotes.map((note) => (
+        <p key={note} className={styles.muted}>
+          {note}
+        </p>
+      ))}
       <p className={styles.muted}>
         {moving ? t("challenges.schedule.moveBody") : t("challenges.schedule.body")}
       </p>

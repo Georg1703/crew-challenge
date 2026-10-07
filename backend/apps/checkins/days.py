@@ -1,4 +1,4 @@
-"""Pure day rules: how a day looks, how a window is judged, streaks and progress.
+"""Pure day rules: how a day looks, how a window is judged, streaks and today's window.
 
 No database and no clock here: callers pass crew-local dates (`clock.crew_today`) and the
 check-ins they loaded. Which windows a challenge has and what each one needs comes from
@@ -132,18 +132,40 @@ def state(challenge: Challenge, part: Span, record: Record, day: date, today: da
     return DayState.MISSED if is_due(challenge, day) else DayState.NOT_DUE
 
 
-def _verdicts(challenge: Challenge, part: Span, record: Record, today: date) -> list[str]:
+@dataclass(frozen=True)
+class Judged:
+    """A window and how it stands today (no verdict for someone who doesn't take part)."""
+
+    window: Window
+    verdict: Verdict | None
+
+
+def judged(challenge: Challenge, part: Span, record: Record, today: date) -> list[Judged]:
+    """Every window of one participant's days, oldest first, with its verdict."""
     return [
-        judge(challenge, w, record, today).state
+        Judged(w, judge(challenge, w, record, today))
         for w in windows.windows(challenge, part.first, part.last)
     ]
+
+
+def current(challenge: Challenge, part: Span, record: Record, today: date) -> Judged | None:
+    """The window today is in (a week, a month or the whole period); None when judged day by day
+    (the day itself says it all) or when today is in no window."""
+    if is_fixed(challenge):
+        return None
+    window = windows.window_at(challenge, part.first, part.last, today)
+    return Judged(window, judge(challenge, window, record, today)) if window else None
+
+
+def _verdicts(challenge: Challenge, part: Span, record: Record, today: date) -> list[str]:
+    return [j.verdict.state for j in judged(challenge, part, record, today) if j.verdict]
 
 
 def streak(challenge: Challenge, part: Span, record: Record, today: date) -> int | None:
     """Windows in a row that were met, counting back from the newest: due days or weeks.
 
     The window still open today is skipped, so it never breaks the streak. A challenge judged
-    once over its whole period has progress instead (None).
+    once over its whole period shows its one window instead (None).
     """
     if challenge.window == Challenge.Window.PERIOD:
         return None
@@ -170,27 +192,6 @@ def longest_streak(challenge: Challenge, part: Span, record: Record, today: date
     return best
 
 
-@dataclass(frozen=True)
-class Progress:
-    """Toward a count of days (`days`) or a total (`amount`)."""
-
-    kind: str
-    done: Decimal
-    goal: Decimal
-
-
-def progress(challenge: Challenge, part: Span, record: Record, today: date) -> Progress | None:
-    """Progress in today's window (a week or the whole period); None when judged day by day."""
-    if is_fixed(challenge):
-        return None
-    window = windows.window_at(challenge, part.first, part.last, today)
-    if window is None:
-        return None
-    verdict = judge(challenge, window, record, today)
-    kind = "amount" if challenge.need_kind == Challenge.NeedKind.AMOUNT else "days"
-    return Progress(kind, verdict.done, window.need)
-
-
 def settled_today(challenge: Challenge, part: Span, record: Record, today: date) -> bool | None:
     """Whether today's ring segment for this challenge is full; None if it has no segment.
 
@@ -204,5 +205,6 @@ def settled_today(challenge: Challenge, part: Span, record: Record, today: date)
         return today in record.done
     if today in record.done:
         return True
-    goal = progress(challenge, part, record, today)
-    return goal is not None and goal.kind == "days" and goal.done >= goal.goal > 0
+    now = current(challenge, part, record, today)
+    counted = challenge.need_kind == Challenge.NeedKind.COUNT
+    return bool(counted and now and now.verdict and now.verdict.state == Verdict.MET)

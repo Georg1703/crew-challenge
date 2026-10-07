@@ -15,7 +15,8 @@ from django.db.models.functions import Greatest
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
-from apps.challenges.periods import dates, month_of, week_of
+from apps.challenges.periods import dates, month_of, scheduled_dates, week_of
+from apps.challenges.windows import windows
 from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Member
@@ -78,7 +79,7 @@ class Card:
     total: Decimal | None
     streak: int | None
     week: list[tuple[date, str]]
-    progress: days.Progress | None
+    current: days.Judged | None  # the week, month or period today is in
     settled: bool | None  # the ring segment: full, empty, or no segment today
     proofs: list[Proof]  # today's
     proof_days: list[date]  # this week's days with proof
@@ -119,7 +120,7 @@ def _card(participant: Participant, record: days.Record, today: date, proofs: li
         total=record.amounts.get(today),
         streak=days.streak(challenge, part, record, today),
         week=[(d, days.state(challenge, part, record, d, today)) for d in week],
-        progress=days.progress(challenge, part, record, today),
+        current=days.current(challenge, part, record, today),
         settled=days.settled_today(challenge, part, record, today),
         proofs=proofs,
         proof_days=[d for d in week if d in record.proof_days],
@@ -160,6 +161,38 @@ def today(*, member: Member) -> Today:
         row.challenges.append((participant.challenge_id, segment))
     result.crew = list(crew.values())
     return result
+
+
+def challenge_windows(
+    *, member: Member, challenge_id: UUID, start: date | None = None, until: date | None = None
+) -> list[days.Judged] | None:
+    """The windows of a challenge the member can see: theirs, with verdicts, when they take part.
+
+    `start`: as if scheduled to begin that day (an admin choosing), without verdicts. `until`: as
+    if the member left that day (the leave sheet). A proposal without `start` has no dates: none.
+    """
+    challenge = challenges.get_challenge(member=member, challenge_id=challenge_id)
+    if challenge is None:
+        return None
+    today = clock.crew_today(member.crew)
+    if start is not None:
+        first, last = scheduled_dates(challenge.period_kind, challenge.period_length, start, today)
+        challenge.period_start, challenge.start_date, challenge.end_date = start, first, last
+        return [days.Judged(w, None) for w in windows(challenge, first, last)]
+    if challenge.state != Challenge.State.CHOSEN:
+        return []
+    participant = Participant.objects.filter(
+        challenge=challenge, member=member, left_on__isnull=True
+    ).first()
+    part = days.span(challenge, None)
+    if until is not None:
+        part = days.Span(part.first, min(part.last, until))
+    if participant is None:  # an admin who doesn't take part: needs only
+        return [days.Judged(w, None) for w in windows(challenge, part.first, part.last)]
+    record = records(challenge_ids=[challenge.pk], member_ids=[member.pk]).get(
+        (challenge.pk, member.pk), days.Record()
+    )
+    return days.judged(challenge, part, record, today)
 
 
 def card(*, member: Member, challenge_id: UUID) -> Card | None:

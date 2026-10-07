@@ -208,3 +208,58 @@ def test_proof_input_is_checked(browser, setup):
     )
     assert bad_day.status_code == 400
     assert start(browser, read, kind="audio", content_type="audio/mp4", size=4).status_code == 400
+
+
+def test_windows_show_what_each_week_asks_for(browser):
+    swim = {
+        "title": "Swim",
+        "measure": "check",
+        "window": "week",
+        "need_value": 3,
+        "period_kind": "day",
+        "period_length": 10,
+        "proof_kind": "photo",
+    }
+    with time_machine.travel("2026-10-10 12:00Z", tick=False):
+        admin = AdminFactory.create(display_name="Ana")
+        member = MemberFactory.create(crew=admin.crew, display_name="Bogdan")
+        challenge = challenges.propose_challenge(by=member, shape=swim, participant_ids=[member.pk])
+        url = f"/api/v1/challenges/{challenge.pk}/windows"
+        browser.force_login(admin.user)
+        assert browser.get(url).json() == []  # a proposal has no dates yet
+        preview = browser.get(f"{url}?start=2026-11-05").json()  # a Thursday
+        assert [
+            (w["first"], w["last"], w["need"], w["full_need"], w["state"]) for w in preview
+        ] == [
+            ("2026-11-05", "2026-11-08", 2.0, 3.0, None),
+            ("2026-11-09", "2026-11-14", 3.0, 3.0, None),
+        ]
+        assert browser.get(f"{url}?start=soon").status_code == 400
+        challenges.schedule_challenge(
+            by=admin, challenge_id=challenge.pk, period_start=date(2026, 11, 5)
+        )
+    with time_machine.travel("2026-11-06 08:00Z", tick=False):
+        services.check_in(by=member, challenge_id=challenge.pk, day=date(2026, 11, 6))
+        watching = browser.get(url).json()  # Ana sees the weeks but doesn't take part
+        assert [(w["need"], w["done"], w["state"]) for w in watching] == [
+            (2.0, None, None),
+            (3.0, None, None),
+        ]
+
+        browser.force_login(member.user)
+        mine = browser.get(url).json()
+        assert [(w["done"], w["state"]) for w in mine] == [(1.0, "open"), (0.0, "future")]
+        leaving = browser.get(f"{url}?until=2026-11-06").json()  # Thursday and Friday
+        assert [(w["last"], w["need"], w["state"]) for w in leaving] == [("2026-11-06", 1.0, "met")]
+        card = browser.get("/api/v1/today").json()["challenges"][0]
+        assert card["current"] == {
+            "first": "2026-11-05",
+            "last": "2026-11-08",
+            "need": 2.0,
+            "full_need": 3.0,
+            "done": 1.0,
+            "state": "open",
+        }
+
+        browser.force_login(AdminFactory.create().user)
+        assert browser.get(url).status_code == 404

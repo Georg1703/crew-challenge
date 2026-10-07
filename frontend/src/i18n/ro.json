@@ -599,18 +599,6 @@
     "totalOf": "{{total}} / {{goal}} {{unit}}",
     "totalToday": "{{total}} {{unit}} azi",
     "streak": "Serie: {{n}}",
-    "progress": {
-      "days": {
-        "week": "{{done}} din {{goal}} săptămâna asta",
-        "month": "{{done}} din {{goal}} luna asta",
-        "period": "{{done}} din {{goal}} până la final"
-      },
-      "amount": {
-        "week": "{{done}} / {{goal}} {{unit}} săptămâna asta",
-        "month": "{{done}} / {{goal}} {{unit}} luna asta",
-        "period": "{{done}} / {{goal}} {{unit}} până la final"
-      }
-    },
     "weekLabel": "Săptămâna asta",
     "states": {
       "done": "bifat",
@@ -739,6 +727,45 @@
         "5": "Medie închisă",
         "6": "Închisă"
       }
+    }
+  },
+  "windows": {
+    "progress": {
+      "count": {
+        "week": "{{done}} din {{goal}} săptămâna asta",
+        "month": "{{done}} din {{goal}} luna asta",
+        "period": "{{done}} din {{goal}} până la final"
+      },
+      "amount": {
+        "week": "{{done}} / {{goal}} {{unit}} săptămâna asta",
+        "month": "{{done}} / {{goal}} {{unit}} luna asta",
+        "period": "{{done}} / {{goal}} {{unit}} până la final"
+      }
+    },
+    "short": {
+      "week": "Săptămână scurtă: {{days}}, {{need}} în loc de {{full}}",
+      "month": "Lună scurtă: {{days}}, {{need}} în loc de {{full}}",
+      "period": "Perioadă mai scurtă: {{days}}, {{need}} în loc de {{full}}"
+    },
+    "leave": {
+      "week": "Ultima ta săptămână ar fi {{days}} și ar cere {{need}} în loc de {{full}}.",
+      "month": "Ultima ta lună ar fi {{days}} și ar cere {{need}} în loc de {{full}}.",
+      "period": "Provocarea ți-ar cere atunci {{need}} în loc de {{full}}."
+    },
+    "title": {
+      "week": "Săptămână cu săptămână",
+      "month": "Lună cu lună",
+      "period": "Toată perioada"
+    },
+    "asks": "Cere {{need}}",
+    "done": "{{done}} din {{need}}",
+    "cut": "{{text}} (în loc de {{full}})",
+    "amount": "{{value}} {{unit}}",
+    "states": {
+      "met": "Reușit",
+      "failed": "Ratat",
+      "open": "Acum",
+      "future": "Urmează"
     }
   }
 }

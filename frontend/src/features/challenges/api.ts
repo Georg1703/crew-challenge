@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, call, type components } from "@/api";
+import { checkinsKey } from "@/features/checkins";
 
 export type Challenge = components["schemas"]["ChallengeOut"];
 export type ChallengeInput = components["schemas"]["ChallengeInRequest"];
@@ -134,6 +135,7 @@ export function useSchedule(id: string) {
     onSuccess: (detail) => {
       queryClient.setQueryData(challengeKey(id), detail);
       void queryClient.invalidateQueries({ queryKey: challengesKey });
+      void queryClient.invalidateQueries({ queryKey: checkinsKey }); // its windows moved too
     },
   });
 }

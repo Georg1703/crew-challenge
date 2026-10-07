@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.challenges.api.serializers import PersonOut
 from apps.challenges.models import ICONS, Challenge
-from apps.checkins.days import DayState
+from apps.checkins.days import DayState, Verdict
 from apps.checkins.models import CheckIn, Proof
 from apps.media.models import Upload
 from apps.reactions.api.serializers import ReactionSummaryOut
@@ -38,10 +38,24 @@ class DayOut(serializers.Serializer):
     state = serializers.ChoiceField(choices=DAY_STATES)
 
 
-class ProgressOut(serializers.Serializer):
-    kind = serializers.ChoiceField(choices=("days", "amount"))
-    done = serializers.FloatField()
-    goal = serializers.FloatField()
+VERDICTS = (Verdict.MET, Verdict.FAILED, Verdict.OPEN, Verdict.FUTURE)
+
+
+class WindowOut(serializers.Serializer):
+    """A stretch of days judged as one unit, what it asks for, and how it stands."""
+
+    first = serializers.DateField()
+    last = serializers.DateField()
+    need = serializers.FloatField(help_text="What this window asks for: check-ins, or a total.")
+    full_need = serializers.FloatField(
+        help_text="What a whole window asks for; more than `need` when this one is cut short."
+    )
+    done = serializers.FloatField(
+        allow_null=True, help_text="Done so far; null for someone who doesn't take part."
+    )
+    state = serializers.ChoiceField(
+        choices=VERDICTS, allow_null=True, help_text="Null for someone who doesn't take part."
+    )
 
 
 class ProofOut(serializers.Serializer):
@@ -85,7 +99,10 @@ class TodayChallengeOut(ChallengeBriefOut):
     total = serializers.FloatField(allow_null=True, help_text="Today's total (numbers only).")
     streak = serializers.IntegerField(allow_null=True)
     week = DayOut(many=True, help_text="Monday to Sunday of this week.")
-    progress = ProgressOut(allow_null=True, help_text="Toward the week's or the period's goal.")
+    current = WindowOut(
+        allow_null=True,
+        help_text="The week, month or period today is in; null for challenges judged day by day.",
+    )
     settled = serializers.BooleanField(
         allow_null=True, help_text="Today's ring segment: full, empty, or none (null)."
     )

@@ -43,3 +43,12 @@ def period_end(kind: str, start: date, length: int) -> date:
     if kind == PeriodKind.DAY:
         return start + timedelta(days=length - 1)
     raise ValueError(f"Unknown period kind: {kind!r}")
+
+
+def scheduled_dates(kind: str, length: int, period_start: date, today: date) -> tuple[date, date]:
+    """The first day that counts and the last day of a period starting on `period_start`.
+
+    A period already under way counts from tomorrow.
+    """
+    start = period_start if today < period_start else today + timedelta(days=1)
+    return start, period_end(kind, period_start, length)

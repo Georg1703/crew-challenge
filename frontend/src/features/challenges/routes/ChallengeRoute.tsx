@@ -3,9 +3,16 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 
 import { useMe } from "@/features/auth";
-import { ChallengeBoard, CheckInSheet, useToday } from "@/features/checkins";
+import {
+  ChallengeBoard,
+  ChallengeWindows,
+  CheckInSheet,
+  shortWindow,
+  useToday,
+  useWindows,
+} from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
-import { formatDate, formatDay, monthAndYear } from "@/shared/lib/format";
+import { formatDate, formatDay, monthAndYear, todayIn } from "@/shared/lib/format";
 import {
   Avatar,
   Banner,
@@ -133,6 +140,16 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
     (myToday.settled === false || myToday.state === "partial");
 
   const started = challenge.phase === "active";
+  const windowed = challenge.window !== "day";
+  // Leaving today cuts the window today is in: say what it then asks for.
+  const todayDay = todayIn(timeZone);
+  const ending = useWindows(
+    challenge.id,
+    { until: todayDay },
+    { enabled: leaving && started && windowed },
+  );
+  const lastWindow = ending.data?.find((w) => w.last === todayDay);
+  const leaveNote = lastWindow && shortWindow(t, lastWindow, challenge, i18n.language, "leave");
   const leaveNow = () =>
     leave.mutate(undefined, {
       onSuccess: () => {
@@ -285,6 +302,10 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
         />
       )}
 
+      {challenge.state === "chosen" && windowed && (
+        <ChallengeWindows challengeId={challenge.id} rule={challenge} />
+      )}
+
       {canCheckIn && (
         <Button
           size="lg"
@@ -333,6 +354,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
         <p className={styles.muted}>
           {started ? t("challenges.leaveBody") : t("challenges.optOutBody")}
         </p>
+        {leaveNote && <p className={styles.muted}>{leaveNote}</p>}
         {leave.error && <Banner tone="danger" title={errorMessage(t, leave.error)} />}
         <div className={styles.actions}>
           <Button variant="danger" size="lg" fullWidth loading={leave.isPending} onClick={leaveNow}>

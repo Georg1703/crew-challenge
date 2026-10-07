@@ -49,7 +49,7 @@ const walk: TodayChallenge = {
   total: null,
   streak: 1,
   week: [],
-  progress: null,
+  current: null,
   settled: true,
   proofs: [saved("p1", "photo", "ready"), saved("v1", "video", "processing")],
   proof_days: ["2026-11-10"],

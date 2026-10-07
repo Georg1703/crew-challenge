@@ -12,7 +12,7 @@ people cannot take the pool's last place.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
 from uuid import UUID
@@ -403,7 +403,8 @@ def schedule_challenge(*, by: Member, challenge_id: UUID, period_start: date) ->
     if kind == PeriodKind.WEEK and period_start.weekday() != 0:
         raise ValidationFailed(fields={"period_start": ["A week starts on a Monday."]})
     today = clock.crew_today(by.crew)
-    first, last = period_start, periods.period_end(kind, period_start, challenge.period_length)
+    first = period_start
+    start, last = periods.scheduled_dates(kind, challenge.period_length, first, today)
 
     if challenge.state == Challenge.State.CHOSEN:
         assert challenge.start_date is not None
@@ -414,7 +415,6 @@ def schedule_challenge(*, by: Member, challenge_id: UUID, period_start: date) ->
 
     if kind == PeriodKind.DAY and first <= today:
         raise ValidationFailed(fields={"period_start": ["Start tomorrow or later."]})
-    start = first if today < first else today + timedelta(days=1)
     if start > last:
         raise PeriodOver()
     if first > periods.add_months(periods.month_of(today)[0], MONTHS_AHEAD):

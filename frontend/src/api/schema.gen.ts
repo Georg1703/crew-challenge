@@ -250,6 +250,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges/{challenge_id}/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The challenge's weeks, months or whole period: what each asks for and how yours stand. */
+        get: operations["challenges_windows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -912,12 +929,6 @@ export interface components {
         JoinWithAccountInRequest: {
             display_name: string;
         };
-        /**
-         * @description * `days` - days
-         *     * `amount` - amount
-         * @enum {string}
-         */
-        KindEnum: "days" | "amount";
         LoginInRequest: {
             username: string;
             password: string;
@@ -1103,13 +1114,6 @@ export interface components {
          * @enum {string}
          */
         PreferredLanguageEnum: "ro" | "en";
-        ProgressOut: {
-            kind: components["schemas"]["KindEnum"];
-            /** Format: double */
-            done: number;
-            /** Format: double */
-            goal: number;
-        };
         ProofDayOut: {
             /** Format: date */
             day: string;
@@ -1252,8 +1256,8 @@ export interface components {
             streak: number | null;
             /** @description Monday to Sunday of this week. */
             week: components["schemas"]["DayOut"][];
-            /** @description Toward the week's or the period's goal. */
-            progress: components["schemas"]["ProgressOut"] | null;
+            /** @description The week, month or period today is in; null for challenges judged day by day. */
+            current: components["schemas"]["WindowOut"] | null;
             /** @description Today's ring segment: full, empty, or none (null). */
             settled: boolean | null;
             /** @description Today's proofs, uploads in flight too. */
@@ -1286,6 +1290,14 @@ export interface components {
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
         };
         /**
+         * @description * `met` - met
+         *     * `failed` - failed
+         *     * `open` - open
+         *     * `future` - future
+         * @enum {string}
+         */
+        VerdictEnum: "met" | "failed" | "open" | "future";
+        /**
          * @description * `day` - Each day
          *     * `week` - Each week, Monday to Sunday
          *     * `month` - Each calendar month
@@ -1293,6 +1305,37 @@ export interface components {
          * @enum {string}
          */
         WindowEnum: "day" | "week" | "month" | "period";
+        /** @description A stretch of days judged as one unit, what it asks for, and how it stands. */
+        WindowOut: {
+            /** Format: date */
+            first: string;
+            /** Format: date */
+            last: string;
+            /**
+             * Format: double
+             * @description What this window asks for: check-ins, or a total.
+             */
+            need: number;
+            /**
+             * Format: double
+             * @description What a whole window asks for; more than `need` when this one is cut short.
+             */
+            full_need: number;
+            /**
+             * Format: double
+             * @description Done so far; null for someone who doesn't take part.
+             */
+            done: number | null;
+            /**
+             * @description Null for someone who doesn't take part.
+             *
+             *     * `met` - met
+             *     * `failed` - failed
+             *     * `open` - open
+             *     * `future` - future
+             */
+            state: (components["schemas"]["VerdictEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1718,6 +1761,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    challenges_windows: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM-DD: as if scheduled from that day (no verdicts). */
+                start?: string;
+                /** @description YYYY-MM-DD: as if you left that day. */
+                until?: string;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WindowOut"][];
+                };
             };
         };
     };

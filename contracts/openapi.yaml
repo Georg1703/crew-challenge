@@ -435,6 +435,41 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/challenges/{challenge_id}/windows:
+    get:
+      operationId: challenges_windows
+      description: 'The challenge''s weeks, months or whole period: what each asks
+        for and how yours stand.'
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: start
+        schema:
+          type: string
+        description: 'YYYY-MM-DD: as if scheduled from that day (no verdicts).'
+      - in: query
+        name: until
+        schema:
+          type: string
+        description: 'YYYY-MM-DD: as if you left that day.'
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WindowOut'
+          description: ''
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -1616,14 +1651,6 @@ components:
           maxLength: 40
       required:
       - display_name
-    KindEnum:
-      enum:
-      - days
-      - amount
-      type: string
-      description: |-
-        * `days` - days
-        * `amount` - amount
     LoginInRequest:
       type: object
       properties:
@@ -2021,21 +2048,6 @@ components:
       description: |-
         * `ro` - Romana
         * `en` - English
-    ProgressOut:
-      type: object
-      properties:
-        kind:
-          $ref: '#/components/schemas/KindEnum'
-        done:
-          type: number
-          format: double
-        goal:
-          type: number
-          format: double
-      required:
-      - done
-      - goal
-      - kind
     ProofDayOut:
       type: object
       properties:
@@ -2316,11 +2328,12 @@ components:
           items:
             $ref: '#/components/schemas/DayOut'
           description: Monday to Sunday of this week.
-        progress:
+        current:
           allOf:
-          - $ref: '#/components/schemas/ProgressOut'
+          - $ref: '#/components/schemas/WindowOut'
           nullable: true
-          description: Toward the week's or the period's goal.
+          description: The week, month or period today is in; null for challenges
+            judged day by day.
         settled:
           type: boolean
           nullable: true
@@ -2337,6 +2350,7 @@ components:
             format: date
           description: Days of this week with proof.
       required:
+      - current
       - day_min
       - end_date
       - icon
@@ -2344,7 +2358,6 @@ components:
       - measure
       - need_kind
       - need_value
-      - progress
       - proof_days
       - proof_kind
       - proof_required
@@ -2403,6 +2416,18 @@ components:
       - id
       - preferred_language
       - username
+    VerdictEnum:
+      enum:
+      - met
+      - failed
+      - open
+      - future
+      type: string
+      description: |-
+        * `met` - met
+        * `failed` - failed
+        * `open` - open
+        * `future` - future
     WindowEnum:
       enum:
       - day
@@ -2415,6 +2440,50 @@ components:
         * `week` - Each week, Monday to Sunday
         * `month` - Each calendar month
         * `period` - The whole period
+    WindowOut:
+      type: object
+      description: A stretch of days judged as one unit, what it asks for, and how
+        it stands.
+      properties:
+        first:
+          type: string
+          format: date
+        last:
+          type: string
+          format: date
+        need:
+          type: number
+          format: double
+          description: 'What this window asks for: check-ins, or a total.'
+        full_need:
+          type: number
+          format: double
+          description: What a whole window asks for; more than `need` when this one
+            is cut short.
+        done:
+          type: number
+          format: double
+          nullable: true
+          description: Done so far; null for someone who doesn't take part.
+        state:
+          nullable: true
+          description: |-
+            Null for someone who doesn't take part.
+
+            * `met` - met
+            * `failed` - failed
+            * `open` - open
+            * `future` - future
+          oneOf:
+          - $ref: '#/components/schemas/VerdictEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - done
+      - first
+      - full_need
+      - last
+      - need
+      - state
   securitySchemes:
     cookieAuth:
       type: apiKey

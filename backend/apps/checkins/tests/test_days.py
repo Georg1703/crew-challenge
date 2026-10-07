@@ -128,28 +128,35 @@ def test_weekly_streak_counts_met_weeks_and_skips_the_open_one():
     assert days.streak(challenge(window="period"), NOV, r, d(10)) is None
 
 
-def test_progress_toward_week_period_and_targets():
+def now(c: Challenge, r: days.Record, today: date, part: days.Span = NOV) -> tuple | None:
+    judged = days.current(c, part, r, today)
+    if judged is None or judged.verdict is None:
+        return None
+    w = judged.window
+    return (w.first, w.last, w.need, w.full_need, judged.verdict.done, judged.verdict.state)
+
+
+def test_the_current_week_month_or_period_and_how_it_stands():
     today = d(10)
-    weekly = days.progress(challenge(window="week", need_value=3), NOV, record([9]), today)
-    assert weekly == days.Progress("days", Decimal(1), Decimal(3))
-    period = days.progress(challenge(window="period", need_value=12), NOV, record([1, 9]), today)
-    assert period == days.Progress("days", Decimal(2), Decimal(12))
-    once = days.progress(challenge(window="period"), NOV, record([3, 9]), today)
-    assert once == days.Progress("days", Decimal(2), Decimal(1))  # what was done, not capped
+    weekly = challenge(window="week", need_value=3)
+    assert now(weekly, record([9]), today) == (d(9), d(15), 3, 3, 1, "open")
+    period = challenge(window="period", need_value=12)
+    assert now(period, record([1, 9]), today) == (d(1), d(30), 12, 12, 2, "open")
+    once = now(challenge(window="period"), record([3, 9]), today)
+    assert once == (d(1), d(30), 1, 1, 2, "met")  # what was done, not capped
     amounts = {d(8): Decimal(30), d(9): Decimal(5), d(10): Decimal(7)}
     per_week = challenge(
         measure="quantity", window="week", need_kind="amount", need_value=Decimal(50)
     )
-    assert days.progress(per_week, NOV, record(amounts=amounts), today) == days.Progress(
-        "amount", Decimal(12), Decimal(50)
-    )
+    assert now(per_week, record(amounts=amounts), today) == (d(9), d(15), 50, 50, 12, "open")
     per_period = challenge(
         measure="quantity", window="period", need_kind="amount", need_value=Decimal(90)
     )
-    period_total = days.progress(per_period, NOV, record(amounts=amounts), today)
-    assert period_total is not None
-    assert period_total.done == Decimal(42)
-    assert days.progress(challenge(), NOV, record(), today) is None
+    assert now(per_period, record(amounts=amounts), today) == (d(1), d(30), 90, 90, 42, "open")
+    assert now(challenge(), record(), today) is None
+    late = challenge(window="week", need_value=3, period_start=d(5), start_date=d(5))
+    short = now(late, record(), d(5), days.Span(d(5), d(30)))  # Thursday - Sunday
+    assert short == (d(5), d(8), 2, 3, 0, "open")
 
 
 def test_ring_segments():
@@ -262,7 +269,7 @@ def test_daily_and_chosen_day_rules_are_unchanged(
     assert days.streak(c, part, r, today) == streak
     assert days.longest_streak(c, part, r, today) == longest
     assert days.settled_today(c, part, r, today) is settled
-    assert days.progress(c, part, r, today) is None
+    assert days.current(c, part, r, today) is None
 
 
 def test_a_window_is_judged_on_the_days_up_to_today():
@@ -286,7 +293,7 @@ def test_a_total_is_judged_on_the_amounts_of_its_days():
     assert (verdict.state, verdict.done, verdict.short) == ("failed", Decimal(41), Decimal(9))
 
 
-def test_a_monthly_streak_counts_months_and_the_open_month_is_progress():
+def test_a_monthly_streak_counts_months_and_the_open_month_is_current():
     winter = challenge(
         window="month",
         need_value=2,
@@ -302,5 +309,5 @@ def test_a_monthly_streak_counts_months_and_the_open_month_is_progress():
     )
     today = date(2027, 1, 10)
     assert days.streak(winter, part, r, today) == 2  # November and December; January still open
-    assert days.progress(winter, part, r, today) == days.Progress("days", Decimal(0), Decimal(2))
+    assert now(winter, r, today, part) == (date(2027, 1, 1), date(2027, 1, 31), 2, 2, 0, "open")
     assert days.state(winter, part, r, today, today) == DayState.OPEN

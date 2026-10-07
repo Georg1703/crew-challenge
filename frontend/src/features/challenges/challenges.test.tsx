@@ -8,6 +8,8 @@ import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsRow } from ".";
+import type { Window } from "@/features/checkins";
+
 import type { Challenge, Pool } from "./api";
 import { describeRule } from "./describe";
 import { startOptions } from "./periods";
@@ -87,14 +89,21 @@ function mockGets(
     proposals = pool as Value<Pool>,
     chosen = [] as Value<Challenge[]>,
     one = detail() as Value<Challenge>,
+    windows = (() => []) as (query: { start?: string; until?: string }) => Window[],
   } = {},
 ) {
-  vi.spyOn(api, "GET").mockImplementation(((path: string) => {
+  vi.spyOn(api, "GET").mockImplementation(((
+    path: string,
+    init?: { params?: { query?: { start?: string; until?: string } } },
+  ) => {
     if (path === "/api/v1/me") return ok(meAs(member));
     if (path === "/api/v1/crew") return ok(crewDetail);
     if (path === "/api/v1/proposals") return ok(value(proposals));
     if (path === "/api/v1/challenges") return ok(value(chosen));
     if (path === "/api/v1/challenges/{challenge_id}") return ok(value(one));
+    if (path === "/api/v1/challenges/{challenge_id}/windows") {
+      return ok(windows(init?.params?.query ?? {}));
+    }
     return fail(404, { code: "not_found" });
   }) as never);
 }
@@ -291,6 +300,38 @@ describe("challenges list", () => {
       params: { path: { challenge_id: "c1" } },
       body: { period_start: "2026-11-10" },
     });
+    vi.useRealTimers();
+  });
+
+  it("says when the chosen start cuts the first week short", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-04T09:00:00Z") }); // a Wednesday
+    const swim = detail({ period_kind: "day", period_length: 10, window: "week", need_value: 3 });
+    const week = (first: string, last: string, need: number): Window => ({
+      first,
+      last,
+      need,
+      full_need: 3,
+      done: null,
+      state: null,
+    });
+    mockGets(ana, {
+      proposals: { ...pool, proposals: [swim] },
+      one: swim,
+      windows: ({ start }) =>
+        start === "2026-11-05"
+          ? [week("2026-11-05", "2026-11-08", 2), week("2026-11-09", "2026-11-14", 3)]
+          : [week("2026-11-09", "2026-11-15", 3), week("2026-11-16", "2026-11-18", 1)],
+    });
+    renderRoutes(routes, { at: "/challenges" });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Choose" }));
+    const sheet = await screen.findByRole("dialog");
+    expect(await within(sheet).findByText("Short week: Thu – Sun, 2 instead of 3")).toBeVisible(); // tomorrow is a Thursday
+    fireEvent.change(within(sheet).getByLabelText("First day"), {
+      target: { value: "2026-11-09" },
+    });
+    expect(await within(sheet).findByText("Short week: Mon – Wed, 1 instead of 3")).toBeVisible();
+    expect(within(sheet).queryByText(/Thu – Sun/)).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 
@@ -555,7 +596,7 @@ describe("one challenge", () => {
       total: null,
       streak: 9,
       week: [],
-      progress: null,
+      current: null,
       settled: false,
     };
     vi.spyOn(api, "GET").mockImplementation(((path: string) => {
@@ -599,6 +640,64 @@ describe("one challenge", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Check in today" }));
     const sheet = await screen.findByRole("dialog");
     expect(within(sheet).getByRole("heading", { name: "50 push-ups" })).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("lists a running challenge's weeks and what leaving today makes of this one", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-10T09:00:00Z") }); // a Tuesday
+    const swim = detail({
+      ...scheduled({ period_kind: "day", period_length: 10 }),
+      period_start: "2026-11-05",
+      start_date: "2026-11-05",
+      end_date: "2026-11-14",
+      phase: "active",
+      measure: "check",
+      window: "week",
+      need_value: 3,
+      taking_part: true,
+      participants: [{ member: person(bogdan), left_on: null }],
+    });
+    const first: Window = {
+      first: "2026-11-05",
+      last: "2026-11-08",
+      need: 2,
+      full_need: 3,
+      done: 2,
+      state: "met",
+    };
+    mockGets(bogdan, {
+      one: swim,
+      windows: ({ until }) =>
+        until
+          ? [first, { ...first, first: "2026-11-09", last: "2026-11-10", need: 1, done: 1 }]
+          : [
+              first,
+              {
+                ...first,
+                first: "2026-11-09",
+                last: "2026-11-14",
+                need: 3,
+                done: 1,
+                state: "open",
+              },
+            ],
+    });
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    const weeks = await screen.findByRole("list", { name: "Week by week" });
+    expect(weeks).toHaveTextContent("November 5 – November 8");
+    expect(weeks).toHaveTextContent("2 of 2 (instead of 3)");
+    expect(within(weeks).getByText("Done")).toBeInTheDocument();
+    expect(weeks).toHaveTextContent("1 of 3");
+    expect(within(weeks).getByText("Now")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Leave the challenge" }));
+    const sheet = await screen.findByRole("dialog", { name: "Leave the challenge?" });
+    expect(
+      await within(sheet).findByText(
+        "Your last week would be Mon – Tue and ask for 1 instead of 3.",
+      ),
+    ).toBeInTheDocument();
     vi.useRealTimers();
   });
 

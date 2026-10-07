@@ -21,6 +21,7 @@ import {
 
 import { useCheckIn, useUndoCheckIn, type TodayChallenge } from "../api";
 import styles from "../checkins.module.css";
+import { shortWindow, windowKind } from "../windows";
 import { AmountSheet } from "./AmountSheet";
 import { ProofRow } from "./ProofRow";
 
@@ -87,6 +88,8 @@ export function CheckInCard({
     </>
   );
   const total = card.total ?? 0;
+  const current = card.current;
+  const short = current && shortWindow(t, current, card, i18n.language);
 
   return (
     <Card className={styles.card}>
@@ -163,17 +166,17 @@ export function CheckInCard({
         />
       )}
 
-      {card.progress && (
-        <p className={styles.meta}>
-          {t(
-            `checkins.progress.${card.progress.kind}.${card.window === "week" || card.window === "month" ? card.window : "period"}`,
-            {
-              done: formatNumber(card.progress.done, i18n.language),
-              goal: formatNumber(card.progress.goal, i18n.language),
+      {current && (
+        <div className={styles.window}>
+          <p className={styles.meta}>
+            {t(`windows.progress.${card.need_kind}.${windowKind(card)}`, {
+              done: formatNumber(current.done ?? 0, i18n.language),
+              goal: formatNumber(current.need, i18n.language),
               unit: card.unit,
-            },
-          )}
-        </p>
+            })}
+          </p>
+          {short && <StatusPill tone="warning">{short}</StatusPill>}
+        </div>
       )}
 
       <WeekStrip

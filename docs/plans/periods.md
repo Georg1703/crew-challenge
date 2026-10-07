@@ -1,7 +1,7 @@
 # Plan: periods, windows and requirements
 
-Status: stages 0-3 merged into `main`, 1-3 deployed (2026-10-07); stage 4 on
-`feat/month-window`; stage 5 to do. One branch and one pull request per stage. Explainer with diagrams and worked examples (private, the owner's):
+Status: stages 0-4 merged into `main`, 1-3 deployed (2026-10-07); stage 5 on
+`feat/window-hints`. One branch and one pull request per stage. Explainer with diagrams and worked examples (private, the owner's):
 https://claude.ai/artifact/1K7fg8iWqb2z6Zb1BwrQZx
 
 Priorities, in order: judging is exactly right (it will decide punishments), the crew always sees
@@ -332,22 +332,30 @@ What was done:
 - Tests: calendar months with a late start and February, a streak counted in months, the shape
   rules and both constraints, the wizard offering months only from 2 months on.
 
-### Stage 5 - Showing windows
+### Stage 5 - Showing windows - done
 
-- API: the Today card's `progress` is replaced by `window` (`first`, `last`, `need`, `full_need`,
-  `done`, `state`); `GET /api/v1/challenges/{id}/windows?start=YYYY-MM-DD` lists a challenge's
-  windows for the viewer, or for a start the admin is considering (one endpoint for the challenge
-  page and the schedule sheet, so the app never computes needs itself).
-- Frontend:
-  - Today card: "1 of 2 this week" and a tag "Short week - Thu-Sun - 2 instead of 3";
-  - challenge page: the list of windows with their needs and verdicts;
-  - schedule sheet: "October starts on a Thursday, so the first week asks for 2";
-  - leave sheet: what the last window then asks for;
-  - one i18n key family for the phrases (`windows.short.*`), in Romanian and English.
-- Removed: `ProgressOut`, its `KindEnum` override in `config/settings/base.py`, `days.Progress`,
-  the `checkins.progress.*` keys (replaced, not kept beside the new ones).
-- Tests: the tag only on short windows; amounts; the schedule note for a late start.
-- Docs: `docs/design-system.md` if a new shared piece appears (likely a small `Tag`).
+- API: the Today card's `progress` is replaced by `current` (`first`, `last`, `need`, `full_need`,
+  `done`, `state`; named `current` because the card already has `window`, the rule's window kind);
+  `GET /api/v1/challenges/{id}/windows` lists a challenge's windows for the viewer (verdicts only
+  for a participant), `?start=YYYY-MM-DD` for a start the admin is considering and
+  `?until=YYYY-MM-DD` for leaving that day. One endpoint for the challenge page, the schedule
+  sheet and the leave sheet, so the app never computes needs itself. `days.current` and
+  `days.judged` serve both; `periods.scheduled_dates` is shared with `schedule_challenge`.
+- Frontend (`features/checkins/windows.ts` holds the phrases, `useWindows` the query):
+  - Today card: "1 of 2 this week" and a warning `StatusPill` "Short week: Thu - Sun, 2 instead
+    of 3" (weekday names for weeks, dates for months and periods);
+  - challenge page (`ChallengeWindows`): the windows with done or need, "(instead of 3)" when cut,
+    and the verdict;
+  - schedule sheet: the same short-window line for every window the chosen start cuts;
+  - leave sheet: "Your last week would be Mon - Tue and ask for 1 instead of 3.";
+  - one i18n key family, `windows.*`; the progress phrases moved there as
+    `windows.progress.{count,amount}.*`.
+- Removed: `ProgressOut`, its `KindEnum` override, `days.Progress` and `days.progress`, the
+  `checkins.progress.*` keys.
+- Tests: the tag only on short windows, amounts, the schedule note for a late start, the windows
+  list and the leave note; the endpoint for a participant, an admin who doesn't take part, a
+  preview, leaving, a proposal and another crew.
+- Docs: no new shared component (the tag is a `StatusPill`).
 
 ## Removal checklist
 
@@ -374,7 +382,7 @@ rows are gone before approving.
 | Month bounds and date-range loops recomputed (done) | `apps/checkins`, `windows.py`, `days.py` | 3 |
 | `months.ts` and the frontend date-math copies (done) | frontend | 3 |
 | "month" wording in schedule texts and period errors (done) | i18n, services | 3 |
-| `ProgressOut`, `KindEnum` override, `days.Progress`, `checkins.progress.*` | API, settings, i18n | 5 |
+| `ProgressOut`, `KindEnum` override, `days.Progress`, `checkins.progress.*` (done) | API, settings, i18n | 5 |
 
 ## Out of scope
 

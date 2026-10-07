@@ -599,18 +599,6 @@
     "totalOf": "{{total}} / {{goal}} {{unit}}",
     "totalToday": "{{total}} {{unit}} today",
     "streak": "Streak: {{n}}",
-    "progress": {
-      "days": {
-        "week": "{{done}} of {{goal}} this week",
-        "month": "{{done}} of {{goal}} this month",
-        "period": "{{done}} of {{goal}} by the end"
-      },
-      "amount": {
-        "week": "{{done}} / {{goal}} {{unit}} this week",
-        "month": "{{done}} / {{goal}} {{unit}} this month",
-        "period": "{{done}} / {{goal}} {{unit}} by the end"
-      }
-    },
     "weekLabel": "This week",
     "states": {
       "done": "done",
@@ -739,6 +727,45 @@
         "5": "Medium dark",
         "6": "Dark"
       }
+    }
+  },
+  "windows": {
+    "progress": {
+      "count": {
+        "week": "{{done}} of {{goal}} this week",
+        "month": "{{done}} of {{goal}} this month",
+        "period": "{{done}} of {{goal}} by the end"
+      },
+      "amount": {
+        "week": "{{done}} / {{goal}} {{unit}} this week",
+        "month": "{{done}} / {{goal}} {{unit}} this month",
+        "period": "{{done}} / {{goal}} {{unit}} by the end"
+      }
+    },
+    "short": {
+      "week": "Short week: {{days}}, {{need}} instead of {{full}}",
+      "month": "Short month: {{days}}, {{need}} instead of {{full}}",
+      "period": "Shorter period: {{days}}, {{need}} instead of {{full}}"
+    },
+    "leave": {
+      "week": "Your last week would be {{days}} and ask for {{need}} instead of {{full}}.",
+      "month": "Your last month would be {{days}} and ask for {{need}} instead of {{full}}.",
+      "period": "The challenge would then ask you for {{need}} instead of {{full}}."
+    },
+    "title": {
+      "week": "Week by week",
+      "month": "Month by month",
+      "period": "The whole period"
+    },
+    "asks": "Asks for {{need}}",
+    "done": "{{done}} of {{need}}",
+    "cut": "{{text}} (instead of {{full}})",
+    "amount": "{{value}} {{unit}}",
+    "states": {
+      "met": "Done",
+      "failed": "Missed",
+      "open": "Now",
+      "future": "To come"
     }
   }
 }
