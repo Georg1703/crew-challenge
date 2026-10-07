@@ -70,6 +70,8 @@ export function FeedCard({
   reactions?: ReactNode;
 }) {
   const footer = week || facts.length > 0 || reactions;
+  // One stage per card, the middle a reaction flies over: the photos when there are any.
+  const stage = proofs.length > 0 ? undefined : "";
   return (
     <article className={cx(styles.card, tone === "success" && styles.success)}>
       <header className={styles.head}>
@@ -89,13 +91,13 @@ export function FeedCard({
         </div>
       </header>
       {highlight && (
-        <p className={styles.highlight} data-stage="">
+        <p className={styles.highlight} data-stage={stage}>
           <span className={styles.big}>{highlight.value}</span>
           <span>{highlight.text}</span>
         </p>
       )}
       {amount && (
-        <div className={styles.amount} data-stage="">
+        <div className={styles.amount} data-stage={stage}>
           <p className={styles.amountLine}>
             <span className={styles.amountValue}>{amount.value}</span>
             {amount.detail && <span className={styles.time}>{amount.detail}</span>}
