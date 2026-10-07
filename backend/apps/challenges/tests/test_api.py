@@ -39,13 +39,11 @@ def as_member(client, member):
     return client
 
 
-NOVEMBER = {"period_kind": "month", "period_start": "2026-11-01"}
+NOVEMBER = {"period_start": "2026-11-01"}
 
 
 def schedule(admin, challenge, start=date(2026, 11, 1)):
-    services.schedule_challenge(
-        by=admin, challenge_id=challenge.pk, period_kind="month", period_start=start
-    )
+    services.schedule_challenge(by=admin, challenge_id=challenge.pk, period_start=start)
 
 
 def test_propose_vote_and_read_the_pool(browser, people):
@@ -55,12 +53,8 @@ def test_propose_vote_and_read_the_pool(browser, people):
     assert created.status_code == 201
     body = created.json()
     assert body["created_by"]["display_name"] == "Bogdan"
-    assert (body["state"], body["phase"], body["period_kind"], body["start_date"]) == (
-        "proposed",
-        None,
-        None,
-        None,
-    )
+    assert (body["state"], body["phase"], body["start_date"]) == ("proposed", None, None)
+    assert (body["period_kind"], body["period_length"]) == ("month", 1)  # the default length
     assert (body["window"], body["on_days"], body["need_kind"], body["need_value"]) == (
         "week",
         [],
@@ -171,11 +165,10 @@ def test_admin_schedules_and_everyone_sees_it(browser, people):
 @pytest.mark.parametrize(
     ("payload", "status", "code"),
     [
-        ({"period_kind": "week", "period_start": "2026-11-02"}, 400, "period_kind_not_available"),
-        ({"period_kind": "month", "period_start": "2026-11-02"}, 400, "validation_failed"),
-        ({"period_kind": "month", "period_start": "2027-12-01"}, 400, "period_too_far"),
-        ({"period_kind": "month", "period_start": "2026-09-01"}, 409, "period_over"),
-        ({"period_kind": "year", "period_start": "2026-11-01"}, 400, "validation_failed"),
+        ({"period_start": "2026-11-02"}, 400, "validation_failed"),  # a month starts on the 1st
+        ({"period_start": "2027-12-01"}, 400, "period_too_far"),
+        ({"period_start": "2026-09-01"}, 409, "period_over"),
+        ({"period_start": "november"}, 400, "validation_failed"),
     ],
 )
 def test_bad_periods_answer_with_a_code(browser, people, payload, status, code):
@@ -270,3 +263,22 @@ def test_strangers_cannot_take_part(browser, people):
     )
     assert response.status_code == 400
     assert "participant_ids" in response.json()["error"]["fields"]
+
+
+def test_a_proposal_says_how_long_and_the_admin_picks_the_monday(browser, people):
+    admin, member = people
+    weeks = {**SHAPE, "period_kind": "week", "period_length": 4}
+    created = as_member(browser, member).post("/api/v1/challenges", weeks, format="json").json()
+    assert (created["period_kind"], created["period_length"]) == ("week", 4)
+    scheduled = as_member(browser, admin).put(
+        f"/api/v1/challenges/{created['id']}/schedule",
+        {"period_start": "2026-11-02"},
+        format="json",
+    )
+    assert scheduled.status_code == 200
+    body = scheduled.json()
+    assert (body["period_start"], body["start_date"], body["end_date"]) == (
+        "2026-11-02",
+        "2026-11-02",
+        "2026-11-29",
+    )

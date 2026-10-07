@@ -30,9 +30,7 @@ def scheduled(admin, by, month: date, participant_ids=None, **shape):
         shape={"title": "Walk", **shape},
         participant_ids=participant_ids,
     )
-    challenges.schedule_challenge(
-        by=admin, challenge_id=challenge.pk, period_kind="month", period_start=month
-    )
+    challenges.schedule_challenge(by=admin, challenge_id=challenge.pk, period_start=month)
     return challenge
 
 

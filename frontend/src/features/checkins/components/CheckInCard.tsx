@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { ChallengeIcon } from "@/features/challenges";
 import { errorMessage } from "@/i18n/errors";
 import { cx } from "@/shared/lib/cx";
+import { weekday } from "@/shared/lib/dates";
 import { formatNumber } from "@/shared/lib/format";
 import { tap } from "@/shared/lib/haptics";
 import {
@@ -24,11 +25,6 @@ import { AmountSheet } from "./AmountSheet";
 import { ProofRow } from "./ProofRow";
 
 const QUICK_AMOUNTS = [1, 5, 10] as const;
-
-/** Weekday index, Monday = 0, of a crew-local date ("2026-11-10"). */
-function weekday(day: string): number {
-  return (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
-}
 
 /** One of my challenges today: check in (hold, or add a number), the week, the streak. */
 export function CheckInCard({

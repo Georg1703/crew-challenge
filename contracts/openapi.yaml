@@ -1076,6 +1076,21 @@ components:
           nullable: true
           description: 'Numbers counted in check-ins: the least amount for a check-in
             to count.'
+        period_kind:
+          allOf:
+          - $ref: '#/components/schemas/PeriodKindEnum'
+          default: month
+          description: |-
+            The unit of how long it runs: months, weeks or days.
+
+            * `month` - Months
+            * `week` - Weeks
+            * `day` - Days
+        period_length:
+          type: integer
+          minimum: 1
+          default: 1
+          description: How many months (1-12), weeks (1-52) or days (1-365) it runs.
         proof_kind:
           allOf:
           - $ref: '#/components/schemas/ProofKindEnum'
@@ -1148,10 +1163,9 @@ components:
           - $ref: '#/components/schemas/PhaseEnum'
           - $ref: '#/components/schemas/NullEnum'
         period_kind:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/PeriodKindEnum'
-          - $ref: '#/components/schemas/NullEnum'
+          $ref: '#/components/schemas/PeriodKindEnum'
+        period_length:
+          type: integer
         period_start:
           type: string
           format: date
@@ -1219,6 +1233,7 @@ components:
       - on_days
       - participants
       - period_kind
+      - period_length
       - period_start
       - phase
       - proof_kind
@@ -1949,12 +1964,12 @@ components:
       enum:
       - month
       - week
-      - custom
+      - day
       type: string
       description: |-
-        * `month` - Month
-        * `week` - Week
-        * `custom` - Custom
+        * `month` - Months
+        * `week` - Weeks
+        * `day` - Days
     PersonOut:
       type: object
       properties:
@@ -2222,14 +2237,12 @@ components:
     ScheduleInRequest:
       type: object
       properties:
-        period_kind:
-          $ref: '#/components/schemas/PeriodKindEnum'
         period_start:
           type: string
           format: date
-          description: First day of the period (the 1st for a month).
+          description: 'First day of the period: the 1st for months, a Monday for
+            weeks, any day from tomorrow for days. Its length comes from the challenge.'
       required:
-      - period_kind
       - period_start
     StatusEnum:
       enum:

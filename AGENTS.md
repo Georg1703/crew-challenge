@@ -121,9 +121,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## Game rules that code must respect
 - Any member adds proposals to the crew's pool (at most `Crew.max_proposals`, default 50). The crew
-  votes (one vote per member per proposal, for as many as they like) and a crew admin schedules
-  proposals for periods (v1: months). A period can have several challenges. Votes guide the admin;
-  they do not decide.
+  votes (one vote per member per proposal, for as many as they like). A proposal says how long it
+  runs (months, weeks or days); a crew admin picks when it starts. Several challenges can run at
+  the same time. Votes guide the admin; they do not decide.
 - A challenge shows who proposed it and when. Its creator chooses who takes part (the
   participants: one `Participant` row each, the whole crew by default, the creator always) and can
   change the list until it is scheduled. Only participants and crew admins see a challenge; only

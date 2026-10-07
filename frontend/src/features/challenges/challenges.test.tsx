@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,7 @@ import { fail, ok, renderRoutes } from "@/test/render";
 import { ChallengeRoute, ChallengesRoute, ProposeRoute, ProposalsRow } from ".";
 import type { Challenge, Pool } from "./api";
 import { describeRule } from "./describe";
-import { monthOptions } from "./months";
+import { startOptions } from "./periods";
 
 const person = (member: typeof ana) => ({
   id: member.id,
@@ -34,7 +34,8 @@ const pushUps: Challenge = {
   proof_required: true,
   state: "proposed",
   phase: null,
-  period_kind: null,
+  period_kind: "month",
+  period_length: 1,
   period_start: null,
   start_date: null,
   end_date: null,
@@ -104,22 +105,47 @@ const routes = [
   { path: "/challenges/:id", element: <ChallengeRoute /> },
 ];
 
-describe("month options", () => {
+describe("start options", () => {
   it("offers the rest of this month and the next three", () => {
-    expect(monthOptions("2026-10-05")).toEqual([
-      { periodStart: "2026-10-01", startsOn: "2026-10-06" },
-      { periodStart: "2026-11-01", startsOn: "2026-11-01" },
-      { periodStart: "2026-12-01", startsOn: "2026-12-01" },
-      { periodStart: "2027-01-01", startsOn: "2027-01-01" },
+    expect(startOptions("month", 1, "2026-10-05")).toEqual([
+      { periodStart: "2026-10-01", startsOn: "2026-10-06", endsOn: "2026-10-31" },
+      { periodStart: "2026-11-01", startsOn: "2026-11-01", endsOn: "2026-11-30" },
+      { periodStart: "2026-12-01", startsOn: "2026-12-01", endsOn: "2026-12-31" },
+      { periodStart: "2027-01-01", startsOn: "2027-01-01", endsOn: "2027-01-31" },
     ]);
   });
 
-  it("leaves out this month on its last day", () => {
-    expect(monthOptions("2026-10-31").map((o) => o.periodStart)).toEqual([
+  it("leaves out this month on its last day, unless the challenge runs longer", () => {
+    expect(startOptions("month", 1, "2026-10-31").map((o) => o.periodStart)).toEqual([
       "2026-11-01",
       "2026-12-01",
       "2027-01-01",
     ]);
+    expect(startOptions("month", 2, "2026-10-31")[0]).toEqual({
+      periodStart: "2026-10-01",
+      startsOn: "2026-11-01",
+      endsOn: "2026-11-30",
+    });
+  });
+
+  it("offers this week from tomorrow and the next eight Mondays; days have a date field", () => {
+    const weeks = startOptions("week", 4, "2026-11-04"); // a Wednesday
+    expect(weeks[0]).toEqual({
+      periodStart: "2026-11-02",
+      startsOn: "2026-11-05",
+      endsOn: "2026-11-29",
+    });
+    expect(weeks.slice(1).map((o) => o.periodStart)).toEqual([
+      "2026-11-09",
+      "2026-11-16",
+      "2026-11-23",
+      "2026-11-30",
+      "2026-12-07",
+      "2026-12-14",
+      "2026-12-21",
+      "2026-12-28",
+    ]);
+    expect(startOptions("day", 21, "2026-11-04")).toEqual([]);
   });
 });
 
@@ -222,6 +248,52 @@ describe("challenges list", () => {
     expect(titles()[0]).toContain("Read");
   });
 
+  it("lets an admin pick a Monday for a proposal that runs in weeks", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-04T09:00:00Z") }); // a Wednesday
+    const weekly = detail({ period_kind: "week", period_length: 4 });
+    mockGets(ana, { proposals: { ...pool, proposals: [weekly] }, one: weekly });
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(scheduled())) as never);
+    renderRoutes(routes, { at: "/challenges" });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Choose" }));
+    const sheet = await screen.findByRole("dialog");
+    expect(
+      within(sheet).getByRole("radio", { name: /^Week of November 2(?!\d)/ }),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText("From tomorrow, November 5, to November 29")).toBeVisible();
+    expect(within(sheet).getByRole("radio", { name: /Week of November 9/ })).toBeChecked();
+    await userEvent.click(within(sheet).getByRole("button", { name: "Choose from November 9" }));
+
+    expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/schedule", {
+      params: { path: { challenge_id: "c1" } },
+      body: { period_start: "2026-11-09" },
+    });
+    vi.useRealTimers();
+  });
+
+  it("lets an admin pick the first day of a proposal that runs a number of days", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-04T09:00:00Z") });
+    const days = detail({ period_kind: "day", period_length: 21 });
+    mockGets(ana, { proposals: { ...pool, proposals: [days] }, one: days });
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(scheduled())) as never);
+    renderRoutes(routes, { at: "/challenges" });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Choose" }));
+    const sheet = await screen.findByRole("dialog");
+    const first = within(sheet).getByLabelText("First day");
+    expect(first).toHaveValue("2026-11-05"); // tomorrow
+    expect(within(sheet).getByText("Until November 25")).toBeVisible();
+    fireEvent.change(first, { target: { value: "2026-11-10" } });
+    expect(within(sheet).getByText("Until November 30")).toBeVisible();
+    await userEvent.click(within(sheet).getByRole("button", { name: "Choose from November 10" }));
+
+    expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/schedule", {
+      params: { path: { challenge_id: "c1" } },
+      body: { period_start: "2026-11-10" },
+    });
+    vi.useRealTimers();
+  });
+
   it("lets an admin choose the month for a proposal", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-05T09:00:00Z") });
     mockGets(ana);
@@ -241,7 +313,7 @@ describe("challenges list", () => {
     expect(await screen.findByText("Scheduled for December")).toBeInTheDocument();
     expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/schedule", {
       params: { path: { challenge_id: "c1" } },
-      body: { period_kind: "month", period_start: "2026-12-01" },
+      body: { period_start: "2026-12-01" },
     });
     vi.useRealTimers();
   });
@@ -281,6 +353,9 @@ describe("proposing", () => {
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await screen.findByRole("heading", { name: "How often?" });
+    await userEvent.click(screen.getByRole("radio", { name: "Weeks" }));
+    for (let n = 0; n < 3; n += 1)
+      await userEvent.click(screen.getByRole("button", { name: "More" }));
     expect(screen.getByLabelText("Each check-in at least (pages)")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("radio", { name: /A total each week/ }));
     expect(screen.queryByLabelText("Each check-in at least (pages)")).not.toBeInTheDocument();
@@ -295,6 +370,7 @@ describe("proposing", () => {
 
     await screen.findByRole("heading", { name: "Check it" });
     expect(screen.getByText("50 pages a week")).toBeInTheDocument();
+    expect(screen.getByText("4 weeks")).toBeInTheDocument();
     expect(screen.getByText("Bogdan")).toBeInTheDocument(); // who takes part
     await userEvent.click(screen.getByRole("button", { name: "Publish the proposal" }));
 
@@ -311,6 +387,8 @@ describe("proposing", () => {
         need_kind: "amount",
         need_value: "50",
         day_min: null,
+        period_kind: "week",
+        period_length: 4,
         proof_kind: "photo",
         proof_required: false,
         participant_ids: [bogdan.id],
@@ -374,7 +452,7 @@ describe("one challenge", () => {
     expect(
       await screen.findByText("You see it because you are an admin; you don't take part."),
     ).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Choose a month" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Choose when" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
   });
 
@@ -388,7 +466,7 @@ describe("one challenge", () => {
     expect(screen.getByRole("button", { name: "Vote" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Edit the proposal" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Withdraw the proposal" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Choose a month" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Choose when" })).not.toBeInTheDocument();
   });
 
   it("lets an admin move a scheduled challenge or put it back in the pool", async () => {
@@ -403,9 +481,7 @@ describe("one challenge", () => {
 
     expect(await screen.findByText("For November 2026")).toBeInTheDocument();
     expect(screen.getByText(/Chosen by Ana/)).toBeInTheDocument();
-    expect(
-      await screen.findByRole("button", { name: "Move to another month" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Move it" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Back to proposals" }));
 
     expect(await screen.findByText("Back in the proposals")).toBeInTheDocument();
@@ -573,7 +649,11 @@ describe("a challenge's rule as a sentence", () => {
     const say = (rule: Partial<Parameters<typeof describeRule>[1]>) =>
       describeRule(
         i18n.t,
-        { window: "day", on_days: [], need_kind: "count", need_value: 1, unit: "km", ...rule },
+        {
+          ...{ window: "day", on_days: [], need_kind: "count", need_value: 1, unit: "km" },
+          ...{ period_kind: "month", period_length: 1 },
+          ...rule,
+        },
         "en",
       );
     expect(say({})).toBe("Every day");
@@ -582,9 +662,18 @@ describe("a challenge's rule as a sentence", () => {
     expect(say({ window: "week", need_value: 3 })).toBe("3 times a week");
     expect(say({ window: "period", need_value: 1 })).toBe("Once, by the end");
     expect(say({ window: "period", need_value: "8" })).toBe("8 times in the month");
+    expect(say({ window: "period", need_value: 8, period_kind: "week", period_length: 4 })).toBe(
+      "8 times in 4 weeks",
+    );
+    expect(say({ window: "period", need_value: 8, period_kind: "day", period_length: 21 })).toBe(
+      "8 times in 21 days",
+    );
     expect(say({ window: "week", need_kind: "amount", need_value: "12.5" })).toBe("12.5 km a week");
     expect(say({ window: "period", need_kind: "amount", need_value: 1200 })).toBe(
       "1,200 km in the month",
+    );
+    expect(say({ window: "period", need_kind: "amount", need_value: 300, period_length: 3 })).toBe(
+      "300 km in 3 months",
     );
   });
 });

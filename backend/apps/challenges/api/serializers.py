@@ -43,6 +43,16 @@ class ChallengeIn(serializers.Serializer):
         default=None,
         help_text="Numbers counted in check-ins: the least amount for a check-in to count.",
     )
+    period_kind = serializers.ChoiceField(
+        choices=PeriodKind.choices,
+        default=PeriodKind.MONTH,
+        help_text="The unit of how long it runs: months, weeks or days.",
+    )
+    period_length = serializers.IntegerField(
+        default=1,
+        min_value=1,
+        help_text="How many months (1-12), weeks (1-52) or days (1-365) it runs.",
+    )
     proof_kind = serializers.ChoiceField(
         choices=Challenge.ProofKind.choices, default=Challenge.ProofKind.NONE
     )
@@ -88,7 +98,8 @@ class ChallengeOut(serializers.Serializer):
     proof_required = serializers.BooleanField()
     state = serializers.ChoiceField(choices=Challenge.State.choices)
     phase = serializers.ChoiceField(choices=PHASES, allow_null=True)
-    period_kind = serializers.ChoiceField(choices=PeriodKind.choices, allow_null=True)
+    period_kind = serializers.ChoiceField(choices=PeriodKind.choices)
+    period_length = serializers.IntegerField()
     period_start = serializers.DateField(allow_null=True)
     start_date = serializers.DateField(allow_null=True)
     end_date = serializers.DateField(allow_null=True)
@@ -116,5 +127,7 @@ class PoolOut(serializers.Serializer):
 
 
 class ScheduleIn(serializers.Serializer):
-    period_kind = serializers.ChoiceField(choices=PeriodKind.choices)
-    period_start = serializers.DateField(help_text="First day of the period (the 1st for a month).")
+    period_start = serializers.DateField(
+        help_text="First day of the period: the 1st for months, a Monday for weeks, any day from "
+        "tomorrow for days. Its length comes from the challenge."
+    )

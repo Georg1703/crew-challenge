@@ -8,10 +8,10 @@ check-ins they loaded. Which windows a challenge has and what each one needs com
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
-from apps.challenges import windows
+from apps.challenges import periods, windows
 from apps.challenges.models import Challenge
 from apps.challenges.windows import Window
 
@@ -38,8 +38,7 @@ class Span:
         return isinstance(day, date) and self.first <= day <= self.last
 
     def days(self, start: date, end: date) -> list[date]:
-        lo, hi = max(start, self.first), min(end, self.last)
-        return [lo + timedelta(days=n) for n in range((hi - lo).days + 1)] if lo <= hi else []
+        return periods.dates(max(start, self.first), min(end, self.last))
 
 
 def span(challenge: Challenge, left_on: date | None) -> Span:

@@ -1,3 +1,5 @@
+import { toDate } from "./dates";
+
 /** Format an instant for display in the crew's time zone (not the phone's). */
 export function formatDateTime(iso: string, language: string, timeZone: string): string {
   return new Intl.DateTimeFormat(language, {
@@ -27,14 +29,12 @@ export function formatDay(day: string, language: string): string {
     timeZone: "UTC",
     day: "numeric",
     month: "long",
-  }).format(new Date(`${day}T00:00:00Z`));
+  }).format(toDate(day));
 }
 
 /** The month of a crew-local date ("2026-11-01") as "noiembrie". */
 export function monthName(day: string, language: string): string {
-  return new Intl.DateTimeFormat(language, { timeZone: "UTC", month: "long" }).format(
-    new Date(`${day}T00:00:00Z`),
-  );
+  return new Intl.DateTimeFormat(language, { timeZone: "UTC", month: "long" }).format(toDate(day));
 }
 
 /** Today's date in a time zone as "2026-10-05" (the crew's day, not the phone's). */
@@ -48,7 +48,7 @@ export function monthAndYear(day: string, language: string): string {
     timeZone: "UTC",
     month: "long",
     year: "numeric",
-  }).format(new Date(`${day}T00:00:00Z`));
+  }).format(toDate(day));
   return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
 }
 
@@ -95,7 +95,7 @@ export function formatDayLong(day: string, language: string): string {
     weekday: "long",
     day: "numeric",
     month: "long",
-  }).format(new Date(`${day}T00:00:00Z`));
+  }).format(toDate(day));
   return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
 }
 

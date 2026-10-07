@@ -14,6 +14,7 @@ import {
   IconPicker,
   OptionList,
   Screen,
+  Segmented,
   Skeleton,
   Stack,
   StepProgress,
@@ -37,7 +38,9 @@ import {
   CHALLENGE_ICONS,
   WEEKDAYS,
   describeDayMin,
+  describeLength,
   describeMeasure,
+  describePeriod,
   describeProof,
   describeRule,
   weekdayShort,
@@ -47,11 +50,25 @@ import {
 const COUNTED = ["daily", "weekdays", "times_per_week", "times_per_period", "once"] as const;
 const TOTALS = ["total_per_week", "total_per_period"] as const;
 type Often = (typeof COUNTED)[number] | (typeof TOTALS)[number];
+const WEEKLY: Often[] = ["times_per_week", "total_per_week"];
+
+/** How long a challenge can run, and the most days each unit has (as the server checks). */
+const KINDS = ["month", "week", "day"] as const;
+const LENGTH_MAX = { month: 12, week: 52, day: 365 } as const;
+const UNIT_DAYS = { month: 31, week: 7, day: 1 } as const;
 
 type Draft = Required<
   Pick<
     ChallengeInput,
-    "title" | "rules" | "icon" | "measure" | "unit" | "proof_kind" | "proof_required"
+    | "title"
+    | "rules"
+    | "icon"
+    | "measure"
+    | "unit"
+    | "period_kind"
+    | "period_length"
+    | "proof_kind"
+    | "proof_required"
   >
 > & {
   often: Often;
@@ -70,6 +87,8 @@ const EMPTY: Draft = {
   icon: "star",
   measure: "check",
   unit: "",
+  period_kind: "month",
+  period_length: 1,
   often: "daily",
   on_days: [0, 1, 2, 3, 4],
   times: 3,
@@ -96,6 +115,8 @@ const FIELD_STEP: Record<string, Step> = {
   need_kind: "often",
   need_value: "often",
   day_min: "often",
+  period_kind: "often",
+  period_length: "often",
   proof_kind: "proof",
   proof_required: "proof",
 };
@@ -159,6 +180,8 @@ function toInput(draft: Draft): ChallengeInput {
     unit: quantity ? draft.unit : "",
     ...shape,
     day_min: dayMin ? decimal(draft.day_min) : null,
+    period_kind: draft.period_kind,
+    period_length: draft.period_length,
     proof_kind: draft.proof_kind,
     proof_required: draft.proof_kind !== "none" && draft.proof_required,
     ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
@@ -198,6 +221,8 @@ function EditProposal({ id }: { id: string }) {
         icon: c.icon,
         measure: c.measure,
         unit: c.unit,
+        period_kind: c.period_kind,
+        period_length: c.period_length,
         often: oftenOf(c),
         on_days: c.on_days.length ? c.on_days : EMPTY.on_days,
         times: c.need_kind === "count" && c.window !== "day" ? c.need_value : EMPTY.times,
@@ -230,6 +255,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
   const quantity = draft.measure === "quantity";
+  const periodDays = UNIT_DAYS[draft.period_kind] * draft.period_length;
   /** Totals need numbers: another kind of record goes back to "every day". */
   const setMeasure = (measure: Draft["measure"]) =>
     setDraft((current) => ({
@@ -253,6 +279,8 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
         errors.need_value = t("challenges.errors.number");
       if (quantity && draft.day_min.trim() && !(Number(decimal(draft.day_min)) > 0))
         errors.day_min = t("challenges.errors.number");
+      if (WEEKLY.includes(draft.often) && periodDays < 7)
+        errors.period_length = t("challenges.errors.weekNeedsDays");
     }
     return errors;
   };
@@ -366,15 +394,46 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
 
           {step === "often" && (
             <Stack>
+              <Segmented
+                label={t("challenges.fields.length")}
+                value={draft.period_kind}
+                onChange={(kind) =>
+                  setDraft((current) => ({
+                    ...current,
+                    period_kind: kind,
+                    period_length: Math.min(current.period_length, LENGTH_MAX[kind]),
+                  }))
+                }
+                options={KINDS.map((value) => ({
+                  value,
+                  label: t(`challenges.options.periodKind.${value}`),
+                }))}
+              />
+              <Stepper
+                label={t(`challenges.fields.periodLength.${draft.period_kind}`)}
+                value={draft.period_length}
+                min={1}
+                max={LENGTH_MAX[draft.period_kind]}
+                onChange={(length) => set("period_length", length)}
+                decreaseLabel={t("challenges.fields.fewer")}
+                increaseLabel={t("challenges.fields.more")}
+              />
+              {fieldError("period_length") && (
+                <Banner tone="danger" title={fieldError("period_length") ?? ""} />
+              )}
               <OptionList
                 label={t("challenges.fields.often")}
                 value={draft.often}
                 onChange={(often) => set("often", often)}
-                options={(quantity ? [...COUNTED, ...TOTALS] : COUNTED).map((value) => ({
-                  value,
-                  title: t(`challenges.options.often.${value}.title`),
-                  description: t(`challenges.options.often.${value}.description`),
-                }))}
+                options={(quantity ? [...COUNTED, ...TOTALS] : COUNTED)
+                  .filter((value) => periodDays >= 7 || !WEEKLY.includes(value))
+                  .map((value) => ({
+                    value,
+                    title: t(`challenges.options.often.${value}.title`, {
+                      period: describePeriod(t, draft),
+                    }),
+                    description: t(`challenges.options.often.${value}.description`),
+                  }))}
               />
               {draft.often === "weekdays" && (
                 <ChipGroup
@@ -394,7 +453,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
                   label={t("challenges.fields.times")}
                   value={draft.times}
                   min={1}
-                  max={draft.often === "times_per_week" ? 7 : 31}
+                  max={draft.often === "times_per_week" ? 7 : periodDays}
                   onChange={(times) => set("times", times)}
                   decreaseLabel={t("challenges.fields.fewer")}
                   increaseLabel={t("challenges.fields.more")}
@@ -495,6 +554,7 @@ function Review({
   const facts: [string, string][] = [
     [t("challenges.facts.name"), draft.title.trim()],
     [t("challenges.facts.who"), whoSummary(draft.participant_ids, people)],
+    [t("challenges.facts.length"), describeLength(t, draft)],
     [t("challenges.facts.record"), describeMeasure(t, shape)],
     [t("challenges.facts.often"), describeRule(t, shape, i18n.language)],
     ...(dayMin ? [[t("challenges.facts.target"), dayMin] as [string, string]] : []),

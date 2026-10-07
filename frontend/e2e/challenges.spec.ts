@@ -32,8 +32,8 @@ function card(page: Page, title: string) {
 async function finishWizard(page: Page, finalButton: string) {
   const steps = [
     "Cine participă?",
-    "Cât de des?",
     "Ce notezi la bifă?",
+    "Cât de des?",
     "Ce dovadă cerem?",
     "Verifică",
   ];
@@ -168,4 +168,34 @@ test("only the people the creator chose see a challenge, and the creator can cha
   await bogdan.getByRole("button", { name: "Retrage propunerea" }).click();
   await bogdan.getByRole("dialog").getByRole("button", { name: "Retrage propunerea" }).click();
   await expect(bogdan).toHaveURL(/\/challenges$/);
+});
+
+test("a proposal can run for weeks, and an admin starts it on a Monday", async ({ browser }) => {
+  const run = unique("Alergare");
+  const ana = await logIn(browser, "ana");
+
+  await ana.goto("/challenges/new");
+  await ana.getByLabel("Numele provocării").fill(run);
+  for (const heading of ["Cine participă?", "Ce notezi la bifă?", "Cât de des?"]) {
+    await ana.getByRole("button", { name: "Continuă" }).click();
+    await expect(ana.getByRole("heading", { name: heading })).toBeVisible();
+  }
+  await ana.getByText("Săptămâni", { exact: true }).click();
+  for (let n = 0; n < 3; n += 1) await ana.getByRole("button", { name: "Mai mult" }).click();
+  await ana.getByText("De câteva ori pe săptămână", { exact: true }).click();
+  for (const heading of ["Ce dovadă cerem?", "Verifică"]) {
+    await ana.getByRole("button", { name: "Continuă" }).click();
+    await expect(ana.getByRole("heading", { name: heading })).toBeVisible();
+  }
+  await expect(ana.getByText("4 săptămâni")).toBeVisible();
+  await expect(ana.getByText("De 3 ori pe săptămână")).toBeVisible();
+  await ana.getByRole("button", { name: "Publică propunerea" }).click();
+  await expect(ana.getByRole("heading", { name: run })).toBeVisible();
+
+  await ana.goto("/challenges");
+  await card(ana, run).getByRole("button", { name: "Alege", exact: true }).click();
+  const sheet = ana.getByRole("dialog");
+  await expect(sheet.getByText(/^Săptămâna din/).first()).toBeVisible();
+  await sheet.getByRole("button", { name: /Alege din/ }).click();
+  await expect(ana.getByText(/Programată din/)).toBeVisible();
 });

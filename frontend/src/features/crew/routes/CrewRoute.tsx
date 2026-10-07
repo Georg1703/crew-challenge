@@ -6,13 +6,12 @@ import { useMe } from "@/features/auth";
 import { ProposalsRow } from "@/features/challenges";
 import { CrewFeed, useFeed, useToday } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
+import { DAY_MS } from "@/shared/lib/dates";
 import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
 
 import { useCrew } from "../api";
 import { CrewStories } from "../components/CrewStories";
 import { freshCounts, markSeen, useSeenVersion } from "../seen";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Echipa, the crew's journal: everyone's day as a row of rings (each opens their page), the

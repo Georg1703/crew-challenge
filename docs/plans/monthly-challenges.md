@@ -1,6 +1,7 @@
 # Plan: proposing and choosing challenges (monthly rounds)
 
-Status: draft for review. Branch: `feat/challenges` (this plan), then one branch per phase.
+Status: built. Periods (months only, the round model) are superseded by
+`docs/plans/periods.md`: a proposal says how long it runs and an admin picks the start.
 
 ## Goal
 

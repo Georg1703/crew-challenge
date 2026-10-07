@@ -15,7 +15,7 @@ from django.db.models.functions import Greatest
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
-from apps.challenges.periods import week_of
+from apps.challenges.periods import dates, month_of, week_of
 from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Member
@@ -215,9 +215,7 @@ def board(*, member: Member, challenge_id: UUID, month: date) -> Board | None:
     if found is None:
         return None
     challenge, today, everyone = found
-    first = month.replace(day=1)
-    next_month = (first + timedelta(days=32)).replace(day=1)
-    month_days = [first + timedelta(days=n) for n in range((next_month - first).days)]
+    month_days = dates(*month_of(month))
     rows = []
     for participant, part, record in everyone:
         rows.append(
@@ -449,9 +447,8 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
     if person is None:
         return None
     today = clock.crew_today(viewer.crew)
-    first = month.replace(day=1)
-    last = (first + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-    month_days = [first + timedelta(days=n) for n in range((last - first).days + 1)]
+    first, last = month_of(month)
+    month_days = dates(first, last)
     parts = list(
         Participant.objects.filter(
             member=person,

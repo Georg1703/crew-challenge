@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
 
+import { dayOfMonth, monthStart } from "@/shared/lib/dates";
 import { monthName, todayIn } from "@/shared/lib/format";
 import { Icon, IconTile, List, ListRow } from "@/shared/ui";
 
 import { useChosenChallenges, usePool } from "../api";
-import { monthStart } from "../months";
 
 /** Day of the month from which admins are reminded when next month has no challenge yet. */
 const CHOOSE_REMINDER_DAY = 25;
@@ -32,9 +32,9 @@ export function ProposalsRow({
   const nextMonth = monthStart(today, 1);
   const remindAdmin =
     isAdmin &&
-    Number(today.slice(8, 10)) >= CHOOSE_REMINDER_DAY &&
+    dayOfMonth(today) >= CHOOSE_REMINDER_DAY &&
     upcoming.data !== undefined &&
-    !upcoming.data.some((c) => c.period_start === nextMonth);
+    !upcoming.data.some((c) => c.period_kind === "month" && c.period_start === nextMonth);
   const waiting = pool.data.proposals.filter((p) => !p.my_vote).length;
   const size = pool.data.size;
   if (size === 0 && !remindAdmin) return null;

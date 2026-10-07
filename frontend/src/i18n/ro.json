@@ -185,14 +185,13 @@
     "not_your_proposal": "Doar cine a propus-o o poate modifica.",
     "challenge_started": "Provocarea a început deja.",
     "challenge_finished": "Provocarea s-a terminat.",
-    "period_over": "Luna aceasta s-a terminat. Alege una mai târzie.",
+    "period_over": "Perioada aceasta s-a terminat. Alege una mai târzie.",
     "not_chosen_yet": "Doar o provocare aleasă are participanți.",
     "conflict": "Nu se poate acum.",
     "pool_full": "Lista de propuneri e plină. Retrage una sau așteaptă până se alege una.",
     "not_a_proposal": "Provocarea a fost deja aleasă, nu mai poate fi schimbată sau votată.",
-    "period_too_far": "Alege o lună cel mult cu un an înainte.",
-    "too_few_days": "Au rămas prea puține zile luna aceasta pentru câte ori cere provocarea.",
-    "period_kind_not_available": "Deocamdată se pot alege doar luni.",
+    "period_too_far": "Alege un început cel mult cu un an înainte.",
+    "too_few_days": "Perioada are mai puține zile decât de câte ori cere provocarea.",
     "day_closed": "Ziua s-a încheiat. Poți bifa doar pentru azi.",
     "not_taking_part": "Nu participi azi la provocarea asta.",
     "not_due_today": "Provocarea asta nu cere nimic azi.",
@@ -264,6 +263,7 @@
     },
     "facts": {
       "name": "Nume",
+      "length": "Durata",
       "often": "Cât de des",
       "record": "Ce notezi",
       "target": "Ținta",
@@ -291,7 +291,7 @@
     "next": "Continuă",
     "publish": "Publică propunerea",
     "save": "Salvează modificările",
-    "reviewNote": "Echipa o vede imediat și poate vota. Un admin alege luna în care are loc.",
+    "reviewNote": "Echipa o vede imediat și poate vota. Un admin alege când începe.",
     "editResetsVotes": "Dacă schimbi provocarea, voturile de până acum se șterg.",
     "steps": {
       "what": {
@@ -319,6 +319,12 @@
       "icon": "Iconița",
       "rules": "Regulile, pe scurt",
       "rulesHint": "Ce contează și ce nu. Opțional.",
+      "length": "Cât durează?",
+      "periodLength": {
+        "month": "Câte luni",
+        "week": "Câte săptămâni",
+        "day": "Câte zile"
+      },
       "often": "Cât de des",
       "onDays": "Zilele",
       "times": "De câte ori",
@@ -338,7 +344,7 @@
       "often": {
         "daily": {
           "title": "În fiecare zi",
-          "description": "O bifă pe zi, toată luna"
+          "description": "O bifă pe zi, până la final"
         },
         "weekdays": {
           "title": "În zilele alese",
@@ -349,8 +355,8 @@
           "description": "În orice zile, de un număr de ori"
         },
         "times_per_period": {
-          "title": "De câteva ori pe lună",
-          "description": "De un număr de ori până la final"
+          "title": "De câteva ori în {{period}}",
+          "description": "În orice zile, de un număr de ori până la final"
         },
         "once": {
           "title": "O singură dată",
@@ -361,7 +367,7 @@
           "description": "Numerele se adună, de luni până duminică"
         },
         "total_per_period": {
-          "title": "Un total pe lună",
+          "title": "Un total pe {{period}}",
           "description": "Numerele se adună până la final"
         }
       },
@@ -396,6 +402,11 @@
           "title": "Poză sau video",
           "description": "Fiecare alege"
         }
+      },
+      "periodKind": {
+        "month": "Luni",
+        "week": "Săptămâni",
+        "day": "Zile"
       }
     },
     "describe": {
@@ -403,10 +414,10 @@
       "weekdays": "În zilele: {{days}}",
       "oncePerWeek": "O dată pe săptămână",
       "timesPerWeek": "De {{n}} ori pe săptămână",
-      "timesPerPeriod": "De {{n}} ori în lună",
+      "timesPerPeriod": "De {{n}} ori în {{period}}",
       "once": "O dată, până la final",
       "totalPerWeek": "{{value}} {{unit}} pe săptămână",
-      "totalPerPeriod": "{{value}} {{unit}} în toată luna",
+      "totalPerPeriod": "{{value}} {{unit}} în {{period}}",
       "dayMin": "Cel puțin {{value}} {{unit}} la fiecare bifă",
       "check": "Doar bifă",
       "quantity": "Un număr ({{unit}})",
@@ -418,7 +429,18 @@
         "photo_or_video": "Poză sau video"
       },
       "proofRequired": "{{kind}}, obligatorie",
-      "proofOptional": "{{kind}}, opțională"
+      "proofOptional": "{{kind}}, opțională",
+      "period": {
+        "month_one": "toată luna",
+        "month_few": "{{count}} luni",
+        "month_other": "{{count}} de luni",
+        "week_one": "toată săptămâna",
+        "week_few": "{{count}} săptămâni",
+        "week_other": "{{count}} de săptămâni",
+        "day_one": "o zi",
+        "day_few": "{{count}} zile",
+        "day_other": "{{count}} de zile"
+      }
     },
     "icons": {
       "dumbbell": "Sală",
@@ -467,7 +489,8 @@
       "title": "Dă-i un nume provocării.",
       "onDays": "Alege cel puțin o zi.",
       "unit": "Scrie unitatea, de exemplu km.",
-      "number": "Scrie un număr mai mare ca zero."
+      "number": "Scrie un număr mai mare ca zero.",
+      "weekNeedsDays": "O provocare pe săptămână are nevoie de cel puțin 7 zile."
     },
     "today": {
       "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
@@ -492,21 +515,26 @@
     "editingNote": "Modifici propunerea ta",
     "chosenBy": "Aleasă de {{name}}, {{date}}",
     "schedule": {
-      "open": "Alege luna",
+      "open": "Alege când",
       "title": "Când are loc „{{title}}”?",
       "moveTitle": "Mută „{{title}}”",
       "month": "Luna",
-      "wholeMonth": "Toată luna",
-      "fromTomorrow": "De mâine, {{date}}",
-      "body": "Participă toată echipa. Oricine se poate retrage până începe. Poți schimba luna până atunci.",
+      "fromTomorrow": "De mâine, {{date}}, până pe {{to}}",
+      "body": "Participă toată echipa. Oricine se poate retrage până începe. Poți schimba data de început până atunci.",
       "moveBody": "Participă din nou toți, și cei care s-au retras.",
-      "confirm": "Alege pentru {{month}}",
-      "done": "Programată pentru {{month}}",
-      "move": "Mută în altă lună",
+      "move": "Mut-o",
       "back": "Înapoi la propuneri",
-      "backDone": "E din nou printre propuneri"
+      "backDone": "E din nou printre propuneri",
+      "week": "Săptămâna",
+      "weekOf": "Săptămâna din {{date}}",
+      "firstDay": "Prima zi",
+      "until": "Până pe {{date}}",
+      "confirmMonth": "Alege pentru {{month}}",
+      "confirmFrom": "Alege din {{date}}",
+      "doneMonth": "Programată pentru {{month}}",
+      "doneFrom": "Programată din {{date}}"
     },
-    "periodFrom": "{{month}}, din {{date}}",
+    "periodFrom": "{{period}}, din {{date}}",
     "who": {
       "title": "Cine participă",
       "label": "Echipa",
@@ -529,7 +557,19 @@
     "optedOut": "Nu mai participi",
     "leaveTitle": "Ieși din provocare?",
     "leaveBody": "Provocarea dispare din lista ta și nu mai poți reveni. Zilele bifate până azi rămân pe tabla echipei.",
-    "left": "Ai ieșit din provocare"
+    "left": "Ai ieșit din provocare",
+    "length": {
+      "month_one": "o lună",
+      "month_few": "{{count}} luni",
+      "month_other": "{{count}} de luni",
+      "week_one": "o săptămână",
+      "week_few": "{{count}} săptămâni",
+      "week_other": "{{count}} de săptămâni",
+      "day_one": "o zi",
+      "day_few": "{{count}} zile",
+      "day_other": "{{count}} de zile"
+    },
+    "range": "{{from}} – {{to}}"
   },
   "checkins": {
     "today": "azi",

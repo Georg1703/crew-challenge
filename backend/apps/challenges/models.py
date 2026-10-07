@@ -28,9 +28,11 @@ ICONS = (
 
 
 class PeriodKind(models.TextChoices):
-    MONTH = "month", "Month"
-    WEEK = "week", "Week"
-    CUSTOM = "custom", "Custom"
+    """The unit of a challenge's length: calendar months, Monday-Sunday weeks, or days."""
+
+    MONTH = "month", "Months"
+    WEEK = "week", "Weeks"
+    DAY = "day", "Days"
 
 
 class Challenge(CrewScopedSoftDeleteModel):
@@ -98,9 +100,19 @@ class Challenge(CrewScopedSoftDeleteModel):
     proof_kind = models.CharField(max_length=20, choices=ProofKind.choices, default=ProofKind.NONE)
     proof_required = models.BooleanField(default=False)
     state = models.CharField(max_length=12, choices=State.choices, default=State.PROPOSED)
-    period_kind = models.CharField(max_length=10, choices=PeriodKind.choices, blank=True)
+    period_kind = models.CharField(
+        max_length=10,
+        choices=PeriodKind.choices,
+        default=PeriodKind.MONTH,
+        help_text="The unit of the period's length, chosen by the creator.",
+    )
+    period_length = models.PositiveSmallIntegerField(
+        default=1, help_text="How many months, weeks or days the challenge runs."
+    )
     period_start = models.DateField(
-        null=True, blank=True, help_text="First day of the period (the 1st for a month)."
+        null=True,
+        blank=True,
+        help_text="First day of the period: the 1st for months, a Monday for weeks.",
     )
     start_date = models.DateField(
         null=True,
@@ -123,7 +135,6 @@ class Challenge(CrewScopedSoftDeleteModel):
             models.CheckConstraint(
                 condition=models.Q(
                     state="proposed",
-                    period_kind="",
                     period_start__isnull=True,
                     start_date__isnull=True,
                     end_date__isnull=True,
@@ -136,6 +147,9 @@ class Challenge(CrewScopedSoftDeleteModel):
                 )
                 & ~models.Q(period_kind=""),
                 name="challenge_period_matches_state",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(period_length__gte=1), name="challenge_period_length_above_zero"
             ),
             models.CheckConstraint(
                 condition=models.Q(need_value__gt=0), name="challenge_need_above_zero"

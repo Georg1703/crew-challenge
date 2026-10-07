@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from .models import Challenge
-from .periods import week_of
+from .periods import dates, week_of
 
 
 @dataclass(frozen=True)
@@ -65,15 +65,11 @@ def _whole_windows(challenge: Challenge, first: date, last: date) -> list[tuple[
         return [
             (monday + timedelta(weeks=n), monday + timedelta(weeks=n, days=6)) for n in range(weeks)
         ]
-    return [(day, day) for day in _dates(first, last)]
+    return [(day, day) for day in dates(first, last)]
 
 
 def _counting_days(challenge: Challenge, first: date, last: date) -> int:
-    return sum(1 for day in _dates(first, last) if counts_on(challenge, day))
-
-
-def _dates(first: date, last: date) -> list[date]:
-    return [first + timedelta(days=n) for n in range((last - first).days + 1)]
+    return sum(1 for day in dates(first, last) if counts_on(challenge, day))
 
 
 def _scaled(challenge: Challenge, need: Decimal, kept: int, whole: int) -> Decimal:

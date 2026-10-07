@@ -1,7 +1,7 @@
 # Plan: periods, windows and requirements
 
-Status: stages 1 and 2 implemented (branches `refactor/window-engine`,
-`refactor/challenge-rule-fields`); stages 0 and 3-5 to do. One branch and one pull request per stage, starting after `feat/reactions`
+Status: stages 1-3 implemented (branches `refactor/window-engine`,
+`refactor/challenge-rule-fields`, `feat/period-length`); stages 0, 4 and 5 to do. One branch and one pull request per stage, starting after `feat/reactions`
 is merged. Explainer with diagrams and worked examples (private, the owner's):
 https://claude.ai/artifact/1K7fg8iWqb2z6Zb1BwrQZx
 
@@ -277,38 +277,43 @@ What was done:
   Expected: the running challenge (`daily`) and pool proposals. Before and after the deploy, note
   the running challenge's board and streaks; they must match.
 
-### Stage 3 - Weeks and day ranges
+### Stage 3 - Weeks and day ranges - done
 
-- Fields and migration: `period_kind` (month / week / day, CUSTOM goes) and `period_length` on
-  proposals, a new period constraint, and the database drops `frequency`, `weekdays`, `times`,
-  `target_scope`, `target_value` (removed from the model in stage 2). `unschedule_challenge`
-  keeps the kind and length (today it clears `period_kind`). `ScheduleIn` keeps only
-  `period_start`; `PeriodKindNotAvailable` goes with its code and i18n key.
-- Wizard: a "How long does it run?" question in the "often" step (`Segmented` for the unit,
-  `Stepper` for the number), the length on the review step, and the "fits the period" check.
-- `schedule_challenge`: months start on the 1st, weeks on a Monday, days on any date from tomorrow;
-  a month or week already under way starts tomorrow (as today); `end_date` from `period_end`;
-  moving keeps the length.
-- `ScheduleSheet`: months as now; for weeks the next 8 Mondays with their ranges; for days a date
-  field with the end shown. `ProposalsRow`'s "next month has no challenge" reminder counts monthly
-  challenges only. `ChallengeRoute` and `ChallengesRoute` show a period as a range when it isn't a
-  whole month.
-- Duplicated date code goes, since this stage needs week math on both sides:
-  - backend: the month bounds recomputed in `board`, `member_progress`, the check-in views'
-    `_month` and `schedule_challenge` use `periods.month_of`;
-  - frontend: one `shared/lib/dates.ts` (parse, format, add days and months, days between, Monday
-    of a week) replaces the copies in `months.ts`, `ChallengeBoard.tsx`, `CrewRoute.tsx`,
-    `CrewFeed.tsx`, `CheckInCard.tsx`, `format.ts` and the three `slice(8, 10)` day-of-month reads.
-    `months.ts` is folded into it.
-- Text: i18n keys that say "month" (`challenges.schedule.*`, `periodFrom`, `periodLine`,
-  `reviewNote`, frequency descriptions) and the `period_over` / `period_too_far` messages become
-  period-neutral; `PeriodTooFar`'s message uses `MONTHS_AHEAD` instead of a written "12".
-- Tests: each kind (on time, late, too far, wrong weekday, moving); week and day options in the
-  sheet; `dates.ts`; e2e: propose "3 times a week for 4 weeks", schedule it, check in.
-- Docs: glossary (Period, Schedule), AGENTS.md game rules ("an admin schedules proposals for
-  periods (v1: months)" -> the creator sets the length, an admin picks the start),
-  `docs/architecture/api-conventions.md` (the schedule body), `docs/plans/monthly-challenges.md`
-  marked as superseded for periods.
+- Migrations: `0009_period_length` adds `period_length`, makes `period_kind` month / week / day
+  (CUSTOM goes) and rewrites the period constraint without asking proposals for an empty kind (the
+  previous release still writes one during the deploy); `0010_fill_period_lengths` gives every
+  row a kind and length (proposals and months: 1 month; the seed's custom ranges: their days);
+  `0011_drop_old_rule_columns` drops `frequency`, `weekdays`, `times`, `target_scope`,
+  `target_value` from the database. All three go back too: run forward and back to 0006 on the
+  dev database, the old columns came back identical.
+- Services: proposals carry `period_kind` and `period_length` (1-12 months, 1-52 weeks, 1-365
+  days); a weekly rule needs at least 7 days; a count over the period is at most its longest
+  possible days. `schedule_challenge(by, challenge_id, period_start)`: months on the 1st, weeks on a
+  Monday, days from tomorrow; a month or week under way starts tomorrow; `periods.period_end`
+  computes the end; moving keeps the length; `unschedule_challenge` keeps the kind and length.
+  `PeriodKindNotAvailable` is gone; `PeriodTooFar` names `MONTHS_AHEAD`.
+- API: `ChallengeIn` takes `period_kind`, `period_length` (default month, 1: what a cached old
+  app means); `ChallengeOut` returns them; `ScheduleIn` is `{period_start}`.
+- Wizard: "How long does it run?" (`Segmented` and `Stepper`) at the top of "How often?"; weekly
+  choices only when the period has 7 days or more; options and sentences name the period ("8 times
+  in 4 weeks"); the review shows the length; proposals show it as a pill and in list lines.
+- Schedule sheet: the month or week under way (from tomorrow) and the next 3 months or 8 Mondays,
+  or a date field for a number of days, with the end shown. The challenge page shows a period as
+  dates unless it is one whole month. The "next month has no challenge" reminder counts monthly
+  challenges only.
+- Duplicated date code: backend `periods.dates` and `periods.month_of` replace four copies;
+  frontend `shared/lib/dates.ts` replaces the copies in `ChallengeBoard`, `CrewRoute`, `CrewFeed`,
+  `CheckInCard`, `format.ts` and three day-of-month reads. `months.ts` became
+  `features/challenges/periods.ts` (only the start options; the date math moved to `dates.ts`).
+- Text: schedule texts, period errors and descriptions no longer say "month"; dead keys gone.
+- e2e: the wizard helper follows the new step order (stage 2 broke it); a new flow proposes
+  "3 times a week for 4 weeks" and schedules it on a Monday. Not run yet: Playwright is not
+  installed on the host. Checking in is not part of it (the period starts tomorrow at the
+  earliest).
+- Docs: glossary (Period, Schedule), AGENTS.md game rules, `docs/architecture/api-conventions.md`,
+  `docs/plans/monthly-challenges.md` marked as superseded for periods.
+- Left for stage 4's migration: require a period kind on proposals in the period constraint, once
+  no release writes an empty one.
 
 ### Stage 4 - Month windows
 
@@ -352,12 +357,12 @@ rows are gone before approving.
 | `TIMES_MAX`, `_days_needed` (done) | `apps/challenges/services.py` | 2 |
 | Target i18n keys, `oncePerPeriod` (done) | i18n | 2 |
 | Weekly-quota code in `seed_demo_history` (done) | seed | 2 |
-| Old columns in the database | migration | 3 |
-| `PeriodKind.CUSTOM`, `PeriodKindNotAvailable`, its code and i18n key | model, services, i18n | 3 |
-| `period_kind` in `ScheduleIn` and `useSchedule` | API, frontend | 3 |
-| Month bounds recomputed in four places | `apps/checkins` selectors and views, services | 3 |
-| `months.ts` and the frontend date-math copies | frontend | 3 |
-| "month" wording in schedule texts and period errors | i18n, services | 3 |
+| Old columns in the database (done) | migration | 3 |
+| `PeriodKind.CUSTOM`, `PeriodKindNotAvailable`, its code and i18n key (done) | model, services, i18n | 3 |
+| `period_kind` in `ScheduleIn` and `useSchedule` (done) | API, frontend | 3 |
+| Month bounds and date-range loops recomputed (done) | `apps/checkins`, `windows.py`, `days.py` | 3 |
+| `months.ts` and the frontend date-math copies (done) | frontend | 3 |
+| "month" wording in schedule texts and period errors (done) | i18n, services | 3 |
 | `ProgressOut`, `KindEnum` override, `days.Progress`, `checkins.progress.*` | API, settings, i18n | 5 |
 
 ## Out of scope

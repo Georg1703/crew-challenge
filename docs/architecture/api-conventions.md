@@ -120,8 +120,9 @@ PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its 
 DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)
 PUT    /api/v1/challenges/{id}/participants   creator: {participant_ids} (while proposed)
 PUT    /api/v1/challenges/{id}/vote     participants: vote for a proposal; DELETE takes it back
-PUT    /api/v1/challenges/{id}/schedule   admin: {period_kind: month, period_start}: schedule or
-                                        move before the start; DELETE puts it back in the pool
+PUT    /api/v1/challenges/{id}/schedule   admin: {period_start} (the 1st, a Monday or a day,
+                                        by the proposal's period kind): schedule or move before
+                                        the start; DELETE puts it back in the pool
 DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or leave -> 204;
                                         either way the challenge is gone for the member
 
