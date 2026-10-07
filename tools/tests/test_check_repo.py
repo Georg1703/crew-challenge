@@ -67,6 +67,11 @@ class CheckRepoTests(unittest.TestCase):
         self.assertIn("docs/a.md:2", errors[0])
         self.assertIn("U+2014", errors[0])
 
+    def test_untracked_output_is_not_checked(self) -> None:
+        write(self.root, "frontend/test-results/run/error-context.md", "Echip\u0103\n")
+        write(self.root, "frontend/playwright-report/index.md", "Echip\u0103\n")
+        self.assertEqual(self.errors(check_repo.check_ascii), [])
+
 
 if __name__ == "__main__":
     unittest.main()

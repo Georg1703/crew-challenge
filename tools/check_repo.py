@@ -42,7 +42,18 @@ REQUIRED_FILES = [
     ".claude/settings.json",
 ]
 
-SKIP_DIRS = {".git", "node_modules", ".venv", "dist", "dev-dist", ".pytest_cache", "tools/tests/fixtures"}
+# Not ours or not tracked: dependencies, builds, caches, and what Playwright writes after a run.
+SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "dist",
+    "dev-dist",
+    ".pytest_cache",
+    "tools/tests/fixtures",
+    "test-results",
+    "playwright-report",
+}
 
 # Backticked paths starting with these prefixes must exist today.
 CHECKED_PATH_PREFIXES = ("docs/", "tools/", ".claude/", ".github/", "infra/aws/")
@@ -61,11 +72,16 @@ class Report:
         self.errors.append(f"{location}: {message}")
 
 
+def skipped(rel: str) -> bool:
+    """A path inside one of SKIP_DIRS, at any depth."""
+    return any(rel == d or rel.startswith(d + "/") or f"/{d}/" in f"/{rel}" for d in SKIP_DIRS)
+
+
 def iter_markdown(root: Path) -> list[Path]:
     files = []
     for path in sorted(root.rglob("*.md")):
         rel = path.relative_to(root).as_posix()
-        if any(rel == d or rel.startswith(d + "/") or f"/{d}/" in f"/{rel}" for d in SKIP_DIRS):
+        if skipped(rel):
             continue
         files.append(path)
     return files
@@ -126,7 +142,7 @@ ASCII_EXEMPT_PREFIXES = ("frontend/src/i18n/",)
 def check_ascii(root: Path, report: Report) -> None:
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root).as_posix()
-        if not path.is_file() or any(part in {".git", "node_modules", ".venv"} for part in path.parts):
+        if not path.is_file() or skipped(rel):
             continue
         if rel.startswith(ASCII_EXEMPT_PREFIXES):
             continue
