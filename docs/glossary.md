@@ -37,7 +37,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Wilted | `wilted` | A tree's look while its member has an unserved punishment. After v1. |
 | Greenhouse | - | Archive of past months' trees. After v1. |
 | Goal | `goal_label`, `goal_target` | Optional numeric monthly target of a challenge (e.g. "books", 2). |
-| Reaction | `Reaction` | An emoji another member puts on a proof. After v1. |
+| Reaction | `Reaction` | One member's emoji on something in the crew (v1: a check-in card in the journal). One per member per target; picking another replaces it. |
+| Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`check_in` now). |
 | Punishment | `Punishment` | An entry in the crew's pool of forfeits. After v1. |
 | Spin | `PunishmentSpin` | One pending or completed turn of the Wheel of Doom for one missed day. Status: `pending`, `spun`, `served`. After v1. |
 | Wheel of Doom | `doom` app | The feature that assigns a punishment after a missed day. After v1. |

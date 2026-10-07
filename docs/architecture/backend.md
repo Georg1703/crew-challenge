@@ -23,7 +23,8 @@ backend/
 |   |-- crews/              # Crew, Member, Invite, switching crews
 |   |-- challenges/         # Challenge (soft deleted), Participant, Vote
 |   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: due days, day states, streaks
-|   `-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
+|   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
+|   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
 |   |-- transcoding/        # Transcoder ABC, MediaConvert (job settings in code), in-memory, factory
@@ -98,8 +99,35 @@ allow_indirect_imports = true  # apps reach them only through integrations/* ada
 name = "Core does not depend on domain apps"
 type = "forbidden"
 source_modules = ["apps.core"]
-forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.checkins", "apps.media", "apps.doom", "apps.notifications"]
+forbidden_modules = ["apps.accounts", "apps.crews", "apps.challenges", "apps.checkins", "apps.media", "apps.reactions", "apps.doom", "apps.notifications"]
+
+[[tool.importlinter.contracts]]
+name = "Reactions know their targets only through the registry (targets register themselves)"
+type = "forbidden"
+source_modules = ["apps.reactions"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media"]
 ```
+
+## Generic building blocks
+
+Some apps serve any kind of object instead of one. They know nothing about the apps that use them;
+those apps register with them. Reach for this when a second kind of object will clearly want the
+same thing (see "How to work in this repo" in AGENTS.md).
+
+**Reactions (`apps/reactions`).** One emoji per member on any registered target. A `Reaction`
+points at its target by a generic key (`target_type` + `target_id`, every id is a UUID), so a new
+kind of target needs no table, endpoint or client change:
+
+1. the target model declares `reactions = GenericRelation("reactions.Reaction",
+   content_type_field="target_type", object_id_field="target_id")`, which deletes its reactions with
+   it (a generic key has no database foreign key; a test fails if a registered model lacks it);
+2. its app registers `Target(key, model, find)` in `AppConfig.ready()`; `find(member, id)` returns
+   the object only if that member may see it and react to it now;
+3. its API embeds `ReactionSummaryOut` (from `reactions.selectors.summaries`, one query per page),
+   and the frontend shows `<Reactions target=... />`.
+
+`PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
+Check-ins are the first target (`check_in`: single journal cards only).
 
 ## Core building blocks (`apps/core`)
 

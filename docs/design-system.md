@@ -190,7 +190,7 @@ for safe areas and `100dvh`.
 
 ## Not in this version
 
-Growing trees and other illustrations, confetti, the Wheel of Doom, reactions, push notifications.
+Growing trees and other illustrations, confetti, the Wheel of Doom, custom reaction sets, push notifications.
 
 ## Guardrails (run by `make check`)
 
