@@ -54,7 +54,8 @@ export default defineConfig({
         // Precache the app shell; every navigation falls back to it (offline start works).
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
         // Nunito Sans ships one file per script; precache only Latin (covers Romanian).
-        globIgnores: ["**/*-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2"],
+        // The emoji picker loads on first use only (src/shared/ui/emojiMart.ts): not precached.
+        globIgnores: ["**/*-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2", "**/emojiMart-*.js"],
         navigateFallback: "/index.html",
         // Never answer API, admin, Django static or media requests from the service worker.
         navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/static\//],

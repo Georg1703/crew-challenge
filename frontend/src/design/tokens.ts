@@ -51,6 +51,7 @@ export const sizeTokens = [
   "button-height",
   "button-height-sm",
   "input-height",
+  "avatar-xs",
   "avatar-sm",
   "avatar-md",
   "avatar-lg",
@@ -60,4 +61,6 @@ export const sizeTokens = [
   "story-avatar-size",
   "story-avatar-size-lg",
   "mini-bar-height",
+  "reaction-chip-height",
+  "emoji-picker-height",
 ] as const;

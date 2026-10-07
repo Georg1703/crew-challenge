@@ -19,7 +19,8 @@ type Person = { id: string; name: string; seed: string };
  * body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
  * target, or a big number for a streak milestone; a plain check-in or a group has none. The
  * footer holds the last seven days (`MiniWeek`) and short facts ("7 days in a row", "day 5 of
- * 30"). `tone="success"` marks a milestone or the whole crew finishing the day.
+ * 30"). `tone="success"` marks a milestone or the whole crew finishing the day. `reactions` sits
+ * between the content and the footer.
  */
 export function FeedCard({
   person,
@@ -36,6 +37,7 @@ export function FeedCard({
   moreLabel,
   week,
   facts = [],
+  reactions,
 }: {
   /** One member: an avatar. */
   person?: Person;
@@ -64,6 +66,8 @@ export function FeedCard({
   week?: { days: { key: string; state: DayState; today?: boolean }[]; label: string };
   /** Short facts in the footer: "7 days in a row", "day 5 of 30", "3 proofs". */
   facts?: ReactNode[];
+  /** The reactions row (chips and the react button), under the content. */
+  reactions?: ReactNode;
 }) {
   const footer = week || facts.length > 0;
   return (
@@ -108,6 +112,7 @@ export function FeedCard({
       {proofs.length > 0 && (
         <ProofMosaic proofs={proofs} onOpen={onOpenProof} moreLabel={moreLabel} />
       )}
+      {reactions}
       {footer && (
         <footer className={styles.foot}>
           {week && <MiniWeek days={week.days} label={week.label} />}

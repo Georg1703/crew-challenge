@@ -9,6 +9,12 @@
   user-select: none;
 }
 
+.xs {
+  width: var(--avatar-xs);
+  height: var(--avatar-xs);
+  font-size: var(--text-caption);
+}
+
 .sm {
   width: var(--avatar-sm);
   height: var(--avatar-sm);

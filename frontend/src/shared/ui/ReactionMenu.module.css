@@ -1,0 +1,73 @@
+/* The quick row: a floating pill of emoji buttons above the react button. */
+.menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sheet);
+  transform-origin: bottom right;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.emoji,
+.more {
+  display: grid;
+  place-items: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.emoji:active {
+  transform: scale(1.25);
+}
+
+.selected {
+  background: var(--color-accent-soft);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+  cursor: pointer;
+}
+
+.emoji:focus-visible,
+.more:focus-visible,
+.who:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}

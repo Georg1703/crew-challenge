@@ -3,7 +3,7 @@
  * Shows every token and component in every state, in light and dark. Change src/styles/tokens.css
  * or a component in src/shared/ui and watch everything here update.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { motion, springs, type SpringName } from "@/shared/motion";
 import {
@@ -21,6 +21,7 @@ import {
   DayDivider,
   DayMark,
   type DayState,
+  EmojiPicker,
   FeedCard,
   HoldButton,
   Icon,
@@ -39,6 +40,9 @@ import {
   type RingSegment,
   type ViewerItem,
   QrCode,
+  ReactionChips,
+  type ReactionChip,
+  ReactionMenu,
   Segmented,
   Sheet,
   Skeleton,
@@ -624,6 +628,7 @@ export function DesignRoute() {
               detail: "20 today",
               progress: { value: 20, max: 30, label: "20 of 30 pages" },
             }}
+            reactions={<ReactionsDemo />}
           />
           <FeedCard
             people={{
@@ -778,5 +783,110 @@ function SpringDemo({ name }: { name: SpringName }) {
       />
       <code>{name}</code>
     </button>
+  );
+}
+
+const QUICK = ["\u{1F44D}", "\u{1F525}", "\u{1F44F}", "\u{1F4AA}", "\u{1F602}", "\u2764\uFE0F"];
+const PEOPLE = ["Ana", "Bogdan", "Cristina", "Dan", "Elena"].map((name) => ({
+  id: name,
+  name,
+  seed: name.toLowerCase(),
+}));
+const EMOJI_TEXTS = {
+  search: "Search",
+  search_no_results_1: "Nothing found",
+  search_no_results_2: "Try another word",
+  pick: "Pick an emoji",
+  add_custom: "Add",
+  categories: {
+    activity: "Activity",
+    custom: "Custom",
+    flags: "Flags",
+    foods: "Food and drink",
+    frequent: "Used lately",
+    nature: "Animals and nature",
+    objects: "Objects",
+    people: "Smileys and people",
+    places: "Travel and places",
+    search: "Search results",
+    symbols: "Symbols",
+  },
+  skins: {
+    choose: "Skin tone",
+    "1": "Default",
+    "2": "Light",
+    "3": "Medium light",
+    "4": "Medium",
+    "5": "Medium dark",
+    "6": "Dark",
+  },
+};
+
+/** Reactions as a card shows them: chips (yours highlighted, "+N"), the quick row, the picker. */
+function ReactionsDemo() {
+  const toast = useToast();
+  const [mine, setMine] = useState<string | null>(QUICK[1] ?? null);
+  const [menu, setMenu] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const others: Record<string, typeof PEOPLE> = {
+    [QUICK[2] ?? ""]: PEOPLE.slice(2, 3),
+    [QUICK[1] ?? ""]: PEOPLE.slice(1, 5),
+  };
+  const emojis = [...new Set([QUICK[2] ?? "", QUICK[1] ?? "", ...(mine ? [mine] : [])])];
+  const chips: ReactionChip[] = emojis
+    .map((emoji) => {
+      const people = [...(emoji === mine ? PEOPLE.slice(0, 1) : []), ...(others[emoji] ?? [])];
+      return { emoji, people, mine: emoji === mine, label: `${emoji}, ${people.length}` };
+    })
+    .filter((chip) => chip.people.length > 0);
+  const react = (emoji: string) => setMine((current) => (current === emoji ? null : emoji));
+  return (
+    <div className={styles.row}>
+      <ReactionChips
+        chips={chips}
+        onToggle={react}
+        onHold={(emoji) => toast(`Who reacted with ${emoji}`)}
+      />
+      <span className={styles.reactAnchor}>
+        <Button
+          ref={opener}
+          variant="ghost"
+          icon={<Icon name="smilePlus" size={20} />}
+          aria-label="React"
+          aria-expanded={menu}
+          onClick={() => setMenu((open) => !open)}
+        />
+        <ReactionMenu
+          open={menu}
+          onClose={() => setMenu(false)}
+          label="React"
+          emojis={QUICK}
+          selected={mine}
+          onPick={react}
+          moreLabel="More emojis"
+          onMore={() => setPicker(true)}
+          whoLabel="Who reacted"
+          onWho={() => toast("Who reacted")}
+          anchor={opener}
+        />
+      </span>
+      <Sheet
+        open={picker}
+        onClose={() => setPicker(false)}
+        title="Pick an emoji"
+        closeLabel="Close"
+      >
+        <EmojiPicker
+          texts={EMOJI_TEXTS}
+          errorText="The emojis did not load."
+          retryLabel="Try again"
+          onPick={(emoji) => {
+            setPicker(false);
+            setMine(emoji);
+          }}
+        />
+      </Sheet>
+    </div>
   );
 }
