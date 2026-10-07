@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EmojiPicker, type EmojiPickerTexts } from "./EmojiPicker";
 import { ReactionChips, type ReactionChip } from "./ReactionChips";
 import { ReactionMenu } from "./ReactionMenu";
+import { Sheet } from "./Sheet";
 
 const FIRE = "\u{1F525}";
 const CLAP = "\u{1F44F}";
@@ -151,5 +152,17 @@ describe("EmojiPicker", () => {
     expect(props).toMatchObject({ i18n: TEXTS, set: "native", emojiButtonSize: 44 });
     (props.onEmojiSelect as (e: { native: string }) => void)({ native: FIRE });
     expect(onPick).toHaveBeenCalledWith(FIRE);
+  });
+
+  it("in a sheet, waits until the sheet has slid in", async () => {
+    render(
+      <Sheet open onClose={() => {}} title="Pick" closeLabel="Close">
+        <EmojiPicker texts={TEXTS} onPick={() => {}} errorText="Failed" retryLabel="Retry" />
+      </Sheet>,
+    );
+    await act(() => import("./emojiMart")); // loaded: only the slide holds it back
+    expect(picked.props).toBeNull();
+
+    await waitFor(() => expect(screen.getByTestId("emoji-mart")).toBeVisible(), { timeout: 3000 });
   });
 });

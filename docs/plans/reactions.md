@@ -74,9 +74,13 @@ existing sheet (`ParticipantsSheet`) is an editor with a picker, not a list, so 
   `--rgb-background`, `--rgb-color`, `--font-family`, `--border-radius`); light and dark follow
   the app theme. No hex values in our code.
 - Settings: `set: "native"`, `previewPosition: "none"`, `skinTonePosition: "search"`,
-  `navPosition: "top"`, `maxFrequentRows: 1`, `emojiButtonSize: 44` (tap target),
-  `dynamicWidth: true` (fills the sheet). Its "frequently used" list stays in its own
-  localStorage (a cache; losing it is harmless).
+  `navPosition: "top"`, `maxFrequentRows: 1`, `perLine` and `emojiButtonSize` (at least 44, the
+  tap target) worked out once from the sheet's width so a row fills it. Not `dynamicWidth`: its
+  ResizeObserver builds the grid a second time on every open. Its "frequently used" list stays in
+  its own localStorage (a cache; losing it is harmless).
+- Smooth opening: the picker is built only after the sheet has slid in (`useSheetSettled`; a
+  skeleton until then), since the slide runs on the main thread. Its sticky category titles lose
+  their `backdrop-filter` blur (a style added to its open shadow root): costly on Android.
 
 ## Backend: new app `apps.reactions`
 

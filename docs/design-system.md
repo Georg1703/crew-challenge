@@ -123,7 +123,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring; `xs` only inside a reaction chip), a row of up to five members then "+N" |
-| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it. |
+| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it. Heavy content waits for `useSheetSettled()` so the slide stays smooth |
 | `Banner` | A message that stays true until it changes (wrong password, offline, your turn). Inline; `floating` only for app-wide notices |
 | `Toast` (`useToast`) | A short confirmation after an action, above the tab bar; optionally one action ("Undo") for 5 seconds |
 | `QrCode` | A scannable code for a link |
@@ -148,7 +148,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ReactionChips` | The reactions under a card: one pill per emoji in the order each was first used, with the `xs` avatar of who used it, or how many when several did; yours highlighted and pressed. A tap toggles yours; press and hold (or the context menu) asks who reacted |
 | `ReactionMenu` | The quick row: a small popover above the react button with a few emojis, "+" for any emoji and "Who reacted". Picking, Escape or a tap outside closes it; focus goes in and back |
 | `EmojiFlight` | A picked reaction flying into place: from the finger it grows big over the card's photo (its `data-stage`), wiggles left and right, then shrinks into its chip, in about 0.6 s. Decorative; skipped with reduced motion |
-| `EmojiPicker` | Any emoji, with search, categories and skin tones (Emoji Mart, loaded on first use), in a `Sheet`. Our colors and font are passed into it; its texts come from our translations |
+| `EmojiPicker` | Any emoji, with search, categories and skin tones (Emoji Mart, loaded on first use), in a `Sheet`; built once the sheet has slid in. Our colors and font are passed into it; its texts come from our translations |
 | `StoryAvatar` | A member with today's ring split into one segment per challenge due today (done green, started faint green, to do grey; nothing due: a plain grey ring), their name and "2/2" under it, and a count of new proofs. A link to the member's page; `lg` at the top of that page |
 | `MiniWeek` | The last seven days as small bars with the shapes of `DayBars`, today outlined; read as one summary |
 | `DayDivider` | A day in the crew's journal: its name, a line and what happened; sticks to the top while that day scrolls |
