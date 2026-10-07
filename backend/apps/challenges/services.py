@@ -32,8 +32,11 @@ TITLE_MAX = 60
 RULES_MAX = 500
 UNIT_MAX = 20
 AMOUNT_MAX = Decimal(10**8)
-# Check-ins a window can ask for: one a day, at most every day of a week or of the longest month.
-COUNT_MAX = {Challenge.Window.DAY: 1, Challenge.Window.WEEK: 7, Challenge.Window.PERIOD: 31}
+MONTHS_AHEAD = 12
+# How long a challenge can run, in each unit of its length.
+LENGTH_MAX = {PeriodKind.MONTH: 12, PeriodKind.WEEK: 52, PeriodKind.DAY: 365}
+# The most days a unit can have (a period count can ask for at most one check-in a day).
+UNIT_DAYS = {PeriodKind.MONTH: 31, PeriodKind.WEEK: 7, PeriodKind.DAY: 1}
 
 
 class PoolFull(Conflict):
@@ -73,12 +76,7 @@ class PeriodOver(Conflict):
 
 class PeriodTooFar(ValidationFailed):
     code = "period_too_far"
-    message = "Choose a period at most 12 months ahead."
-
-
-class PeriodKindNotAvailable(ValidationFailed):
-    code = "period_kind_not_available"
-    message = "Only months can be chosen for now."
+    message = f"Choose a period at most {MONTHS_AHEAD} months ahead."
 
 
 class TooFewDays(Conflict):
@@ -113,6 +111,8 @@ class Shape:
     need_kind: str = Challenge.NeedKind.COUNT
     need_value: Decimal = Decimal(1)
     day_min: Decimal | None = None
+    period_kind: str = PeriodKind.MONTH
+    period_length: int = 1
     proof_kind: str = Challenge.ProofKind.NONE
     proof_required: bool = False
 
@@ -143,9 +143,21 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
     if measure != Challenge.Measure.QUANTITY:
         unit = ""
 
+    period_kind = raw.get("period_kind", PeriodKind.MONTH)
+    period_length = raw.get("period_length", 1)
+    longest = 0  # the most days the period can have
+    if period_kind not in PeriodKind.values:
+        bad("period_kind", "Choose months, weeks or days.")
+    elif not isinstance(period_length, int) or not 1 <= period_length <= LENGTH_MAX[period_kind]:
+        bad("period_length", f"Choose 1-{LENGTH_MAX[period_kind]}.")
+    else:
+        longest = UNIT_DAYS[period_kind] * period_length
+
     window = raw.get("window", Challenge.Window.DAY)
     if window not in Challenge.Window.values:
         bad("window", "Choose how often.")
+    elif window == Challenge.Window.WEEK and 0 < longest < 7:
+        bad("window", "A weekly challenge needs a period of at least 7 days.")
     on_days = 0
     days = raw.get("on_days") or []
     if days and window != Challenge.Window.DAY:
@@ -167,8 +179,8 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
             bad("need_kind", "For each day, set the least amount a check-in needs instead.")
         if need_value is None:
             bad("need_value", "Give a number above zero.")
-    elif window in COUNT_MAX:
-        limit = COUNT_MAX[window]
+    elif window in Challenge.Window.values:
+        limit = {Challenge.Window.DAY: 1, Challenge.Window.WEEK: 7}.get(window, longest or 1)
         if need_value is None or need_value != need_value.to_integral_value() or need_value > limit:
             bad("need_value", f"Choose 1-{limit}." if limit > 1 else "Each day asks for 1.")
 
@@ -198,6 +210,8 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         need_kind=need_kind,
         need_value=need_value or Decimal(1),
         day_min=day_min,
+        period_kind=period_kind,
+        period_length=period_length,
         proof_kind=proof_kind,
         proof_required=proof_required,
     )
@@ -365,36 +379,36 @@ def clear_vote(*, by: Member, challenge_id: UUID) -> None:
 
 # --- the admin's schedule ----------------------------------------------------------------------
 
-MONTHS_AHEAD = 12
-
 
 @transaction.atomic
-def schedule_challenge(
-    *, by: Member, challenge_id: UUID, period_kind: str, period_start: date
-) -> Challenge:
-    """An admin takes a proposal out of the pool and schedules it for a period.
+def schedule_challenge(*, by: Member, challenge_id: UUID, period_start: date) -> Challenge:
+    """An admin takes a proposal out of the pool and picks when it starts.
 
-    Also moves a scheduled challenge that has not started. Chosen before the period: it runs the
-    whole period. Chosen late (the period has begun): it starts tomorrow. The participants stay as
-    they are (people who opted out stay out when it moves). Scheduling for the same period changes
-    nothing.
+    How long it runs was proposed with it: months start on the 1st, weeks on a Monday, a number of
+    days on any day from tomorrow. Also moves a scheduled challenge that has not started (its
+    length stays). Chosen while its month or week is under way: it starts tomorrow, and its windows
+    ask for less. The participants stay as they are (people who opted out stay out when it moves).
+    Scheduling for the same start changes nothing.
     """
     require_admin(by)
-    if period_kind != PeriodKind.MONTH:
-        raise PeriodKindNotAvailable(fields={"period_kind": [PeriodKindNotAvailable.message]})
-    if period_start.day != 1:
-        raise ValidationFailed(fields={"period_start": ["A month starts on its first day."]})
     challenge = _lock(by, challenge_id)
+    kind = challenge.period_kind
+    if kind == PeriodKind.MONTH and period_start.day != 1:
+        raise ValidationFailed(fields={"period_start": ["A month starts on its first day."]})
+    if kind == PeriodKind.WEEK and period_start.weekday() != 0:
+        raise ValidationFailed(fields={"period_start": ["A week starts on a Monday."]})
     today = clock.crew_today(by.crew)
-    first, last = periods.month_of(period_start)
+    first, last = period_start, periods.period_end(kind, period_start, challenge.period_length)
 
     if challenge.state == Challenge.State.CHOSEN:
         assert challenge.start_date is not None
-        if challenge.period_kind == period_kind and challenge.period_start == first:
+        if challenge.period_start == first:
             return challenge
         if today >= challenge.start_date:
             raise ChallengeStarted()
 
+    if kind == PeriodKind.DAY and first <= today:
+        raise ValidationFailed(fields={"period_start": ["Start tomorrow or later."]})
     start = first if today < first else today + timedelta(days=1)
     if start > last:
         raise PeriodOver()
@@ -408,7 +422,6 @@ def schedule_challenge(
         raise TooFewDays()  # a late start asks for less (windows.py), a short month can't
 
     challenge.state = Challenge.State.CHOSEN
-    challenge.period_kind = period_kind
     challenge.period_start = first
     challenge.start_date = start
     challenge.end_date = last
@@ -432,7 +445,6 @@ def unschedule_challenge(*, by: Member, challenge_id: UUID) -> Challenge:
     if clock.crew_today(by.crew) >= challenge.start_date:
         raise ChallengeStarted()
     challenge.state = Challenge.State.PROPOSED
-    challenge.period_kind = ""
     challenge.period_start = challenge.start_date = challenge.end_date = None
     challenge.chosen_by = None
     challenge.chosen_at = None

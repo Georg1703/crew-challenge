@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 import time_machine
 
-from apps.challenges import selectors, services
+from apps.challenges import periods, selectors, services
 from apps.challenges.models import Challenge, Participant, Vote
 from apps.challenges.windows import windows
 from apps.core.errors import PermissionDenied, ValidationFailed
@@ -96,6 +96,15 @@ def test_shapes_are_normalized():
         ({"proof_kind": "audio"}, "proof_kind"),
         ({"measure": "dance"}, "measure"),
         ({"window": "hourly"}, "window"),
+        ({"period_kind": "year"}, "period_kind"),
+        ({"period_length": 13}, "period_length"),  # at most 12 months
+        ({"period_kind": "week", "period_length": 53}, "period_length"),
+        ({"period_kind": "day", "period_length": 0}, "period_length"),
+        ({"period_kind": "day", "period_length": 5, "window": "week", "need_value": 2}, "window"),
+        (
+            {"period_kind": "day", "period_length": 10, "window": "period", "need_value": 11},
+            "need_value",
+        ),
         ({"rules": "x" * 501}, "rules"),
     ],
 )
@@ -109,7 +118,7 @@ def test_bad_shapes_name_the_field(change, field):
 
 
 def november(by):
-    return {"by": by, "period_kind": "month", "period_start": date(2026, 11, 1)}
+    return {"by": by, "period_start": date(2026, 11, 1)}
 
 
 def test_any_member_proposes_into_the_pool(crew):
@@ -117,7 +126,8 @@ def test_any_member_proposes_into_the_pool(crew):
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     assert proposal.created_by == bogdan
     assert proposal.state == "proposed"
-    assert (proposal.period_kind, proposal.period_start, proposal.start_date) == ("", None, None)
+    assert (proposal.period_kind, proposal.period_length) == ("month", 1)
+    assert (proposal.period_start, proposal.start_date) == (None, None)
     assert (proposal.measure, proposal.unit, proposal.day_min) == (
         "quantity",
         "push-ups",
@@ -337,9 +347,7 @@ def test_moving_before_the_start_keeps_opt_outs_and_is_locked_after(crew):
     services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
     services.stop_taking_part(by=cristina, challenge_id=chosen.pk)
 
-    services.schedule_challenge(
-        by=admin, challenge_id=chosen.pk, period_kind="month", period_start=date(2027, 1, 1)
-    )
+    services.schedule_challenge(by=admin, challenge_id=chosen.pk, period_start=date(2027, 1, 1))
     chosen.refresh_from_db()
     assert (chosen.start_date, chosen.end_date) == (date(2027, 1, 1), date(2027, 1, 31))
     assert Participant.objects.filter(challenge=chosen).count() == 2  # Cristina stays out
@@ -358,12 +366,8 @@ def test_putting_back_in_the_pool_reopens_votes_and_keeps_participants(crew):
     services.schedule_challenge(challenge_id=chosen.pk, **november(admin))
 
     back = services.unschedule_challenge(by=admin, challenge_id=chosen.pk)
-    assert (back.state, back.period_kind, back.period_start, back.start_date) == (
-        "proposed",
-        "",
-        None,
-        None,
-    )
+    assert (back.state, back.period_start, back.start_date) == ("proposed", None, None)
+    assert (back.period_kind, back.period_length) == ("month", 1)  # how long stays with it
     assert (back.end_date, back.chosen_by, back.chosen_at) == (None, None, None)
     assert Participant.objects.filter(challenge=chosen).count() == 3
     assert selectors.tallies(challenges=[chosen])[chosen.pk].count == 1
@@ -388,7 +392,7 @@ def test_scheduling_on_the_last_day_or_for_a_past_month_is_too_late(crew):
         services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
     with pytest.raises(services.PeriodOver):
         services.schedule_challenge(
-            by=admin, challenge_id=proposal.pk, period_kind="month", period_start=date(2026, 9, 1)
+            by=admin, challenge_id=proposal.pk, period_start=date(2026, 9, 1)
         )
 
 
@@ -402,7 +406,6 @@ def test_the_last_day_follows_the_crew_time_zone(crew):
             services.schedule_challenge(
                 by=admin,
                 challenge_id=proposal.pk,
-                period_kind="month",
                 period_start=date(2026, 10, 1),
             )
         services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
@@ -411,28 +414,23 @@ def test_the_last_day_follows_the_crew_time_zone(crew):
 
 
 @pytest.mark.parametrize(
-    ("period_kind", "period_start", "error"),
+    ("period_start", "error"),
     [
-        ("week", date(2026, 11, 2), services.PeriodKindNotAvailable),
-        ("month", date(2026, 11, 2), ValidationFailed),
-        ("month", date(2027, 11, 1), services.PeriodTooFar),
+        (date(2026, 11, 2), ValidationFailed),  # a month starts on the 1st
+        (date(2027, 11, 1), services.PeriodTooFar),
     ],
 )
-def test_bad_periods_are_refused(crew, period_kind, period_start, error):
+def test_bad_periods_are_refused(crew, period_start, error):
     admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     with pytest.raises(error):
-        services.schedule_challenge(
-            by=admin, challenge_id=proposal.pk, period_kind=period_kind, period_start=period_start
-        )
+        services.schedule_challenge(by=admin, challenge_id=proposal.pk, period_start=period_start)
 
 
 def test_twelve_months_ahead_is_the_limit(crew):
     admin, bogdan, _ = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
-    services.schedule_challenge(
-        by=admin, challenge_id=proposal.pk, period_kind="month", period_start=date(2027, 10, 1)
-    )
+    services.schedule_challenge(by=admin, challenge_id=proposal.pk, period_start=date(2027, 10, 1))
 
 
 def test_a_period_shorter_than_the_count_is_refused_and_a_late_start_asks_for_less(crew):
@@ -441,9 +439,7 @@ def test_a_period_shorter_than_the_count_is_refused_and_a_late_start_asks_for_le
         by=bogdan, shape={"title": "Swim", "window": "period", "need_value": 30}
     )
     with pytest.raises(services.TooFewDays):  # February 2027 has 28 days
-        services.schedule_challenge(
-            by=admin, challenge_id=swim.pk, period_kind="month", period_start=date(2027, 2, 1)
-        )
+        services.schedule_challenge(by=admin, challenge_id=swim.pk, period_start=date(2027, 2, 1))
     with time_machine.travel("2026-11-25 12:00Z", tick=False):  # 26-30 Nov: 5 of 30 days
         chosen = services.schedule_challenge(challenge_id=swim.pk, **november(admin))
     assert chosen.start_date is not None
@@ -615,12 +611,86 @@ def test_moving_and_putting_back_keep_the_participants(crew):
     admin, bogdan, cristina = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS, participant_ids=[cristina.pk])
     services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
-    services.schedule_challenge(
-        by=admin, challenge_id=proposal.pk, period_kind="month", period_start=date(2026, 12, 1)
-    )
+    services.schedule_challenge(by=admin, challenge_id=proposal.pk, period_start=date(2026, 12, 1))
     assert names(proposal) == ["Bogdan", "Cristina"]
     services.unschedule_challenge(by=admin, challenge_id=proposal.pk)
     assert names(proposal) == ["Bogdan", "Cristina"]
+
+
+WEEKLY = {
+    "title": "Run",
+    "window": "week",
+    "need_value": 3,
+    "period_kind": "week",
+    "period_length": 4,
+}
+
+
+def test_weeks_start_on_a_monday_and_run_their_length(crew):
+    admin, bogdan, _ = crew
+    run = services.propose_challenge(by=bogdan, shape=WEEKLY)
+    with pytest.raises(ValidationFailed):
+        services.schedule_challenge(by=admin, challenge_id=run.pk, period_start=date(2026, 11, 3))
+    chosen = services.schedule_challenge(
+        by=admin, challenge_id=run.pk, period_start=date(2026, 11, 2)
+    )
+    assert (chosen.period_start, chosen.start_date, chosen.end_date) == (
+        date(2026, 11, 2),
+        date(2026, 11, 2),
+        date(2026, 11, 29),
+    )
+    moved = services.schedule_challenge(
+        by=admin, challenge_id=run.pk, period_start=date(2026, 11, 9)
+    )
+    assert (moved.end_date, moved.period_length) == (date(2026, 12, 6), 4)  # same length
+
+
+def test_weeks_under_way_start_tomorrow(crew):
+    admin, bogdan, _ = crew
+    run = services.propose_challenge(by=bogdan, shape=WEEKLY)
+    with time_machine.travel("2026-11-04 12:00Z", tick=False):  # a Wednesday
+        chosen = services.schedule_challenge(
+            by=admin, challenge_id=run.pk, period_start=date(2026, 11, 2)
+        )
+    assert (chosen.period_start, chosen.start_date) == (date(2026, 11, 2), date(2026, 11, 5))
+
+
+def test_a_number_of_days_starts_any_day_from_tomorrow(crew):
+    admin, bogdan, _ = crew
+    swim = services.propose_challenge(
+        by=bogdan,
+        shape={"title": "Swim", "window": "period", "need_value": 8, "period_kind": "day"}
+        | {"period_length": 21},
+    )
+    with pytest.raises(ValidationFailed):  # today is the 10th
+        services.schedule_challenge(by=admin, challenge_id=swim.pk, period_start=date(2026, 10, 10))
+    chosen = services.schedule_challenge(
+        by=admin, challenge_id=swim.pk, period_start=date(2026, 10, 17)
+    )
+    assert (chosen.start_date, chosen.end_date) == (date(2026, 10, 17), date(2026, 11, 6))
+
+
+def test_several_months_end_with_the_last_month(crew):
+    admin, bogdan, _ = crew
+    cook = services.propose_challenge(by=bogdan, shape={"title": "Cook", "period_length": 3})
+    chosen = services.schedule_challenge(challenge_id=cook.pk, **november(admin))
+    assert chosen.end_date == date(2027, 1, 31)
+
+
+@pytest.mark.parametrize(
+    ("kind", "start", "length", "end"),
+    [
+        ("month", date(2026, 10, 1), 1, date(2026, 10, 31)),
+        ("month", date(2026, 12, 1), 2, date(2027, 1, 31)),
+        ("month", date(2027, 2, 1), 1, date(2027, 2, 28)),
+        ("week", date(2026, 11, 2), 4, date(2026, 11, 29)),
+        ("day", date(2026, 10, 10), 21, date(2026, 10, 30)),
+    ],
+)
+def test_period_ends(kind, start, length, end):
+    assert periods.period_end(kind, start, length) == end
+    with pytest.raises(ValueError, match="Unknown period kind"):
+        periods.period_end("", start, length)
 
 
 # --- lists -----------------------------------------------------------------------------------

@@ -43,7 +43,7 @@ def november(admin, by, shape, participant_ids=None):
     """A challenge proposed by `by` and scheduled for November."""
     challenge = challenges.propose_challenge(by=by, shape=shape, participant_ids=participant_ids)
     challenges.schedule_challenge(
-        by=admin, challenge_id=challenge.pk, period_kind="month", period_start=date(2026, 11, 1)
+        by=admin, challenge_id=challenge.pk, period_start=date(2026, 11, 1)
     )
     challenge.refresh_from_db()
     return challenge
@@ -197,7 +197,7 @@ def test_the_25_hour_day_when_clocks_go_back(crew):
     with at("2026-10-20 08:00Z"):
         walk = challenges.propose_challenge(by=bogdan, shape=WALK)
         challenges.schedule_challenge(  # chosen late: runs 21-31 October
-            by=admin, challenge_id=walk.pk, period_kind="month", period_start=date(2026, 10, 1)
+            by=admin, challenge_id=walk.pk, period_start=date(2026, 10, 1)
         )
     sunday = date(2026, 10, 25)  # Chisinau goes from UTC+3 to UTC+2 at 04:00 local
     with at("2026-10-25 21:30Z"):  # 23:30 local, still Sunday
@@ -212,7 +212,7 @@ def test_a_day_is_missed_from_local_midnight_also_when_the_clocks_go_back(crew):
     admin, bogdan, _ = crew
     walk = challenges.propose_challenge(by=bogdan, shape=WALK, participant_ids=None)
     challenges.schedule_challenge(  # October is under way: it starts tomorrow, the 11th
-        by=admin, challenge_id=walk.pk, period_kind="month", period_start=date(2026, 10, 1)
+        by=admin, challenge_id=walk.pk, period_start=date(2026, 10, 1)
     )
     with at("2026-10-24 12:00Z"):
         services.check_in(by=bogdan, challenge_id=walk.pk, day=date(2026, 10, 24))

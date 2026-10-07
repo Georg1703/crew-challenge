@@ -12,6 +12,7 @@ import {
   viewerItem,
 } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
+import { dayOfMonth } from "@/shared/lib/dates";
 import { formatDayLong, monthAndYear, todayIn } from "@/shared/lib/format";
 import {
   Banner,
@@ -137,7 +138,7 @@ export function MemberRoute() {
           </div>
           <div className={styles.memberBars}>
             <DayBarsAxis
-              days={data.days.map((d) => Number(d.slice(8, 10)))}
+              days={data.days.map(dayOfMonth)}
               todayIndex={todayIndex >= 0 ? todayIndex : undefined}
             />
             <DayBars

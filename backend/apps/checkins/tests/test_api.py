@@ -27,7 +27,7 @@ def setup():
         member = MemberFactory.create(crew=admin.crew, display_name="Bogdan")
         read = challenges.propose_challenge(by=member, shape=READ)
         challenges.schedule_challenge(
-            by=admin, challenge_id=read.pk, period_kind="month", period_start=date(2026, 11, 1)
+            by=admin, challenge_id=read.pk, period_start=date(2026, 11, 1)
         )
     with time_machine.travel("2026-11-10 08:00Z", tick=False):
         yield admin, member, read

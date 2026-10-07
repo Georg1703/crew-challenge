@@ -5,6 +5,7 @@ import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
 import { Reactions } from "@/features/reactions";
 import { errorMessage } from "@/i18n/errors";
+import { addDays } from "@/shared/lib/dates";
 import { formatDayLong, formatList, formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
 import {
   Banner,
@@ -34,9 +35,7 @@ function chip(item: Item) {
 
 /** "Today", "Yesterday", else "Monday, 5 October"; then "5 check-ins, 9 proofs". */
 function divider(entry: JournalDay, t: T, language: string, today: string) {
-  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000)
-    .toISOString()
-    .slice(0, 10);
+  const yesterday = addDays(today, -1);
   const title =
     entry.day === today
       ? t("crew.journal.today")

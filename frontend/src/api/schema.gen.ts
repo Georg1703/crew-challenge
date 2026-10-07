@@ -651,6 +651,20 @@ export interface components {
              * @description Numbers counted in check-ins: the least amount for a check-in to count.
              */
             day_min?: string | null;
+            /**
+             * @description The unit of how long it runs: months, weeks or days.
+             *
+             *     * `month` - Months
+             *     * `week` - Weeks
+             *     * `day` - Days
+             * @default month
+             */
+            period_kind: components["schemas"]["PeriodKindEnum"];
+            /**
+             * @description How many months (1-12), weeks (1-52) or days (1-365) it runs.
+             * @default 1
+             */
+            period_length: number;
             /** @default none */
             proof_kind: components["schemas"]["ProofKindEnum"];
             /** @default false */
@@ -677,7 +691,8 @@ export interface components {
             proof_required: boolean;
             state: components["schemas"]["ChallengeStateEnum"];
             phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
-            period_kind: (components["schemas"]["PeriodKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            period_kind: components["schemas"]["PeriodKindEnum"];
+            period_length: number;
             /** Format: date */
             period_start: string | null;
             /** Format: date */
@@ -1054,12 +1069,12 @@ export interface components {
             created_by: components["schemas"]["MemberSummaryOut"] | null;
         };
         /**
-         * @description * `month` - Month
-         *     * `week` - Week
-         *     * `custom` - Custom
+         * @description * `month` - Months
+         *     * `week` - Weeks
+         *     * `day` - Days
          * @enum {string}
          */
-        PeriodKindEnum: "month" | "week" | "custom";
+        PeriodKindEnum: "month" | "week" | "day";
         PersonOut: {
             /** Format: uuid */
             id: string;
@@ -1184,10 +1199,9 @@ export interface components {
             mine: string | null;
         };
         ScheduleInRequest: {
-            period_kind: components["schemas"]["PeriodKindEnum"];
             /**
              * Format: date
-             * @description First day of the period (the 1st for a month).
+             * @description First day of the period: the 1st for months, a Monday for weeks, any day from tomorrow for days. Its length comes from the challenge.
              */
             period_start: string;
         };

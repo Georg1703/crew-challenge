@@ -120,7 +120,7 @@ export function useVote() {
   });
 }
 
-/** Admin: schedule a proposal for a month, or move a scheduled one before it starts. */
+/** Admin: pick when a proposal starts, or move a scheduled one before it starts. */
 export function useSchedule(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -128,7 +128,7 @@ export function useSchedule(id: string) {
       call(
         api.PUT("/api/v1/challenges/{challenge_id}/schedule", {
           ...path(id),
-          body: { period_kind: "month", period_start: periodStart },
+          body: { period_start: periodStart },
         }),
       ),
     onSuccess: (detail) => {

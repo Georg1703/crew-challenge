@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/i18n/errors";
 import { cx } from "@/shared/lib/cx";
+import { dayOfMonth, daysBetween, monthStart } from "@/shared/lib/dates";
 import { formatDay, formatDayLong, monthAndYear, todayIn } from "@/shared/lib/format";
 import {
   Avatar,
@@ -24,19 +25,8 @@ import { DaySheet } from "./DaySheet";
 
 const LEGEND = ["done", "missed", "todo", "future"] as const;
 const LEFT_TODAY: DayState[] = ["todo", "partial"];
-const DAY_MS = 86_400_000;
-
 /** "2026-11" from a date ("2026-11-10"), and months moved by `offset`. */
-function monthKey(day: string, offset = 0): string {
-  const [year = 0, month = 1] = day.split("-").map(Number);
-  const index = year * 12 + month - 1 + offset;
-  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
-}
-
-/** Whole days from `a` to `b` (dates as "YYYY-MM-DD"). */
-function daysBetween(a: string, b: string): number {
-  return Math.round((Date.parse(b) - Date.parse(a)) / DAY_MS);
-}
+const monthKey = (day: string, offset = 0) => monthStart(day, offset).slice(0, 7);
 
 function count(states: DayState[], state: DayState): number {
   return states.filter((s) => s === state).length;
@@ -230,7 +220,7 @@ function Rows({
     <div className={styles.board}>
       <div className={styles.boardRow}>
         <DayBarsAxis
-          days={board.days.map((d) => Number(d.slice(8, 10)))}
+          days={board.days.map(dayOfMonth)}
           todayIndex={index >= 0 ? index : undefined}
           onPick={(i) => (board.days[i] ?? "") <= today && onPick(i)}
           labels={board.days.map((d) => formatDayLong(d, i18n.language))}

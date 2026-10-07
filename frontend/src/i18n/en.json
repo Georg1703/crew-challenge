@@ -185,14 +185,13 @@
     "not_your_proposal": "Only the person who proposed it can change it.",
     "challenge_started": "The challenge has already started.",
     "challenge_finished": "The challenge has finished.",
-    "period_over": "This month is over. Choose a later one.",
+    "period_over": "This period is over. Choose a later one.",
     "not_chosen_yet": "Only a chosen challenge has participants.",
     "conflict": "That can't be done right now.",
     "pool_full": "The list of proposals is full. Withdraw one or wait until one is chosen.",
     "not_a_proposal": "This challenge has already been chosen, so it can't be changed or voted on.",
-    "period_too_far": "Choose a month at most a year ahead.",
-    "too_few_days": "Too few days are left this month for how many times the challenge asks.",
-    "period_kind_not_available": "Only months can be chosen for now.",
+    "period_too_far": "Choose a start at most a year ahead.",
+    "too_few_days": "This period has fewer days than the times the challenge asks for.",
     "day_closed": "That day has ended. You can only check in for today.",
     "not_taking_part": "You're not taking part in this challenge today.",
     "not_due_today": "This challenge asks for nothing today.",
@@ -264,6 +263,7 @@
     },
     "facts": {
       "name": "Name",
+      "length": "How long",
       "often": "How often",
       "record": "What you record",
       "target": "Target",
@@ -291,7 +291,7 @@
     "next": "Continue",
     "publish": "Publish the proposal",
     "save": "Save the changes",
-    "reviewNote": "The crew sees it right away and can vote. An admin chooses the month it runs in.",
+    "reviewNote": "The crew sees it right away and can vote. An admin chooses when it starts.",
     "editResetsVotes": "If you change the challenge, the votes so far are reset.",
     "steps": {
       "what": {
@@ -319,6 +319,12 @@
       "icon": "Icon",
       "rules": "The rules, in short",
       "rulesHint": "What counts and what doesn't. Optional.",
+      "length": "How long does it run?",
+      "periodLength": {
+        "month": "How many months",
+        "week": "How many weeks",
+        "day": "How many days"
+      },
       "often": "How often",
       "onDays": "Days",
       "times": "How many times",
@@ -338,7 +344,7 @@
       "often": {
         "daily": {
           "title": "Every day",
-          "description": "One check-in a day, all month"
+          "description": "One check-in a day, to the end"
         },
         "weekdays": {
           "title": "On chosen days",
@@ -349,8 +355,8 @@
           "description": "Any days, a number of times"
         },
         "times_per_period": {
-          "title": "A few times a month",
-          "description": "A number of times by the end"
+          "title": "A few times in {{period}}",
+          "description": "Any days, a number of times by the end"
         },
         "once": {
           "title": "Once",
@@ -361,7 +367,7 @@
           "description": "The numbers add up, Monday to Sunday"
         },
         "total_per_period": {
-          "title": "A total for the month",
+          "title": "A total for {{period}}",
           "description": "The numbers add up by the end"
         }
       },
@@ -396,6 +402,11 @@
           "title": "Photo or video",
           "description": "Everyone picks"
         }
+      },
+      "periodKind": {
+        "month": "Months",
+        "week": "Weeks",
+        "day": "Days"
       }
     },
     "describe": {
@@ -403,10 +414,10 @@
       "weekdays": "On {{days}}",
       "oncePerWeek": "Once a week",
       "timesPerWeek": "{{n}} times a week",
-      "timesPerPeriod": "{{n}} times in the month",
+      "timesPerPeriod": "{{n}} times in {{period}}",
       "once": "Once, by the end",
       "totalPerWeek": "{{value}} {{unit}} a week",
-      "totalPerPeriod": "{{value}} {{unit}} in the month",
+      "totalPerPeriod": "{{value}} {{unit}} in {{period}}",
       "dayMin": "At least {{value}} {{unit}} each check-in",
       "check": "Just a check-in",
       "quantity": "A number ({{unit}})",
@@ -418,7 +429,18 @@
         "photo_or_video": "Photo or video"
       },
       "proofRequired": "{{kind}}, required",
-      "proofOptional": "{{kind}}, optional"
+      "proofOptional": "{{kind}}, optional",
+      "period": {
+        "month_one": "the month",
+        "month_few": "{{count}} months",
+        "month_other": "{{count}} months",
+        "week_one": "the week",
+        "week_few": "{{count}} weeks",
+        "week_other": "{{count}} weeks",
+        "day_one": "1 day",
+        "day_few": "{{count}} days",
+        "day_other": "{{count}} days"
+      }
     },
     "icons": {
       "dumbbell": "Gym",
@@ -467,7 +489,8 @@
       "title": "Give the challenge a name.",
       "onDays": "Choose at least one day.",
       "unit": "Write the unit, for example km.",
-      "number": "Write a number above zero."
+      "number": "Write a number above zero.",
+      "weekNeedsDays": "A weekly challenge needs at least 7 days."
     },
     "today": {
       "chooseTitle": "No challenge for {{month}} yet",
@@ -492,21 +515,26 @@
     "editingNote": "Editing your proposal",
     "chosenBy": "Chosen by {{name}}, {{date}}",
     "schedule": {
-      "open": "Choose a month",
+      "open": "Choose when",
       "title": "When does “{{title}}” run?",
       "moveTitle": "Move “{{title}}”",
       "month": "Month",
-      "wholeMonth": "The whole month",
-      "fromTomorrow": "From tomorrow, {{date}}",
-      "body": "The whole crew takes part. Anyone can opt out until it starts. You can change the month until then.",
+      "fromTomorrow": "From tomorrow, {{date}}, to {{to}}",
+      "body": "The whole crew takes part. Anyone can opt out until it starts. You can change when it starts until then.",
       "moveBody": "Everyone takes part again, also those who opted out.",
-      "confirm": "Choose for {{month}}",
-      "done": "Scheduled for {{month}}",
-      "move": "Move to another month",
+      "move": "Move it",
       "back": "Back to proposals",
-      "backDone": "Back in the proposals"
+      "backDone": "Back in the proposals",
+      "week": "Week",
+      "weekOf": "Week of {{date}}",
+      "firstDay": "First day",
+      "until": "Until {{date}}",
+      "confirmMonth": "Choose for {{month}}",
+      "confirmFrom": "Choose from {{date}}",
+      "doneMonth": "Scheduled for {{month}}",
+      "doneFrom": "Scheduled from {{date}}"
     },
-    "periodFrom": "{{month}}, from {{date}}",
+    "periodFrom": "{{period}}, from {{date}}",
     "who": {
       "title": "Who takes part",
       "label": "The crew",
@@ -529,7 +557,19 @@
     "optedOut": "You're no longer taking part",
     "leaveTitle": "Leave the challenge?",
     "leaveBody": "The challenge leaves your list and you cannot come back. The days you did so far stay on the crew's board.",
-    "left": "You left the challenge"
+    "left": "You left the challenge",
+    "length": {
+      "month_one": "1 month",
+      "month_few": "{{count}} months",
+      "month_other": "{{count}} months",
+      "week_one": "1 week",
+      "week_few": "{{count}} weeks",
+      "week_other": "{{count}} weeks",
+      "day_one": "1 day",
+      "day_few": "{{count}} days",
+      "day_other": "{{count}} days"
+    },
+    "range": "{{from}} – {{to}}"
   },
   "checkins": {
     "today": "today",

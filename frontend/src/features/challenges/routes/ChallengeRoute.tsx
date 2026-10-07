@@ -29,7 +29,13 @@ import {
   type Challenge,
 } from "../api";
 import styles from "../challenges.module.css";
-import { describeDayMin, describeMeasure, describeProof, describeRule } from "../describe";
+import {
+  describeDayMin,
+  describeLength,
+  describeMeasure,
+  describeProof,
+  describeRule,
+} from "../describe";
 import { ChallengeIcon } from "../components/ChallengeIcon";
 import { PhasePill } from "../components/PhasePill";
 import { ParticipantsSheet } from "../components/ParticipantsSheet";
@@ -83,18 +89,27 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   const target = describeDayMin(t, challenge, i18n.language);
 
   const facts = [
+    ...(proposal ? [describeLength(t, challenge)] : []), // once scheduled, the dates say it
     describeRule(t, challenge, i18n.language),
     describeMeasure(t, challenge),
     describeProof(t, challenge),
   ];
-  const period =
-    challenge.period_start && challenge.start_date
-      ? challenge.start_date === challenge.period_start
-        ? monthAndYear(challenge.period_start, i18n.language)
-        : t("challenges.periodFrom", {
-            month: monthAndYear(challenge.period_start, i18n.language),
-            date: formatDay(challenge.start_date, i18n.language),
+  const { period_start: first, start_date: start, end_date: end } = challenge;
+  // One month by its name ("November 2026"), anything else as dates.
+  const whole =
+    first && end
+      ? challenge.period_kind === "month" && challenge.period_length === 1
+        ? monthAndYear(first, i18n.language)
+        : t("challenges.range", {
+            from: formatDay(first, i18n.language),
+            to: formatDay(end, i18n.language),
           })
+      : null;
+  const period =
+    whole && start
+      ? start === first
+        ? whole
+        : t("challenges.periodFrom", { period: whole, date: formatDay(start, i18n.language) })
       : null;
   const footnotes = [
     period && t("challenges.periodLine", { period }),

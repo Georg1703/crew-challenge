@@ -1,4 +1,4 @@
-"""Calendar periods a challenge can be scheduled for. v1 uses months; weeks and custom come later.
+"""Calendar periods a challenge runs in: whole months, Monday-Sunday weeks, or a number of days.
 
 Pure functions on crew-local dates (no time zones here: callers pass `clock.crew_today(crew)`).
 """
@@ -7,6 +7,13 @@ from __future__ import annotations
 
 import calendar
 from datetime import date, timedelta
+
+from .models import PeriodKind
+
+
+def dates(first: date, last: date) -> list[date]:
+    """Every day from `first` to `last`, both included (none when `last` comes first)."""
+    return [first + timedelta(days=n) for n in range((last - first).days + 1)]
 
 
 def week_of(day: date) -> tuple[date, date]:
@@ -31,3 +38,14 @@ def add_months(first: date, months: int) -> date:
     """The first day of the month `months` after the month that starts on `first`."""
     index = first.year * 12 + first.month - 1 + months
     return date(index // 12, index % 12 + 1, 1)
+
+
+def period_end(kind: str, start: date, length: int) -> date:
+    """The last day of `length` months (from the 1st), weeks (from a Monday) or days."""
+    if kind == PeriodKind.MONTH:
+        return add_months(start, length) - timedelta(days=1)
+    if kind == PeriodKind.WEEK:
+        return start + timedelta(weeks=length, days=-1)
+    if kind == PeriodKind.DAY:
+        return start + timedelta(days=length - 1)
+    raise ValueError(f"Unknown period kind: {kind!r}")

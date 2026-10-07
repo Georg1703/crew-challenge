@@ -16,7 +16,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Pool | `selectors.pool`, `Crew.max_proposals` | The crew's proposals waiting to be scheduled. Holds at most `max_proposals` (default 50). |
 | Proposal | `Challenge` with `state=proposed` | A challenge in the pool. Visible only to the crew, with who proposed it and when. |
 | Vote | `Vote` | A member likes a proposal: one vote per member per proposal, for as many proposals as they want. |
-| Schedule | `schedule_challenge` | An admin takes a proposal out of the pool and sets its period (v1: a month). Votes guide, they do not decide. Several challenges can share a period. |
+| Period | `period_kind`, `period_length`, `period_start`, `end_date` | When a challenge runs. The creator proposes how long (`period_kind` months, weeks or days, and `period_length` how many); an admin picks the start; the end follows. |
+| Schedule | `schedule_challenge` | An admin takes a proposal out of the pool and picks when it starts: the 1st of a month, a Monday, or any day from tomorrow (by its period kind). A month or week already under way starts tomorrow. Votes guide, they do not decide. Several challenges can run at the same time. |
 | Challenge | `Challenge` | A shared task for a period. State: `proposed` -> `chosen` (and back, before the start). Phase of a chosen one (derived from dates): `upcoming`, `active`, `finished`. |
 | Participant | `Participant` | A member who takes part in a challenge, chosen by its creator when proposing (the whole crew by default, the creator always). Sees it, votes on it while it is a proposal, checks in once it runs. Opting out before the start removes the row; leaving during it sets `left_on`. Not `Invite` (joining a crew). |
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
