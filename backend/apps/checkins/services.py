@@ -19,6 +19,7 @@ from django.db.models import Sum
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
+from apps.challenges.services import ChallengeNotFound
 from apps.challenges.windows import counts_on
 from apps.core import clock
 from apps.core.errors import Conflict, DomainError, NotFound, PermissionDenied, ValidationFailed
@@ -52,11 +53,6 @@ EXTENSIONS: dict[str, dict[str, str]] = {  # allowed content types, the extensio
     },
     Proof.Kind.VIDEO: {"video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm"},
 }
-
-
-class ChallengeNotFound(NotFound):
-    code = "challenge_not_found"
-    message = "This challenge does not exist."
 
 
 class MemberNotFound(NotFound):

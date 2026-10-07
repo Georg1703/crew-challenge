@@ -245,8 +245,6 @@
     "voted": "Voted",
     "choose": "Choose",
     "dates": "{{start}} - {{end}}",
-    "until": "Until {{date}}",
-    "open": "See the challenge",
     "sections": {
       "active": "Active now",
       "upcoming": "Coming up",
@@ -268,10 +266,6 @@
       "record": "What you record",
       "target": "Target",
       "proof": "Proof",
-      "period": "Period",
-      "proposed": "Proposed",
-      "chosen": "Chosen",
-      "votes": "Votes",
       "who": "Who takes part"
     },
     "participantsTitle": "Taking part",

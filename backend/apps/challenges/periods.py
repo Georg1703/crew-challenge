@@ -28,12 +28,6 @@ def month_of(day: date) -> tuple[date, date]:
     return day.replace(day=1), day.replace(day=last)
 
 
-def next_month_of(day: date) -> tuple[date, date]:
-    """First and last day of the month after the one that contains `day`."""
-    _, last = month_of(day)
-    return month_of(last + timedelta(days=1))
-
-
 def add_months(first: date, months: int) -> date:
     """The first day of the month `months` after the month that starts on `first`."""
     index = first.year * 12 + first.month - 1 + months

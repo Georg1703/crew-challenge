@@ -245,8 +245,6 @@
     "voted": "Ai votat",
     "choose": "Alege",
     "dates": "{{start}} - {{end}}",
-    "until": "Până pe {{date}}",
-    "open": "Vezi provocarea",
     "sections": {
       "active": "Active acum",
       "upcoming": "Urmează",
@@ -268,10 +266,6 @@
       "record": "Ce notezi",
       "target": "Ținta",
       "proof": "Dovada",
-      "period": "Perioada",
-      "proposed": "Propusă",
-      "chosen": "Aleasă",
-      "votes": "Voturi",
       "who": "Cine participă"
     },
     "participantsTitle": "Participă",
