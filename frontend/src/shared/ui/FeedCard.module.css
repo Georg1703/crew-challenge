@@ -104,6 +104,28 @@
   border-top-color: var(--color-success-line);
 }
 
+/* Reactions end the first row: beside the week, or beside the facts when there is no week. */
+.reactions {
+  display: flex;
+  align-items: center;
+  order: 1;
+  margin-left: auto;
+}
+
+.facts {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+/* With a week, the facts take the next row, under it. */
+.factsBelow {
+  flex-basis: 100%;
+  order: 2;
+}
+
 .fact {
   color: var(--color-text-muted);
   font-size: var(--text-small);

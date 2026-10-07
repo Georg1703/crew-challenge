@@ -1,19 +1,23 @@
-import { useMemo, useRef, useState } from "react";
+import { startTransition, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { useMe } from "@/features/auth";
 import { errorMessage } from "@/i18n/errors";
 import { formatList } from "@/shared/lib/format";
+import { useReducedMotion } from "@/shared/motion";
 import {
   Button,
+  EmojiFlight,
   EmojiPicker,
   Icon,
   ReactionChips,
   ReactionMenu,
   Sheet,
+  preloadEmojiPicker,
   useToast,
   type EmojiPickerTexts,
+  type Flight,
   type ReactionChip,
 } from "@/shared/ui";
 
@@ -23,8 +27,10 @@ import { ReactorsSheet } from "./ReactorsSheet";
 
 /**
  * Reactions on anything registered as a target: the chips, the react button with its quick row,
- * the full emoji picker and who reacted. The owner of the data passes the target's `summary` and
- * keeps it fresh through `onChange` (optimistic, then the server's answer).
+ * the full emoji picker and who reacted. The owner of the data passes the target's `summary`; the
+ * change shows here at once (with the picked emoji flying over the card into its chip), and
+ * `onChange` gets the server's answer for the owner's cache, without redrawing the owner on every
+ * tap.
  */
 export function Reactions({
   target,
@@ -46,13 +52,26 @@ export function Reactions({
   const [menu, setMenu] = useState(false);
   const [picker, setPicker] = useState(false);
   const [who, setWho] = useState<string | null>(null); // the emoji to list first, "" for all
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const [landing, setLanding] = useState<string | null>(null); // a new chip, shown on arrival
   const opener = useRef<HTMLButtonElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const still = useReducedMotion();
+  // What this card shows: the owner's summary, changed at once by a tap. A new summary from the
+  // owner (a refresh, the server's answer) replaces it.
+  const [shown, setShown] = useState(summary);
+  const [given, setGiven] = useState(summary);
+  if (summary !== given) {
+    setGiven(summary);
+    setShown(summary);
+  }
   const react = useReact({
     target,
     id,
     me,
-    summary,
-    onChange,
+    summary: shown,
+    onChange: setShown,
+    onSaved: (answer) => startTransition(() => onChange(answer)), // the owner redraws when idle
     onError: (error) => toast(errorMessage(t, error), "error"),
   });
   const byId = useMemo(() => new Map(people.map((m) => [m.id, m])), [people]);
@@ -60,9 +79,9 @@ export function Reactions({
 
   const name = (memberId: string) =>
     memberId === me ? t("reactions.you") : (byId.get(memberId)?.display_name ?? "?");
-  const chips: ReactionChip[] = summary.groups.map((group) => ({
+  const chips: ReactionChip[] = shown.groups.map((group) => ({
     emoji: group.emoji,
-    mine: group.emoji === summary.mine,
+    mine: group.emoji === shown.mine,
     people: group.member_ids.map((memberId) => ({
       id: memberId,
       name: byId.get(memberId)?.display_name ?? "?",
@@ -73,31 +92,70 @@ export function Reactions({
       names: formatList(group.member_ids.map(name), i18n.language),
     }),
   }));
-  const choose = (emoji: string) => react.mutate(emoji === summary.mine ? null : emoji);
+  /** React (or take it back), and fly the new emoji from `from` over the card into its chip. */
+  const choose = (emoji: string, from?: DOMRect) => {
+    const next = emoji === shown.mine ? null : emoji;
+    const isNew = next !== null && !shown.groups.some((group) => group.emoji === next);
+    react.mutate(next);
+    const card = root.current?.closest("article");
+    const via = (card?.querySelector("[data-stage]") ?? card)?.getBoundingClientRect();
+    const start = from ?? opener.current?.getBoundingClientRect();
+    if (!next || still || !via || !start) return;
+    setLanding(isNew ? next : null);
+    setFlight({
+      id: Date.now(),
+      emoji: next,
+      from: start,
+      via,
+      to: () =>
+        root.current
+          ?.querySelector(`[data-emoji="${CSS.escape(next)}"]`)
+          ?.getBoundingClientRect() ?? null,
+    });
+  };
 
   return (
-    <div className={styles.row}>
-      <ReactionChips chips={chips} onToggle={choose} onHold={(emoji) => setWho(emoji)} />
+    <div ref={root} className={styles.row}>
+      <ReactionChips
+        chips={chips}
+        onToggle={choose}
+        onHold={(emoji) => setWho(emoji)}
+        landing={flight ? landing : null}
+      />
+      {flight && (
+        <EmojiFlight
+          key={flight.id}
+          flight={flight}
+          onDone={() => {
+            setFlight(null);
+            setLanding(null);
+          }}
+        />
+      )}
       <span className={styles.anchor}>
         <Button
           ref={opener}
           variant="ghost"
-          icon={<Icon name="smilePlus" size={20} />}
+          className={styles.react}
+          icon={<Icon name="smilePlus" size={18} />}
           aria-label={t("reactions.react")}
           aria-expanded={menu}
-          onClick={() => setMenu((open) => !open)}
+          onClick={() => {
+            if (!menu) preloadEmojiPicker(); // so "+" opens at once
+            setMenu((open) => !open);
+          }}
         />
         <ReactionMenu
           open={menu}
           onClose={() => setMenu(false)}
           label={t("reactions.react")}
           emojis={QUICK_REACTIONS}
-          selected={summary.mine}
+          selected={shown.mine}
           onPick={choose}
           moreLabel={t("reactions.more")}
           onMore={() => setPicker(true)}
-          whoLabel={summary.groups.length > 0 ? t("reactions.who") : undefined}
-          onWho={summary.groups.length > 0 ? () => setWho("") : undefined}
+          whoLabel={shown.groups.length > 0 ? t("reactions.who") : undefined}
+          onWho={shown.groups.length > 0 ? () => setWho("") : undefined}
           anchor={opener}
         />
       </span>
@@ -113,14 +171,14 @@ export function Reactions({
           retryLabel={t("common.retry")}
           onPick={(emoji) => {
             setPicker(false);
-            react.mutate(emoji === summary.mine ? null : emoji);
+            choose(emoji);
           }}
         />
       </Sheet>
       <ReactorsSheet
         open={who !== null}
         onClose={() => setWho(null)}
-        summary={summary}
+        summary={shown}
         first={who || null}
         people={byId}
         me={me}

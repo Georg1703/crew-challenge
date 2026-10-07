@@ -97,12 +97,12 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 - Depth: `--shadow-card` on cards and lists, `--shadow-sheet` on sheets, toasts and floating
   banners. Nothing else casts a shadow. Dark cards rely on their border.
 - Sizes: `--tap-min` 44px (every control), `--button-height` 52px, `--button-height-sm` 44px,
-  `--input-height` 48px, `--avatar-xs/sm/md/lg` 22/28/40/64px, `--tabbar-height` 64px,
+  `--input-height` 48px, `--avatar-xs/sm/md/lg` 18/28/40/64px, `--tabbar-height` 64px,
   `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`),
   `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens),
   `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
   `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`),
-  `--reaction-chip-height` 32px (a `ReactionChips` pill; its tap area still reaches `--tap-min`),
+  `--reaction-chip-height` 26px (a `ReactionChips` pill; its tap area still reaches `--tap-min`),
   `--emoji-picker-height` 352px (the `EmojiPicker` in a sheet).
   `--ring-current` marks today in a week strip.
 - Layers: `--z-sticky` (a `DayDivider` over the cards under it), `--z-popover` (the quick row of reactions), `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
@@ -123,7 +123,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |
 | `Avatar`, `AvatarStack` | A member (initial on their color, optional today ring; `xs` only inside a reaction chip), a row of up to five members then "+N" |
-| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it |
+| `Sheet` | Bottom sheets for a short task (invite, check in, confirm, a day of the board). Title, close button, one primary action. Escape closes it unless a layer above (the proof viewer) took it. |
 | `Banner` | A message that stays true until it changes (wrong password, offline, your turn). Inline; `floating` only for app-wide notices |
 | `Toast` (`useToast`) | A short confirmation after an action, above the tab bar; optionally one action ("Undo") for 5 seconds |
 | `QrCode` | A scannable code for a link |
@@ -144,9 +144,10 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A ready video shows its length in a pill; a video being prepared with no poster shows calm stripes. A button when it opens something; an optional remove button (today only); `fill` fills a mosaic cell instead of staying square |
 | `ProofMosaic` | A check-in's proofs laid out by count: one in a 4:3 box, two side by side, three or more as one big and two small with "+N" over the third. The big tiles show the full photo (`full`), the small ones the thumbnail. Tapping a tile opens the viewer at that proof |
 | `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline with sound, opened by a tap (muted if the browser refuses, and after the person mutes one) (HLS, with hls.js loaded only where needed) |
-| `FeedCard` | One moment in the crew's journal, as a card of its own: who (an avatar with today's ring, or a stack for a group), what, the challenge as a chip and when; then by kind a `ProofMosaic`, an amount with a bar to the target, or a milestone's big number; a footer with `MiniWeek` and short facts. `tone="success"` for a milestone or the whole crew finishing the day. `reactions` holds the card's reactions row, between the content and the footer |
-| `ReactionChips` | The reactions under a card: one pill per emoji in the order each was first used, with up to three `xs` avatars then "+N"; yours highlighted and pressed. A tap toggles yours; press and hold (or the context menu) asks who reacted |
+| `FeedCard` | One moment in the crew's journal, as a card of its own: who (an avatar with today's ring, or a stack for a group), what, the challenge as a chip and when; then by kind a `ProofMosaic`, an amount with a bar to the target, or a milestone's big number; a footer with `MiniWeek` and short facts. `tone="success"` for a milestone or the whole crew finishing the day. `reactions` ends the footer's first row (chips and the react button), next to the week; the facts then take the row under it |
+| `ReactionChips` | The reactions under a card: one pill per emoji in the order each was first used, with the `xs` avatar of who used it, or how many when several did; yours highlighted and pressed. A tap toggles yours; press and hold (or the context menu) asks who reacted |
 | `ReactionMenu` | The quick row: a small popover above the react button with a few emojis, "+" for any emoji and "Who reacted". Picking, Escape or a tap outside closes it; focus goes in and back |
+| `EmojiFlight` | A picked reaction flying into place: from the finger it grows big over the card's photo (its `data-stage`), wiggles left and right, then shrinks into its chip, in about 0.6 s. Decorative; skipped with reduced motion |
 | `EmojiPicker` | Any emoji, with search, categories and skin tones (Emoji Mart, loaded on first use), in a `Sheet`. Our colors and font are passed into it; its texts come from our translations |
 | `StoryAvatar` | A member with today's ring split into one segment per challenge due today (done green, started faint green, to do grey; nothing due: a plain grey ring), their name and "2/2" under it, and a count of new proofs. A link to the member's page; `lg` at the top of that page |
 | `MiniWeek` | The last seven days as small bars with the shapes of `DayBars`, today outlined; read as one summary |

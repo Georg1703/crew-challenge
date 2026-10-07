@@ -19,8 +19,8 @@ type Person = { id: string; name: string; seed: string };
  * body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
  * target, or a big number for a streak milestone; a plain check-in or a group has none. The
  * footer holds the last seven days (`MiniWeek`) and short facts ("7 days in a row", "day 5 of
- * 30"). `tone="success"` marks a milestone or the whole crew finishing the day. `reactions` sits
- * between the content and the footer.
+ * 30"). `tone="success"` marks a milestone or the whole crew finishing the day. `reactions` ends
+ * the footer's first row: next to the week, whose facts then go on a row of their own.
  */
 export function FeedCard({
   person,
@@ -66,10 +66,10 @@ export function FeedCard({
   week?: { days: { key: string; state: DayState; today?: boolean }[]; label: string };
   /** Short facts in the footer: "7 days in a row", "day 5 of 30", "3 proofs". */
   facts?: ReactNode[];
-  /** The reactions row (chips and the react button), under the content. */
+  /** The reactions (chips and the react button), at the end of the footer row. */
   reactions?: ReactNode;
 }) {
-  const footer = week || facts.length > 0;
+  const footer = week || facts.length > 0 || reactions;
   return (
     <article className={cx(styles.card, tone === "success" && styles.success)}>
       <header className={styles.head}>
@@ -89,13 +89,13 @@ export function FeedCard({
         </div>
       </header>
       {highlight && (
-        <p className={styles.highlight}>
+        <p className={styles.highlight} data-stage="">
           <span className={styles.big}>{highlight.value}</span>
           <span>{highlight.text}</span>
         </p>
       )}
       {amount && (
-        <div className={styles.amount}>
+        <div className={styles.amount} data-stage="">
           <p className={styles.amountLine}>
             <span className={styles.amountValue}>{amount.value}</span>
             {amount.detail && <span className={styles.time}>{amount.detail}</span>}
@@ -112,15 +112,19 @@ export function FeedCard({
       {proofs.length > 0 && (
         <ProofMosaic proofs={proofs} onOpen={onOpenProof} moreLabel={moreLabel} />
       )}
-      {reactions}
       {footer && (
         <footer className={styles.foot}>
           {week && <MiniWeek days={week.days} label={week.label} />}
-          {facts.map((fact, i) => (
-            <span key={i} className={styles.fact}>
-              {fact}
-            </span>
-          ))}
+          {reactions && <div className={styles.reactions}>{reactions}</div>}
+          {facts.length > 0 && (
+            <div className={cx(styles.facts, week && styles.factsBelow)}>
+              {facts.map((fact, i) => (
+                <span key={i} className={styles.fact}>
+                  {fact}
+                </span>
+              ))}
+            </div>
+          )}
         </footer>
       )}
     </article>

@@ -21,6 +21,8 @@ import {
   DayDivider,
   DayMark,
   type DayState,
+  EmojiFlight,
+  type Flight,
   EmojiPicker,
   FeedCard,
   HoldButton,
@@ -615,7 +617,8 @@ export function DesignRoute() {
                 (state, i) => ({ key: String(i), state, today: i === 6 }),
               ),
             }}
-            facts={["5 days in a row", "day 12 of 30", "5 proofs"]}
+            facts={["5 days in a row", "day 12 of 30"]}
+            reactions={<ReactionsDemo />}
           />
           <FeedCard
             person={{ id: "bogdan", name: "Bogdan", seed: "bogdan" }}
@@ -628,7 +631,6 @@ export function DesignRoute() {
               detail: "20 today",
               progress: { value: 20, max: 30, label: "20 of 30 pages" },
             }}
-            reactions={<ReactionsDemo />}
           />
           <FeedCard
             people={{
@@ -829,6 +831,9 @@ function ReactionsDemo() {
   const [menu, setMenu] = useState(false);
   const [picker, setPicker] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const [landing, setLanding] = useState<string | null>(null);
   const others: Record<string, typeof PEOPLE> = {
     [QUICK[2] ?? ""]: PEOPLE.slice(2, 3),
     [QUICK[1] ?? ""]: PEOPLE.slice(1, 5),
@@ -840,13 +845,43 @@ function ReactionsDemo() {
       return { emoji, people, mine: emoji === mine, label: `${emoji}, ${people.length}` };
     })
     .filter((chip) => chip.people.length > 0);
-  const react = (emoji: string) => setMine((current) => (current === emoji ? null : emoji));
+  const react = (emoji: string, from?: DOMRect) => {
+    const next = mine === emoji ? null : emoji;
+    const isNew = next !== null && !emojis.includes(next);
+    setMine(next);
+    const card = root.current?.closest("article");
+    const via = (card?.querySelector("[data-stage]") ?? card)?.getBoundingClientRect();
+    const start = from ?? opener.current?.getBoundingClientRect();
+    if (!next || !via || !start) return;
+    setLanding(isNew ? next : null);
+    setFlight({
+      id: Date.now(),
+      emoji: next,
+      from: start,
+      via,
+      to: () =>
+        root.current
+          ?.querySelector(`[data-emoji="${CSS.escape(next)}"]`)
+          ?.getBoundingClientRect() ?? null,
+    });
+  };
   return (
-    <div className={styles.row}>
+    <div ref={root} className={styles.row}>
+      {flight && (
+        <EmojiFlight
+          key={flight.id}
+          flight={flight}
+          onDone={() => {
+            setFlight(null);
+            setLanding(null);
+          }}
+        />
+      )}
       <ReactionChips
         chips={chips}
         onToggle={react}
         onHold={(emoji) => toast(`Who reacted with ${emoji}`)}
+        landing={flight ? landing : null}
       />
       <span className={styles.reactAnchor}>
         <Button
@@ -883,7 +918,7 @@ function ReactionsDemo() {
           retryLabel="Try again"
           onPick={(emoji) => {
             setPicker(false);
-            setMine(emoji);
+            react(emoji);
           }}
         />
       </Sheet>

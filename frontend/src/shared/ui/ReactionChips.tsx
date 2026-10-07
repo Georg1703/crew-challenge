@@ -1,5 +1,7 @@
 import { cx } from "@/shared/lib/cx";
 import { usePress } from "@/shared/lib/usePress";
+import { useRef } from "react";
+
 import { AnimatePresence, motion, useSpring } from "@/shared/motion";
 
 import { Avatar } from "./Avatar";
@@ -17,27 +19,36 @@ export interface ReactionChip {
   label: string;
 }
 
-const SHOWN_PEOPLE = 3;
-
 /**
- * The reactions under a card, one chip per emoji in the order each was first used: the emoji, up
- * to three small avatars, then "+N". The viewer's chip is highlighted and pressed. A tap toggles
- * your reaction to that emoji; press and hold (or the context menu) asks who reacted.
+ * A card's reactions, one small chip per emoji in the order each was first used: the emoji and
+ * who used it (their avatar when it is one person, else how many). The viewer's chip is highlighted
+ * and pressed. A tap toggles your reaction to that emoji (with the chip's place, for an
+ * `EmojiFlight`); press and hold (or the context menu) asks who reacted. `landing` keeps one chip
+ * invisible until its flying emoji arrives; chips leave and make room without a jump.
  */
 export function ReactionChips({
   chips,
   onToggle,
   onHold,
+  landing = null,
 }: {
   chips: ReactionChip[];
-  onToggle: (emoji: string) => void;
+  onToggle: (emoji: string, from: DOMRect) => void;
   onHold: (emoji: string) => void;
+  /** The emoji whose chip waits, invisible, for its flight to land. */
+  landing?: string | null;
 }) {
   return (
     <ul className={styles.chips}>
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {chips.map((chip) => (
-          <Chip key={chip.emoji} chip={chip} onToggle={onToggle} onHold={onHold} />
+          <Chip
+            key={chip.emoji}
+            chip={chip}
+            landing={chip.emoji === landing}
+            onToggle={onToggle}
+            onHold={onHold}
+          />
         ))}
       </AnimatePresence>
     </ul>
@@ -46,30 +57,38 @@ export function ReactionChips({
 
 function Chip({
   chip,
+  landing,
   onToggle,
   onHold,
 }: {
   chip: ReactionChip;
-  onToggle: (emoji: string) => void;
+  landing: boolean;
+  onToggle: (emoji: string, from: DOMRect) => void;
   onHold: (emoji: string) => void;
 }) {
-  const spring = useSpring("bouncy");
+  const spring = useSpring("snappy");
+  const button = useRef<HTMLButtonElement>(null);
   const press = usePress({
-    onPress: () => onToggle(chip.emoji),
+    onPress: () => {
+      const from = button.current?.getBoundingClientRect();
+      if (from) onToggle(chip.emoji, from);
+    },
     onLongPress: () => onHold(chip.emoji),
   });
-  const shown = chip.people.slice(0, SHOWN_PEOPLE);
-  const extra = chip.people.length - shown.length;
+  const [only] = chip.people;
   return (
     <motion.li
+      layout="position"
       className={styles.item}
-      initial={{ opacity: 0, scale: 0.6 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={landing ? { opacity: 0, scale: 1 } : { opacity: 0, scale: 0.6 }}
+      animate={landing ? { opacity: 0, scale: 1 } : { opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.6 }}
       transition={spring}
     >
       <button
+        ref={button}
         type="button"
+        data-emoji={chip.emoji}
         className={cx(styles.chip, chip.mine && styles.mine)}
         aria-pressed={chip.mine}
         aria-label={chip.label}
@@ -78,12 +97,15 @@ function Chip({
         <span className={styles.emoji} aria-hidden="true">
           {chip.emoji}
         </span>
-        <span className={styles.people} aria-hidden="true">
-          {shown.map((person) => (
-            <Avatar key={person.id} name={person.name} seed={person.seed} size="xs" />
-          ))}
-          {extra > 0 && <span className={styles.more}>{`+${extra}`}</span>}
-        </span>
+        {chip.people.length === 1 && only ? (
+          <span className={styles.people} aria-hidden="true">
+            <Avatar name={only.name} seed={only.seed} size="xs" />
+          </span>
+        ) : (
+          <span className={styles.count} aria-hidden="true">
+            {chip.people.length}
+          </span>
+        )}
       </button>
     </motion.li>
   );

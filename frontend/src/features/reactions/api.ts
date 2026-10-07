@@ -39,8 +39,9 @@ export function applyReaction(
 
 /**
  * React to one target, optimistically: `onChange` gets the expected summary at once, then the
- * server's, or the old one back on error. The owner of the data (a feed, a page) keeps it in its
- * own cache through `onChange`; this hook knows nothing about other features' queries.
+ * server's, or the old one back on error. `onSaved` gets the server's answer only, for the owner
+ * of the data (a feed, a page) to keep in its own cache; this hook knows nothing about other
+ * features' queries.
  */
 export function useReact({
   target,
@@ -48,6 +49,7 @@ export function useReact({
   me,
   summary,
   onChange,
+  onSaved,
   onError,
 }: {
   target: ReactionTarget;
@@ -55,6 +57,7 @@ export function useReact({
   me: string;
   summary: ReactionSummary;
   onChange: (summary: ReactionSummary) => void;
+  onSaved: (summary: ReactionSummary) => void;
   onError: (error: unknown) => void;
 }) {
   return useMutation({
@@ -71,7 +74,10 @@ export function useReact({
       onChange(applyReaction(before, me, emoji));
       return { before };
     },
-    onSuccess: (answer) => onChange(answer),
+    onSuccess: (answer) => {
+      onChange(answer);
+      onSaved(answer);
+    },
     onError: (error, _emoji, context) => {
       if (context) onChange(context.before);
       onError(error);

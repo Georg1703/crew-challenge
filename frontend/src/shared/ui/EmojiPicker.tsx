@@ -34,6 +34,11 @@ function load() {
   return import("./emojiMart");
 }
 
+/** Start loading the picker early (when a quick row opens), so "+" opens at once. */
+export function preloadEmojiPicker(): void {
+  void load().catch(() => undefined); // a failure shows when the picker opens
+}
+
 /** A token's color as "r, g, b", the form Emoji Mart's variables take (read from the page). */
 function rgb(token: string, probe: HTMLElement): string {
   probe.style.color = `var(${token})`;

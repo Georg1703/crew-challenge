@@ -38,15 +38,14 @@ describe("ReactionChips", () => {
     { emoji: FIRE, people: people.slice(0, 1), mine: true, label: "Fire, from you" },
   ];
 
-  it("shows each emoji with up to three people, then +N, and marks yours", () => {
+  it("shows each emoji with who used it, or how many, and marks yours", () => {
     render(<ReactionChips chips={chips} onToggle={() => {}} onHold={() => {}} />);
     const clap = screen.getByRole("button", { name: "Clap, from 4" });
     expect(clap).toHaveAttribute("aria-pressed", "false");
-    expect(clap).toHaveTextContent("+1");
-    expect(screen.getByRole("button", { name: "Fire, from you" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(clap).toHaveTextContent("4");
+    const fire = screen.getByRole("button", { name: "Fire, from you" });
+    expect(fire).toHaveAttribute("aria-pressed", "true");
+    expect(fire).toHaveTextContent("A"); // one person: their avatar
   });
 
   it("a tap toggles that emoji; holding asks who reacted", () => {
@@ -57,7 +56,7 @@ describe("ReactionChips", () => {
     const fire = screen.getByRole("button", { name: "Fire, from you" });
 
     fireEvent.click(fire);
-    expect(onToggle).toHaveBeenCalledWith(FIRE);
+    expect(onToggle).toHaveBeenCalledWith(FIRE, expect.anything()); // and where it was
 
     fireEvent.pointerDown(fire, { clientX: 0, clientY: 0 });
     act(() => vi.advanceTimersByTime(500));
@@ -108,7 +107,7 @@ describe("ReactionMenu", () => {
     );
     await userEvent.click(screen.getByRole("menuitemradio", { name: FIRE }));
 
-    expect(onPick).toHaveBeenCalledWith(FIRE);
+    expect(onPick).toHaveBeenCalledWith(FIRE, expect.anything());
     await waitFor(() => expect(menu).not.toBeInTheDocument());
     expect(opener).toHaveFocus();
   });

@@ -35,6 +35,7 @@
   font-size: var(--text-title-m);
   line-height: var(--leading-title-m);
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--duration-fast) var(--ease-out);
 }

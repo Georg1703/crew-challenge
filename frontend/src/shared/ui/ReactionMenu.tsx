@@ -31,7 +31,8 @@ export function ReactionMenu({
   emojis: string[];
   /** The viewer's reaction, shown pressed. */
   selected?: string | null;
-  onPick: (emoji: string) => void;
+  /** The emoji and where its button was (for an `EmojiFlight`). */
+  onPick: (emoji: string, from: DOMRect) => void;
   /** "+": "More emojis". */
   moreLabel: string;
   onMore: () => void;
@@ -47,7 +48,7 @@ export function ReactionMenu({
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
-    panel.current?.querySelector("button")?.focus();
+    panel.current?.querySelector("button")?.focus({ preventScroll: true }); // no jump on phones
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -63,7 +64,7 @@ export function ReactionMenu({
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown, true);
-      previous?.focus();
+      previous?.focus({ preventScroll: true });
     };
   }, [open, onClose, anchor]);
 
@@ -93,7 +94,10 @@ export function ReactionMenu({
                 role="menuitemradio"
                 aria-checked={selected === emoji}
                 className={cx(styles.emoji, selected === emoji && styles.selected)}
-                onClick={choose(() => onPick(emoji))}
+                onClick={(event) => {
+                  const from = event.currentTarget.getBoundingClientRect();
+                  choose(() => onPick(emoji, from))();
+                }}
               >
                 {emoji}
               </button>
