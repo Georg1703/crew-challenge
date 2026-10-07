@@ -32,8 +32,8 @@ function card(page: Page, title: string) {
 async function finishWizard(page: Page, finalButton: string) {
   const steps = [
     "Cine participă?",
-    "Cât de des?",
     "Ce notezi la bifă?",
+    "Cât de des?",
     "Ce dovadă cerem?",
     "Verifică",
   ];
