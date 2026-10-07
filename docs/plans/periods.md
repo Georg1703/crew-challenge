@@ -1,8 +1,7 @@
 # Plan: periods, windows and requirements
 
-Status: stages 1-3 implemented (branches `refactor/window-engine`,
-`refactor/challenge-rule-fields`, `feat/period-length`); stages 0, 4 and 5 to do. One branch and one pull request per stage, starting after `feat/reactions`
-is merged. Explainer with diagrams and worked examples (private, the owner's):
+Status: stages 1-3 merged into `main` and deployed (2026-10-07); stage 0 on
+`chore/challenges-dead-code`; stages 4 and 5 to do. One branch and one pull request per stage. Explainer with diagrams and worked examples (private, the owner's):
 https://claude.ai/artifact/1K7fg8iWqb2z6Zb1BwrQZx
 
 Priorities, in order: judging is exactly right (it will decide punishments), the crew always sees
@@ -52,7 +51,7 @@ repeats the "due day" check in four places, so every new rhythm touches all of t
 | Production | One running monthly challenge with a daily check-in; it maps one to one, no compatibility code. |
 | Showing short windows | Always show the scaled need and say why it is lower: Today card, challenge page, schedule sheet, wheel card. |
 
-## Decisions with a proposed default (confirm or change)
+## Decisions taken while building (all built as first proposed)
 
 1. **The creator sets the length, an admin picks the start.** The requirement depends on the
    length ("8 times" in a week or in a month), so it is part of what the crew votes on.
@@ -186,9 +185,9 @@ what it removes; the checklist at the end must be empty when stage 5 merges.
 The Wheel of Doom gets its own plan; it can start after stage 2 (it needs `judge()` and the final
 fields) and run alongside stages 3-5.
 
-### Stage 0 - Clean-up (no behavior change)
+### Stage 0 - Clean-up (no behavior change) - done
 
-Found while planning; each is unused today or describes something that doesn't exist.
+Found while planning; each was unused or described something that doesn't exist.
 
 - Backend: `periods.next_month_of` (never called); the second `ChallengeNotFound` in
   `apps/checkins/services.py` (same code and message as the one in `apps/challenges/services.py`;
@@ -197,10 +196,10 @@ Found while planning; each is unused today or describes something that doesn't e
   `challenges.facts.{period,proposed,chosen,votes}` (in both files); the `DaySheetRow` type in
   `features/checkins/api.ts`; the `month` argument of `useMemberProgress` (never passed).
 - Docs: the glossary's Goal row and the `goal_target` example in
-  `docs/architecture/api-conventions.md` (no such fields); that page's 409 table, which lists only
-  `challenge_started` and `not_due_today` (add `challenge_finished`, `not_chosen_yet`,
-  `period_over`); the import-linter list in `docs/architecture/backend.md`, brought in line with
-  `pyproject.toml`.
+  `docs/architecture/api-conventions.md` (no such fields); that page's error table, now listing the
+  codes the services raise (several were missing, and `not_invited` no longer exists); the copy of
+  the import-linter contracts in `docs/architecture/backend.md` (4 of 9, with apps that don't
+  exist), replaced by a summary that points to `backend/pyproject.toml`.
 
 ### Stage 1 - One engine (backend only, API unchanged)
 
@@ -307,9 +306,13 @@ What was done:
   `features/challenges/periods.ts` (only the start options; the date math moved to `dates.ts`).
 - Text: schedule texts, period errors and descriptions no longer say "month"; dead keys gone.
 - e2e: the wizard helper follows the new step order (stage 2 broke it); a new flow proposes
-  "3 times a week for 4 weeks" and schedules it on a Monday. Not run yet: Playwright is not
-  installed on the host. Checking in is not part of it (the period starts tomorrow at the
-  earliest).
+  "3 times a week for 4 weeks" and schedules it on a Monday. All e2e tests pass, after three fixes
+  to run them locally: pnpm started from `frontend/` (corepack), one test at a time (several
+  specs check in as the same person), `seed_demo` bringing back removed demo logins. Checking in
+  is not part of it (the period starts tomorrow at the earliest).
+- Lesson: the new columns of 0007 and 0009 have Python defaults only, so the previous release
+  could not insert rows while the migrations ran (the deploys went through without failed writes).
+  `docs/recipes/new-migration.md` now asks for database defaults (`db_default`).
 - Docs: glossary (Period, Schedule), AGENTS.md game rules, `docs/architecture/api-conventions.md`,
   `docs/plans/monthly-challenges.md` marked as superseded for periods.
 - Left for stage 4's migration: require a period kind on proposals in the period constraint, once
@@ -345,11 +348,11 @@ rows are gone before approving.
 
 | Item | Where | Stage |
 |---|---|---|
-| `next_month_of` | `apps/challenges/periods.py` | 0 |
-| Second `ChallengeNotFound` | `apps/checkins/services.py` | 0 |
-| `challenges.until`, `challenges.open`, `challenges.facts.{period,proposed,chosen,votes}` | i18n | 0 |
-| `DaySheetRow`, `useMemberProgress`'s `month` argument | `features/checkins/api.ts` | 0 |
-| Goal glossary row, `goal_target` example | docs | 0 |
+| `next_month_of` (done) | `apps/challenges/periods.py` | 0 |
+| Second `ChallengeNotFound` (done) | `apps/checkins/services.py` | 0 |
+| `challenges.until`, `challenges.open`, `challenges.facts.{period,proposed,chosen,votes}` (done) | i18n | 0 |
+| `DaySheetRow`, `useMemberProgress`'s `month` argument (done) | `features/checkins/api.ts` | 0 |
+| Goal glossary row, `goal_target` example (done) | docs | 0 |
 | `FIXED`, `week_quota`, `done_between`, `week_of`, frequency branches (done) | `apps/checkins/days.py` | 1 |
 | Old weekly tests in `test_days.py` (done) | tests | 1 |
 | `rule_of` (done) | `apps/challenges/windows.py` | 2 |
