@@ -5,3 +5,4 @@ pnpm-lock.yaml
 src/api/schema.gen.ts
 playwright-report
 test-results
+.pnpm-store

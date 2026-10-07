@@ -15,7 +15,16 @@ const MOTION_PATHS = ["motion", "motion/react", "motion/react-client", "framer-m
 );
 
 export default tseslint.config(
-  { ignores: ["dist", "coverage", "src/api/schema.gen.ts", "playwright-report", "test-results"] },
+  {
+    ignores: [
+      "dist",
+      ".pnpm-store",
+      "coverage",
+      "src/api/schema.gen.ts",
+      "playwright-report",
+      "test-results",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
