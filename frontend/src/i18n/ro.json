@@ -348,6 +348,10 @@
           "title": "De câteva ori pe săptămână",
           "description": "În orice zile, de un număr de ori"
         },
+        "times_per_month": {
+          "title": "De câteva ori pe lună",
+          "description": "În orice zile, de un număr de ori în fiecare lună"
+        },
         "times_per_period": {
           "title": "De câteva ori în {{period}}",
           "description": "În orice zile, de un număr de ori până la final"
@@ -359,6 +363,10 @@
         "total_per_week": {
           "title": "Un total pe săptămână",
           "description": "Numerele se adună, de luni până duminică"
+        },
+        "total_per_month": {
+          "title": "Un total în fiecare lună",
+          "description": "Numerele se adună, în fiecare lună calendaristică"
         },
         "total_per_period": {
           "title": "Un total pe {{period}}",
@@ -411,6 +419,9 @@
       "timesPerPeriod": "De {{n}} ori în {{period}}",
       "once": "O dată, până la final",
       "totalPerWeek": "{{value}} {{unit}} pe săptămână",
+      "oncePerMonth": "O dată pe lună",
+      "timesPerMonth": "De {{n}} ori pe lună",
+      "totalPerMonth": "{{value}} {{unit}} pe lună",
       "totalPerPeriod": "{{value}} {{unit}} în {{period}}",
       "dayMin": "Cel puțin {{value}} {{unit}} la fiecare bifă",
       "check": "Doar bifă",
@@ -484,7 +495,8 @@
       "onDays": "Alege cel puțin o zi.",
       "unit": "Scrie unitatea, de exemplu km.",
       "number": "Scrie un număr mai mare ca zero.",
-      "weekNeedsDays": "O provocare pe săptămână are nevoie de cel puțin 7 zile."
+      "weekNeedsDays": "O provocare pe săptămână are nevoie de cel puțin 7 zile.",
+      "monthNeedsMonths": "Pentru o regulă pe lună, alege cel puțin 2 luni."
     },
     "today": {
       "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
@@ -590,10 +602,12 @@
     "progress": {
       "days": {
         "week": "{{done}} din {{goal}} săptămâna asta",
+        "month": "{{done}} din {{goal}} luna asta",
         "period": "{{done}} din {{goal}} până la final"
       },
       "amount": {
         "week": "{{done}} / {{goal}} {{unit}} săptămâna asta",
+        "month": "{{done}} / {{goal}} {{unit}} luna asta",
         "period": "{{done}} / {{goal}} {{unit}} până la final"
       }
     },

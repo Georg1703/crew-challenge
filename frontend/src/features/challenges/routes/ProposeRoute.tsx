@@ -47,10 +47,22 @@ import {
 } from "../describe";
 
 /** How often, as the wizard offers it: counted check-ins, or (numbers only) a total. */
-const COUNTED = ["daily", "weekdays", "times_per_week", "times_per_period", "once"] as const;
-const TOTALS = ["total_per_week", "total_per_period"] as const;
+const COUNTED = [
+  "daily",
+  "weekdays",
+  "times_per_week",
+  "times_per_month",
+  "times_per_period",
+  "once",
+] as const;
+const TOTALS = ["total_per_week", "total_per_month", "total_per_period"] as const;
 type Often = (typeof COUNTED)[number] | (typeof TOTALS)[number];
 const WEEKLY: Often[] = ["times_per_week", "total_per_week"];
+/** Per calendar month: offered from 2 months on (one month is the whole period). */
+const MONTHLY: Often[] = ["times_per_month", "total_per_month"];
+const TIMES: Often[] = ["times_per_week", "times_per_month", "times_per_period"];
+/** The most check-ins a week or a month can ask for (February has 28 days); a period: its days. */
+const TIMES_MAX: Partial<Record<Often, number>> = { times_per_week: 7, times_per_month: 28 };
 
 /** How long a challenge can run, and the most days each unit has (as the server checks). */
 const KINDS = ["month", "week", "day"] as const;
@@ -124,7 +136,7 @@ const FIELD_STEP: Record<string, Step> = {
 /** A typed number as the API takes it: "12,5" -> "12.5". */
 const decimal = (text: string) => text.trim().replace(",", ".");
 
-const isTotal = (often: Often) => often === "total_per_week" || often === "total_per_period";
+const isTotal = (often: Often) => (TOTALS as readonly Often[]).includes(often);
 
 type Rule = Pick<ChallengeInput, "window" | "on_days" | "need_kind" | "need_value">;
 
@@ -147,12 +159,16 @@ function rule(draft: Draft): Rule {
       return { ...counted("day", 1), on_days: draft.on_days };
     case "times_per_week":
       return counted("week", draft.times);
+    case "times_per_month":
+      return counted("month", draft.times);
     case "times_per_period":
       return counted("period", draft.times);
     case "once":
       return counted("period", 1);
     case "total_per_week":
       return total("week");
+    case "total_per_month":
+      return total("month");
     case "total_per_period":
       return total("period");
     default:
@@ -162,8 +178,12 @@ function rule(draft: Draft): Rule {
 
 /** The choice in "How often?" for a stored challenge. */
 function oftenOf(c: Challenge): Often {
-  if (c.need_kind === "amount") return c.window === "week" ? "total_per_week" : "total_per_period";
+  if (c.need_kind === "amount") {
+    if (c.window === "week") return "total_per_week";
+    return c.window === "month" ? "total_per_month" : "total_per_period";
+  }
   if (c.window === "week") return "times_per_week";
+  if (c.window === "month") return "times_per_month";
   if (c.window === "period") return c.need_value === 1 ? "once" : "times_per_period";
   return c.on_days.length ? "weekdays" : "daily";
 }
@@ -256,6 +276,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
     setDraft((current) => ({ ...current, [key]: value }));
   const quantity = draft.measure === "quantity";
   const periodDays = UNIT_DAYS[draft.period_kind] * draft.period_length;
+  const monthly = draft.period_kind === "month" && draft.period_length > 1;
   /** Totals need numbers: another kind of record goes back to "every day". */
   const setMeasure = (measure: Draft["measure"]) =>
     setDraft((current) => ({
@@ -281,6 +302,8 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
         errors.day_min = t("challenges.errors.number");
       if (WEEKLY.includes(draft.often) && periodDays < 7)
         errors.period_length = t("challenges.errors.weekNeedsDays");
+      if (MONTHLY.includes(draft.often) && !monthly)
+        errors.period_length = t("challenges.errors.monthNeedsMonths");
     }
     return errors;
   };
@@ -427,6 +450,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
                 onChange={(often) => set("often", often)}
                 options={(quantity ? [...COUNTED, ...TOTALS] : COUNTED)
                   .filter((value) => periodDays >= 7 || !WEEKLY.includes(value))
+                  .filter((value) => monthly || !MONTHLY.includes(value))
                   .map((value) => ({
                     value,
                     title: t(`challenges.options.often.${value}.title`, {
@@ -448,12 +472,12 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
                   }))}
                 />
               )}
-              {(draft.often === "times_per_week" || draft.often === "times_per_period") && (
+              {TIMES.includes(draft.often) && (
                 <Stepper
                   label={t("challenges.fields.times")}
                   value={draft.times}
                   min={1}
-                  max={draft.often === "times_per_week" ? 7 : periodDays}
+                  max={TIMES_MAX[draft.often] ?? periodDays}
                   onChange={(times) => set("times", times)}
                   decreaseLabel={t("challenges.fields.fewer")}
                   increaseLabel={t("challenges.fields.more")}

@@ -158,6 +158,8 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         bad("window", "Choose how often.")
     elif window == Challenge.Window.WEEK and 0 < longest < 7:
         bad("window", "A weekly challenge needs a period of at least 7 days.")
+    elif window == Challenge.Window.MONTH and period_kind != PeriodKind.MONTH:
+        bad("window", "A monthly challenge needs a period counted in months.")
     on_days = 0
     days = raw.get("on_days") or []
     if days and window != Challenge.Window.DAY:
@@ -180,7 +182,10 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         if need_value is None:
             bad("need_value", "Give a number above zero.")
     elif window in Challenge.Window.values:
-        limit = {Challenge.Window.DAY: 1, Challenge.Window.WEEK: 7}.get(window, longest or 1)
+        # A month asks for at most 28, so February can meet it too.
+        limit = {Challenge.Window.DAY: 1, Challenge.Window.WEEK: 7, Challenge.Window.MONTH: 28}.get(
+            window, longest or 1
+        )
         if need_value is None or need_value != need_value.to_integral_value() or need_value > limit:
             bad("need_value", f"Choose 1-{limit}." if limit > 1 else "Each day asks for 1.")
 

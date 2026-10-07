@@ -118,3 +118,24 @@ def test_a_late_start_scales_the_whole_period_and_halves_round_up():
 def test_whole_period_challenges_have_one_window(fields, need):
     c = challenge(OCT_1, OCT_31, **fields)
     assert windows(c, OCT_1, OCT_31) == [Window(OCT_1, OCT_31, need, need)]
+
+
+def test_months_are_calendar_months_and_a_late_start_cuts_the_first():
+    cook = challenge(
+        date(2026, 10, 15),
+        date(2026, 12, 31),
+        period_start=OCT_1,
+        window="month",
+        need_value=4,
+        period_kind="month",
+        period_length=3,
+    )
+    assert needs(cook, date(2026, 10, 15), date(2026, 12, 31)) == [
+        ("2026-10-15", "2026-10-31", 2),  # 4 x 17/31 = 2.2
+        ("2026-11-01", "2026-11-30", 4),
+        ("2026-12-01", "2026-12-31", 4),
+    ]
+    february = challenge(date(2027, 2, 1), date(2027, 2, 28), window="month", need_value=4)
+    assert windows(february, date(2027, 2, 1), date(2027, 2, 28)) == [
+        Window(date(2027, 2, 1), date(2027, 2, 28), Decimal(4), Decimal(4))
+    ]

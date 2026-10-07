@@ -348,6 +348,10 @@
           "title": "A few times a week",
           "description": "Any days, a number of times"
         },
+        "times_per_month": {
+          "title": "A few times a month",
+          "description": "Any days, a number of times each month"
+        },
         "times_per_period": {
           "title": "A few times in {{period}}",
           "description": "Any days, a number of times by the end"
@@ -359,6 +363,10 @@
         "total_per_week": {
           "title": "A total each week",
           "description": "The numbers add up, Monday to Sunday"
+        },
+        "total_per_month": {
+          "title": "A total each month",
+          "description": "The numbers add up, each calendar month"
         },
         "total_per_period": {
           "title": "A total for {{period}}",
@@ -411,6 +419,9 @@
       "timesPerPeriod": "{{n}} times in {{period}}",
       "once": "Once, by the end",
       "totalPerWeek": "{{value}} {{unit}} a week",
+      "oncePerMonth": "Once a month",
+      "timesPerMonth": "{{n}} times a month",
+      "totalPerMonth": "{{value}} {{unit}} a month",
       "totalPerPeriod": "{{value}} {{unit}} in {{period}}",
       "dayMin": "At least {{value}} {{unit}} each check-in",
       "check": "Just a check-in",
@@ -484,7 +495,8 @@
       "onDays": "Choose at least one day.",
       "unit": "Write the unit, for example km.",
       "number": "Write a number above zero.",
-      "weekNeedsDays": "A weekly challenge needs at least 7 days."
+      "weekNeedsDays": "A weekly challenge needs at least 7 days.",
+      "monthNeedsMonths": "For a rule per month, choose 2 months or more."
     },
     "today": {
       "chooseTitle": "No challenge for {{month}} yet",
@@ -590,10 +602,12 @@
     "progress": {
       "days": {
         "week": "{{done}} of {{goal}} this week",
+        "month": "{{done}} of {{goal}} this month",
         "period": "{{done}} of {{goal}} by the end"
       },
       "amount": {
         "week": "{{done}} / {{goal}} {{unit}} this week",
+        "month": "{{done}} / {{goal}} {{unit}} this month",
         "period": "{{done}} / {{goal}} {{unit}} by the end"
       }
     },

@@ -166,7 +166,7 @@ export function CheckInCard({
       {card.progress && (
         <p className={styles.meta}>
           {t(
-            `checkins.progress.${card.progress.kind}.${card.window === "week" ? "week" : "period"}`,
+            `checkins.progress.${card.progress.kind}.${card.window === "week" || card.window === "month" ? card.window : "period"}`,
             {
               done: formatNumber(card.progress.done, i18n.language),
               goal: formatNumber(card.progress.goal, i18n.language),

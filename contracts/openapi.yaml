@@ -1051,6 +1051,7 @@ components:
 
             * `day` - Each day
             * `week` - Each week, Monday to Sunday
+            * `month` - Each calendar month
             * `period` - The whole period
         on_days:
           type: array
@@ -2406,11 +2407,13 @@ components:
       enum:
       - day
       - week
+      - month
       - period
       type: string
       description: |-
         * `day` - Each day
         * `week` - Each week, Monday to Sunday
+        * `month` - Each calendar month
         * `period` - The whole period
   securitySchemes:
     cookieAuth:

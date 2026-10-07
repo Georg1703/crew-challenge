@@ -1,7 +1,7 @@
 # Plan: periods, windows and requirements
 
-Status: stages 1-3 merged into `main` and deployed (2026-10-07); stage 0 on
-`chore/challenges-dead-code`; stages 4 and 5 to do. One branch and one pull request per stage. Explainer with diagrams and worked examples (private, the owner's):
+Status: stages 0-3 merged into `main`, 1-3 deployed (2026-10-07); stage 4 on
+`feat/month-window`; stage 5 to do. One branch and one pull request per stage. Explainer with diagrams and worked examples (private, the owner's):
 https://claude.ai/artifact/1K7fg8iWqb2z6Zb1BwrQZx
 
 Priorities, in order: judging is exactly right (it will decide punishments), the crew always sees
@@ -315,14 +315,22 @@ What was done:
   `docs/recipes/new-migration.md` now asks for database defaults (`db_default`).
 - Docs: glossary (Period, Schedule), AGENTS.md game rules, `docs/architecture/api-conventions.md`,
   `docs/plans/monthly-challenges.md` marked as superseded for periods.
-- Left for stage 4's migration: require a period kind on proposals in the period constraint, once
-  no release writes an empty one.
+- Left for stage 4's migration (done there): require a period kind on proposals in the period
+  constraint, once no release writes an empty one.
 
-### Stage 4 - Month windows
+### Stage 4 - Month windows - done
 
-- `windows()`: calendar months; allowed only in periods counted in months.
-- Wizard: "N times a month" and "a total per month"; `describe.ts`.
-- Tests: months of 28-31 days, a 3-month period, a late start in the first month.
+- `windows()`: calendar months (`Challenge.Window.MONTH`), cut and scaled like weeks (a late start
+  on October 15 asks 4 x 17/31 = 2 that month). Only in periods counted in months (checked in the
+  shape and by a database constraint); at most 28 a month, so February can meet it too.
+- Wizard: "A few times a month" and "A total each month", offered from 2 months on (one month is
+  the whole period, which "A few times in the month" already covers); `describe.ts` says "4 times a
+  month"; the Today card says "2 of 4 this month".
+- Migrations: `0012_month_windows` (the choice; a challenge with an empty period kind gets one
+  month) and `0013_period_kind_required` (every challenge has a kind; month windows need months),
+  which closes what stage 3 left open. Run forward and back on the dev database.
+- Tests: calendar months with a late start and February, a streak counted in months, the shape
+  rules and both constraints, the wizard offering months only from 2 months on.
 
 ### Stage 5 - Showing windows
 

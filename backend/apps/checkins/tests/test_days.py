@@ -284,3 +284,23 @@ def test_a_total_is_judged_on_the_amounts_of_its_days():
     amounts = {d(8): Decimal(30), d(9): Decimal(20), d(14): Decimal(21)}  # the 8th is last week
     verdict = days.judge(km, week, record(amounts=amounts), d(16))
     assert (verdict.state, verdict.done, verdict.short) == ("failed", Decimal(41), Decimal(9))
+
+
+def test_a_monthly_streak_counts_months_and_the_open_month_is_progress():
+    winter = challenge(
+        window="month",
+        need_value=2,
+        period_kind="month",
+        period_length=3,
+        period_start=date(2026, 11, 1),
+        start_date=date(2026, 11, 1),
+        end_date=date(2027, 1, 31),
+    )
+    part = days.Span(date(2026, 11, 1), date(2027, 1, 31))
+    r = days.Record(
+        done={date(2026, 11, 3), date(2026, 11, 20), date(2026, 12, 5), date(2026, 12, 6)}
+    )
+    today = date(2027, 1, 10)
+    assert days.streak(winter, part, r, today) == 2  # November and December; January still open
+    assert days.progress(winter, part, r, today) == days.Progress("days", Decimal(0), Decimal(2))
+    assert days.state(winter, part, r, today, today) == DayState.OPEN

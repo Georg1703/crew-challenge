@@ -635,6 +635,7 @@ export interface components {
              *
              *     * `day` - Each day
              *     * `week` - Each week, Monday to Sunday
+             *     * `month` - Each calendar month
              *     * `period` - The whole period
              */
             window: components["schemas"]["WindowEnum"];
@@ -1287,10 +1288,11 @@ export interface components {
         /**
          * @description * `day` - Each day
          *     * `week` - Each week, Monday to Sunday
+         *     * `month` - Each calendar month
          *     * `period` - The whole period
          * @enum {string}
          */
-        WindowEnum: "day" | "week" | "period";
+        WindowEnum: "day" | "week" | "month" | "period";
     };
     responses: never;
     parameters: never;

@@ -63,14 +63,20 @@ export function describeRule(
   const period = describePeriod(t, shape);
   if (shape.need_kind === "amount") {
     const value = new Intl.NumberFormat(language).format(n);
-    return shape.window === "week"
-      ? t("challenges.describe.totalPerWeek", { value, unit: shape.unit })
-      : t("challenges.describe.totalPerPeriod", { value, unit: shape.unit, period });
+    if (shape.window === "week")
+      return t("challenges.describe.totalPerWeek", { value, unit: shape.unit });
+    if (shape.window === "month")
+      return t("challenges.describe.totalPerMonth", { value, unit: shape.unit });
+    return t("challenges.describe.totalPerPeriod", { value, unit: shape.unit, period });
   }
   if (shape.window === "week")
     return n === 1
       ? t("challenges.describe.oncePerWeek")
       : t("challenges.describe.timesPerWeek", { n });
+  if (shape.window === "month")
+    return n === 1
+      ? t("challenges.describe.oncePerMonth")
+      : t("challenges.describe.timesPerMonth", { n });
   if (shape.window === "period")
     return n === 1
       ? t("challenges.describe.once")

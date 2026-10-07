@@ -53,6 +53,7 @@ class Challenge(CrewScopedSoftDeleteModel):
     class Window(models.TextChoices):
         DAY = "day", "Each day"
         WEEK = "week", "Each week, Monday to Sunday"
+        MONTH = "month", "Each calendar month"
         PERIOD = "period", "The whole period"
 
     class NeedKind(models.TextChoices):
@@ -133,20 +134,26 @@ class Challenge(CrewScopedSoftDeleteModel):
         indexes = [models.Index(fields=["crew", "state", "start_date"])]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(
-                    state="proposed",
-                    period_start__isnull=True,
-                    start_date__isnull=True,
-                    end_date__isnull=True,
-                )
-                | models.Q(
-                    state="chosen",
-                    period_start__isnull=False,
-                    start_date__gte=models.F("period_start"),
-                    end_date__gte=models.F("start_date"),
+                condition=(
+                    models.Q(
+                        state="proposed",
+                        period_start__isnull=True,
+                        start_date__isnull=True,
+                        end_date__isnull=True,
+                    )
+                    | models.Q(
+                        state="chosen",
+                        period_start__isnull=False,
+                        start_date__gte=models.F("period_start"),
+                        end_date__gte=models.F("start_date"),
+                    )
                 )
                 & ~models.Q(period_kind=""),
                 name="challenge_period_matches_state",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(window="month") | models.Q(period_kind="month"),
+                name="challenge_month_windows_in_months",
             ),
             models.CheckConstraint(
                 condition=models.Q(period_length__gte=1), name="challenge_period_length_above_zero"

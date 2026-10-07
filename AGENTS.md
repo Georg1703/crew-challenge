@@ -135,8 +135,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   way the member stops seeing it and cannot come back; the board keeps a leaver's days.
 - Plan and details: `docs/plans/monthly-challenges.md`.
 - A participant checks in for today only (crew time zone; midnight closes the day). Numbers add up
-  during the day. A challenge is judged in windows (a day, a Monday-Sunday week or the whole
-  period, `apps/challenges/windows.py`): a window that ended below its need has failed, and a
+  during the day. A challenge is judged in windows (a day, a Monday-Sunday week, a calendar month
+  or the whole period, `apps/challenges/windows.py`): a window that ended below its need has failed, and a
   failed day window is a missed day. Verdicts are derived on read, not stored. Streaks are per
   challenge.
 - Proof (stage 3) attaches to the day's check-in. A proof upload that starts before midnight

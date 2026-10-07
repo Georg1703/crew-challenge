@@ -330,6 +330,43 @@ describe("proposing", () => {
     expect(screen.getByRole("heading", { name: "What do you propose?" })).toBeInTheDocument();
   });
 
+  it("offers a rule per month once the challenge runs 2 months or more", async () => {
+    mockGets(bogdan);
+    const post = vi.spyOn(api, "POST").mockImplementation((() => ok(detail(), 201)) as never);
+    renderRoutes(routes, { at: "/challenges/new" });
+
+    await userEvent.type(await screen.findByLabelText("Name of the challenge"), "Cook");
+    for (const heading of ["Who takes part?", "What do you record?", "How often?"]) {
+      await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+      await screen.findByRole("heading", { name: heading });
+    }
+    expect(screen.queryByRole("radio", { name: /A few times a month/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "More" })); // 2 months
+    await userEvent.click(screen.getByRole("radio", { name: /A few times a month/ }));
+    for (const heading of ["What proof?", "Check it"]) {
+      await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+      await screen.findByRole("heading", { name: heading });
+    }
+    expect(screen.getByText("3 times a month")).toBeInTheDocument();
+    expect(screen.getByText("2 months")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Publish the proposal" }));
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith(
+        "/api/v1/challenges",
+        expect.objectContaining({
+          body: expect.objectContaining({
+            window: "month",
+            need_kind: "count",
+            need_value: "3",
+            period_kind: "month",
+            period_length: 2,
+          }),
+        }),
+      ),
+    );
+  });
+
   it("walks through the steps and publishes the proposal", async () => {
     mockGets(bogdan);
     const post = vi.spyOn(api, "POST").mockImplementation((() => ok(detail(), 201)) as never);
@@ -674,6 +711,11 @@ describe("a challenge's rule as a sentence", () => {
     );
     expect(say({ window: "period", need_kind: "amount", need_value: 300, period_length: 3 })).toBe(
       "300 km in 3 months",
+    );
+    expect(say({ window: "month", need_value: 1, period_length: 3 })).toBe("Once a month");
+    expect(say({ window: "month", need_value: 4, period_length: 3 })).toBe("4 times a month");
+    expect(say({ window: "month", need_kind: "amount", need_value: 100, period_length: 3 })).toBe(
+      "100 km a month",
     );
   });
 });

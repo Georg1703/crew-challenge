@@ -1,9 +1,9 @@
 """The windows a challenge is judged in, and what each one needs.
 
-A window is a stretch of days judged as one unit: a single day, a Monday-Sunday week, or the
-whole period. Its need is a number of check-ins (`count`) or a total amount (`amount`); a window
-cut short by the period's edges, a late start or leaving asks for less, in proportion to its days
-that count. Pure functions on crew-local dates: no database and no clock here.
+A window is a stretch of days judged as one unit: a single day, a Monday-Sunday week, a calendar
+month, or the whole period. Its need is a number of check-ins (`count`) or a total amount
+(`amount`); a window cut short by the period's edges, a late start or leaving asks for less, in
+proportion to its days that count. Pure functions on crew-local dates: no database and no clock.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from .models import Challenge
-from .periods import dates, week_of
+from .periods import add_months, dates, month_of, week_of
 
 
 @dataclass(frozen=True)
@@ -65,6 +65,12 @@ def _whole_windows(challenge: Challenge, first: date, last: date) -> list[tuple[
         return [
             (monday + timedelta(weeks=n), monday + timedelta(weeks=n, days=6)) for n in range(weeks)
         ]
+    if challenge.window == Challenge.Window.MONTH:
+        months, start = [], month_of(first)[0]
+        while start <= last:
+            months.append(month_of(start))
+            start = add_months(start, 1)
+        return months
     return [(day, day) for day in dates(first, last)]
 
 

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 import time_machine
+from django.db import IntegrityError, transaction
 
 from apps.challenges import periods, selectors, services
 from apps.challenges.models import Challenge, Participant, Vote
@@ -105,6 +106,8 @@ def test_shapes_are_normalized():
             {"period_kind": "day", "period_length": 10, "window": "period", "need_value": 11},
             "need_value",
         ),
+        ({"window": "month", "need_value": 3, "period_kind": "week", "period_length": 4}, "window"),
+        ({"window": "month", "need_value": 29, "period_length": 3}, "need_value"),  # Feb has 28
         ({"rules": "x" * 501}, "rules"),
     ],
 )
@@ -719,3 +722,17 @@ def test_factories_build_a_proposal():
     assert proposal.created_by is not None
     assert proposal.crew == proposal.created_by.crew
     assert proposal.state == "proposed"
+
+
+def test_the_database_wants_a_period_kind_and_months_for_a_monthly_window(crew):
+    _, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
+    rows = Challenge.objects.filter(pk=proposal.pk)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        rows.update(period_kind="")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        rows.update(window="month", period_kind="week")
+    cook = services.propose_challenge(
+        by=bogdan, shape={"title": "Cook", "window": "month", "need_value": 4, "period_length": 3}
+    )
+    assert (cook.window, cook.period_kind, cook.period_length) == ("month", "month", 3)
