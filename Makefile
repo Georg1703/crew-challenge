@@ -13,7 +13,9 @@ COMPOSE      := docker compose
 BACKEND_DIR  := backend
 FRONTEND_DIR := frontend
 UV           := uv --directory $(BACKEND_DIR) run
-PNPM         := pnpm --dir $(FRONTEND_DIR)
+# Run pnpm inside frontend/: corepack picks pnpm's version from the package.json of the folder it
+# starts in, and the repo root has none (`pnpm --dir` from here gets corepack's global default).
+PNPM         := cd $(FRONTEND_DIR) && pnpm
 PYTHON       := python3
 
 HAS_BACKEND  := $(wildcard $(BACKEND_DIR)/pyproject.toml)
