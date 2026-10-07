@@ -19,6 +19,7 @@ from django.db.models import Sum
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
+from apps.challenges.windows import counts_on
 from apps.core import clock
 from apps.core.errors import Conflict, DomainError, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Member
@@ -139,7 +140,7 @@ def check_in(
     """Record today's check-in. Numbers add up during the day; a plain check-in counts once."""
     participant = _participant(by, challenge_id, day)
     challenge = participant.challenge
-    if days.is_fixed(challenge) and not days.is_due(challenge, day):
+    if not counts_on(challenge, day):
         raise NotDueToday()
     value = _clean_amount(challenge, amount)
     row, created = CheckIn.objects.select_for_update().get_or_create(

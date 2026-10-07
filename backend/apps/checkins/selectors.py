@@ -15,6 +15,7 @@ from django.db.models.functions import Greatest
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
+from apps.challenges.periods import week_of
 from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Member
@@ -110,7 +111,7 @@ class Today:
 def _card(participant: Participant, record: days.Record, today: date, proofs: list[Proof]) -> Card:
     challenge = participant.challenge
     part = days.span(challenge, participant.left_on)
-    monday, _ = days.week_of(today)
+    monday, _ = week_of(today)
     week = [monday + timedelta(days=n) for n in range(7)]
     return Card(
         challenge=challenge,
@@ -400,9 +401,7 @@ def day_summaries(*, member: Member, on: set[date]) -> dict[date, DaySummary]:
         due = [
             p
             for p in people
-            if days.is_fixed(p.challenge)
-            and days.is_due(p.challenge, day)
-            and day in days.span(p.challenge, p.left_on)
+            if days.is_due(p.challenge, day) and day in days.span(p.challenge, p.left_on)
         ]
         result[day] = DaySummary(
             check_ins=check_ins.get(day, 0),
@@ -486,11 +485,10 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
         result.longest_streak = max(
             result.longest_streak, days.longest_streak(challenge, part, record, today) or 0
         )
-        if days.is_fixed(challenge):
-            due = [d for d in part.days(first, min(last, today)) if days.is_due(challenge, d)]
-            open_today = today in due and today not in record.done
-            result.month_due += len(due) - int(open_today)
-            result.month_done += sum(1 for d in due if d in record.done)
+        due = [d for d in part.days(first, min(last, today)) if days.is_due(challenge, d)]
+        open_today = today in due and today not in record.done
+        result.month_due += len(due) - int(open_today)
+        result.month_done += sum(1 for d in due if d in record.done)
         result.challenges.append(
             ChallengeMonth(
                 challenge=challenge,

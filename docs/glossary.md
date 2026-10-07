@@ -23,14 +23,18 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `excused`. A missed day has no row: it is derived. |
 | Entry | `CheckInEntry` | One "+N" of a check-in; a day's entries add up. Undo removes the last one. |
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
-| Due day | `days.is_due` | A day a daily or chosen-weekday challenge asks for. Challenges asked a number of times per week or period have no due days, only a quota. |
+| Due day | `days.is_due` | A day a challenge judged day by day (daily or chosen weekdays) asks for. Challenges asked a number of times or a total per week or period have no due days: they are judged per window. |
+| Window | `windows.Window` | A stretch of days judged as one unit: a single day, a Monday-Sunday week, or the whole period (`apps/challenges/windows.py`). |
+| Need | `Window.need` | What one window asks for: a number of check-ins or a total amount. |
+| Short window | `Window.need` < `Window.full_need` | A window cut by the period's edges, a late start or leaving; it asks for less, in proportion to its days that count (rounded half up; amounts to one decimal). A window that would ask for nothing is not judged. |
+| Verdict | `days.Verdict` | How a window stands: `met` (reached its need, even before it ends), `failed` (ended below it), `open` (today is in it), `future`. A failed day window is a missed day. |
 | Proof | `Proof` | What backs a check-in: a `photo` or `video` (v1), at most 5 a day, added after checking in. Status: `uploading`, `processing`, `ready`, `failed`. Removable only on its own day. Later also for a served punishment. |
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `Transcode` (`hls_key`, `poster_key`) | Processed versions of a video for playback (HLS 720p/360p + poster image), made by a MediaConvert job that Celery polls. |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for a proof's upload to finish (`Upload.expires_at`). |
 | Feed | `selectors.feed` | The crew's check-ins with their proofs on challenges you can see, latest activity first (the check-in or its newest proof). Derived, nothing stored. UI: "Activitate" on Echipa. |
 | Day sheet | `selectors.day_sheet` | One day of a challenge: every participant's state, total and proofs. Opened by tapping a day on the board. |
-| Streak | `days.streak` | Per challenge: due days in a row without a miss (daily, weekdays) or weeks in a row with the quota met (times a week). Today never breaks it. |
+| Streak | `days.streak` | Per challenge: windows met in a row (due days, or weeks), counting back from the newest; the window still open today never breaks it. Challenges judged over the whole period have progress instead. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |
 | Garden | - | Home screen showing every member's tree. After v1. |
 | Tree stage | `tree_stage` | Derived from done days this challenge: `seed` 0, `sprout` 1-3, `sapling` 4-9, `bloom` 10-19, `fruit` 20+. After v1. |

@@ -208,3 +208,24 @@ def test_the_25_hour_day_when_clocks_go_back(crew):
     assert today.deadline.isoformat() == "2026-10-25T22:00:00+00:00"
     with at("2026-10-25 22:00Z"), pytest.raises(services.DayClosed):
         services.check_in(by=bogdan, challenge_id=walk.pk, day=sunday)
+
+
+def test_a_day_is_missed_from_local_midnight_also_when_the_clocks_go_back(crew):
+    admin, bogdan, _ = crew
+    walk = challenges.propose_challenge(by=bogdan, shape=WALK, participant_ids=None)
+    challenges.schedule_challenge(  # October is under way: it starts tomorrow, the 11th
+        by=admin, challenge_id=walk.pk, period_kind="month", period_start=date(2026, 10, 1)
+    )
+    with at("2026-10-24 12:00Z"):
+        services.check_in(by=bogdan, challenge_id=walk.pk, day=date(2026, 10, 24))
+
+    def today_and_streak(moment: str) -> tuple[date, int | None]:
+        with at(moment):
+            now = selectors.today(member=bogdan)
+            return now.day, now.cards[0].streak
+
+    # Summer time (UTC+3) until 04:00 on Sunday the 25th, then UTC+2.
+    assert today_and_streak("2026-10-24 20:59Z") == (date(2026, 10, 24), 1)  # 23:59 on the 24th
+    assert today_and_streak("2026-10-24 21:01Z") == (date(2026, 10, 25), 1)  # 00:01: still open
+    assert today_and_streak("2026-10-25 21:59Z") == (date(2026, 10, 25), 1)  # 23:59, UTC+2
+    assert today_and_streak("2026-10-25 22:01Z") == (date(2026, 10, 26), 0)  # the 25th is missed

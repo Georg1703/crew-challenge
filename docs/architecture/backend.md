@@ -21,8 +21,8 @@ backend/
 |   |-- core/               # shared building blocks, no domain logic
 |   |-- accounts/           # User, login/logout/me
 |   |-- crews/              # Crew, Member, Invite, switching crews
-|   |-- challenges/         # Challenge (soft deleted), Participant, Vote
-|   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: due days, day states, streaks
+|   |-- challenges/         # Challenge (soft deleted), Participant, Vote; windows.py: what each window needs
+|   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: day states, verdicts, streaks
 |   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/

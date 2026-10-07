@@ -1,8 +1,8 @@
-"""Pure day rules: which days are due, how a day looks, streaks and progress.
+"""Pure day rules: how a day looks, how a window is judged, streaks and progress.
 
 No database and no clock here: callers pass crew-local dates (`clock.crew_today`) and the
-check-ins they loaded. Nothing in this module assumes a month: a challenge runs from its
-`start_date` to its `end_date`, and a participant until the day they left (`left_on`).
+check-ins they loaded. Which windows a challenge has and what each one needs comes from
+`apps.challenges.windows`; this module judges them against what a participant did.
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 
+from apps.challenges import windows
 from apps.challenges.models import Challenge
-
-FIXED = (Challenge.Frequency.DAILY, Challenge.Frequency.WEEKDAYS)
+from apps.challenges.windows import Window
 
 
 class DayState:
@@ -61,16 +61,13 @@ class Record:
 
 
 def is_fixed(challenge: Challenge) -> bool:
-    """Daily and chosen-weekday challenges ask for specific days; the rest ask for a count."""
-    return challenge.frequency in FIXED
+    """Judged day by day (every day, or chosen days); the rest are judged over longer windows."""
+    return windows.rule_of(challenge).window == windows.DAY
 
 
 def is_due(challenge: Challenge, day: date) -> bool:
-    if challenge.frequency == Challenge.Frequency.DAILY:
-        return True
-    if challenge.frequency == Challenge.Frequency.WEEKDAYS:
-        return bool(challenge.weekdays & (1 << day.weekday()))
-    return False
+    """A day a challenge judged day by day asks for."""
+    return is_fixed(challenge) and windows.counts_on(challenge, day)
 
 
 def counts(challenge: Challenge, total: Decimal | None) -> bool:
@@ -78,9 +75,47 @@ def counts(challenge: Challenge, total: Decimal | None) -> bool:
     if challenge.measure != Challenge.Measure.QUANTITY:
         return True
     total = total or Decimal(0)
-    if challenge.target_scope == Challenge.TargetScope.PER_CHECK_IN and challenge.target_value:
-        return total >= challenge.target_value
-    return total > 0
+    day_min = windows.rule_of(challenge).day_min
+    return total >= day_min if day_min else total > 0
+
+
+@dataclass(frozen=True)
+class Verdict:
+    """How a window stands on a given day."""
+
+    MET = "met"  # reached its need (it can be met before it ends)
+    FAILED = "failed"  # ended below its need
+    OPEN = "open"  # today is in it and its need isn't reached yet
+    FUTURE = "future"  # starts after today
+
+    state: str
+    done: Decimal
+    need: Decimal
+
+    @property
+    def short(self) -> Decimal:
+        """How much a failed window lacked."""
+        return self.need - self.done if self.state == self.FAILED else Decimal(0)
+
+
+def judge(challenge: Challenge, window: Window, record: Record, today: date) -> Verdict:
+    """The verdict on one window, from the days up to today that count."""
+    if window.first > today:
+        return Verdict(Verdict.FUTURE, Decimal(0), window.need)
+    seen = [
+        d
+        for d in Span(window.first, window.last).days(window.first, today)
+        if windows.counts_on(challenge, d)
+    ]
+    if windows.rule_of(challenge).need_kind == windows.AMOUNT:
+        done = sum((record.amounts.get(d, Decimal(0)) for d in seen), Decimal(0))
+    else:
+        done = Decimal(sum(1 for d in seen if d in record.done))
+    if done >= window.need:
+        return Verdict(Verdict.MET, done, window.need)
+    if window.last >= today:
+        return Verdict(Verdict.OPEN, done, window.need)
+    return Verdict(Verdict.FAILED, done, window.need)
 
 
 def state(challenge: Challenge, part: Span, record: Record, day: date, today: date) -> str:
@@ -93,94 +128,48 @@ def state(challenge: Challenge, part: Span, record: Record, day: date, today: da
     if day == today:
         if day in record.partial:
             return DayState.PARTIAL
-        if is_fixed(challenge):
-            return DayState.TODO if is_due(challenge, day) else DayState.NOT_DUE
-        return DayState.OPEN
-    if is_fixed(challenge) and is_due(challenge, day):
-        return DayState.MISSED
-    return DayState.NOT_DUE
+        if not windows.counts_on(challenge, day):
+            return DayState.NOT_DUE
+        return DayState.TODO if is_fixed(challenge) else DayState.OPEN
+    return DayState.MISSED if is_due(challenge, day) else DayState.NOT_DUE
 
 
-def week_of(day: date) -> tuple[date, date]:
-    monday = day - timedelta(days=day.weekday())
-    return monday, monday + timedelta(days=6)
-
-
-def week_quota(challenge: Challenge, part: Span, day: date) -> int:
-    """Times asked in the week of `day`: a partial first or last week asks for fewer."""
-    monday, sunday = week_of(day)
-    return min(challenge.times or 0, len(part.days(monday, sunday)))
-
-
-def done_between(record: Record, part: Span, start: date, end: date) -> int:
-    return sum(1 for d in part.days(start, end) if d in record.done)
+def _verdicts(challenge: Challenge, part: Span, record: Record, today: date) -> list[str]:
+    return [
+        judge(challenge, w, record, today).state
+        for w in windows.windows(challenge, part.first, part.last)
+    ]
 
 
 def streak(challenge: Challenge, part: Span, record: Record, today: date) -> int | None:
-    """Due days (daily, weekdays) or weeks (times a week) in a row without a miss.
+    """Windows in a row that were met, counting back from the newest: due days or weeks.
 
-    Today, or this week, only adds to the streak once it is done: it is never a break.
-    Challenges asked a number of times per period, or once, have progress instead (None).
+    The window still open today is skipped, so it never breaks the streak. A challenge judged
+    once over its whole period has progress instead (None).
     """
-    if is_fixed(challenge):
-        count, day = 0, min(today, part.last)
-        if day == today and day in record.done:
-            count, day = 1, day - timedelta(days=1)
-        elif day == today:
-            day -= timedelta(days=1)
-        while day >= part.first:
-            if is_due(challenge, day):
-                if day not in record.done:
-                    break
-                count += 1
-            day -= timedelta(days=1)
-        return count
-    if challenge.frequency == Challenge.Frequency.TIMES_PER_WEEK:
-        count, (monday, sunday) = 0, week_of(min(today, part.last))
-        current = True
-        while sunday >= part.first:
-            quota = week_quota(challenge, part, monday)
-            met = done_between(record, part, monday, sunday) >= quota > 0
-            if met:
-                count += 1
-            elif not current:
-                break
-            current = False
-            monday, sunday = monday - timedelta(days=7), sunday - timedelta(days=7)
-        return count
-    return None
+    if windows.rule_of(challenge).window == windows.PERIOD:
+        return None
+    count = 0
+    for verdict in reversed(_verdicts(challenge, part, record, today)):
+        if verdict == Verdict.MET:
+            count += 1
+        elif verdict == Verdict.FAILED:
+            break
+    return count
 
 
 def longest_streak(challenge: Challenge, part: Span, record: Record, today: date) -> int | None:
-    """The longest run so far of due days (or met weeks) in a row, up to today.
-
-    Today, or this week, still open is not a break. None for challenges without streaks.
-    """
-    end = min(today, part.last)
+    """The longest run so far of met windows in a row. None when judged over the whole period."""
+    if windows.rule_of(challenge).window == windows.PERIOD:
+        return None
     best = run = 0
-    if is_fixed(challenge):
-        day = part.first
-        while day <= end:
-            if is_due(challenge, day):
-                if day in record.done:
-                    run += 1
-                    best = max(best, run)
-                elif day != today:
-                    run = 0
-            day += timedelta(days=1)
-        return best
-    if challenge.frequency == Challenge.Frequency.TIMES_PER_WEEK:
-        (monday, sunday), (current, _) = week_of(part.first), week_of(end)
-        while monday <= current:
-            quota = week_quota(challenge, part, monday)
-            if done_between(record, part, monday, sunday) >= quota > 0:
-                run += 1
-                best = max(best, run)
-            elif monday != current:
-                run = 0
-            monday, sunday = monday + timedelta(days=7), sunday + timedelta(days=7)
-        return best
-    return None
+    for verdict in _verdicts(challenge, part, record, today):
+        if verdict == Verdict.MET:
+            run += 1
+            best = max(best, run)
+        elif verdict == Verdict.FAILED:
+            run = 0
+    return best
 
 
 @dataclass(frozen=True)
@@ -193,50 +182,29 @@ class Progress:
 
 
 def progress(challenge: Challenge, part: Span, record: Record, today: date) -> Progress | None:
-    """Progress toward the week's or the period's goal; None for daily and weekday challenges
-    without a weekly or period target."""
-    monday, sunday = week_of(today)
-    if challenge.measure == Challenge.Measure.QUANTITY and challenge.target_value:
-        if challenge.target_scope == Challenge.TargetScope.PER_WEEK:
-            total = sum(
-                (record.amounts.get(d, Decimal(0)) for d in part.days(monday, sunday)), Decimal(0)
-            )
-            return Progress("amount", total, challenge.target_value)
-        if challenge.target_scope == Challenge.TargetScope.PER_PERIOD:
-            total = sum(
-                (record.amounts.get(d, Decimal(0)) for d in part.days(part.first, today)),
-                Decimal(0),
-            )
-            return Progress("amount", total, challenge.target_value)
-    if challenge.frequency == Challenge.Frequency.TIMES_PER_WEEK:
-        return Progress(
-            "days",
-            Decimal(done_between(record, part, monday, sunday)),
-            Decimal(week_quota(challenge, part, today)),
-        )
-    if challenge.frequency == Challenge.Frequency.TIMES_PER_PERIOD:
-        return Progress(
-            "days",
-            Decimal(done_between(record, part, part.first, today)),
-            Decimal(challenge.times or 0),
-        )
-    if challenge.frequency == Challenge.Frequency.ONCE:
-        return Progress(
-            "days", Decimal(min(1, done_between(record, part, part.first, today))), Decimal(1)
-        )
-    return None
+    """Progress in today's window (a week or the whole period); None when judged day by day."""
+    rule = windows.rule_of(challenge)
+    if rule.window == windows.DAY:
+        return None
+    window = windows.window_at(challenge, part.first, part.last, today)
+    if window is None:
+        return None
+    verdict = judge(challenge, window, record, today)
+    kind = "amount" if rule.need_kind == windows.AMOUNT else "days"
+    return Progress(kind, verdict.done, window.need)
 
 
 def settled_today(challenge: Challenge, part: Span, record: Record, today: date) -> bool | None:
     """Whether today's ring segment for this challenge is full; None if it has no segment.
 
-    Fixed challenges have a segment on due days, full once today is done. Flexible ones always
-    have one, full once checked in today or once the week's or period's count is reached.
+    Challenges judged day by day have a segment on due days, full once today is done. The others
+    have one on every day that counts, full once checked in today or once the window's count is
+    reached.
     """
-    if today not in part:
+    if today not in part or not windows.counts_on(challenge, today):
         return None
     if is_fixed(challenge):
-        return today in record.done if is_due(challenge, today) else None
+        return today in record.done
     if today in record.done:
         return True
     goal = progress(challenge, part, record, today)

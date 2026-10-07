@@ -9,6 +9,12 @@ import calendar
 from datetime import date, timedelta
 
 
+def week_of(day: date) -> tuple[date, date]:
+    """Monday and Sunday of the week that contains `day`."""
+    monday = day - timedelta(days=day.weekday())
+    return monday, monday + timedelta(days=6)
+
+
 def month_of(day: date) -> tuple[date, date]:
     """First and last day of the month that contains `day`."""
     last = calendar.monthrange(day.year, day.month)[1]

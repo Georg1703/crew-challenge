@@ -26,6 +26,7 @@ from django.db import transaction
 
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant, PeriodKind
+from apps.challenges.periods import week_of
 from apps.checkins import days
 from apps.checkins.models import CheckIn, CheckInEntry, Proof
 from apps.core import clock
@@ -237,7 +238,7 @@ class Seeder:
         if not days.is_fixed(challenge):  # a few times a week: any days, up to the count
             weeks: dict[date, list[date]] = {}
             for day in past:
-                weeks.setdefault(days.week_of(day)[0], []).append(day)
+                weeks.setdefault(week_of(day)[0], []).append(day)
             picked = [self.random.sample(w, min(len(w), spec.times or 1)) for w in weeks.values()]
             return sorted(day for week in picked for day in week)
         due = [day for day in past if days.is_due(challenge, day)]
@@ -252,7 +253,7 @@ class Seeder:
         """Everyone does everything due PERFECT days ago, on the challenges the viewer sees."""
         day = self.today - timedelta(days=PERFECT)
         for challenge in challenges.visible(member=viewer).filter(state=C.State.CHOSEN):
-            if not (days.is_fixed(challenge) and days.is_due(challenge, day)):
+            if not days.is_due(challenge, day):
                 continue
             for p in Participant.objects.filter(challenge=challenge).select_related("member"):
                 if day in days.span(challenge, p.left_on):
