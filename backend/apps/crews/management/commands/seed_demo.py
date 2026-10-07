@@ -3,7 +3,8 @@
 - Demo Crew: ana (admin), bogdan, cristina, dan.
 - Eva's crew: eva (admin). Used to try joining a second crew with an existing account.
 
-Safe to run more than once. Refuses to run when DEBUG is off, so it never touches production.
+Safe to run more than once: a demo login someone deleted, or took out of its crew, comes back
+(the e2e tests log in with them). Refuses to run when DEBUG is off, so it never touches production.
 """
 
 from typing import Any
@@ -13,8 +14,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.accounts import services as accounts
+from apps.accounts.models import User
 from apps.crews import services
-from apps.crews.models import Crew
+from apps.crews.models import Crew, Member
 
 DEMO_PASSWORD = "garden-flame-2026"
 DEMO_CREWS = [
@@ -30,8 +32,13 @@ class Command(BaseCommand):
         if not settings.DEBUG:
             raise CommandError("seed_demo only runs with DEBUG on (local development).")
         for name, members in DEMO_CREWS:
-            if Crew.objects.filter(name=name).exists():
-                self.stdout.write(f"{name} already exists; nothing to do.")
+            crew = Crew.objects.filter(name=name).first()
+            if crew is not None:
+                restored = self._restore(crew, members)
+                if restored:
+                    self.stdout.write(f"{name}: restored {', '.join(restored)} ({DEMO_PASSWORD}).")
+                else:
+                    self.stdout.write(f"{name} already exists; nothing to do.")
                 continue
             self._create(name, members)
             self.stdout.write(self.style.SUCCESS(f"Created {name}. Log in with:"))
@@ -55,3 +62,20 @@ class Command(BaseCommand):
                 password=DEMO_PASSWORD,
                 display_name=display_name,
             )
+
+    @staticmethod
+    @transaction.atomic
+    def _restore(crew: Crew, members: list[tuple[str, str]]) -> list[str]:
+        """Put back the demo members a crew lost; the first one is its admin. Their usernames."""
+        restored = []
+        for index, (username, display_name) in enumerate(members):
+            if Member.objects.filter(crew=crew, user__username=username).exists():
+                continue
+            user = User.objects.filter(username=username).first() or accounts.create_user(
+                username=username, password=DEMO_PASSWORD
+            )
+            role = Member.Role.ADMIN if index == 0 else Member.Role.MEMBER
+            # The crew may have no admin left to invite them, so the membership is added directly.
+            services._add_member(crew=crew, user=user, display_name=display_name, role=role)
+            restored.append(username)
+        return restored
