@@ -17,6 +17,9 @@ const backendEnv = {
 
 export default defineConfig({
   testDir: "e2e",
+  // One test at a time: they share one database and the demo crew, and several check in as the
+  // same person on the same challenge today, then undo it.
+  workers: 1,
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
