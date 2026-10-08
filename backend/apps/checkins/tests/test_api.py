@@ -16,7 +16,7 @@ READ = {
     "measure": "quantity",
     "unit": "pages",
     "day_min": 20,
-    "proof_kind": "photo_or_video",
+    "proof_required": True,
 }
 
 
@@ -219,7 +219,7 @@ def test_windows_show_what_each_week_asks_for(browser):
         "need_value": 3,
         "period_kind": "day",
         "period_length": 10,
-        "proof_kind": "photo",
+        "proof_required": True,
     }
     with time_machine.travel("2026-10-10 12:00Z", tick=False):
         admin = AdminFactory.create(display_name="Ana")

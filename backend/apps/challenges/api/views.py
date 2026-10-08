@@ -46,7 +46,6 @@ def challenge_data(
         "need_kind": challenge.need_kind,
         "need_value": challenge.need_value,
         "day_min": challenge.day_min,
-        "proof_kind": challenge.proof_kind,
         "proof_required": challenge.proof_required,
         "state": challenge.state,
         "phase": selectors.phase(challenge, today),

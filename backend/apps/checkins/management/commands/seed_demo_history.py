@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -46,7 +46,7 @@ class Spec:
     icon: str
     measure: str
     window: str
-    proof_kind: str
+    media: str  # the demo's proofs: photo, video, mixed, or none ("")
     began: int  # days before today
     who: list[int]
     streaks: list[int]  # due days in a row up to yesterday, one per member in `who`
@@ -63,7 +63,7 @@ SPECS = [
         "book",
         C.Measure.QUANTITY,
         C.Window.DAY,
-        C.ProofKind.PHOTO,
+        "photo",
         began=34,
         who=[0, 1, 2, 3, 4, 5],
         streaks=[30, 16, 9, 3, 22, 5],
@@ -76,7 +76,7 @@ SPECS = [
         "sugar",
         C.Measure.ABSTAIN,
         C.Window.DAY,
-        C.ProofKind.NONE,
+        "",
         began=16,
         who=[0, 1, 2, 3],
         streaks=[7, 16, 4, 10],
@@ -87,7 +87,7 @@ SPECS = [
         "running",
         C.Measure.CHECK,
         C.Window.DAY,
-        C.ProofKind.VIDEO,
+        "video",
         began=20,
         who=[0, 2, 4],
         streaks=[4, 2, 6],
@@ -98,7 +98,7 @@ SPECS = [
         "dumbbell",
         C.Measure.CHECK,
         C.Window.WEEK,
-        C.ProofKind.PHOTO_OR_VIDEO,
+        "mixed",
         began=20,
         who=[0, 3, 5],
         streaks=[],
@@ -183,6 +183,7 @@ class Seeder:
         self.today = clock.crew_today(crew)
         self.now = clock.now()
         self.random = random.Random(7)  # the same history every time
+        self.media: dict[UUID, str] = {}  # challenge -> its Spec.media
         self.storage: ObjectStorage = get_object_storage()
         self.admin = next(m for m in members if m.role == Member.Role.ADMIN)
         self.video = (
@@ -211,7 +212,7 @@ class Seeder:
             on_days=spec.on_days,
             need_value=spec.need,
             day_min=spec.day_min,
-            proof_kind=spec.proof_kind,
+            proof_required=bool(spec.media),
             state=C.State.CHOSEN,
             period_kind=PeriodKind.DAY,
             period_length=spec.began + DAYS_LEFT + 1,
@@ -221,6 +222,7 @@ class Seeder:
             chosen_by=self.admin,
             chosen_at=self.at(start - timedelta(days=1), 20),
         )
+        self.media[challenge.pk] = spec.media
         taking_part = [(i, self.members[i]) for i in spec.who if i < len(self.members)]
         for _, member in taking_part:
             Participant.objects.create(crew=self.crew, challenge=challenge, member=member)
@@ -308,11 +310,12 @@ class Seeder:
             CheckInEntry.objects.filter(pk=entry.pk).update(created_at=when, updated_at=when)
         CheckIn.objects.filter(pk=row.pk).update(created_at=when, updated_at=when)
         self.check_ins += 1
-        if challenge.proof_kind == C.ProofKind.NONE:
+        media = self.media.get(challenge.pk, "")
+        if not media:
             return
-        if challenge.proof_kind == C.ProofKind.VIDEO:
+        if media == "video":
             kinds = ["video"] * min(proofs, 2)
-        elif challenge.proof_kind == C.ProofKind.PHOTO:
+        elif media == "photo":
             kinds = ["photo"] * proofs
         else:  # a video now and then, photos otherwise
             kinds = [

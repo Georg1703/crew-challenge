@@ -53,10 +53,9 @@ class ChallengeIn(serializers.Serializer):
         min_value=1,
         help_text="How many months (1-12), weeks (1-52) or days (1-365) it runs.",
     )
-    proof_kind = serializers.ChoiceField(
-        choices=Challenge.ProofKind.choices, default=Challenge.ProofKind.NONE
+    proof_required = serializers.BooleanField(
+        default=False, help_text="A photo or a video with each check-in; false: no proof."
     )
-    proof_required = serializers.BooleanField(default=False)
     participant_ids = serializers.ListField(
         child=serializers.UUIDField(),
         required=False,
@@ -94,8 +93,9 @@ class ChallengeOut(serializers.Serializer):
     day_min = serializers.DecimalField(
         max_digits=10, decimal_places=2, allow_null=True, coerce_to_string=False
     )
-    proof_kind = serializers.ChoiceField(choices=Challenge.ProofKind.choices)
-    proof_required = serializers.BooleanField()
+    proof_required = serializers.BooleanField(
+        help_text="A photo or a video with each check-in; false: no proof."
+    )
     state = serializers.ChoiceField(choices=Challenge.State.choices)
     phase = serializers.ChoiceField(choices=PHASES, allow_null=True)
     period_kind = serializers.ChoiceField(choices=PeriodKind.choices)

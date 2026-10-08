@@ -32,7 +32,6 @@ const pushUps: Challenge = {
   need_kind: "count",
   need_value: 1,
   day_min: 50,
-  proof_kind: "video",
   proof_required: true,
   state: "proposed",
   phase: null,
@@ -443,7 +442,7 @@ describe("proposing", () => {
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await screen.findByRole("heading", { name: "What proof?" });
-    await userEvent.click(screen.getByRole("radio", { name: /Quick, works for almost anything/ }));
+    await userEvent.click(screen.getByRole("switch", { name: /A photo or a video/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await screen.findByRole("heading", { name: "Check it" });
@@ -467,8 +466,7 @@ describe("proposing", () => {
         day_min: null,
         period_kind: "week",
         period_length: 4,
-        proof_kind: "photo",
-        proof_required: false,
+        proof_required: true,
         participant_ids: [bogdan.id],
       },
     });
@@ -540,7 +538,7 @@ describe("one challenge", () => {
 
     expect(await screen.findByRole("heading", { name: "50 push-ups" })).toBeInTheDocument();
     expect(screen.getByText("At least 50 push-ups each check-in")).toBeInTheDocument();
-    expect(screen.getByText("Video, required")).toBeInTheDocument();
+    expect(screen.getByText("Photo or video")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vote" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Edit the proposal" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Withdraw the proposal" })).toBeInTheDocument();
@@ -589,7 +587,6 @@ describe("one challenge", () => {
       need_kind: "count",
       need_value: 1,
       day_min: null,
-      proof_kind: "none",
       proof_required: false,
       end_date: "2026-11-30",
       state: "todo",

@@ -96,8 +96,9 @@ class TodayChallengeOut(ChallengeBriefOut):
     need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
     need_value = serializers.FloatField()
     day_min = serializers.FloatField(allow_null=True)
-    proof_kind = serializers.ChoiceField(choices=Challenge.ProofKind.choices)
-    proof_required = serializers.BooleanField()
+    proof_required = serializers.BooleanField(
+        help_text="A photo or a video with each check-in; false: no proof."
+    )
     end_date = serializers.DateField()
     state = serializers.ChoiceField(choices=DAY_STATES, help_text="Today's state.")
     total = serializers.FloatField(allow_null=True, help_text="Today's total (numbers only).")

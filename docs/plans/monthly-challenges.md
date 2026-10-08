@@ -57,7 +57,7 @@ can be added later without a data migration.
 | What you record per check-in | `check` (just done), `quantity` (a number + unit), `abstain` ("held it") | `measure`, `unit` |
 | How often | `daily`, `weekdays` (chosen days), `times_per_week`, `times_per_period`, `once` | `frequency`, `weekdays` (bitmask), `times` |
 | Target (quantity only) | per check-in, per week, per period, total for the challenge | `target_scope`, `target_value` |
-| Proof | `none`, `photo`, `video`, `photo_or_video`; required or optional | `proof_kind`, `proof_required` |
+| Proof | `none`, `photo`, `video`, `photo_or_video`; required or optional (now yes or no, see `docs/plans/wheel.md`) | `proof_kind`, `proof_required` |
 
 Plus `title` (60), `rules` (500, optional), `icon` (a key from a fixed list in `Icon`).
 Validation lives in `services.py` (for example `unit` and `target_*` only with `quantity`,

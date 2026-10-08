@@ -20,7 +20,6 @@ PUSHUPS = {
     "measure": "quantity",
     "unit": "push-ups",
     "day_min": 50,
-    "proof_kind": "video",
     "proof_required": True,
 }
 NO_SUGAR = {
@@ -67,8 +66,9 @@ def test_shapes_are_normalized():
         | {"need_kind": "amount", "need_value": "50.5"}
     )
     assert (km.window, km.need_kind, km.need_value) == ("week", "amount", Decimal("50.5"))
-    no_proof = services.clean_shape({"title": "Read", "proof_kind": "none", "proof_required": True})
-    assert no_proof.proof_required is False
+    assert services.clean_shape({"title": "Read", "proof_required": True}).proof_required is True
+    old_kind = services.clean_shape({"title": "Read", "proof_kind": "video"})  # no longer read
+    assert old_kind.proof_required is False
 
 
 @pytest.mark.parametrize(
@@ -94,7 +94,6 @@ def test_shapes_are_normalized():
         ),
         ({"window": "week", "need_kind": "amount", "need_value": 20}, "day_min"),  # totals: no min
         ({"need_kind": "weight"}, "need_kind"),
-        ({"proof_kind": "audio"}, "proof_kind"),
         ({"measure": "dance"}, "measure"),
         ({"window": "hourly"}, "window"),
         ({"period_kind": "year"}, "period_kind"),

@@ -43,7 +43,6 @@ const walk: TodayChallenge = {
   need_kind: "count",
   need_value: 1,
   day_min: null,
-  proof_kind: "photo_or_video",
   proof_required: true,
   end_date: "2026-11-30",
   state: "done",

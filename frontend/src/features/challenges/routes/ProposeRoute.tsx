@@ -79,7 +79,6 @@ type Draft = Required<
     | "unit"
     | "period_kind"
     | "period_length"
-    | "proof_kind"
     | "proof_required"
   >
 > & {
@@ -106,7 +105,6 @@ const EMPTY: Draft = {
   times: 3,
   total: "",
   day_min: "",
-  proof_kind: "none",
   proof_required: false,
   participant_ids: null,
 };
@@ -129,7 +127,6 @@ const FIELD_STEP: Record<string, Step> = {
   day_min: "often",
   period_kind: "often",
   period_length: "often",
-  proof_kind: "proof",
   proof_required: "proof",
 };
 
@@ -202,8 +199,7 @@ function toInput(draft: Draft): ChallengeInput {
     day_min: dayMin ? decimal(draft.day_min) : null,
     period_kind: draft.period_kind,
     period_length: draft.period_length,
-    proof_kind: draft.proof_kind,
-    proof_required: draft.proof_kind !== "none" && draft.proof_required,
+    proof_required: draft.proof_required,
     ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
   };
 }
@@ -248,7 +244,6 @@ function EditProposal({ id }: { id: string }) {
         times: c.need_kind === "count" && c.window !== "day" ? c.need_value : EMPTY.times,
         total: c.need_kind === "amount" ? String(c.need_value) : "",
         day_min: c.day_min == null ? "" : String(c.day_min),
-        proof_kind: c.proof_kind,
         proof_required: c.proof_required,
         participant_ids: c.participants.map((p) => p.member.id),
       }}
@@ -507,26 +502,12 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
           )}
 
           {step === "proof" && (
-            <Stack>
-              <OptionList
-                label={t("challenges.fields.proof")}
-                value={draft.proof_kind}
-                onChange={(kind) => set("proof_kind", kind)}
-                options={(["none", "photo", "video", "photo_or_video"] as const).map((value) => ({
-                  value,
-                  title: t(`challenges.options.proof.${value}.title`),
-                  description: t(`challenges.options.proof.${value}.description`),
-                }))}
-              />
-              {draft.proof_kind !== "none" && (
-                <Toggle
-                  label={t("challenges.fields.proofRequired")}
-                  description={t("challenges.fields.proofRequiredHint")}
-                  checked={draft.proof_required}
-                  onChange={(on) => set("proof_required", on)}
-                />
-              )}
-            </Stack>
+            <Toggle
+              label={t("challenges.fields.proofRequired")}
+              description={t("challenges.fields.proofRequiredHint")}
+              checked={draft.proof_required}
+              onChange={(on) => set("proof_required", on)}
+            />
           )}
 
           {step === "review" && (

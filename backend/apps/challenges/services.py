@@ -113,7 +113,6 @@ class Shape:
     day_min: Decimal | None = None
     period_kind: str = PeriodKind.MONTH
     period_length: int = 1
-    proof_kind: str = Challenge.ProofKind.NONE
     proof_required: bool = False
 
 
@@ -197,10 +196,7 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         elif day_min is None:
             bad("day_min", "Give a number above zero.")
 
-    proof_kind = raw.get("proof_kind") or Challenge.ProofKind.NONE
-    if proof_kind not in Challenge.ProofKind.values:
-        bad("proof_kind", "Choose the kind of proof.")
-    proof_required = bool(raw.get("proof_required")) and proof_kind != Challenge.ProofKind.NONE
+    proof_required = bool(raw.get("proof_required"))
 
     if errors:
         raise ValidationFailed(fields=errors)
@@ -217,7 +213,6 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         day_min=day_min,
         period_kind=period_kind,
         period_length=period_length,
-        proof_kind=proof_kind,
         proof_required=proof_required,
     )
 

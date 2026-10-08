@@ -14,7 +14,6 @@ type Shape = Pick<
   | "need_kind"
   | "period_kind"
   | "period_length"
-  | "proof_kind"
   | "proof_required"
 > & { need_value: number | string; day_min: number | string | null };
 
@@ -106,20 +105,12 @@ export function describeDayMin(
   return t("challenges.describe.dayMin", { value, unit: shape.unit });
 }
 
-/** "Video, required", "No proof" */
-export function describeProof(t: TFunction, shape: Pick<Shape, "proof_kind" | "proof_required">) {
-  if (shape.proof_kind === "none") return t("challenges.describe.proof.none");
-  return t(
-    shape.proof_required
-      ? "challenges.describe.proofRequired"
-      : "challenges.describe.proofOptional",
-    {
-      kind: t(`challenges.describe.proof.${shape.proof_kind}`),
-    },
-  );
+/** "Photo or video", "No proof" */
+export function describeProof(t: TFunction, shape: Pick<Shape, "proof_required">) {
+  return t(shape.proof_required ? "challenges.describe.proof.yes" : "challenges.describe.proof.no");
 }
 
-/** One short line for lists: "1 month · Every day · 50 push-ups each check-in · Video". */
+/** One short line for lists: "1 month · Every day · 50 push-ups each check-in · Photo or video". */
 export function summaryLine(t: TFunction, shape: Shape, language: string) {
   return [
     describeLength(t, shape),

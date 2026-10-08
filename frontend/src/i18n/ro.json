@@ -330,9 +330,8 @@
       "measure": "La fiecare bifă",
       "unit": "Unitatea",
       "unitHint": "De exemplu km, pagini, minute.",
-      "proof": "Dovada",
-      "proofRequired": "Dovada e obligatorie",
-      "proofRequiredHint": "Fără ea bifa nu contează."
+      "proofRequired": "O poză sau un video la fiecare bifă",
+      "proofRequiredHint": "Fiecare adaugă una când bifează."
     },
     "options": {
       "often": {
@@ -387,24 +386,6 @@
           "description": "Pentru „fără zahăr”, „fără telefon”"
         }
       },
-      "proof": {
-        "none": {
-          "title": "Fără dovadă",
-          "description": "Pe cuvânt"
-        },
-        "photo": {
-          "title": "Poză",
-          "description": "Rapid, pentru aproape orice"
-        },
-        "video": {
-          "title": "Video",
-          "description": "Pentru mișcare: flotări, exerciții"
-        },
-        "photo_or_video": {
-          "title": "Poză sau video",
-          "description": "Fiecare alege"
-        }
-      },
       "periodKind": {
         "month": "Luni",
         "week": "Săptămâni",
@@ -428,13 +409,9 @@
       "quantity": "Un număr ({{unit}})",
       "abstain": "Te abții",
       "proof": {
-        "none": "Fără dovadă",
-        "photo": "Poză",
-        "video": "Video",
-        "photo_or_video": "Poză sau video"
+        "yes": "Poză sau video",
+        "no": "Fără dovadă"
       },
-      "proofRequired": "{{kind}}, obligatorie",
-      "proofOptional": "{{kind}}, opțională",
       "period": {
         "month_one": "toată luna",
         "month_few": "{{count}} luni",

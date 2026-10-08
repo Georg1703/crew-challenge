@@ -330,9 +330,8 @@
       "measure": "Each check-in",
       "unit": "Unit",
       "unitHint": "For example km, pages, minutes.",
-      "proof": "Proof",
-      "proofRequired": "Proof is required",
-      "proofRequiredHint": "Without it the check-in doesn't count."
+      "proofRequired": "A photo or a video with each check-in",
+      "proofRequiredHint": "Everyone adds one when they check in."
     },
     "options": {
       "often": {
@@ -387,24 +386,6 @@
           "description": "For “no sugar”, “no phone”"
         }
       },
-      "proof": {
-        "none": {
-          "title": "No proof",
-          "description": "On your word"
-        },
-        "photo": {
-          "title": "Photo",
-          "description": "Quick, works for almost anything"
-        },
-        "video": {
-          "title": "Video",
-          "description": "For movement: push-ups, workouts"
-        },
-        "photo_or_video": {
-          "title": "Photo or video",
-          "description": "Everyone picks"
-        }
-      },
       "periodKind": {
         "month": "Months",
         "week": "Weeks",
@@ -428,13 +409,9 @@
       "quantity": "A number ({{unit}})",
       "abstain": "Holding back",
       "proof": {
-        "none": "No proof",
-        "photo": "Photo",
-        "video": "Video",
-        "photo_or_video": "Photo or video"
+        "yes": "Photo or video",
+        "no": "No proof"
       },
-      "proofRequired": "{{kind}}, required",
-      "proofOptional": "{{kind}}, optional",
       "period": {
         "month_one": "the month",
         "month_few": "{{count}} months",
