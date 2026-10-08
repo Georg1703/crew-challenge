@@ -17,7 +17,7 @@ async function logIn(browser: Browser, username: string): Promise<Page> {
   const page = await (await browser.newContext({ locale: "en-US" })).newPage();
   await page.goto("/login");
   await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
   return page;

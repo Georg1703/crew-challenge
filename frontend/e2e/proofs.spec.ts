@@ -27,7 +27,7 @@ test("add a photo to today's check-in and see it in the crew feed", async ({ bro
   const page = await (await browser.newContext({ locale: "en-US" })).newPage();
   await page.goto("/login");
   await page.getByLabel("Username").fill("cristina");
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 

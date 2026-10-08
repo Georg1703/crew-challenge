@@ -120,7 +120,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 |---|---|
 | `Screen`, `Stack` | Every route's layout (safe areas, tab bar space, max width, the one title) and vertical spacing |
 | `Button` | Every action. `primary` (one per screen), `secondary`, `ghost` (text action), `danger` (destructive, never primary). `size="lg"` (52px) for main actions, `md` (44px) inside cards. States: loading, disabled |
-| `TextField` | Every text input: label above, hint or error below, wired for screen readers |
+| `TextField` | Every text input: label above, hint or error below, wired for screen readers. `reveal` (a label) puts an eye button in a password field that shows what is typed |
 | `Card` | A group of related content. `tone="accent"` highlights the one thing that needs the user |
 | `List`, `ListRow`, `IconTile` | Members, invites, settings: rows inside one surface. A row has a leading avatar or icon tile, a title, one secondary line and at most one trailing item. `to` makes the whole row a link, `onClick` a button; `current` marks the chosen row |
 | `StatusPill` | Short status: `neutral`, `accent` (to do), `success` (done, with a check), `warning`, `danger` |

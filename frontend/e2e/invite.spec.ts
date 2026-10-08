@@ -18,7 +18,7 @@ async function newPage(browser: Browser): Promise<Page> {
 async function logIn(page: Page, username: string) {
   await page.goto("/login");
   await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 }
@@ -42,7 +42,7 @@ async function createAccount(page: Page, path: string, name: string, username: s
   await page.getByRole("button", { name: "Accept the invite" }).click();
   await page.getByLabel("What should we call you?").fill(name);
   await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Join the crew" }).click();
   await expect(page).toHaveURL(/\/welcome$/);
 }
@@ -116,7 +116,7 @@ test("someone with an account in another crew joins with it", async ({ page, bro
   await person.getByRole("button", { name: "I already have an account" }).click();
   await expect(person).toHaveURL(/\/login\?next=/);
   await person.getByLabel("Username").fill(username);
-  await person.getByLabel("Password").fill(PASSWORD);
+  await person.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await person.getByRole("button", { name: "Log in" }).click();
 
   await expect(
@@ -156,7 +156,7 @@ test("a taken username shows under the username field", async ({ page, browser }
   await guest.getByRole("button", { name: "Accept the invite" }).click();
   await guest.getByLabel("What should we call you?").fill(unique("Ion"));
   await guest.getByLabel("Username").fill("ana");
-  await guest.getByLabel("Password").fill(PASSWORD);
+  await guest.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await guest.getByRole("button", { name: "Join the crew" }).click();
   await expect(guest.getByLabel("Username")).toHaveAccessibleDescription(/taken/i);
 });

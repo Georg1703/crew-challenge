@@ -201,6 +201,7 @@ function CreateAccount({ code, onBack }: { code: string; onBack: () => void }) {
             hint={t("join.passwordHint")}
             name="password"
             type="password"
+            reveal={t("auth.showPassword")}
             autoComplete="new-password"
             value={form.password}
             onChange={set("password")}

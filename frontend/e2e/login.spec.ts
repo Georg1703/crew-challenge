@@ -12,7 +12,7 @@ test("a member logs in, sees today's challenges and finds the crew in its tab", 
   await expect(page).toHaveURL(/\/login/);
 
   await page.getByLabel("Username").fill("Ana");
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
 
   await expect(page.getByRole("heading", { name: "Bună, Ana" })).toBeVisible();

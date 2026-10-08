@@ -14,7 +14,7 @@ test("spin the wheel, serve the punishment, and the crew sees it", async ({ brow
   ).newPage();
   await page.goto("/login");
   await page.getByLabel("Username").fill("dan");
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 

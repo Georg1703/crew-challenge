@@ -20,6 +20,7 @@
     "loginTitle": "Log in",
     "username": "Username",
     "password": "Password",
+    "showPassword": "Show password",
     "login": "Log in",
     "noAccount": "No account? Ask someone in the crew for an invite link.",
     "joiningAs": "After you log in, you join the crew from the invite."

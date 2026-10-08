@@ -37,6 +37,18 @@ describe("TextField", () => {
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription("Taken.");
   });
+
+  it("shows and hides a password with its eye button", async () => {
+    render(<TextField label="Password" type="password" reveal="Show password" />);
+    const input = screen.getByLabelText("Password");
+    const eye = screen.getByRole("button", { name: "Show password" });
+    expect(input).toHaveAttribute("type", "password");
+    await userEvent.click(eye);
+    expect(input).toHaveAttribute("type", "text");
+    expect(eye).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(eye);
+    expect(input).toHaveAttribute("type", "password");
+  });
 });
 
 describe("Sheet", () => {

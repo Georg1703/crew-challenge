@@ -244,6 +244,7 @@ export function DesignRoute() {
         <TextField label="With hint" hint="At least 8 characters." />
         <TextField label="With error" defaultValue="ab" error="This username is taken." />
         <TextField label="Disabled" defaultValue="Disabled" disabled />
+        <TextField label="Password" type="password" defaultValue="secret" reveal="Show password" />
       </Section>
 
       <Section title="Status pills and avatars">

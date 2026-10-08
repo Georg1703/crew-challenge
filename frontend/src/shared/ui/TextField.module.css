@@ -39,6 +39,35 @@
   color: var(--color-text-disabled);
 }
 
+/* A password field with its eye button inside, on the right. */
+.revealable {
+  position: relative;
+}
+
+.revealable .input {
+  padding-right: var(--tap-min);
+}
+
+.reveal {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.reveal:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
 .invalid,
 .invalid:focus-visible {
   border-color: var(--color-danger);

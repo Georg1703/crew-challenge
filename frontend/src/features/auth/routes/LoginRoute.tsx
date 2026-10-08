@@ -47,6 +47,7 @@ export function LoginRoute() {
             label={t("auth.password")}
             name="password"
             type="password"
+            reveal={t("auth.showPassword")}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
