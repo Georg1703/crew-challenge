@@ -71,8 +71,8 @@ Every error, from any layer, has this shape:
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken`, `invalid_emoji`, `period_too_far` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
 | 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_a_participant`, `not_taking_part`, `not_your_proposal`, `permission_denied` |
-| 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `target_not_found`, `upload_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch` |
+| 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `spin_not_found`, `target_not_found`, `upload_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch`, `not_drawn`, `proof_needed`, `proof_not_needed` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -137,7 +137,16 @@ GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whol
                                         `start` previews a start, `until` previews leaving that day
 GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
 GET    /api/v1/feed?cursor=...          the crew's check-ins with proofs, latest activity first
-                                        (30 per page, challenges you can see)
+                                        (30 per page, challenges you can see); replaced by journal
+GET    /api/v1/journal?cursor=...       check-ins and drawn spins, latest activity first: each
+                                        {kind, activity_at, check_in | spin} (30 per page)
+
+GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
+                                        to_serve (the Today card) and each challenge's punishments
+POST   /api/v1/spins/{id}/draw          the server draws the punishment -> the spin; safe to repeat
+POST   /api/v1/spins/{id}/done          serve a punishment that needs no proof -> the spin
+POST   /api/v1/spins/{id}/proofs        start a proof on a drawn punishment that needs one -> 201
+GET    /api/v1/spins/{id}/proofs/resume?fingerprint=...   my open video upload on it, or 404
 
 POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   {kind, content_type, size, fingerprint?,
                                         thumb_size?}: add proof to today's check-in -> 201

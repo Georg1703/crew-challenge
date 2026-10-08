@@ -25,6 +25,8 @@ backend/
 |   |-- checkins/           # CheckIn, CheckInEntry; days.py: day states, verdicts, streaks
 |   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |   |-- proofs/             # Proof on any subject (generic key): uploads, parts, transcoding, expiry
+|   |-- doom/               # Spin: the Wheel of Doom (open, draw, serve); builds on check-ins and proofs
+|   |-- journal/            # The crew's journal: check-ins and drawn spins (the top: nothing imports it)
 |   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
@@ -90,7 +92,9 @@ flowchart TB
   check-ins; nothing lower imports something higher;
 - media knows files, not challenges or check-ins; proofs know files and members, not what they
   back (check-ins build on them); reactions know their targets only through the
-  registry (no challenges, check-ins or media).
+  registry (no challenges, check-ins or media);
+- the Wheel of Doom (`doom`) builds on check-ins and proofs, and the journal on top of both;
+  nothing below imports them.
 
 ## Generic building blocks
 

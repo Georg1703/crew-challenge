@@ -407,6 +407,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The crew's check-ins and drawn spins, with their proofs, latest activity first. */
+        get: operations["journal_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -578,6 +595,91 @@ export interface paths {
         post?: never;
         /** @description Take your reaction back. Returns the target's reactions. */
         delete: operations["reactions_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/spins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My spins not served yet, oldest first, with how many to spin and to serve. */
+        get: operations["spins_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/spins/{spin_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Serve a drawn punishment that needs no proof. */
+        post: operations["spins_done"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/spins/{spin_id}/draw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Spin: the server draws the punishment (the dial then turns to it). Safe to repeat. */
+        post: operations["spins_draw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/spins/{spin_id}/proofs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a photo or video to a drawn punishment that needs proof. */
+        post: operations["spins_proofs_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/spins/{spin_id}/proofs/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My unfinished video upload of this file on this spin, or 404. */
+        get: operations["spins_proofs_resume"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -845,6 +947,12 @@ export interface components {
             /** @description Everyone finished everything due that day (challenges judged day by day). */
             crew_done: boolean;
         };
+        /**
+         * @description * `spun` - spun
+         *     * `served` - served
+         * @enum {string}
+         */
+        DrawnSpinStateEnum: "spun" | "served";
         /** @description One check-in: who, on what, which day, and its proofs. */
         FeedItemOut: {
             /**
@@ -936,6 +1044,29 @@ export interface components {
         };
         JoinWithAccountInRequest: {
             display_name: string;
+        };
+        JournalEntryOut: {
+            kind: components["schemas"]["JournalKindEnum"];
+            /**
+             * Format: date-time
+             * @description The journal's order, latest first.
+             */
+            activity_at: string;
+            /** @description Set when `kind` is check_in. */
+            check_in: components["schemas"]["FeedItemOut"] | null;
+            /** @description Set when `kind` is spin. */
+            spin: components["schemas"]["SpinItemOut"] | null;
+        };
+        /**
+         * @description * `check_in` - check_in
+         *     * `spin` - spin
+         * @enum {string}
+         */
+        JournalKindEnum: "check_in" | "spin";
+        JournalPageOut: {
+            results: components["schemas"]["JournalEntryOut"][];
+            /** @description Send as `cursor` for the next page. */
+            next: string | null;
         };
         LoginInRequest: {
             username: string;
@@ -1040,6 +1171,13 @@ export interface components {
         NeedKindEnum: "count" | "amount";
         /** @enum {unknown} */
         NullEnum: null;
+        OwedOut: {
+            to_spin: number;
+            /** @description Drawn, not served yet. */
+            to_serve: number;
+            /** @description Not served yet, oldest window first. */
+            spins: components["schemas"]["SpinOut"][];
+        };
         PaginatedFeedItemOutList: {
             results: components["schemas"]["FeedItemOut"][];
             next: string | null;
@@ -1224,6 +1362,89 @@ export interface components {
              */
             period_start: string;
         };
+        /** @description A drawn spin in the crew's journal: who drew what, and how it is going. */
+        SpinItemOut: {
+            /**
+             * Format: uuid
+             * @description The spin.
+             */
+            id: string;
+            member: components["schemas"]["PersonOut"];
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            /**
+             * Format: date
+             * @description The crew-local day it was drawn.
+             */
+            day: string;
+            /** Format: date */
+            window_first: string;
+            /** Format: date */
+            window_last: string;
+            need_kind: components["schemas"]["NeedKindEnum"];
+            /** Format: double */
+            need: number;
+            /** Format: double */
+            done: number;
+            punishment: components["schemas"]["PunishmentOut"];
+            /** @description Arcs on the dial. */
+            punishment_count: number;
+            state: components["schemas"]["DrawnSpinStateEnum"];
+            /** Format: date */
+            serve_by: string;
+            late: boolean;
+            /** @description Processing and ready proofs. */
+            proofs: components["schemas"]["ProofOut"][];
+            reactions: components["schemas"]["ReactionSummaryOut"];
+            /** @description The crew's whole day, for its divider. */
+            day_summary: components["schemas"]["DaySummaryOut"];
+        };
+        /** @description One of my spins: what it is for, the dial's punishments, and what was drawn. */
+        SpinOut: {
+            /** Format: uuid */
+            id: string;
+            challenge: components["schemas"]["ChallengeBriefOut"];
+            need_kind: components["schemas"]["NeedKindEnum"];
+            /**
+             * Format: date
+             * @description The failed window it came from.
+             */
+            window_first: string;
+            /** Format: date */
+            window_last: string;
+            /**
+             * Format: double
+             * @description What the window asked for.
+             */
+            need: number;
+            /**
+             * Format: double
+             * @description What was done in it.
+             */
+            done: number;
+            /** @description The dial: every punishment, by position. */
+            punishments: components["schemas"]["PunishmentOut"][];
+            /** @description The one drawn; null until the spin. */
+            punishment: components["schemas"]["PunishmentOut"] | null;
+            state: components["schemas"]["SpinStateEnum"];
+            /** Format: date-time */
+            drawn_at: string | null;
+            /**
+             * Format: date
+             * @description The draw's day + 7.
+             */
+            serve_by: string | null;
+            /** @description Spun, not served, and past `serve_by`. */
+            late: boolean;
+            /** @description My proofs on it, uploads in flight too. */
+            proofs: components["schemas"]["ProofOut"][];
+        };
+        /**
+         * @description * `pending` - pending
+         *     * `spun` - spun
+         *     * `served` - served
+         * @enum {string}
+         */
+        SpinStateEnum: "pending" | "spun" | "served";
         /**
          * @description * `valid` - valid
          *     * `expired` - expired
@@ -1999,6 +2220,28 @@ export interface operations {
             };
         };
     };
+    journal_list: {
+        parameters: {
+            query?: {
+                /** @description `next` of the last page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalPageOut"];
+                };
+            };
+        };
+    };
     me_retrieve: {
         parameters: {
             query?: never;
@@ -2223,7 +2466,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "check_in";
+                target: "check_in" | "spin";
                 target_id: string;
             };
             cookie?: never;
@@ -2250,7 +2493,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "check_in";
+                target: "check_in" | "spin";
                 target_id: string;
             };
             cookie?: never;
@@ -2263,6 +2506,115 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    spins_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwedOut"];
+                };
+            };
+        };
+    };
+    spins_done: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spin_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpinOut"];
+                };
+            };
+        };
+    };
+    spins_draw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spin_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpinOut"];
+                };
+            };
+        };
+    };
+    spins_proofs_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spin_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProofStartInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
+            };
+        };
+    };
+    spins_proofs_resume: {
+        parameters: {
+            query: {
+                fingerprint: string;
+            };
+            header?: never;
+            path: {
+                spin_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
             };
         };
     };

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.checkins import days, selectors, services
+from apps.checkins.models import CheckIn
 from apps.core import clock
 from apps.core.errors import ValidationFailed
 from apps.core.pagination import CursorPagination
@@ -283,6 +284,30 @@ class FeedPagination(CursorPagination):
     ordering = "-activity_at"
 
 
+def feed_items(
+    member: Member, page: list[CheckIn], summaries: dict[date, selectors.DaySummary]
+) -> list[dict[str, Any]]:
+    """Journal items for a page of check-ins from `selectors.feed` (see FeedItemOut)."""
+    details = selectors.feed_details(page)
+    reacted = reactions.summaries(member=member, target="check_in", ids=[c.pk for c in page])
+    return [
+        {
+            "id": c.pk,
+            "member": c.member,
+            "challenge": c.challenge,
+            "day": c.day,
+            "status": c.status,
+            "total": c.amount,
+            "activity_at": c.activity_at,  # type: ignore[attr-defined]
+            "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
+            **feed_detail_data(details[c.pk]),
+            "day_summary": vars(summaries[c.day]),
+            "reactions": asdict(reacted[c.pk]),
+        }
+        for c in page
+    ]
+
+
 class FeedView(APIView):
     permission_classes = [IsCrewMember]
     pagination_class = FeedPagination  # also gives the schema its {results, next} and cursor
@@ -294,25 +319,8 @@ class FeedView(APIView):
         page = paginator.paginate_queryset(selectors.feed(member=_member(request)), request, self)
         assert page is not None  # always paginated
         member = _member(request)
-        details = selectors.feed_details(page)
         summaries = selectors.day_summaries(member=member, on={c.day for c in page})
-        reacted = reactions.summaries(member=member, target="check_in", ids=[c.pk for c in page])
-        items = [
-            {
-                "id": c.pk,
-                "member": c.member,
-                "challenge": c.challenge,
-                "day": c.day,
-                "status": c.status,
-                "total": c.amount,
-                "activity_at": c.activity_at,  # type: ignore[attr-defined]
-                "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
-                **feed_detail_data(details[c.pk]),
-                "day_summary": vars(summaries[c.day]),
-                "reactions": asdict(reacted[c.pk]),
-            }
-            for c in page
-        ]
+        items = feed_items(member, page, summaries)
         return paginator.get_paginated_response(FeedItemOut(items, many=True).data)
 
 

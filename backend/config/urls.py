@@ -20,6 +20,8 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.checkins.api.urls")),
     path("", include("apps.media.api.urls")),
     path("", include("apps.proofs.api.urls")),
+    path("", include("apps.doom.api.urls")),
+    path("", include("apps.journal.api.urls")),
     path("", include("apps.reactions.api.urls")),
 ]
 

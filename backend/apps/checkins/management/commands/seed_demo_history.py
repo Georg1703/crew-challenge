@@ -7,7 +7,9 @@ a day the whole crew finished, misses, partial days, and photos and videos as pr
 day). `--username` is the member the history is built around (the longest streaks, the most
 challenges). Photos are drawn here; videos are copies of the newest video the crew uploaded
 (none uploaded: no videos). Writes rows directly, like seed_demo_challenge, and only with DEBUG.
-Runs once: it stops when the demo challenges exist.
+Runs once: it stops when the demo challenges exist. Two challenges have punishments, so their
+missed days and weeks owe spins (the beat opens them every 15 minutes, or run
+`apps.doom.services.open_spins()` in a shell).
 """
 
 import random
@@ -25,7 +27,7 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 
 from apps.challenges import selectors as challenges
-from apps.challenges.models import Challenge, Participant, PeriodKind
+from apps.challenges.models import Challenge, Participant, PeriodKind, Punishment
 from apps.challenges.windows import windows
 from apps.checkins import days
 from apps.checkins.models import CheckIn, CheckInEntry
@@ -56,6 +58,8 @@ class Spec:
     on_days: int = 0
     need: int = 1  # check-ins each window asks for
     day_min: int | None = None
+    # The wheel's punishments: (text, needs proof). Missed weeks and days then owe spins.
+    punishments: tuple[tuple[str, bool], ...] = ()
 
 
 SPECS = [
@@ -93,6 +97,11 @@ SPECS = [
         who=[0, 2, 4],
         streaks=[4, 2, 6],
         on_days=MON | WED | FRI,
+        punishments=(
+            ("20 de genuflexiuni", True),
+            ("F\u0103r\u0103 telefon dup\u0103 21:00", False),
+            ("Du\u0219 rece, 2 minute", True),
+        ),
     ),
     Spec(
         "Sal\u0103 (demo)",
@@ -105,6 +114,13 @@ SPECS = [
         streaks=[],
         today={3: 2},
         need=3,
+        punishments=(
+            ("Speli vasele disear\u0103", False),
+            ("Plank, 2 minute", True),
+            ("C\u00e2n\u021bi pe video, 30 de secunde", True),
+            ("20 de flot\u0103ri", True),
+            ("F\u0103r\u0103 dulciuri o zi", False),
+        ),
     ),
 ]
 DAYS_LEFT = 24  # every demo challenge ends this many days after today
@@ -224,6 +240,12 @@ class Seeder:
             chosen_at=self.at(start - timedelta(days=1), 20),
         )
         self.media[challenge.pk] = spec.media
+        Punishment.objects.bulk_create(
+            Punishment(
+                crew=self.crew, challenge=challenge, position=n, text=text, proof_required=proof
+            )
+            for n, (text, proof) in enumerate(spec.punishments, start=1)
+        )
         taking_part = [(i, self.members[i]) for i in spec.who if i < len(self.members)]
         for _, member in taking_part:
             Participant.objects.create(crew=self.crew, challenge=challenge, member=member)

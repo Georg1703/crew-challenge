@@ -35,7 +35,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `Transcode` (`hls_key`, `poster_key`) | Processed versions of a video for playback (HLS 720p/360p + poster image), made by a MediaConvert job that Celery polls. |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for a proof's upload to finish (`Upload.expires_at`). |
-| Feed | `selectors.feed` | The crew's check-ins with their proofs on challenges you can see, latest activity first (the check-in or its newest proof). Derived, nothing stored. UI: "Activitate" on Echipa. |
+| Feed | `selectors.feed` | The crew's check-ins with their proofs on challenges you can see, latest activity first (the check-in or its newest proof). Derived, nothing stored. UI: "Activitate" on Echipa. Becomes part of the journal. |
+| Journal | `apps/journal` | The feed with drawn spins in it: check-ins and spins, latest activity first. Derived, nothing stored. |
 | Day sheet | `selectors.day_sheet` | One day of a challenge: every participant's state, total and proofs. Opened by tapping a day on the board. |
 | Streak | `days.streak` | Per challenge: windows met in a row (due days, or weeks), counting back from the newest; the window still open today never breaks it. Challenges judged over the whole period have progress instead. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |
@@ -47,4 +48,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`check_in` now). |
 | Punishment | `Punishment` | One of a challenge's punishments: a short text and whether it needs proof. None, or 2 to 8, written by the creator; fixed once scheduled. |
 | Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
+| Draw | `doom.services.draw` | Choosing a spin's punishment on the server, before the dial turns. Every punishment as likely. |
+| Serve by | `Spin.serve_by` | The last day to serve a drawn punishment: the draw's crew-local day + 7. After it the spin is late. |
+| Served | - | A drawn punishment with a proof the crew can see, or "Done" when it needs no proof. Derived. |
 | Wheel of Doom | `doom` app | Punishments for failed windows: spins are owed, drawn on the server, then served with proof (`docs/plans/wheel.md`). |

@@ -45,7 +45,8 @@ falls back to it whenever a poster fails to load. Uploads that miss their grace 
 Celery job. The crew watches through CloudFront, which one set of signed cookies opens per crew.
 
 **Midnight judgment.** Celery beat runs idempotent jobs in each crew's time zone: mark missed
-days, expire stuck uploads, reset streaks, create pending spins, send push notifications.
+days, expire stuck uploads, reset streaks, open the spins owed for failed windows (every 15
+minutes), send push notifications.
 
 ## Where code goes
 

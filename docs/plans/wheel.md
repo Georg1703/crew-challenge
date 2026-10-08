@@ -1,6 +1,6 @@
 # Plan: Wheel of Doom, punishments and generic proofs
 
-Status: stages 0-3 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
+Status: stages 0-4 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
 commit per stage, committed after the owner's review. Screens: design C
 ("The dial") on the design canvas (private, the owner's):
 https://claude.ai/artifact/7UG7dkUWgTWXq3Mist9Xx9
@@ -48,7 +48,7 @@ Punishment, Spin and Wheel of Doom. Wilted trees and Web Push stay after v1.
 | Serving | Within 7 days of the draw (`serve_by`); after that the card says "Late". No other penalty in v1. |
 | Today card | Shows while anything is owed ("2 spins - 1 proof to add"), right under the day ring card, above the challenge cards; at the top when there is no ring. |
 | Journal | One item per spin, posted when drawn; its proofs attach to it and move it to the top, like a check-in's. The crew can react. Seen by the challenge's participants and admins. |
-| Proofs on a spin | Same as check-ins: up to 5, photo or video, straight to storage, removable on the day they were added. Allowed any day until served. |
+| Proofs on a spin | Same as check-ins: up to 5, photo or video, straight to storage, removable on the day they were added. Any day; the first one the crew can see serves it. |
 | Proof model | One generic `Proof` for any subject (a check-in, a spin), in its own app. |
 | Screens | Design C: a dial (the day ring's shape) with one arc per punishment. |
 
@@ -109,7 +109,7 @@ Proof (proofs; table stays checkins_proof)
 
 ```
 window closes (crew midnight)
-  -> doom.open_spins (Celery beat, hourly, idempotent)
+  -> doom.open_spins (Celery beat, every 15 minutes, idempotent)
        for each chosen challenge with punishments, each participant (leavers too),
        each window with last < today: judge(); failed -> spins 1..k (k = missing check-ins,
        or 1 for a total); bulk insert, ignoring the ones that exist (unique constraint)
@@ -121,8 +121,8 @@ window closes (crew midnight)
      no proof: POST /spins/{id}/done -> served
 ```
 
-The task judges every closed window of the challenges it covers each hour. That is a few hundred
-small judgements for a family crew; it gets a "last judged" marker if crews grow.
+The task judges every closed window of the challenges it covers on each run. That is a few
+hundred small judgements for a family crew; it gets a "last judged" marker if crews grow.
 
 ## API (end state)
 
@@ -140,9 +140,9 @@ small judgements for a family crew; it gets a "last judged" marker if crews grow
 `GET /api/v1/feed` stays one release beside the journal so a phone with the previous app keeps a
 working feed during a deploy, then goes (stage 6).
 
-Errors (new codes): `spin_not_found` (404), `already_served` (409), `proof_not_needed` (409, proof
-or "Done" on the wrong kind of punishment), `not_drawn` (409), `punishments_count` (validation,
-1 punishment or more than 8).
+Errors (new codes): `spin_not_found` (404), `not_drawn` (409), `proof_needed` (409, "Done" on a
+punishment that needs proof), `proof_not_needed` (409, a proof on one that does not). The count
+of punishments is a field error (`punishments`) of `validation_failed`.
 
 ## Screens (design C)
 
@@ -179,7 +179,7 @@ columns go in two releases.
 | 1. Proof yes or no | `feat/proof-yes-no` | Challenges ask "Proof?" yes or no; photo or video always | S |
 | 2. Generic proofs | `refactor/generic-proofs` | One `Proof` model in `apps/proofs` for any subject; check-ins use it; nothing changes for people | L |
 | 3. Punishments | `feat/punishments` | The wizard asks for punishments; the challenge page shows them | M |
-| 4. Spins (backend) | `feat/spins` | Spins open when windows fail; draw, done, spin proofs, journal and reactions in the API | L |
+| 4. Spins (backend) | `feat/spins` | Spins open when windows fail; draw, done, spin proofs, the journal and reactions in the API | L |
 | 5. Wheel screens | `feat/wheel-screens` | Today card, spins page with the dial, journal spin cards | L |
 | 6. Clean-up | `chore/drop-old-feed` | The old feed endpoint and the old proof columns are gone; deployed a release after 1-5 | S |
 
@@ -261,26 +261,32 @@ columns go in two releases.
   editing replaces them and resets votes only when they changed, a scheduled challenge cannot be
   edited, the API round trip; the wizard step (one is refused, two are sent) and the list.
 
-### Stage 4 - Spins (backend)
+### Stage 4 - Spins (backend) - done
 
-- New app `apps/doom` (named in `backend/AGENTS.md`): `Spin`, services `open_spins` (beat, hourly),
-  `draw`, `serve_without_proof`, `start_spin_proof`; selectors `open_spins_of(member)`,
-  `journal_spins(member)`, `reactable_spin`; registered as a reaction target (`spin`) and a proof
-  subject (`GenericRelation`).
-- Journal: `checkins/journal.py` holds a small registry of journal sources (check-ins register
-  themselves, doom registers spins), like reaction targets: each source gives its items' ids and
-  `activity_at` for the member; `GET /api/v1/journal` merges them in one cursor-paged query and
-  loads each page per source. `day_summary` stays the check-ins' (spins show as their own cards).
-- import-linter: doom builds on check-ins and proofs; nothing below imports doom.
+- New app `apps/doom` (named in `backend/AGENTS.md`): `Spin` (migration `0001_initial`), services
+  `open_spins` (beat every 15 minutes), `draw` (takes an `rng` for tests), `mark_done`,
+  `start_proof`, `resume_proof`; selectors `owed` (my open spins and the counts), `mine`,
+  `journal`, `reactable_spin`, `state`, `late`; a reaction target (`spin`) and a proof subject
+  (`GenericRelation`, `related_query_name="spin"`). Locks use `select_for_update(of=("self",))`
+  (Postgres refuses to lock the empty side of the outer join to the punishment).
+- Journal: its own app, `apps/journal`, not a registry in check-ins: its API schema has to name
+  both item shapes, and check-ins may not import the wheel. Each kind pages its own rows after the
+  cursor (`activity_at`, id), the page is merged in Python (Django cannot filter a union), and
+  `GET /api/v1/journal` answers `{kind, activity_at, check_in | spin}`. Check-in items are the
+  feed's (`feed_items`, now shared with `/feed`); spin items carry the punishment, the number of
+  arcs, the state, `serve_by`, late, shown proofs, reactions and the day's summary.
+- import-linter: doom builds on check-ins and proofs, the journal on doom; nothing below imports
+  either.
+- Seed: two demo challenges (`seed_demo_history`) have punishments, so local data owes spins.
 - Tests:
   - opening: a failed week opens one spin per missing check-in, a missed total opens one, a met
     window none, a challenge without punishments none; running twice opens nothing new; the window
     closes at crew midnight (23:59 / 00:01) and on the DST day (October 25, 2026); a leaver's cut
     window; windows after the challenge ended;
-  - drawing: only my own pending spin; repeat-safe; equal odds (many draws with a seeded random
-    source); `serve_by` = draw day + 7 in the crew's time zone; late after it;
+  - drawing: only my own pending spin; repeat-safe; the pick comes from the random source (equal
+    odds are `random.choice`'s); `serve_by` = draw day + 7 in the crew's time zone; late after it;
   - serving: a shown proof serves it, removing it un-serves it; "Done" only without proof; proofs
-    only on a drawn spin that needs them, at most 5;
+    only on a drawn spin that needs them; resume on its own spin;
   - journal: spins appear when drawn, ordered with check-ins by activity, visible to participants
     and admins only; reactions on a spin item.
 

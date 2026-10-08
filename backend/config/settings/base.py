@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "apps.checkins",
     "apps.media",
     "apps.proofs",
+    "apps.doom",
+    "apps.journal",
     "apps.reactions",
 ]
 
@@ -150,6 +152,9 @@ SPECTACULAR_SETTINGS = {
         "ProofStatusEnum": "apps.proofs.models.Proof.Status",
         "UploadModeEnum": "apps.media.models.Upload.Mode",
         "VerdictEnum": "apps.checkins.api.serializers.VERDICTS",
+        "SpinStateEnum": "apps.doom.api.serializers.STATES",
+        "DrawnSpinStateEnum": "apps.doom.api.serializers.DRAWN_STATES",
+        "JournalKindEnum": "apps.journal.api.serializers.KINDS",
         # The name the contract had before proofs also brought a "status".
         "StatusEnum": ["valid", "expired", "used"],
     },

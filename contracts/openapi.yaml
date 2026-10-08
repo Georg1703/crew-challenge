@@ -673,6 +673,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeOut'
           description: ''
+  /api/v1/journal:
+    get:
+      operationId: journal_list
+      description: The crew's check-ins and drawn spins, with their proofs, latest
+        activity first.
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+        description: '`next` of the last page.'
+      tags:
+      - journal
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalPageOut'
+          description: ''
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -901,6 +923,7 @@ paths:
           type: string
           enum:
           - check_in
+          - spin
         description: What kind of thing the id is.
         required: true
       - in: path
@@ -936,6 +959,7 @@ paths:
           type: string
           enum:
           - check_in
+          - spin
         description: What kind of thing the id is.
         required: true
       - in: path
@@ -951,6 +975,122 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/spins:
+    get:
+      operationId: spins_list
+      description: My spins not served yet, oldest first, with how many to spin and
+        to serve.
+      tags:
+      - spins
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwedOut'
+          description: ''
+  /api/v1/spins/{spin_id}/done:
+    post:
+      operationId: spins_done
+      description: Serve a drawn punishment that needs no proof.
+      parameters:
+      - in: path
+        name: spin_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - spins
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpinOut'
+          description: ''
+  /api/v1/spins/{spin_id}/draw:
+    post:
+      operationId: spins_draw
+      description: 'Spin: the server draws the punishment (the dial then turns to
+        it). Safe to repeat.'
+      parameters:
+      - in: path
+        name: spin_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - spins
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpinOut'
+          description: ''
+  /api/v1/spins/{spin_id}/proofs:
+    post:
+      operationId: spins_proofs_start
+      description: Add a photo or video to a drawn punishment that needs proof.
+      parameters:
+      - in: path
+        name: spin_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - spins
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofStartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
+  /api/v1/spins/{spin_id}/proofs/resume:
+    get:
+      operationId: spins_proofs_resume
+      description: My unfinished video upload of this file on this spin, or 404.
+      parameters:
+      - in: query
+        name: fingerprint
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: spin_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - spins
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
   /api/v1/today:
     get:
       operationId: today_retrieve
@@ -1486,6 +1626,14 @@ components:
       - check_ins
       - crew_done
       - proofs
+    DrawnSpinStateEnum:
+      enum:
+      - spun
+      - served
+      type: string
+      description: |-
+        * `spun` - spun
+        * `served` - served
     FeedItemOut:
       type: object
       description: 'One check-in: who, on what, which day, and its proofs.'
@@ -1665,6 +1813,52 @@ components:
           maxLength: 40
       required:
       - display_name
+    JournalEntryOut:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/JournalKindEnum'
+        activity_at:
+          type: string
+          format: date-time
+          description: The journal's order, latest first.
+        check_in:
+          allOf:
+          - $ref: '#/components/schemas/FeedItemOut'
+          nullable: true
+          description: Set when `kind` is check_in.
+        spin:
+          allOf:
+          - $ref: '#/components/schemas/SpinItemOut'
+          nullable: true
+          description: Set when `kind` is spin.
+      required:
+      - activity_at
+      - check_in
+      - kind
+      - spin
+    JournalKindEnum:
+      enum:
+      - check_in
+      - spin
+      type: string
+      description: |-
+        * `check_in` - check_in
+        * `spin` - spin
+    JournalPageOut:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalEntryOut'
+        next:
+          type: string
+          nullable: true
+          description: Send as `cursor` for the next page.
+      required:
+      - next
+      - results
     LoginInRequest:
       type: object
       properties:
@@ -1882,6 +2076,23 @@ components:
     NullEnum:
       enum:
       - null
+    OwedOut:
+      type: object
+      properties:
+        to_spin:
+          type: integer
+        to_serve:
+          type: integer
+          description: Drawn, not served yet.
+        spins:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpinOut'
+          description: Not served yet, oldest window first.
+      required:
+      - spins
+      - to_serve
+      - to_spin
     PaginatedFeedItemOutList:
       type: object
       required:
@@ -2285,6 +2496,159 @@ components:
             weeks, any day from tomorrow for days. Its length comes from the challenge.'
       required:
       - period_start
+    SpinItemOut:
+      type: object
+      description: 'A drawn spin in the crew''s journal: who drew what, and how it
+        is going.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The spin.
+        member:
+          $ref: '#/components/schemas/PersonOut'
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        day:
+          type: string
+          format: date
+          description: The crew-local day it was drawn.
+        window_first:
+          type: string
+          format: date
+        window_last:
+          type: string
+          format: date
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        need:
+          type: number
+          format: double
+        done:
+          type: number
+          format: double
+        punishment:
+          $ref: '#/components/schemas/PunishmentOut'
+        punishment_count:
+          type: integer
+          description: Arcs on the dial.
+        state:
+          $ref: '#/components/schemas/DrawnSpinStateEnum'
+        serve_by:
+          type: string
+          format: date
+        late:
+          type: boolean
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Processing and ready proofs.
+        reactions:
+          $ref: '#/components/schemas/ReactionSummaryOut'
+        day_summary:
+          allOf:
+          - $ref: '#/components/schemas/DaySummaryOut'
+          description: The crew's whole day, for its divider.
+      required:
+      - challenge
+      - day
+      - day_summary
+      - done
+      - id
+      - late
+      - member
+      - need
+      - need_kind
+      - proofs
+      - punishment
+      - punishment_count
+      - reactions
+      - serve_by
+      - state
+      - window_first
+      - window_last
+    SpinOut:
+      type: object
+      description: 'One of my spins: what it is for, the dial''s punishments, and
+        what was drawn.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        challenge:
+          $ref: '#/components/schemas/ChallengeBriefOut'
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        window_first:
+          type: string
+          format: date
+          description: The failed window it came from.
+        window_last:
+          type: string
+          format: date
+        need:
+          type: number
+          format: double
+          description: What the window asked for.
+        done:
+          type: number
+          format: double
+          description: What was done in it.
+        punishments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PunishmentOut'
+          description: 'The dial: every punishment, by position.'
+        punishment:
+          allOf:
+          - $ref: '#/components/schemas/PunishmentOut'
+          nullable: true
+          description: The one drawn; null until the spin.
+        state:
+          $ref: '#/components/schemas/SpinStateEnum'
+        drawn_at:
+          type: string
+          format: date-time
+          nullable: true
+        serve_by:
+          type: string
+          format: date
+          nullable: true
+          description: The draw's day + 7.
+        late:
+          type: boolean
+          description: Spun, not served, and past `serve_by`.
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: My proofs on it, uploads in flight too.
+      required:
+      - challenge
+      - done
+      - drawn_at
+      - id
+      - late
+      - need
+      - need_kind
+      - proofs
+      - punishment
+      - punishments
+      - serve_by
+      - state
+      - window_first
+      - window_last
+    SpinStateEnum:
+      enum:
+      - pending
+      - spun
+      - served
+      type: string
+      description: |-
+        * `pending` - pending
+        * `spun` - spun
+        * `served` - served
     StatusEnum:
       enum:
       - valid
