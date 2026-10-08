@@ -35,6 +35,7 @@ async function finishWizard(page: Page, finalButton: string) {
     "Ce notezi la bifă?",
     "Cât de des?",
     "Ce dovadă cerem?",
+    "Pedepse",
     "Verifică",
   ];
   for (const heading of steps) {
@@ -183,7 +184,7 @@ test("a proposal can run for weeks, and an admin starts it on a Monday", async (
   await ana.getByText("Săptămâni", { exact: true }).click();
   for (let n = 0; n < 3; n += 1) await ana.getByRole("button", { name: "Mai mult" }).click();
   await ana.getByText("De câteva ori pe săptămână", { exact: true }).click();
-  for (const heading of ["Ce dovadă cerem?", "Verifică"]) {
+  for (const heading of ["Ce dovadă cerem?", "Pedepse", "Verifică"]) {
     await ana.getByRole("button", { name: "Continuă" }).click();
     await expect(ana.getByRole("heading", { name: heading })).toBeVisible();
   }

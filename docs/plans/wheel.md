@@ -1,6 +1,6 @@
 # Plan: Wheel of Doom, punishments and generic proofs
 
-Status: stages 0-2 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
+Status: stages 0-3 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
 commit per stage, committed after the owner's review. Screens: design C
 ("The dial") on the design canvas (private, the owner's):
 https://claude.ai/artifact/7UG7dkUWgTWXq3Mist9Xx9
@@ -178,10 +178,10 @@ columns go in two releases.
 | 0. Plan and scope | `docs/wheel-plan` | This plan; the wheel is in v1 in the docs | S |
 | 1. Proof yes or no | `feat/proof-yes-no` | Challenges ask "Proof?" yes or no; photo or video always | S |
 | 2. Generic proofs | `refactor/generic-proofs` | One `Proof` model in `apps/proofs` for any subject; check-ins use it; nothing changes for people | L |
-| 3. Punishments | `feat/punishments` | The wizard asks for punishments; the challenge page shows them; old proof columns dropped | M |
+| 3. Punishments | `feat/punishments` | The wizard asks for punishments; the challenge page shows them | M |
 | 4. Spins (backend) | `feat/spins` | Spins open when windows fail; draw, done, spin proofs, journal and reactions in the API | L |
 | 5. Wheel screens | `feat/wheel-screens` | Today card, spins page with the dial, journal spin cards | L |
-| 6. Clean-up | `chore/drop-old-feed` | The old feed endpoint is gone | S |
+| 6. Clean-up | `chore/drop-old-feed` | The old feed endpoint and the old proof columns are gone; deployed a release after 1-5 | S |
 
 ### Stage 0 - Plan and scope
 
@@ -241,22 +241,25 @@ columns go in two releases.
   and works after midnight; the tile tests moved to `features/proofs`. The migrations ran forward
   and back on a scratch database with a proof (filled, a new row without `check_in`, restored).
 
-### Stage 3 - Punishments
+### Stage 3 - Punishments - done
 
 - `Punishment` model (challenge, position, text, proof_required) with a check constraint
   (position 1-8) and a unique key (challenge, position). `clean_shape`: none or 2-8 items, text
-  1-80 characters (trimmed, no duplicates), `proof_required` boolean. `propose_challenge` and
-  `update_proposal` write them; editing a proposal replaces them as a whole. The challenge API
-  embeds them (`position`, `text`, `proof_required`).
-- Wizard step "Punishments" after "Proof"; the challenge page lists them; the proposal summary
-  says how many.
-- Migrations that finish earlier stages (the previous release no longer reads these columns):
-  drop `challenges_challenge.proof_kind`; fill `subject` again for proofs started during the stage 2
-  deploy, make it required, drop `checkins_proof.check_in_id`.
-- Removed: the `proof_kind` column, the proof's `check_in` column.
-- Tests: the shape (0, 1, 2, 8, 9 items; blank, long and repeated texts), the constraints, editing
-  a proposal replaces its punishments and resets its votes, a scheduled challenge's punishments
-  cannot change, deleting a proposal deletes them.
+  1-80 characters (trimmed, no duplicates ignoring case), `proof_required` boolean.
+  `propose_challenge` and `edit_proposal` write them (migration `0015_punishments`); editing a
+  proposal replaces them as a whole and, when they changed, resets the votes. The challenge API
+  takes and returns them (`position`, `text`, `proof_required`); lists load them in one query. The
+  admin shows them read only.
+- Wizard step "Punishments" after "What proof?" (design D3: a card per punishment with its text,
+  "Needs a photo or video" and remove; "Add a punishment" up to 8; "2 of 8"); it refuses a single
+  one, a blank one and repeats before moving on. The summary says how many; the challenge page
+  lists them, numbered, with how each is served.
+- The old columns (`proof_kind`, the proof's `check_in`) were to go here; they move to stage 6.
+  The branch may be deployed in one go, and then the release before it (main) still reads them
+  during the deploy: they can only go in a later deploy.
+- Tests: the shape (0, 1, 2, 8, 9 items; blank, long and repeated texts), the database constraints,
+  editing replaces them and resets votes only when they changed, a scheduled challenge cannot be
+  edited, the API round trip; the wizard step (one is refused, two are sent) and the list.
 
 ### Stage 4 - Spins (backend)
 
@@ -293,8 +296,13 @@ columns go in two releases.
 
 ### Stage 6 - Clean-up
 
+- Deployed only after stages 1-5 are live (a release later), because the release before them
+  still reads what this removes.
 - Removed: `GET /api/v1/feed`, `FeedView`, `useFeed` and its test fixtures (the journal replaced
   them a release ago).
+- Migrations: drop `challenges_challenge.proof_kind`; fill `member` and `subject` again for proofs
+  the old release started during the deploy (raw SQL from `check_in_id`), then, in a migration of
+  its own, make them required and drop `checkins_proof.check_in_id`.
 
 ## Removal checklist
 
@@ -305,7 +313,7 @@ columns go in two releases.
 | Proof services, views, tasks and tests in `apps/checkins` (done) | backend | 2 |
 | `Proof.check_in` in the model (done) | backend | 2 |
 | `features/checkins/uploads`, `ProofRow` (done) | frontend | 2 |
-| `proof_kind` and `checkins_proof.check_in_id` columns | migrations | 3 |
+| `proof_kind` and `checkins_proof.check_in_id` columns | migrations | 6 |
 | `GET /api/v1/feed`, `FeedView`, `useFeed` | backend, frontend | 6 |
 
 ## Out of scope

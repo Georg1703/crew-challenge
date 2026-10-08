@@ -173,3 +173,26 @@
   font-weight: var(--weight-bold);
   line-height: var(--leading-small);
 }
+
+/* A punishment in the wizard: its text with the remove button beside it. */
+.punishmentHead {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.punishmentHead > :first-child {
+  flex-grow: 1;
+}
+
+/* A punishment's number on the challenge page: its place on the dial. */
+.punishmentNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--avatar-md);
+  height: var(--avatar-md);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  font-weight: var(--weight-bold);
+}

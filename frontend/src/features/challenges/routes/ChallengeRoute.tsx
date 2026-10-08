@@ -306,6 +306,26 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
         <ChallengeWindows challengeId={challenge.id} rule={challenge} />
       )}
 
+      {challenge.punishments.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("challenges.punishments.title")}</h2>
+          <List label={t("challenges.punishments.title")}>
+            {challenge.punishments.map((p) => (
+              <ListRow
+                key={p.position}
+                leading={<span className={styles.punishmentNumber}>{p.position}</span>}
+                title={p.text}
+                subtitle={t(
+                  p.proof_required
+                    ? "challenges.punishments.withProof"
+                    : "challenges.punishments.withDone",
+                )}
+              />
+            ))}
+          </List>
+        </section>
+      )}
+
       {canCheckIn && (
         <Button
           size="lg"

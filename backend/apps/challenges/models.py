@@ -179,6 +179,33 @@ class Challenge(CrewScopedSoftDeleteModel):
         return self.title
 
 
+class Punishment(CrewScopedModel):
+    """One of a challenge's punishments: none, or 2 to 8. Written by its creator with the proposal
+    (replaced as a whole while it is one) and fixed once scheduled; the wheel draws one per spin."""
+
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="punishments")
+    position = models.PositiveSmallIntegerField(help_text="1 to 8: its number on the dial.")
+    text = models.CharField(max_length=80)
+    proof_required = models.BooleanField(
+        default=False, help_text="Served with a photo or a video; else by tapping Done."
+    )
+
+    class Meta:
+        ordering = ("position",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["challenge", "position"], name="punishment_position_once"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1, position__lte=8),
+                name="punishment_position_1_to_8",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.position}. {self.text}"
+
+
 class Vote(CrewScopedModel):
     """A member likes a proposal. A member votes for as many proposals as they want, once each."""
 

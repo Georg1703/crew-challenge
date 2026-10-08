@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from django.db import transaction
@@ -26,13 +26,15 @@ from apps.crews.models import Crew, Member
 from apps.crews.services import require_admin
 
 from . import periods
-from .models import ICONS, Challenge, Participant, PeriodKind, Vote
+from .models import ICONS, Challenge, Participant, PeriodKind, Punishment, Vote
 
 TITLE_MAX = 60
 RULES_MAX = 500
 UNIT_MAX = 20
 AMOUNT_MAX = Decimal(10**8)
 MONTHS_AHEAD = 12
+PUNISHMENTS_MAX = 8  # and at least 2, or none: one would be no draw
+PUNISHMENT_MAX = 80  # characters
 # How long a challenge can run, in each unit of its length.
 LENGTH_MAX = {PeriodKind.MONTH: 12, PeriodKind.WEEK: 52, PeriodKind.DAY: 365}
 # The most days a unit can have (a period count can ask for at most one check-in a day).
@@ -97,6 +99,11 @@ class NotChosenYet(Conflict):
 # --- the shape of a challenge ------------------------------------------------------------------
 
 
+class PunishmentShape(NamedTuple):
+    text: str
+    proof_required: bool
+
+
 @dataclass(frozen=True)
 class Shape:
     """Everything the creator decides. Validated by `clean_shape`."""
@@ -114,6 +121,7 @@ class Shape:
     period_kind: str = PeriodKind.MONTH
     period_length: int = 1
     proof_required: bool = False
+    punishments: tuple[PunishmentShape, ...] = ()
 
 
 def clean_shape(raw: dict[str, Any]) -> Shape:
@@ -198,6 +206,17 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
 
     proof_required = bool(raw.get("proof_required"))
 
+    punishments = tuple(
+        PunishmentShape(str(p.get("text", "")).strip(), bool(p.get("proof_required")))
+        for p in raw.get("punishments") or []
+    )
+    if len(punishments) == 1 or len(punishments) > PUNISHMENTS_MAX:
+        bad("punishments", "Add 2 to 8 punishments, or none.")
+    if any(not p.text or len(p.text) > PUNISHMENT_MAX for p in punishments):
+        bad("punishments", "Write each punishment in 1 to 80 characters.")
+    if len({p.text.casefold() for p in punishments}) < len(punishments):
+        bad("punishments", "Each punishment must be different.")
+
     if errors:
         raise ValidationFailed(fields=errors)
     return Shape(
@@ -214,6 +233,7 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         period_kind=period_kind,
         period_length=period_length,
         proof_required=proof_required,
+        punishments=punishments,
     )
 
 
@@ -227,8 +247,32 @@ def _positive(value: Any) -> Decimal | None:
 
 
 def _apply(challenge: Challenge, shape: Shape) -> None:
+    """Set the challenge's fields; its punishments are rows of their own (`_set_punishments`)."""
     for field, value in shape.__dict__.items():
-        setattr(challenge, field, value)
+        if field != "punishments":
+            setattr(challenge, field, value)
+
+
+def _punishments_of(challenge: Challenge) -> tuple[PunishmentShape, ...]:
+    return tuple(
+        PunishmentShape(p.text, p.proof_required)
+        for p in Punishment.objects.filter(challenge=challenge).order_by("position")
+    )
+
+
+def _set_punishments(challenge: Challenge, punishments: tuple[PunishmentShape, ...]) -> None:
+    """Replace them as a whole: only a proposal changes, and no spin can point at them yet."""
+    Punishment.objects.filter(challenge=challenge).delete()
+    Punishment.objects.bulk_create(
+        Punishment(
+            crew_id=challenge.crew_id,
+            challenge=challenge,
+            position=position,
+            text=p.text,
+            proof_required=p.proof_required,
+        )
+        for position, p in enumerate(punishments, start=1)
+    )
 
 
 # --- the pool ----------------------------------------------------------------------------------
@@ -298,6 +342,7 @@ def propose_challenge(
     challenge = Challenge(crew=crew, created_by=by)
     _apply(challenge, cleaned)
     challenge.save()
+    _set_punishments(challenge, cleaned.punishments)
     _set_participants(challenge, by, chosen)
     return challenge
 
@@ -320,10 +365,15 @@ def edit_proposal(
     if challenge.created_by_id != by.pk:
         raise NotYourProposal()
     _require_proposed(challenge)
-    if any(getattr(challenge, field) != value for field, value in cleaned.__dict__.items()):
+    fields = {k: v for k, v in cleaned.__dict__.items() if k != "punishments"}
+    if (
+        any(getattr(challenge, field) != value for field, value in fields.items())
+        or _punishments_of(challenge) != cleaned.punishments
+    ):
         _apply(challenge, cleaned)
         challenge.revision += 1
         challenge.save()
+        _set_punishments(challenge, cleaned.punishments)
         Vote.objects.filter(challenge=challenge).delete()
     if participant_ids is not None:
         _set_participants(challenge, by, _crew_member_ids(by.crew, participant_ids))

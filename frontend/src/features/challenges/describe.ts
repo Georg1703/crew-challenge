@@ -110,6 +110,13 @@ export function describeProof(t: TFunction, shape: Pick<Shape, "proof_required">
   return t(shape.proof_required ? "challenges.describe.proof.yes" : "challenges.describe.proof.no");
 }
 
+/** "3 punishments", "None" */
+export function describePunishments(t: TFunction, count: number) {
+  return count
+    ? t("challenges.describe.punishments", { count })
+    : t("challenges.describe.noPunishments");
+}
+
 /** One short line for lists: "1 month · Every day · 50 push-ups each check-in · Photo or video". */
 export function summaryLine(t: TFunction, shape: Shape, language: string) {
   return [

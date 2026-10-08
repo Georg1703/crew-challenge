@@ -281,3 +281,27 @@ def test_a_proposal_says_how_long_and_the_admin_picks_the_monday(browser, people
         "2026-11-02",
         "2026-11-29",
     )
+
+
+def test_punishments_go_in_with_the_proposal_and_come_back_numbered(browser, people):
+    admin, member = people
+    client = as_member(browser, member)
+    punishments = [
+        {"text": "20 burpees", "proof_required": True},
+        {"text": "No phone after 21:00"},
+    ]
+    created = client.post(
+        "/api/v1/challenges", {**SHAPE, "punishments": punishments}, format="json"
+    )
+    assert created.json()["punishments"] == [
+        {"position": 1, "text": "20 burpees", "proof_required": True},
+        {"position": 2, "text": "No phone after 21:00", "proof_required": False},
+    ]
+    pool = as_member(browser, admin).get("/api/v1/proposals").json()["proposals"]
+    assert [p["text"] for p in pool[0]["punishments"]] == ["20 burpees", "No phone after 21:00"]
+
+    one = client.post(
+        "/api/v1/challenges", {**SHAPE, "punishments": punishments[:1]}, format="json"
+    )
+    assert one.status_code == 400
+    assert "punishments" in one.json()["error"]["fields"]

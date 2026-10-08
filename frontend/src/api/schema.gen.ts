@@ -691,6 +691,8 @@ export interface components {
              * @default false
              */
             proof_required: boolean;
+            /** @description None, or 2 to 8, in their order on the dial. Editing replaces them all. */
+            punishments?: components["schemas"]["PunishmentInRequest"][];
             /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
             participant_ids?: string[] | null;
         };
@@ -711,6 +713,8 @@ export interface components {
             day_min: number | null;
             /** @description A photo or a video with each check-in; false: no proof. */
             proof_required: boolean;
+            /** @description None, or 2 to 8, by position. */
+            punishments: components["schemas"]["PunishmentOut"][];
             state: components["schemas"]["ChallengeStateEnum"];
             phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
             period_kind: components["schemas"]["PeriodKindEnum"];
@@ -1181,6 +1185,22 @@ export interface components {
             parts: components["schemas"]["PartOut"][];
             /** @description PUT the thumbnail here, Content-Type image/jpeg. */
             thumb_put_url: string | null;
+        };
+        PunishmentInRequest: {
+            /** @description 1 to 80 characters (checked with the shape). */
+            text: string;
+            /**
+             * @description Served with a photo or a video; false: by tapping Done.
+             * @default false
+             */
+            proof_required: boolean;
+        };
+        PunishmentOut: {
+            /** @description 1 to 8: its number on the dial. */
+            position: number;
+            text: string;
+            /** @description Served with a photo or a video; false: by tapping Done. */
+            proof_required: boolean;
         };
         ReactionGroupOut: {
             emoji: string;

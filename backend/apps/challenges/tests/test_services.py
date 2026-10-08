@@ -6,7 +6,7 @@ import time_machine
 from django.db import IntegrityError, transaction
 
 from apps.challenges import periods, selectors, services
-from apps.challenges.models import Challenge, Participant, Vote
+from apps.challenges.models import Challenge, Participant, Punishment, Vote
 from apps.challenges.windows import windows
 from apps.core.errors import PermissionDenied, ValidationFailed
 from apps.crews import services as crews
@@ -200,6 +200,75 @@ def test_editing_resets_the_votes_and_only_the_creator_may(crew):
     assert Vote.objects.filter(challenge=other).count() == 1  # other proposals keep theirs
 
 
+def punishment(text, proof=False):
+    return {"text": text, "proof_required": proof}
+
+
+TWO = [punishment(" 20 burpees ", proof=True), punishment("Cold shower")]
+
+
+@pytest.mark.parametrize(("count", "ok"), [(0, True), (1, False), (2, True), (8, True), (9, False)])
+def test_a_challenge_has_no_punishments_or_two_to_eight(count, ok):
+    shape = {**PUSHUPS, "punishments": [punishment(f"Plank {n}") for n in range(count)]}
+    if ok:
+        assert len(services.clean_shape(shape).punishments) == count
+    else:
+        with pytest.raises(ValidationFailed) as error:
+            services.clean_shape(shape)
+        assert "punishments" in error.value.fields
+
+
+@pytest.mark.parametrize(
+    "punishments",
+    [
+        [punishment(""), punishment("Plank")],
+        [punishment("x" * 81), punishment("Plank")],
+        [punishment("Plank"), punishment(" plank ")],  # the same, ignoring case and spaces
+    ],
+)
+def test_each_punishment_is_written_and_different(punishments):
+    with pytest.raises(ValidationFailed) as error:
+        services.clean_shape({**PUSHUPS, "punishments": punishments})
+    assert "punishments" in error.value.fields
+
+
+def test_punishments_are_kept_in_order_and_replaced_by_an_edit(crew):
+    admin, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape={**PUSHUPS, "punishments": TWO})
+    rows = list(Punishment.objects.filter(challenge=proposal))
+    assert [(p.position, p.text, p.proof_required) for p in rows] == [
+        (1, "20 burpees", True),
+        (2, "Cold shower", False),
+    ]
+    services.cast_vote(by=admin, challenge_id=proposal.pk)
+    same = services.edit_proposal(
+        by=bogdan, challenge_id=proposal.pk, shape={**PUSHUPS, "punishments": TWO}
+    )
+    assert same.revision == 1  # nothing changed: the votes stay
+    assert Vote.objects.filter(challenge=proposal).count() == 1
+
+    edited = services.edit_proposal(
+        by=bogdan,
+        challenge_id=proposal.pk,
+        shape={**PUSHUPS, "punishments": [*TWO, punishment("Sing on video", proof=True)]},
+    )
+    assert edited.revision == 2
+    assert not Vote.objects.filter(challenge=proposal).exists()
+    assert Punishment.objects.filter(challenge=proposal).count() == 3
+    services.edit_proposal(by=bogdan, challenge_id=proposal.pk, shape=PUSHUPS)
+    assert not Punishment.objects.filter(challenge=proposal).exists()  # none is fine too
+
+
+def test_the_database_keeps_positions_one_to_eight_and_unique(crew):
+    _, bogdan, _ = crew
+    proposal = services.propose_challenge(by=bogdan, shape={**PUSHUPS, "punishments": TWO})
+    for position in (9, 2):  # out of range, then taken
+        with transaction.atomic(), pytest.raises(IntegrityError):
+            Punishment.objects.create(
+                crew=bogdan.crew, challenge=proposal, position=position, text="Plank"
+            )
+
+
 def test_withdrawing_is_a_soft_delete_by_the_creator_or_an_admin(crew):
     admin, bogdan, cristina = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
@@ -230,6 +299,7 @@ def test_a_scheduled_challenge_cannot_be_edited_withdrawn_or_voted_on(crew):
     ):
         with pytest.raises(services.NotAProposal):
             action()
+    assert Punishment.objects.filter(challenge=chosen).count() == 0  # as proposed: none
 
 
 def test_other_crews_cannot_see_or_touch_a_proposal(crew):

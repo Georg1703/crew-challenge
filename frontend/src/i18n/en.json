@@ -266,7 +266,8 @@
       "record": "What you record",
       "target": "Target",
       "proof": "Proof",
-      "who": "Who takes part"
+      "who": "Who takes part",
+      "punishments": "Punishments"
     },
     "participantsTitle": "Taking part",
     "leftOn": "Left on {{date}}",
@@ -305,6 +306,9 @@
       },
       "who": {
         "title": "Who takes part?"
+      },
+      "punishments": {
+        "title": "Punishments"
       }
     },
     "fields": {
@@ -422,7 +426,11 @@
         "day_one": "1 day",
         "day_few": "{{count}} days",
         "day_other": "{{count}} days"
-      }
+      },
+      "punishments_one": "{{count}} punishment",
+      "punishments_few": "{{count}} punishments",
+      "punishments_other": "{{count}} punishments",
+      "noPunishments": "None"
     },
     "icons": {
       "dumbbell": "Gym",
@@ -473,7 +481,10 @@
       "unit": "Write the unit, for example km.",
       "number": "Write a number above zero.",
       "weekNeedsDays": "A weekly challenge needs at least 7 days.",
-      "monthNeedsMonths": "For a rule per month, choose 2 months or more."
+      "monthNeedsMonths": "For a rule per month, choose 2 months or more.",
+      "punishmentsCount": "Add one more, or remove it: the wheel needs at least 2.",
+      "punishmentText": "Write each punishment.",
+      "punishmentSame": "Each punishment must be different."
     },
     "today": {
       "chooseTitle": "No challenge for {{month}} yet",
@@ -552,7 +563,18 @@
       "day_few": "{{count}} days",
       "day_other": "{{count}} days"
     },
-    "range": "{{from}} – {{to}}"
+    "range": "{{from}} – {{to}}",
+    "punishments": {
+      "intro": "None, or 2 to 8. For each missing check-in, the wheel draws one.",
+      "label": "Punishment {{n}}",
+      "remove": "Remove punishment {{n}}",
+      "proof": "Needs a photo or video",
+      "add": "Add a punishment",
+      "count": "{{n}} of {{max}}",
+      "title": "Punishments",
+      "withProof": "Served with a photo or video",
+      "withDone": "Served with a tap on Done"
+    }
   },
   "checkins": {
     "today": "today",

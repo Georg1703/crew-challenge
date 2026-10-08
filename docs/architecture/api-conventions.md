@@ -114,7 +114,8 @@ POST   /api/v1/invites/{code}/accept    public: {username, password, display_nam
 
 GET    /api/v1/proposals                the pool: proposals (newest first) with votes, size, limit
 GET    /api/v1/challenges?phase=...     scheduled challenges: upcoming, active, finished
-POST   /api/v1/challenges               propose into the pool, {participant_ids?} -> 201 (409 pool_full)
+POST   /api/v1/challenges               propose into the pool, {participant_ids?, punishments?}
+                                        -> 201 (409 pool_full); punishments: none or 2-8
 GET    /api/v1/challenges/{id}          one challenge with participants
 PUT    /api/v1/challenges/{id}          creator: replace a proposal (resets its votes)
 DELETE /api/v1/challenges/{id}          creator or admin: withdraw a proposal (soft delete)

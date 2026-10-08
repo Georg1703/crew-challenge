@@ -266,7 +266,8 @@
       "record": "Ce notezi",
       "target": "Ținta",
       "proof": "Dovada",
-      "who": "Cine participă"
+      "who": "Cine participă",
+      "punishments": "Pedepse"
     },
     "participantsTitle": "Participă",
     "leftOn": "A ieșit pe {{date}}",
@@ -305,6 +306,9 @@
       },
       "who": {
         "title": "Cine participă?"
+      },
+      "punishments": {
+        "title": "Pedepse"
       }
     },
     "fields": {
@@ -422,7 +426,11 @@
         "day_one": "o zi",
         "day_few": "{{count}} zile",
         "day_other": "{{count}} de zile"
-      }
+      },
+      "punishments_one": "{{count}} pedeapsă",
+      "punishments_few": "{{count}} pedepse",
+      "punishments_other": "{{count}} de pedepse",
+      "noPunishments": "Niciuna"
     },
     "icons": {
       "dumbbell": "Sală",
@@ -473,7 +481,10 @@
       "unit": "Scrie unitatea, de exemplu km.",
       "number": "Scrie un număr mai mare ca zero.",
       "weekNeedsDays": "O provocare pe săptămână are nevoie de cel puțin 7 zile.",
-      "monthNeedsMonths": "Pentru o regulă pe lună, alege cel puțin 2 luni."
+      "monthNeedsMonths": "Pentru o regulă pe lună, alege cel puțin 2 luni.",
+      "punishmentsCount": "Mai adaugă una sau șterge-o: roata are nevoie de cel puțin 2.",
+      "punishmentText": "Scrie fiecare pedeapsă.",
+      "punishmentSame": "Pedepsele trebuie să fie diferite."
     },
     "today": {
       "chooseTitle": "Încă nu e nicio provocare pentru {{month}}",
@@ -552,7 +563,18 @@
       "day_few": "{{count}} zile",
       "day_other": "{{count}} de zile"
     },
-    "range": "{{from}} – {{to}}"
+    "range": "{{from}} – {{to}}",
+    "punishments": {
+      "intro": "Niciuna, sau între 2 și 8. Pentru fiecare bifă lipsă, roata alege una.",
+      "label": "Pedeapsa {{n}}",
+      "remove": "Șterge pedeapsa {{n}}",
+      "proof": "Cere o poză sau un video",
+      "add": "Adaugă o pedeapsă",
+      "count": "{{n}} din {{max}}",
+      "title": "Pedepse",
+      "withProof": "Se face cu o poză sau un video",
+      "withDone": "Se face cu o atingere pe „Gata”"
+    }
   },
   "checkins": {
     "today": "azi",

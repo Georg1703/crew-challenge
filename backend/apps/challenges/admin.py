@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from .models import Challenge, Participant, Vote
+from .models import Challenge, Participant, Punishment, Vote
 
 
 class ParticipantInline(admin.TabularInline):
@@ -15,9 +15,22 @@ class ParticipantInline(admin.TabularInline):
     extra = 0
 
 
+class PunishmentInline(admin.TabularInline):
+    """Read only: punishments change with the proposal, through the app."""
+
+    model = Punishment
+    fields = ("position", "text", "proof_required")
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+
 @admin.register(Challenge)
 class ChallengeAdmin(admin.ModelAdmin):
-    inlines = (ParticipantInline,)
+    inlines = (ParticipantInline, PunishmentInline)
     list_display = (
         "title",
         "crew",

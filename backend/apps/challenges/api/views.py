@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.challenges import selectors, services
-from apps.challenges.models import Challenge, Participant
+from apps.challenges.models import Challenge, Participant, Punishment
 from apps.core import clock
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
@@ -27,13 +27,17 @@ def challenge_data(
     member: Member,
     tally: selectors.Tally | None = None,
     people: list[Participant] | None = None,
+    punishments: list[Punishment] | None = None,
 ) -> dict[str, Any]:
-    """One challenge for `member`. Pass `tally` and `people` when loaded for a whole list."""
+    """One challenge for `member`. Pass `tally`, `people` and `punishments` when loaded for a
+    whole list."""
     today = clock.crew_today(challenge.crew)
     if tally is None:
         tally = selectors.tallies(challenges=[challenge]).get(challenge.pk, selectors.Tally())
     if people is None:
         people = selectors.participants(challenges=[challenge]).get(challenge.pk, [])
+    if punishments is None:
+        punishments = selectors.punishments(challenges=[challenge]).get(challenge.pk, [])
     return {
         "id": challenge.pk,
         "title": challenge.title,
@@ -47,6 +51,10 @@ def challenge_data(
         "need_value": challenge.need_value,
         "day_min": challenge.day_min,
         "proof_required": challenge.proof_required,
+        "punishments": [
+            {"position": p.position, "text": p.text, "proof_required": p.proof_required}
+            for p in punishments
+        ],
         "state": challenge.state,
         "phase": selectors.phase(challenge, today),
         "period_kind": challenge.period_kind,
@@ -71,8 +79,15 @@ def challenge_data(
 def challenges_data(challenges: list[Challenge], member: Member) -> list[dict[str, Any]]:
     tallies = selectors.tallies(challenges=challenges)
     people = selectors.participants(challenges=challenges)
+    punishments = selectors.punishments(challenges=challenges)
     return [
-        challenge_data(c, member, tallies.get(c.pk, selectors.Tally()), people.get(c.pk, []))
+        challenge_data(
+            c,
+            member,
+            tallies.get(c.pk, selectors.Tally()),
+            people.get(c.pk, []),
+            punishments.get(c.pk, []),
+        )
         for c in challenges
     ]
 

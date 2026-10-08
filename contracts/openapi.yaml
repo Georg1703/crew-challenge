@@ -1138,6 +1138,12 @@ components:
           type: boolean
           default: false
           description: 'A photo or a video with each check-in; false: no proof.'
+        punishments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PunishmentInRequest'
+          description: None, or 2 to 8, in their order on the dial. Editing replaces
+            them all.
         participant_ids:
           type: array
           items:
@@ -1194,6 +1200,11 @@ components:
         proof_required:
           type: boolean
           description: 'A photo or a video with each check-in; false: no proof.'
+        punishments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PunishmentOut'
+          description: None, or 2 to 8, by position.
         state:
           $ref: '#/components/schemas/ChallengeStateEnum'
         phase:
@@ -1276,6 +1287,7 @@ components:
       - period_start
       - phase
       - proof_required
+      - punishments
       - revision
       - rules
       - start_date
@@ -2196,6 +2208,34 @@ components:
       - proof
       - put_url
       - thumb_put_url
+    PunishmentInRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          description: 1 to 80 characters (checked with the shape).
+          maxLength: 200
+        proof_required:
+          type: boolean
+          default: false
+          description: 'Served with a photo or a video; false: by tapping Done.'
+      required:
+      - text
+    PunishmentOut:
+      type: object
+      properties:
+        position:
+          type: integer
+          description: '1 to 8: its number on the dial.'
+        text:
+          type: string
+        proof_required:
+          type: boolean
+          description: 'Served with a photo or a video; false: by tapping Done.'
+      required:
+      - position
+      - proof_required
+      - text
     ReactionGroupOut:
       type: object
       properties:

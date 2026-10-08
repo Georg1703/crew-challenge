@@ -16,7 +16,7 @@ from django.db.models import Q, QuerySet
 from apps.core import clock
 from apps.crews.models import Member
 
-from .models import Challenge, Participant, Vote
+from .models import Challenge, Participant, Punishment, Vote
 
 PHASES = ("upcoming", "active", "finished")
 
@@ -100,6 +100,14 @@ def participants(*, challenges: list[Challenge]) -> dict[UUID, list[Participant]
         .order_by("member__created_at", "member_id")
     )
     for row in rows:
+        result[row.challenge_id].append(row)
+    return dict(result)
+
+
+def punishments(*, challenges: list[Challenge]) -> dict[UUID, list[Punishment]]:
+    """Each challenge's punishments, by position, in one query."""
+    result: dict[UUID, list[Punishment]] = defaultdict(list)
+    for row in Punishment.objects.filter(challenge__in=challenges).order_by("position"):
         result[row.challenge_id].append(row)
     return dict(result)
 

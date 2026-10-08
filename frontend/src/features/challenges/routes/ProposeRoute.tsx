@@ -10,7 +10,9 @@ import { formatList } from "@/shared/lib/format";
 import {
   Banner,
   Button,
+  Card,
   ChipGroup,
+  Icon,
   IconPicker,
   OptionList,
   Screen,
@@ -42,6 +44,7 @@ import {
   describeMeasure,
   describePeriod,
   describeProof,
+  describePunishments,
   describeRule,
   weekdayShort,
 } from "../describe";
@@ -90,7 +93,17 @@ type Draft = Required<
   day_min: string;
   /** null: nobody changed the list yet, so the whole crew takes part. */
   participant_ids: string[] | null;
+  /** `key` only keeps each row's identity while rows are added and removed. */
+  punishments: { key: number; text: string; proof_required: boolean }[];
 };
+
+const PUNISHMENTS_MAX = 8; // and at least 2, or none (the API checks it too)
+let nextPunishmentKey = 0;
+const newPunishment = (text = "", proof_required = false) => ({
+  key: nextPunishmentKey++,
+  text,
+  proof_required,
+});
 
 const EMPTY: Draft = {
   title: "",
@@ -107,9 +120,10 @@ const EMPTY: Draft = {
   day_min: "",
   proof_required: false,
   participant_ids: null,
+  punishments: [],
 };
 
-const STEPS = ["what", "who", "record", "often", "proof", "review"] as const;
+const STEPS = ["what", "who", "record", "often", "proof", "punishments", "review"] as const;
 type Step = (typeof STEPS)[number];
 
 /** Which step shows each field, to send people back to the field the server rejected. */
@@ -128,6 +142,7 @@ const FIELD_STEP: Record<string, Step> = {
   period_kind: "often",
   period_length: "often",
   proof_required: "proof",
+  punishments: "punishments",
 };
 
 /** A typed number as the API takes it: "12,5" -> "12.5". */
@@ -200,6 +215,10 @@ function toInput(draft: Draft): ChallengeInput {
     period_kind: draft.period_kind,
     period_length: draft.period_length,
     proof_required: draft.proof_required,
+    punishments: draft.punishments.map((p) => ({
+      text: p.text.trim(),
+      proof_required: p.proof_required,
+    })),
     ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
   };
 }
@@ -246,6 +265,7 @@ function EditProposal({ id }: { id: string }) {
         day_min: c.day_min == null ? "" : String(c.day_min),
         proof_required: c.proof_required,
         participant_ids: c.participants.map((p) => p.member.id),
+        punishments: c.punishments.map((p) => newPunishment(p.text, p.proof_required)),
       }}
     />
   );
@@ -279,6 +299,11 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
       measure,
       often: measure !== "quantity" && isTotal(current.often) ? "daily" : current.often,
     }));
+  const setPunishment = (key: number, change: Partial<Draft["punishments"][number]>) =>
+    set(
+      "punishments",
+      draft.punishments.map((p) => (p.key === key ? { ...p, ...change } : p)),
+    );
   const people = crew.data?.members ?? [];
   const creatorId = me.data?.member?.id; // only the creator proposes or edits
 
@@ -299,6 +324,14 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
         errors.period_length = t("challenges.errors.weekNeedsDays");
       if (MONTHLY.includes(draft.often) && !monthly)
         errors.period_length = t("challenges.errors.monthNeedsMonths");
+    }
+    if (current === "punishments") {
+      const texts = draft.punishments.map((p) => p.text.trim().toLocaleLowerCase());
+      if (texts.length === 1) errors.punishments = t("challenges.errors.punishmentsCount");
+      else if (texts.some((text) => !text))
+        errors.punishments = t("challenges.errors.punishmentText");
+      else if (new Set(texts).size < texts.length)
+        errors.punishments = t("challenges.errors.punishmentSame");
     }
     return errors;
   };
@@ -510,6 +543,60 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
             />
           )}
 
+          {step === "punishments" && (
+            <Stack>
+              <p className={styles.muted}>{t("challenges.punishments.intro")}</p>
+              {draft.punishments.map((p, i) => (
+                <Card key={p.key}>
+                  <Stack>
+                    <div className={styles.punishmentHead}>
+                      <TextField
+                        label={t("challenges.punishments.label", { n: i + 1 })}
+                        value={p.text}
+                        maxLength={80}
+                        onChange={(e) => setPunishment(p.key, { text: e.target.value })}
+                      />
+                      <Button
+                        variant="ghost"
+                        icon={<Icon name="close" size={20} />}
+                        aria-label={t("challenges.punishments.remove", { n: i + 1 })}
+                        onClick={() =>
+                          set(
+                            "punishments",
+                            draft.punishments.filter((other) => other.key !== p.key),
+                          )
+                        }
+                      />
+                    </div>
+                    <Toggle
+                      label={t("challenges.punishments.proof")}
+                      checked={p.proof_required}
+                      onChange={(on) => setPunishment(p.key, { proof_required: on })}
+                    />
+                  </Stack>
+                </Card>
+              ))}
+              {fieldError("punishments") && (
+                <Banner tone="danger" title={fieldError("punishments") ?? ""} />
+              )}
+              {draft.punishments.length < PUNISHMENTS_MAX && (
+                <Button
+                  variant="secondary"
+                  icon={<Icon name="plus" size={20} />}
+                  onClick={() => set("punishments", [...draft.punishments, newPunishment()])}
+                >
+                  {t("challenges.punishments.add")}
+                </Button>
+              )}
+              <p className={styles.meta}>
+                {t("challenges.punishments.count", {
+                  n: draft.punishments.length,
+                  max: PUNISHMENTS_MAX,
+                })}
+              </p>
+            </Stack>
+          )}
+
           {step === "review" && (
             <Review draft={draft} editing={Boolean(editingId)} people={people} />
           )}
@@ -564,6 +651,7 @@ function Review({
     [t("challenges.facts.often"), describeRule(t, shape, i18n.language)],
     ...(dayMin ? [[t("challenges.facts.target"), dayMin] as [string, string]] : []),
     [t("challenges.facts.proof"), describeProof(t, shape)],
+    [t("challenges.facts.punishments"), describePunishments(t, draft.punishments.length)],
   ];
   return (
     <Stack>

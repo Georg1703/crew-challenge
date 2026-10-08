@@ -33,6 +33,7 @@ const pushUps: Challenge = {
   need_value: 1,
   day_min: 50,
   proof_required: true,
+  punishments: [],
   state: "proposed",
   phase: null,
   period_kind: "month",
@@ -383,7 +384,7 @@ describe("proposing", () => {
     expect(screen.queryByRole("radio", { name: /A few times a month/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "More" })); // 2 months
     await userEvent.click(screen.getByRole("radio", { name: /A few times a month/ }));
-    for (const heading of ["What proof?", "Check it"]) {
+    for (const heading of ["What proof?", "Punishments", "Check it"]) {
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
       await screen.findByRole("heading", { name: heading });
     }
@@ -445,7 +446,22 @@ describe("proposing", () => {
     await userEvent.click(screen.getByRole("switch", { name: /A photo or a video/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
+    await screen.findByRole("heading", { name: "Punishments" });
+    await userEvent.click(screen.getByRole("button", { name: "Add a punishment" }));
+    await userEvent.type(screen.getByLabelText("Punishment 1"), "20 burpees");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(
+      await screen.findByText("Add one more, or remove it: the wheel needs at least 2."),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Add a punishment" }));
+    await userEvent.type(screen.getByLabelText("Punishment 2"), "No phone after 21:00");
+    const [, second] = screen.getAllByRole("switch", { name: "Needs a photo or video" });
+    await userEvent.click(second as HTMLElement);
+    expect(screen.getByText("2 of 8")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+
     await screen.findByRole("heading", { name: "Check it" });
+    expect(screen.getByText("2 punishments")).toBeInTheDocument();
     expect(screen.getByText("50 pages a week")).toBeInTheDocument();
     expect(screen.getByText("4 weeks")).toBeInTheDocument();
     expect(screen.getByText("Bogdan")).toBeInTheDocument(); // who takes part
@@ -467,6 +483,10 @@ describe("proposing", () => {
         period_kind: "week",
         period_length: 4,
         proof_required: true,
+        punishments: [
+          { text: "20 burpees", proof_required: false },
+          { text: "No phone after 21:00", proof_required: true },
+        ],
         participant_ids: [bogdan.id],
       },
     });
@@ -478,7 +498,7 @@ describe("proposing", () => {
     renderRoutes(routes, { at: "/challenges/new" });
 
     await userEvent.type(await screen.findByLabelText("Name of the challenge"), "Read");
-    for (let step = 0; step < 5; step += 1) {
+    for (let step = 0; step < 6; step += 1) {
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     }
     await userEvent.click(await screen.findByRole("button", { name: "Publish the proposal" }));
@@ -530,6 +550,20 @@ describe("one challenge", () => {
     ).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Choose when" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
+  });
+
+  it("lists the punishments, numbered, with how each is served", async () => {
+    const punishments = [
+      { position: 1, text: "20 burpees", proof_required: true },
+      { position: 2, text: "No phone after 21:00", proof_required: false },
+    ];
+    mockGets(bogdan, { one: detail({ punishments }) });
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    const list = await screen.findByRole("list", { name: "Punishments" });
+    expect(within(list).getByText("20 burpees")).toBeInTheDocument();
+    expect(within(list).getByText("Served with a photo or video")).toBeInTheDocument();
+    expect(within(list).getByText("Served with a tap on Done")).toBeInTheDocument();
   });
 
   it("lets the creator vote, edit or withdraw a proposal", async () => {

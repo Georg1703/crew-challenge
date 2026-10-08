@@ -10,6 +10,23 @@ class PersonOut(serializers.Serializer):
     avatar_seed = serializers.CharField()
 
 
+class PunishmentIn(serializers.Serializer):
+    text = serializers.CharField(
+        max_length=200, allow_blank=True, help_text="1 to 80 characters (checked with the shape)."
+    )
+    proof_required = serializers.BooleanField(
+        default=False, help_text="Served with a photo or a video; false: by tapping Done."
+    )
+
+
+class PunishmentOut(serializers.Serializer):
+    position = serializers.IntegerField(help_text="1 to 8: its number on the dial.")
+    text = serializers.CharField()
+    proof_required = serializers.BooleanField(
+        help_text="Served with a photo or a video; false: by tapping Done."
+    )
+
+
 class ChallengeIn(serializers.Serializer):
     """The creator's choices. Combinations are checked in services.clean_shape."""
 
@@ -56,6 +73,12 @@ class ChallengeIn(serializers.Serializer):
     proof_required = serializers.BooleanField(
         default=False, help_text="A photo or a video with each check-in; false: no proof."
     )
+    punishments = PunishmentIn(
+        many=True,
+        required=False,
+        default=list,
+        help_text="None, or 2 to 8, in their order on the dial. Editing replaces them all.",
+    )
     participant_ids = serializers.ListField(
         child=serializers.UUIDField(),
         required=False,
@@ -96,6 +119,7 @@ class ChallengeOut(serializers.Serializer):
     proof_required = serializers.BooleanField(
         help_text="A photo or a video with each check-in; false: no proof."
     )
+    punishments = PunishmentOut(many=True, help_text="None, or 2 to 8, by position.")
     state = serializers.ChoiceField(choices=Challenge.State.choices)
     phase = serializers.ChoiceField(choices=PHASES, allow_null=True)
     period_kind = serializers.ChoiceField(choices=PeriodKind.choices)
