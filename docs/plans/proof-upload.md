@@ -145,8 +145,8 @@ the code, tested against the in-memory fake, nothing to keep in sync in the cons
 
 Stage 3 details: one Celery beat job (`finish_videos`, every 20 s, and right after each video
 completes) starts or checks every processing video's job, so a lost task never strands a video.
-A failed or stuck (2 h) job still shows the video with its original. The poster's file name is
-found by listing the output folder. Renditions are cut to a box (640 and 1280 px on the long side,
+A failed or stuck (2 h) job still shows the video with its original. The poster is chosen from
+the frames of the first 5 seconds by listing the output folder (see `docs/plans/video-poster.md`). Renditions are cut to a box (640 and 1280 px on the long side,
 never upscaled), so portrait and landscape phone videos both stay sharp.
 
 ## Edge cases

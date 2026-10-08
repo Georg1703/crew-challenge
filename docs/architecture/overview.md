@@ -38,7 +38,10 @@ See [API conventions](api-conventions.md).
 the phone) goes up with one presigned PUT; a video as an S3 multipart upload: parts go directly to
 S3 with presigned URLs and each part's ETag is reported, so a closed app can resume. On complete
 Django verifies the object's size and a Celery task starts a MediaConvert job, then polls it
-every 20 seconds until the renditions are ready. Uploads that miss their grace are expired by a
+every 20 seconds until the renditions are ready. MediaConvert captures a frame a second for the
+first 5 seconds and Django keeps the one with the most detail (the biggest JPEG: videos often
+start black) as the poster; when all are blank, the phone's own thumbnail stays, and the browser
+falls back to it whenever a poster fails to load. Uploads that miss their grace are expired by a
 Celery job. The crew watches through CloudFront, which one set of signed cookies opens per crew.
 
 **Midnight judgment.** Celery beat runs idempotent jobs in each crew's time zone: mark missed

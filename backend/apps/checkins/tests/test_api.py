@@ -188,13 +188,14 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     services.finish_videos()  # starts the job
     prefix = upload.key.rsplit(".", 1)[0]
     object_storage.put_object(
-        key=f"{prefix}/poster.0000000.jpg", data=b"jpg", content_type="image/jpeg"
+        key=f"{prefix}/poster.0000000.jpg", data=b"j" * 10_000, content_type="image/jpeg"
     )
     transcoder.finish(next(iter(transcoder.jobs)))
     services.finish_videos()
     shown = browser.get("/api/v1/today").json()["challenges"][0]["proofs"][0]
     assert shown["status"] == "ready"
     assert "poster" in shown["thumb_url"]  # the server's poster wins over the phone's frame
+    assert "thumb" in shown["phone_thumb_url"]  # the fallback when the poster will not load
     assert shown["hls_url"] is None  # locally the original plays
 
 

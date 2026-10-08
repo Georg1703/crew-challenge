@@ -1,8 +1,9 @@
 """What the app needs from video transcoding, independent of AWS.
 
-A finished upload goes in; HLS renditions (360p and 720p) and one poster frame come out under an
-output prefix in the same bucket: the master playlist at `<prefix>hls.m3u8`, the poster as
-`<prefix>poster.<number>.jpg`. Jobs are polled, never called back.
+A finished upload goes in; HLS renditions (360p and 720p) and poster frames come out under an
+output prefix in the same bucket: the master playlist at `<prefix>hls.m3u8`, up to
+`POSTER_CAPTURES` frames (one a second from the start) as `<prefix>poster.<number>.jpg`. The app
+keeps the one with the most detail (videos often start black). Jobs are polled, never called back.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 RUNNING, DONE, FAILED = "running", "done", "failed"
 HLS_PLAYLIST = "hls.m3u8"
 POSTER_PREFIX = "poster"
+POSTER_CAPTURES = 5  # frames at 0, 1, 2, 3 and 4 seconds; a shorter video gives fewer
 
 
 class TranscodeError(Exception):

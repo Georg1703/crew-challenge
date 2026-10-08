@@ -50,6 +50,20 @@ afterEach(() => {
 });
 
 describe("ProofTile", () => {
+  it("shows the fallback when the image fails, then the placeholder (no loop)", () => {
+    const { container } = render(
+      <ProofTile kind="video" src="/poster.jpg" fallbackSrc="/phone.jpg" label="Video by Ana" />,
+    );
+    const image = () => container.querySelector("img");
+    expect(image()).toHaveAttribute("src", "/poster.jpg");
+
+    fireEvent.error(image() as HTMLImageElement);
+    expect(image()).toHaveAttribute("src", "/phone.jpg");
+
+    fireEvent.error(image() as HTMLImageElement);
+    expect(image()).toBeNull(); // the video placeholder, and no going back to the poster
+  });
+
   it("opens and removes with its own buttons", async () => {
     const onOpen = vi.fn();
     const onRemove = vi.fn();

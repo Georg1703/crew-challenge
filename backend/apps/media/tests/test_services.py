@@ -222,7 +222,7 @@ def test_one_job_per_video_until_its_renditions_are_made(object_storage, transco
     assert len(transcoder.jobs) == 1
 
     poster = f"{upload.renditions_prefix}poster.0000000.jpg"
-    object_storage.put_object(key=poster, data=b"jpg", content_type="image/jpeg")
+    object_storage.put_object(key=poster, data=b"j" * 10_000, content_type="image/jpeg")
     transcoder.finish(job.job_id)
     done = job_of(upload)
 
@@ -260,3 +260,52 @@ def test_only_finished_videos_are_transcoded_and_only_when_on(object_storage):
     get_transcoder.cache_clear()
     with override_settings(TRANSCODER_BACKEND="off"):
         assert services.transcode(upload_id=upload.pk) is None
+
+
+def frames(storage, prefix, sizes):
+    """Poster frames as MediaConvert writes them: poster.0000000.jpg, poster.0000001.jpg..."""
+    keys = [f"{prefix}poster.{n:07d}.jpg" for n in range(len(sizes))]
+    for key, size in zip(keys, sizes, strict=True):
+        storage.put_object(key=key, data=b"j" * size, content_type="image/jpeg")
+    return keys
+
+
+def test_the_poster_is_the_frame_with_the_most_detail(object_storage):
+    keys = frames(object_storage, "v/", [900, 2_000, 41_000, 39_000, 12_000])  # starts black
+
+    assert services.best_poster(prefix="v/poster") == keys[2]
+    assert object_storage.list_keys(prefix="v/") == [keys[2]]  # the other frames are deleted
+
+
+def test_equal_frames_keep_the_earliest_and_blank_videos_keep_none(object_storage):
+    same = frames(object_storage, "a/", [20_000, 20_000])
+    assert services.best_poster(prefix="a/poster") == same[0]
+
+    frames(object_storage, "b/", [700, 1_200, 3_000])  # all dark: the phone's frame shows instead
+    assert services.best_poster(prefix="b/poster") == ""
+    assert object_storage.list_keys(prefix="b/") == []
+
+    assert services.best_poster(prefix="c/poster") == ""  # no frames at all
+
+
+def test_blank_posters_of_older_videos_are_dropped(object_storage, transcoder):
+    blank = finished_video(object_storage)
+    fine = finished_video(object_storage, key="crews/c/proofs/q/original.mp4")
+    for upload, size in ((blank, 900), (fine, 30_000)):
+        job = job_of(upload)
+        frames(object_storage, upload.renditions_prefix, [size])
+        Transcode.objects.filter(pk=job.pk).update(
+            status=Transcode.Status.DONE,
+            poster_key=f"{upload.renditions_prefix}poster.0000000.jpg",
+        )
+
+    assert services.drop_blank_posters(dry_run=True) == [
+        blank.renditions_prefix + "poster.0000000.jpg"
+    ]
+    assert Transcode.objects.get(upload=blank).poster_key  # a dry run changes nothing
+
+    assert len(services.drop_blank_posters()) == 1
+    assert Transcode.objects.get(upload=blank).poster_key == ""
+    assert Transcode.objects.get(upload=fine).poster_key
+    assert object_storage.list_keys(prefix=blank.renditions_prefix + "poster") == []
+    assert services.drop_blank_posters() == []  # twice is a no-op

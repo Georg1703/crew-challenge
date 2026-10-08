@@ -18,7 +18,7 @@ def video(object_storage, transcoder):
     """A finished video whose renditions are made."""
     upload = finished_video(object_storage)
     poster = f"{upload.renditions_prefix}poster.0000000.jpg"
-    object_storage.put_object(key=poster, data=b"jpg", content_type="image/jpeg")
+    object_storage.put_object(key=poster, data=b"j" * 10_000, content_type="image/jpeg")
     transcoder.finish(job_of(upload).job_id)
     job_of(upload)
     return Upload.objects.get(pk=upload.pk)

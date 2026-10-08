@@ -205,6 +205,52 @@ def delete_upload(*, upload_id: UUID) -> None:
     upload.delete()
 
 
+# A poster frame smaller than this is (nearly) all one color: black, or a hand over the lens.
+MIN_POSTER_BYTES = 8 * 1024
+
+
+def best_poster(*, prefix: str) -> str:
+    """The poster frame with the most detail, the others deleted; "" when none is worth showing.
+
+    Videos often start black (a phone fading in, a hand over the lens). A black or blank frame
+    compresses to a tiny JPEG, so the biggest file of the first seconds is the best picture. When
+    even that one is tiny it is deleted too, and the phone's own frame stays the thumbnail.
+    """
+    storage = get_object_storage()
+    sizes = {}
+    for key in storage.list_keys(prefix=prefix):
+        info = storage.head(key=key)
+        sizes[key] = info.size if info else 0
+    best = max(sorted(sizes), key=lambda key: sizes[key], default="")  # ties: the earliest
+    if best and sizes[best] < MIN_POSTER_BYTES:
+        best = ""
+    for key in sizes:
+        if key != best:
+            storage.delete(key=key)
+    return best
+
+
+def drop_blank_posters(*, dry_run: bool = False) -> list[str]:
+    """Clear the poster of every finished video whose poster is too small to be a picture.
+
+    For videos transcoded before `best_poster` (one frame at 0 s, often black). Their phone's
+    thumbnail shows instead. Returns the dropped keys; with `dry_run` nothing changes.
+    """
+    storage = get_object_storage()
+    dropped = []
+    for job in Transcode.objects.filter(status=Transcode.Status.DONE).exclude(poster_key=""):
+        info = storage.head(key=job.poster_key)
+        if info is not None and info.size >= MIN_POSTER_BYTES:
+            continue
+        dropped.append(job.poster_key)
+        if dry_run:
+            continue
+        storage.delete(key=job.poster_key)
+        job.poster_key = ""
+        job.save(update_fields=["poster_key", "updated_at"])
+    return dropped
+
+
 def transcode(*, upload_id: UUID) -> Transcode | None:
     """Start the job that makes a finished video's renditions, or check the one running.
 
@@ -228,10 +274,9 @@ def transcode(*, upload_id: UUID) -> Transcode | None:
         state = transcoder.check(job_id=job.job_id)
         if state.state == DONE:
             prefix = upload.renditions_prefix
-            posters = get_object_storage().list_keys(prefix=prefix + POSTER_PREFIX)
             job.status = Transcode.Status.DONE
             job.hls_key = prefix + HLS_PLAYLIST
-            job.poster_key = posters[0] if posters else ""
+            job.poster_key = best_poster(prefix=prefix + POSTER_PREFIX)
         elif state.state == FAILED or clock.now() >= job.created_at + TRANSCODE_TIMEOUT:
             job.status = Transcode.Status.FAILED
             job.error = (state.error or "Gave up after 2 hours.")[:500]

@@ -18,6 +18,7 @@ from .base import (
     DONE,
     FAILED,
     HLS_PLAYLIST,
+    POSTER_CAPTURES,
     POSTER_PREFIX,
     RUNNING,
     Job,
@@ -72,7 +73,7 @@ def _rendition(name: str, side: int, max_bitrate: int) -> dict[str, Any]:
 
 
 def job_settings(*, input_url: str, output_url: str) -> dict[str, Any]:
-    """HLS (360p + 720p, 6 s segments) and one JPEG poster from the first second."""
+    """HLS (360p + 720p, 6 s segments) and JPEG poster frames, one a second from the start."""
     return {
         "TimecodeConfig": {"Source": "ZEROBASED"},
         "Inputs": [
@@ -119,7 +120,7 @@ def job_settings(*, input_url: str, output_url: str) -> dict[str, Any]:
                                 "FrameCaptureSettings": {
                                     "FramerateNumerator": 1,
                                     "FramerateDenominator": 1,
-                                    "MaxCaptures": 1,
+                                    "MaxCaptures": POSTER_CAPTURES,
                                     "Quality": 80,
                                 },
                             },

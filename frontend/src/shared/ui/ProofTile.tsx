@@ -20,7 +20,9 @@ export type ProofTileState = "ready" | "uploading" | "paused" | "processing" | "
  * One proof as a square thumbnail. Its state reads by shape, not only color: a ring filling while
  * it uploads, a pause mark while it waits, a clock while a video is prepared, an alert when it
  * failed, a play mark on a ready video. It fills its grid cell (`--proof-tile-size` caps tracks).
- * A video being prepared without a poster shows calm stripes (`--media-pending`).
+ * A video being prepared without a poster shows calm stripes (`--media-pending`). When `src`
+ * fails to load it shows `fallbackSrc` (a video's phone thumbnail behind its poster), then the
+ * placeholder.
  * With `onOpen` it is a button (view it, or pause and retry while uploading: the caller decides);
  * with `onRemove` it gets a remove button in the corner. Say the state in `label`.
  */
@@ -28,6 +30,7 @@ export function ProofTile({
   kind,
   state = "ready",
   src,
+  fallbackSrc,
   progress = 0,
   label,
   onOpen,
@@ -40,6 +43,8 @@ export function ProofTile({
   state?: ProofTileState;
   /** Thumbnail, poster, or the phone's local preview while uploading. */
   src?: string | null;
+  /** Shown when `src` fails to load. */
+  fallbackSrc?: string | null;
   /** 0 to 1, while uploading. */
   progress?: number;
   label: string;
@@ -51,10 +56,19 @@ export function ProofTile({
   /** Fill the cell's height instead of staying square (inside a `ProofMosaic`). */
   fill?: boolean;
 }) {
+  const [broken, setBroken] = useState<string[]>([]);
+  const image = [src, fallbackSrc].find((url) => url && !broken.includes(url)) ?? null;
   const face = (
     <>
-      {src ? (
-        <img className={styles.image} src={src} alt="" loading="lazy" decoding="async" />
+      {image ? (
+        <img
+          className={styles.image}
+          src={image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setBroken((urls) => [...urls, image])}
+        />
       ) : (
         <span className={styles.placeholder}>
           <Icon name={kind === "video" ? "video" : "image"} size={20} />
@@ -65,7 +79,7 @@ export function ProofTile({
     </>
   );
   return (
-    <span className={cx(styles.tile, styles[state], fill && styles.filled, !src && styles.empty)}>
+    <span className={cx(styles.tile, styles[state], fill && styles.filled, !image && styles.empty)}>
       {onOpen ? (
         <button type="button" className={styles.face} onClick={onOpen} aria-label={label}>
           {face}
