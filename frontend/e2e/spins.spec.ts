@@ -17,8 +17,9 @@ test("spin the wheel, serve the punishment, and the crew sees it", async ({ brow
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 
-  await expect(page.getByRole("heading", { name: /\d+ (de )?rotir/ })).toBeVisible();
-  await page.getByRole("button", { name: "Deschide" }).click();
+  const owed = page.getByRole("heading", { name: /\d+ (de )?rotir/ });
+  await expect(owed).toBeVisible();
+  await owed.click();
   await expect(page).toHaveURL(/\/spins$/);
 
   await page.getByRole("button", { name: "Învârte" }).first().click();

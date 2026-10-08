@@ -783,7 +783,6 @@
     "lateCount_one": "{{count}} punishment is late",
     "lateCount_few": "{{count}} punishments are late",
     "lateCount_other": "{{count}} punishments are late",
-    "open": "Open",
     "missedDay": "Missed {{date}}",
     "amount": "{{value}} {{unit}}",
     "windowShort": "{{when}}: {{done}} of {{need}}",

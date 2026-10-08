@@ -75,7 +75,7 @@ describe("the spins card on Today", () => {
 
     expect(await screen.findByRole("heading", { name: "1 spin · 1 to serve" })).toBeVisible();
     expect(screen.getByText("1 punishment is late")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Open" }));
+    await userEvent.click(screen.getByRole("link", { name: /1 spin · 1 to serve/ }));
     expect(await screen.findByText("Spins page")).toBeInTheDocument();
   });
 
@@ -84,7 +84,7 @@ describe("the spins card on Today", () => {
     renderRoutes([{ path: "/", element: <SpinsCard /> }]);
     await waitFor(() => expect(get).toHaveBeenCalled());
     expect(screen.queryByRole("heading")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Open" })).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 });
 

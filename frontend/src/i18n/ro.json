@@ -783,7 +783,6 @@
     "lateCount_one": "{{count}} pedeapsă e întârziată",
     "lateCount_few": "{{count}} pedepse sunt întârziate",
     "lateCount_other": "{{count}} de pedepse sunt întârziate",
-    "open": "Deschide",
     "missedDay": "Ratat: {{date}}",
     "amount": "{{value}} {{unit}}",
     "windowShort": "{{when}}: {{done}} din {{need}}",

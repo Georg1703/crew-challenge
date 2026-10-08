@@ -130,6 +130,7 @@ describe("the crew journal", () => {
 
     expect(await screen.findByText("Bogdan spun the wheel")).toBeInTheDocument();
     expect(screen.getByText("Cold shower, 2 minutes")).toBeInTheDocument();
+    expect(screen.queryByText("3")).toBeNull(); // the text only, not its number on the dial
     expect(screen.getByText("Serve by Monday, November 16")).toBeInTheDocument();
     expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
   });

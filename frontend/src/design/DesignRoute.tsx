@@ -480,7 +480,9 @@ export function DesignRoute() {
         >
           {drawn === null ? "Spin" : "Again"}
         </Button>
-        <Dial size="sm" count={5} drawn={3} label="The dial as a mark, 3 drawn" />
+        <Card tone="accent">
+          <Dial size="sm" count={6} label="The dial as a mark" />
+        </Card>
       </Section>
 
       <Section title="Check-in">

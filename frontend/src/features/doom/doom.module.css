@@ -14,11 +14,29 @@
   line-height: var(--leading-small);
 }
 
-/* Today's card: the dial mark beside what is owed. */
+/* Today's card: the dial mark beside what is owed, the whole card a link to the wheel. */
 .owed {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* How many spins are owed, in the middle of the mark. */
+.markCount {
+  color: var(--color-accent-pressed);
+  font-size: var(--text-title-s);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title-s);
+  font-variant-numeric: tabular-nums;
+}
+
+.owedText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .title {

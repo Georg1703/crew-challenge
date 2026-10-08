@@ -1,18 +1,18 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 
-import { Button, Card, Dial } from "@/shared/ui";
+import { Card, Dial, Icon } from "@/shared/ui";
 
 import { useSpins } from "../api";
 import styles from "../doom.module.css";
 
-/** On Today, under the day ring, while anything is owed: how much, and the way to the wheel. */
+const MARK_SEGMENTS = 6; // the mark is a sign, not this challenge's punishments: six reads best
+
+/** On Today, under the day ring, while anything is owed: how much. The whole card opens the wheel. */
 export function SpinsCard() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const owed = useSpins().data;
-  const [first] = owed?.spins ?? [];
-  if (!owed || !first) return null;
+  if (!owed?.spins.length) return null;
   const late = owed.spins.filter((spin) => spin.late).length;
   const title = [
     owed.to_spin > 0 && t("doom.toSpin", { count: owed.to_spin }),
@@ -22,18 +22,20 @@ export function SpinsCard() {
     .join(" · ");
   return (
     <Card tone="accent">
-      <div className={styles.stack}>
-        <div className={styles.owed}>
-          <Dial size="sm" count={first.punishments.length} label={t("doom.title")} />
-          <div>
-            <h2 className={styles.title}>{title}</h2>
-            <p className={styles.meta}>
-              {late ? t("doom.lateCount", { count: late }) : t("doom.cardBody")}
-            </p>
-          </div>
+      <Link to="/spins" className={styles.owed}>
+        <Dial size="sm" count={MARK_SEGMENTS} label={t("doom.title")}>
+          <span className={styles.markCount} aria-hidden="true">
+            {owed.spins.length}
+          </span>
+        </Dial>
+        <div className={styles.owedText}>
+          <h2 className={styles.title}>{title}</h2>
+          <p className={styles.meta}>
+            {late ? t("doom.lateCount", { count: late }) : t("doom.cardBody")}
+          </p>
         </div>
-        <Button onClick={() => navigate("/spins")}>{t("doom.open")}</Button>
-      </div>
+        <Icon name="chevronRight" size={20} />
+      </Link>
     </Card>
   );
 }

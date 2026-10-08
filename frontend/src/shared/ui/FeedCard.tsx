@@ -51,8 +51,8 @@ export function FeedCard({
   /** "5 min ago", "21:40", formatted by the caller. */
   time?: string;
   tone?: "default" | "success";
-  /** A milestone's big number and its line: "7", "days in a row". */
-  highlight?: { value: string; text: string };
+  /** A milestone's big number and its line ("7", "days in a row"), or the line alone. */
+  highlight?: { value?: string; text: string };
   /** A quantity: "+12 pages", "20 today", and a bar when there is a target. */
   amount?: {
     value: string;
@@ -92,7 +92,7 @@ export function FeedCard({
       </header>
       {highlight && (
         <p className={styles.highlight} data-stage={stage}>
-          <span className={styles.big}>{highlight.value}</span>
+          {highlight.value && <span className={styles.big}>{highlight.value}</span>}
           <span>{highlight.text}</span>
         </p>
       )}

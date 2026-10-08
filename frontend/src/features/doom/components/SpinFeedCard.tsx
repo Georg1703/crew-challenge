@@ -38,7 +38,7 @@ export function SpinFeedCard({
       challenge={{ icon: CHALLENGE_ICONS[item.challenge.icon], label: item.challenge.title }}
       time={time}
       tone={served ? "success" : "default"}
-      highlight={{ value: String(item.punishment.position), text: item.punishment.text }}
+      highlight={{ text: item.punishment.text }}
       proofs={item.proofs.map((p) => shownTile(p, t, who))}
       onOpenProof={onOpenProof}
       moreLabel={t("feed.more", { count: item.proofs.length - SHOWN_PROOFS })}

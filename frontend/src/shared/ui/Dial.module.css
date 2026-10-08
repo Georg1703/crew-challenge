@@ -21,13 +21,34 @@
 
 .arc {
   fill: none;
-  stroke: var(--color-surface-sunken);
+  stroke: var(--color-border);
   stroke-width: 12;
-  stroke-linecap: round;
 }
 
+/* The mark sits on Today's accent card: clay segments in turns inside a thin rim, a solid marker. */
 .sm .arc {
-  stroke-width: 16;
+  stroke: var(--color-accent);
+  stroke-width: 15;
+}
+
+.sm .alt {
+  stroke: var(--color-dial-alt);
+}
+
+.rim {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 3;
+}
+
+/* Thin lines between punishments, in the card's own color. */
+.separator {
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+}
+
+.sm .separator {
+  stroke-width: 4;
 }
 
 /* The drawn arc: lit once the marker stopped on it (see Dial.tsx). */
@@ -66,10 +87,13 @@
   transform: translate(-50%, -50%);
 }
 
+/* On the mark's ring (radius 45 of 120), cut out of the card. */
 .sm .marker {
+  top: 12.5%;
   width: var(--space-3);
   height: var(--space-3);
-  border-width: var(--space-hair);
+  border: var(--space-hair) solid var(--color-accent-soft);
+  background: var(--color-text);
 }
 
 .center {

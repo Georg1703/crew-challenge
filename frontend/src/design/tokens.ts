@@ -12,6 +12,7 @@ export const colorTokens = [
   "accent-pressed",
   "accent-soft",
   "on-accent",
+  "dial-alt",
   "success",
   "success-soft",
   "success-line",

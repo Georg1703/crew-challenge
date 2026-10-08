@@ -302,8 +302,8 @@ columns go in two releases.
   what failed, the dial and the numbered punishments, then the punishment with "Serve by" (or
   "Late") and the proof tiles or "Done"; an empty state.
 - Journal: `CrewFeed` and the crew page read `/api/v1/journal` (`useJournal`; `useFeed` is gone,
-  the backend's `/feed` stays for a previous app); spin cards use `FeedCard` as it is (the drawn
-  number as its highlight, the punishment as its line), with proofs and reactions.
+  the backend's `/feed` stays for a previous app); spin cards use `FeedCard` as it is (the
+  punishment's text as its highlight, no number), with proofs and reactions.
 - i18n (ro and en): the spins card and page, the journal card, the new error codes.
 - Seed: `seed_demo_spins` (in `make seed`, `make setup` and the e2e server) gives the demo crew
   "Roata (demo)" whose last week owes three spins each; every run starts over.
