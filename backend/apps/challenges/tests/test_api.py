@@ -16,8 +16,7 @@ SHAPE = {
     "window": "week",
     "need_kind": "amount",
     "need_value": "20",
-    "proof_kind": "photo_or_video",
-    "proof_required": False,
+    "proof_required": True,
 }
 
 

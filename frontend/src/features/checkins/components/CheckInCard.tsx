@@ -191,7 +191,7 @@ export function CheckInCard({
         }))}
       />
 
-      {card.proof_kind !== "none" && (card.state === "done" || card.state === "partial") && (
+      {card.proof_required && (card.state === "done" || card.state === "partial") && (
         <>
           {card.proof_required && card.proofs.length === 0 && (
             <p className={styles.meta}>{t("proofs.nudge")}</p>

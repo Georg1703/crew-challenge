@@ -39,11 +39,6 @@ MAX_PROOFS = 5  # per check-in, not counting failed ones
 PHOTO_MAX_SIZE = 50 * MiB  # phones send ~0.5 MB after shrinking; this is for originals
 THUMB_MAX_SIZE = 2 * MiB
 VIDEO_MAX_SECONDS = 3 * 60 * 60  # a video's length, as the phone reads it
-KINDS: dict[str, set[str]] = {
-    Challenge.ProofKind.PHOTO: {Proof.Kind.PHOTO},
-    Challenge.ProofKind.VIDEO: {Proof.Kind.VIDEO},
-    Challenge.ProofKind.PHOTO_OR_VIDEO: {Proof.Kind.PHOTO, Proof.Kind.VIDEO},
-}
 EXTENSIONS: dict[str, dict[str, str]] = {  # allowed content types, the extension each gets
     Proof.Kind.PHOTO: {
         "image/jpeg": "jpg",
@@ -237,10 +232,8 @@ def start_proof(
     is a video's length in seconds, read on the phone (kept for videos only).
     """
     challenge = _participant(by, challenge_id, day).challenge
-    if kind not in KINDS.get(challenge.proof_kind, set()):
-        raise ValidationFailed(
-            fields={"kind": ["This challenge does not take this kind of proof."]}
-        )
+    if not challenge.proof_required:
+        raise ValidationFailed(fields={"kind": ["This challenge takes no proof."]})
     content_type = content_type.split(";")[0].strip().lower()  # "video/webm;codecs=vp9"
     extension = EXTENSIONS[kind].get(content_type)
     if extension is None:

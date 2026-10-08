@@ -40,7 +40,7 @@ def walk():
     with at("2026-10-10 12:00Z"):
         ana = AdminFactory.create(display_name="Ana")
         bogdan = MemberFactory.create(crew=ana.crew, display_name="Bogdan")
-        challenge = scheduled(ana, bogdan, date(2026, 11, 1), proof_kind="photo_or_video")
+        challenge = scheduled(ana, bogdan, date(2026, 11, 1), proof_required=True)
     with at("2026-11-10 08:00Z"):
         yield ana, bogdan, challenge
 
@@ -146,17 +146,16 @@ def test_proof_needs_todays_check_in(walk):
         photo(bogdan, challenge, day=date(2026, 11, 9))
 
 
-def test_kinds_and_types_follow_the_challenge(walk):
+def test_proof_is_a_photo_or_a_video_when_the_challenge_asks_for_it(walk):
     ana, bogdan, challenge = walk
     with at("2026-10-10 12:00Z"):
-        photos_only = scheduled(ana, bogdan, date(2026, 11, 1), title="Read", proof_kind="photo")
         no_proof = scheduled(ana, bogdan, date(2026, 11, 1), title="Gym")
-    for c in (challenge, photos_only, no_proof):
+    for c in (challenge, no_proof):
         check_in(bogdan, c)
 
     for refused, field in [
-        (lambda: video(bogdan, photos_only), "kind"),
         (lambda: photo(bogdan, no_proof), "kind"),
+        (lambda: video(bogdan, no_proof), "kind"),
         (lambda: photo(bogdan, challenge, content_type="image/gif"), "content_type"),
         (lambda: photo(bogdan, challenge, size=50 * MiB + 1), "size"),
         (lambda: photo(bogdan, challenge, thumb_size=2 * MiB + 1), "thumb_size"),
@@ -213,7 +212,7 @@ def test_started_before_midnight_finishes_within_the_grace():
     """25 October 2026 has 25 hours in Chisinau: the grace still ends 24 h after its midnight."""
     with at("2026-09-10 12:00Z"):
         ana = AdminFactory.create()
-        challenge = scheduled(ana, ana, date(2026, 10, 1), proof_kind="photo")
+        challenge = scheduled(ana, ana, date(2026, 10, 1), proof_required=True)
     with at("2026-10-25 21:59Z"):  # 23:59 local
         check_in(ana, challenge, day=date(2026, 10, 25))
         late = photo(ana, challenge, day=date(2026, 10, 25), thumb_size=None)

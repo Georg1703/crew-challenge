@@ -683,9 +683,10 @@ export interface components {
              * @default 1
              */
             period_length: number;
-            /** @default none */
-            proof_kind: components["schemas"]["ProofKindEnum"];
-            /** @default false */
+            /**
+             * @description A photo or a video with each check-in; false: no proof.
+             * @default false
+             */
             proof_required: boolean;
             /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
             participant_ids?: string[] | null;
@@ -705,7 +706,7 @@ export interface components {
             need_value: number;
             /** Format: double */
             day_min: number | null;
-            proof_kind: components["schemas"]["ProofKindEnum"];
+            /** @description A photo or a video with each check-in; false: no proof. */
             proof_required: boolean;
             state: components["schemas"]["ChallengeStateEnum"];
             phase: (components["schemas"]["PhaseEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -1120,14 +1121,6 @@ export interface components {
             challenge: components["schemas"]["ChallengeBriefOut"];
             proofs: components["schemas"]["ProofOut"][];
         };
-        /**
-         * @description * `none` - No proof
-         *     * `photo` - Photo
-         *     * `video` - Video
-         *     * `photo_or_video` - Photo or video
-         * @enum {string}
-         */
-        ProofKindEnum: "none" | "photo" | "video" | "photo_or_video";
         ProofOut: {
             /** Format: uuid */
             id: string;
@@ -1231,7 +1224,7 @@ export interface components {
             need_value: number;
             /** Format: double */
             day_min: number | null;
-            proof_kind: components["schemas"]["ProofKindEnum"];
+            /** @description A photo or a video with each check-in; false: no proof. */
             proof_required: boolean;
             /** Format: date */
             end_date: string;

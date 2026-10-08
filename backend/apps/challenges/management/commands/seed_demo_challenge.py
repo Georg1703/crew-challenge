@@ -20,7 +20,6 @@ from apps.crews import selectors as crews
 from apps.crews.models import Crew
 
 TITLE = "Plimbare (demo)"
-PROOF_KIND = Challenge.ProofKind.PHOTO_OR_VIDEO
 
 
 class Command(BaseCommand):
@@ -36,7 +35,7 @@ class Command(BaseCommand):
         first, last = periods.month_of(clock.crew_today(crew))
         running = Challenge.objects.for_crew(crew).filter(title=TITLE, start_date=first)
         if running.exists():
-            running.update(proof_kind=PROOF_KIND)  # one seeded before proofs existed takes them too
+            running.update(proof_required=True)  # one seeded before proofs existed takes them too
             self.stdout.write(f"{TITLE} already runs this month; nothing to do.")
             return
         members = crews.list_members(crew=crew)
@@ -47,7 +46,7 @@ class Command(BaseCommand):
             title=TITLE,
             icon="walk",
             window=Challenge.Window.DAY,
-            proof_kind=PROOF_KIND,
+            proof_required=True,
             state=Challenge.State.CHOSEN,
             period_kind="month",
             period_start=first,

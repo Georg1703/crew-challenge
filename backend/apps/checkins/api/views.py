@@ -109,7 +109,6 @@ def card_data(card: selectors.Card) -> dict[str, Any]:
         "need_kind": c.need_kind,
         "need_value": c.need_value,
         "day_min": c.day_min,
-        "proof_kind": c.proof_kind,
         "proof_required": c.proof_required,
         "end_date": c.end_date,
         "state": card.state,

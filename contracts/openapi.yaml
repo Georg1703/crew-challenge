@@ -1127,13 +1127,10 @@ components:
           minimum: 1
           default: 1
           description: How many months (1-12), weeks (1-52) or days (1-365) it runs.
-        proof_kind:
-          allOf:
-          - $ref: '#/components/schemas/ProofKindEnum'
-          default: none
         proof_required:
           type: boolean
           default: false
+          description: 'A photo or a video with each check-in; false: no proof.'
         participant_ids:
           type: array
           items:
@@ -1187,10 +1184,9 @@ components:
           exclusiveMaximum: true
           exclusiveMinimum: true
           nullable: true
-        proof_kind:
-          $ref: '#/components/schemas/ProofKindEnum'
         proof_required:
           type: boolean
+          description: 'A photo or a video with each check-in; false: no proof.'
         state:
           $ref: '#/components/schemas/ChallengeStateEnum'
         phase:
@@ -1272,7 +1268,6 @@ components:
       - period_length
       - period_start
       - phase
-      - proof_kind
       - proof_required
       - revision
       - rules
@@ -2064,18 +2059,6 @@ components:
       - challenge
       - day
       - proofs
-    ProofKindEnum:
-      enum:
-      - none
-      - photo
-      - video
-      - photo_or_video
-      type: string
-      description: |-
-        * `none` - No proof
-        * `photo` - Photo
-        * `video` - Video
-        * `photo_or_video` - Photo or video
     ProofOut:
       type: object
       properties:
@@ -2294,10 +2277,9 @@ components:
           type: number
           format: double
           nullable: true
-        proof_kind:
-          $ref: '#/components/schemas/ProofKindEnum'
         proof_required:
           type: boolean
+          description: 'A photo or a video with each check-in; false: no proof.'
         end_date:
           type: string
           format: date
@@ -2359,7 +2341,6 @@ components:
       - need_kind
       - need_value
       - proof_days
-      - proof_kind
       - proof_required
       - proofs
       - settled

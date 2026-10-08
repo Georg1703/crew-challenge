@@ -8,7 +8,7 @@ Priorities, in order: efficiency (fast on a phone, cheap to run), user experienc
 | Topic | Decision |
 |---|---|
 | Does a day need proof? | No. The check-in makes the day done; proof is extra. A day with proof gets a dot on the board and in the week strip. `proof_required` only nudges ("Adauga dovada") on the card. |
-| How many | Up to 5 proofs per check-in (photos and/or videos, as the challenge's `proof_kind` allows). |
+| How many | Up to 5 proofs per check-in, photos and/or videos, when the challenge asks for proof (`proof_required`; it was `proof_kind` until the wheel plan's stage 1). |
 | Deleting | Only today: you can remove a proof (and add another) until midnight. After that proofs are permanent. |
 | Where the crew sees them | A feed on Echipa (who checked in what, when, with which proofs), and a day sheet: tap a day on a challenge's board to see everyone's proofs for that day. |
 

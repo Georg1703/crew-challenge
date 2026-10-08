@@ -60,12 +60,6 @@ class Challenge(CrewScopedSoftDeleteModel):
         COUNT = "count", "A number of check-ins"
         AMOUNT = "amount", "A total amount"
 
-    class ProofKind(models.TextChoices):
-        NONE = "none", "No proof"
-        PHOTO = "photo", "Photo"
-        VIDEO = "video", "Video"
-        PHOTO_OR_VIDEO = "photo_or_video", "Photo or video"
-
     created_by = models.ForeignKey(
         Member, on_delete=models.SET_NULL, null=True, blank=True, related_name="proposals"
     )
@@ -98,8 +92,9 @@ class Challenge(CrewScopedSoftDeleteModel):
         blank=True,
         help_text="The least amount for a day's check-in to count (numbers only).",
     )
-    proof_kind = models.CharField(max_length=20, choices=ProofKind.choices, default=ProofKind.NONE)
-    proof_required = models.BooleanField(default=False)
+    proof_required = models.BooleanField(
+        default=False, help_text="Each check-in asks for a photo or a video; else no proof."
+    )
     state = models.CharField(max_length=12, choices=State.choices, default=State.PROPOSED)
     period_kind = models.CharField(
         max_length=10,
