@@ -28,6 +28,7 @@ const saved = (id: string, kind: Proof["kind"], status: Proof["status"]): Proof 
   url: status === "ready" || status === "processing" ? `/media/${id}` : null,
   hls_url: null,
   thumb_url: kind === "photo" ? `/media/${id}-thumb.jpg` : null,
+  phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
   duration: null,
 });

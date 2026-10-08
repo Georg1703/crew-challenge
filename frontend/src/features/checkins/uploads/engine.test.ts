@@ -88,6 +88,7 @@ const proof = (id: string, kind: "photo" | "video") => ({
   url: null,
   hls_url: null,
   thumb_url: null,
+  phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
 });
 const PHOTO_PLAN = {

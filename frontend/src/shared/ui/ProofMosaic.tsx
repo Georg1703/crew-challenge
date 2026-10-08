@@ -8,6 +8,8 @@ export type FeedProof = {
   kind: ProofKind;
   state: ProofTileState;
   src?: string | null;
+  /** Shown when `src` fails to load (a video's phone thumbnail behind its poster). */
+  fallback?: string | null;
   /** The full photo, for the big tiles: a thumbnail is too small there and looks blurred. */
   full?: string | null;
   label: string;
@@ -48,6 +50,7 @@ export function ProofMosaic({
             kind={proof.kind}
             state={proof.state}
             src={(i === 0 || shown.length === 2) && proof.full ? proof.full : proof.src}
+            fallbackSrc={proof.fallback}
             label={proof.label}
             duration={proof.duration}
             onOpen={onOpen && (() => onOpen(i))}

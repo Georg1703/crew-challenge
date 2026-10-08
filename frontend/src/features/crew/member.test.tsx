@@ -25,6 +25,7 @@ const proof = (id: string, at = "2026-11-10T08:00:00Z") => ({
   url: `/media/${id}.jpg`,
   hls_url: null,
   thumb_url: null,
+  phone_thumb_url: null,
   created_at: at,
   duration: null,
 });

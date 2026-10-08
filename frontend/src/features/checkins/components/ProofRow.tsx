@@ -109,6 +109,7 @@ export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
             kind={proof.kind}
             state={SAVED_STATE[proof.status]}
             src={proof.thumb_url ?? (proof.kind === "photo" ? proof.url : null)}
+            fallbackSrc={proof.phone_thumb_url}
             label={t(
               `proofs.tile.${waiting ? "waiting" : proof.status === "failed" ? "failedSaved" : proof.status}`,
               { kind: kind(proof.kind) },

@@ -2100,6 +2100,11 @@ components:
           nullable: true
           description: A video's poster once ready, else a small JPEG from the phone;
             else show `url`.
+        phone_thumb_url:
+          type: string
+          nullable: true
+          description: 'The phone''s own small JPEG, if it made one: show it when
+            `thumb_url` fails.'
         created_at:
           type: string
           format: date-time
@@ -2113,6 +2118,7 @@ components:
       - hls_url
       - id
       - kind
+      - phone_thumb_url
       - status
       - thumb_url
       - url

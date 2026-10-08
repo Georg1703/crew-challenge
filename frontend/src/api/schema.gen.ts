@@ -1139,6 +1139,8 @@ export interface components {
             hls_url: string | null;
             /** @description A video's poster once ready, else a small JPEG from the phone; else show `url`. */
             thumb_url: string | null;
+            /** @description The phone's own small JPEG, if it made one: show it when `thumb_url` fails. */
+            phone_thumb_url: string | null;
             /** Format: date-time */
             created_at: string;
             /** @description A video's length in seconds, when the phone could read it. */

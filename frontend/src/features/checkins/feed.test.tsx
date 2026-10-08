@@ -22,6 +22,7 @@ const photo = (id: string): Proof => ({
   url: `/media/${id}.jpg`,
   hls_url: null,
   thumb_url: `/media/${id}-thumb.jpg`,
+  phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
   duration: null,
 });
