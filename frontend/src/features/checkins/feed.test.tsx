@@ -99,26 +99,27 @@ const plainWalk = (id: string, member: typeof ana, at: string): FeedItem => ({
 });
 
 describe("the crew journal", () => {
+  const spin = {
+    id: "s1",
+    member: person(bogdan),
+    challenge: { id: "swim", title: "Swim", icon: "water", measure: "check", unit: "" },
+    day: "2026-11-09",
+    window_first: "2026-11-02",
+    window_last: "2026-11-08",
+    need_kind: "count",
+    need: 3,
+    done: 1,
+    punishment: { position: 3, text: "Cold shower, 2 minutes", proof_required: true },
+    punishment_count: 5,
+    state: "spun",
+    serve_by: "2026-11-16",
+    late: false,
+    proofs: [],
+    reactions: { groups: [], mine: null },
+    day_summary: { check_ins: 0, proofs: 0, crew_done: false },
+  };
+
   it("shows a drawn spin with its punishment and when it is due", async () => {
-    const spin = {
-      id: "s1",
-      member: person(bogdan),
-      challenge: { id: "swim", title: "Swim", icon: "water", measure: "check", unit: "" },
-      day: "2026-11-09",
-      window_first: "2026-11-02",
-      window_last: "2026-11-08",
-      need_kind: "count",
-      need: 3,
-      done: 1,
-      punishment: { position: 3, text: "Cold shower, 2 minutes", proof_required: true },
-      punishment_count: 5,
-      state: "spun",
-      serve_by: "2026-11-16",
-      late: false,
-      proofs: [],
-      reactions: { groups: [], mine: null },
-      day_summary: { check_ins: 0, proofs: 0, crew_done: false },
-    };
     vi.spyOn(api, "GET").mockImplementation((() =>
       ok({
         results: [{ kind: "spin", activity_at: "2026-11-09T08:00:00Z", check_in: null, spin }],
@@ -133,6 +134,30 @@ describe("the crew journal", () => {
     expect(screen.queryByText("3")).toBeNull(); // the text only, not its number on the dial
     expect(screen.getByText("Serve by Monday, November 16")).toBeInTheDocument();
     expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
+  });
+
+  it("shows a served spin as a card of its own, with no date to serve by", async () => {
+    vi.spyOn(api, "GET").mockImplementation((() =>
+      ok({
+        results: [
+          {
+            kind: "served",
+            activity_at: "2026-11-11T10:00:00Z",
+            check_in: null,
+            spin: { ...spin, day: "2026-11-11", state: "served" },
+          },
+          { kind: "spin", activity_at: "2026-11-09T08:00:00Z", check_in: null, spin },
+        ],
+        next: null,
+      })) as never);
+    renderRoutes([
+      { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
+    ]);
+
+    expect(await screen.findByText("Bogdan served a punishment")).toBeInTheDocument();
+    expect(screen.getByText("Bogdan spun the wheel")).toBeInTheDocument();
+    expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(2);
+    expect(screen.getAllByText(/^Serve by/)).toHaveLength(1); // the drawn card, as it was
   });
 
   it("shows each day under its divider, with cards that say who did what", async () => {

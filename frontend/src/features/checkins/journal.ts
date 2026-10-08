@@ -8,8 +8,8 @@ export type JournalCard =
   | { kind: "group"; key: string; items: FeedItem[] }
   /** Everyone finished everything due that day. */
   | { kind: "crew"; key: string }
-  /** A drawn spin (Wheel of Doom), at the time of its latest activity. */
-  | { kind: "spin"; key: string; spin: SpinItem; at: string };
+  /** A spin (Wheel of Doom), drawn or `served`: two cards, each at its own time. */
+  | { kind: "spin"; key: string; spin: SpinItem; served: boolean; at: string };
 
 export interface JournalDay {
   day: string;
@@ -27,7 +27,8 @@ function plain(item: FeedItem): boolean {
 /**
  * The crew's journal, day by day: one entry per day (latest day first), its cards in the order
  * things happened (latest first), plain check-ins of one challenge gathered where the latest of
- * them sits, and the crew's whole day on top when everyone finished. Spins are cards of their own.
+ * them sits, and the crew's whole day on top when everyone finished. A spin is a card of its own
+ * when drawn, and another one when served.
  */
 export function journal(entries: JournalEntry[]): JournalDay[] {
   const days = new Map<string, JournalDay>();
@@ -41,12 +42,13 @@ export function journal(entries: JournalEntry[]): JournalDay[] {
     }
     return entry;
   };
-  for (const { check_in: item, spin, activity_at: at } of entries) {
+  for (const { kind, check_in: item, spin, activity_at: at } of entries) {
     if (spin) {
       dayOf(spin.day, spin.day_summary).cards.push({
         kind: "spin",
-        key: `spin-${spin.id}`,
+        key: `${kind}-${spin.id}`,
         spin,
+        served: kind === "served",
         at,
       });
       continue;

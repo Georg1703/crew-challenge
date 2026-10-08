@@ -1,4 +1,4 @@
-"""Wheel of Doom reads: my open spins, and drawn spins for the crew's journal."""
+"""Wheel of Doom reads: my open spins, and drawn and served spins for the crew's journal."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Exists, OuterRef, Q, QuerySet, Subquery
-from django.db.models.functions import Greatest
+from django.db.models import Exists, F, OuterRef, Q, QuerySet, Subquery
+from django.db.models.functions import Coalesce
 
 from apps.challenges import selectors as challenges
 from apps.core import clock
@@ -81,15 +81,26 @@ def owed(*, member: Member) -> Owed:
     return Owed(spins=rows, to_spin=to_spin, to_serve=len(rows) - to_spin)
 
 
+def _visible(member: Member) -> QuerySet[Spin]:
+    return _with_state(
+        Spin.objects.filter(challenge__in=challenges.visible(member=member))
+    ).select_related("challenge__crew")
+
+
 def journal(*, member: Member) -> QuerySet[Spin]:
-    """Drawn spins on challenges the member can see, with `activity_at`: the later of the draw,
-    "Done" and the newest shown proof (`Greatest` skips what is empty)."""
-    newest_proof = _shown_proofs().order_by("-updated_at").values("updated_at")[:1]
+    """Drawn spins on challenges the member can see, at the draw (`activity_at`): the journal's
+    "spun the wheel" cards, which never change after."""
+    return _visible(member).filter(drawn_at__isnull=False).annotate(activity_at=F("drawn_at"))
+
+
+def served(*, member: Member) -> QuerySet[Spin]:
+    """Served spins on challenges the member can see, at the moment they were served
+    (`activity_at`): "Done", or the first proof the crew could see. The journal's second card."""
+    first_proof = _shown_proofs().order_by("updated_at").values("updated_at")[:1]
     return (
-        _with_state(Spin.objects.filter(challenge__in=challenges.visible(member=member)))
-        .filter(drawn_at__isnull=False)
-        .annotate(activity_at=Greatest("drawn_at", "done_at", Subquery(newest_proof)))
-        .select_related("challenge__crew")
+        _visible(member)
+        .filter(Q(done_at__isnull=False) | Q(has_shown=True))
+        .annotate(activity_at=Coalesce("done_at", Subquery(first_proof)))
     )
 
 

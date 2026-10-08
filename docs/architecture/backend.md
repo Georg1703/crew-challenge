@@ -26,7 +26,7 @@ backend/
 |   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |   |-- proofs/             # Proof on any subject (generic key): uploads, parts, transcoding, expiry
 |   |-- doom/               # Spin: the Wheel of Doom (open, draw, serve); builds on check-ins and proofs
-|   |-- journal/            # The crew's journal: check-ins and drawn spins (the top: nothing imports it)
+|   |-- journal/            # The crew's journal: check-ins, drawn and served spins (the top: nothing imports it)
 |   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory

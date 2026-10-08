@@ -1,4 +1,4 @@
-"""The crew's journal: check-ins and drawn spins, latest activity first.
+"""The crew's journal: check-ins, drawn spins and served ones, latest activity first.
 
 Its own app because it is the one place that knows both kinds (check-ins must not import the
 Wheel of Doom). Each kind pages its own rows after the cursor; the page is merged here, since
@@ -18,7 +18,7 @@ from apps.checkins import selectors as checkins
 from apps.crews.models import Member
 from apps.doom import selectors as doom
 
-CHECK_IN, SPIN = "check_in", "spin"
+CHECK_IN, SPIN, SERVED = "check_in", "spin", "served"
 Cursor = tuple[datetime, UUID]  # the last item's activity_at and id
 
 
@@ -26,7 +26,7 @@ Cursor = tuple[datetime, UUID]  # the last item's activity_at and id
 class Entry:
     kind: str
     activity_at: datetime
-    item: Any  # a CheckIn from checkins.selectors.feed, or a Spin from doom.selectors.journal
+    item: Any  # a CheckIn from checkins.selectors.feed, a Spin from doom.selectors.journal/served
 
 
 def _after(rows: QuerySet[Any], cursor: Cursor | None) -> QuerySet[Any]:
@@ -43,6 +43,7 @@ def page(*, member: Member, cursor: Cursor | None, size: int) -> tuple[list[Entr
     for kind, rows in (
         (CHECK_IN, checkins.feed(member=member)),
         (SPIN, doom.journal(member=member)),
+        (SERVED, doom.served(member=member)),
     ):
         newest = _after(rows, cursor).order_by("-activity_at", "-pk")[: size + 1]
         found += [Entry(kind, row.activity_at, row) for row in newest]

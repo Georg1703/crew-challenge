@@ -1,7 +1,7 @@
 """Spins on "Swim 3 times a week" (Chisinau: UTC+2 from October 25, 2026, UTC+3 before)."""
 
 import random
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -204,8 +204,13 @@ def test_the_crew_sees_drawn_spins_only(swim):
     assert spin is not None
     assert not selectors.journal(member=ana).exists()  # nothing drawn yet
     with at("2026-11-09 08:00Z"):
-        services.draw(by=bogdan, spin_id=spin.pk)
+        services.draw(by=bogdan, spin_id=spin.pk, rng=Pick(1))
     assert [s.pk for s in selectors.journal(member=ana)] == [spin.pk]
+    assert not selectors.served(member=ana).exists()
+    with at("2026-11-10 08:00Z"):
+        services.mark_done(by=bogdan, spin_id=spin.pk)
+    served = [s.activity_at for s in selectors.served(member=ana)]  # type: ignore[attr-defined]
+    assert served == [datetime(2026, 11, 10, 8, tzinfo=UTC)]  # at "Done"
     assert selectors.reactable_spin(ana, spin.pk) == spin
     stranger = AdminFactory.create()
     assert not selectors.journal(member=stranger).exists()

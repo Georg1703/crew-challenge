@@ -138,8 +138,9 @@ GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whol
 GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
 GET    /api/v1/feed?cursor=...          the crew's check-ins with proofs, latest activity first
                                         (30 per page, challenges you can see); replaced by journal
-GET    /api/v1/journal?cursor=...       check-ins and drawn spins, latest activity first: each
-                                        {kind, activity_at, check_in | spin} (30 per page)
+GET    /api/v1/journal?cursor=...       check-ins, drawn spins and served ones, latest activity
+                                        first: each {kind, activity_at, check_in | spin}, kind
+                                        check_in, spin or served (30 per page)
 
 GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
                                         to_serve (the Today card) and each challenge's punishments

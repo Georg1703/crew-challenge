@@ -47,7 +47,7 @@ Punishment, Spin and Wheel of Doom. Wilted trees and Web Push stay after v1.
 | Odds | Equal; the same punishment can come twice in a row. |
 | Serving | Within 7 days of the draw (`serve_by`); after that the card says "Late". No other penalty in v1. |
 | Today card | Shows while anything is owed ("2 spins - 1 proof to add"), right under the day ring card, above the challenge cards; at the top when there is no ring. |
-| Journal | One item per spin, posted when drawn; its proofs attach to it and move it to the top, like a check-in's. The crew can react. Seen by the challenge's participants and admins. |
+| Journal | Two items per spin: one when drawn, which never changes after (the punishment, the day to serve by), and one when served ("Done" or the first shown proof), with the proofs. The crew reacts on the drawn one (reactions per card wait for the journal refactor). Seen by the challenge's participants and admins. |
 | Proofs on a spin | Same as check-ins: up to 5, photo or video, straight to storage, removable on the day they were added. Any day; the first one the crew can see serves it. |
 | Proof model | One generic `Proof` for any subject (a check-in, a spin), in its own app. |
 | Screens | Design C: a dial (the day ring's shape) with one arc per punishment. |
@@ -132,8 +132,8 @@ hundred small judgements for a family crew; it gets a "last judged" marker if cr
 | `POST /api/v1/spins/{id}/draw` | Draw the punishment; returns the spin with its `punishment` (its `position` is where the dial lands) |
 | `POST /api/v1/spins/{id}/done` | Serve a punishment that needs no proof |
 | `POST /api/v1/spins/{id}/proofs` | Start a proof on a spun spin (same body and answer as check-in proofs) |
-| `GET /api/v1/journal?cursor=` | The crew's journal: `{kind: "check_in" or "spin", activity_at, check_in or spin, day_summary}` |
-| `PUT/DELETE /api/v1/reactions/spin/{id}` | Reactions on a spin's journal item (a new target) |
+| `GET /api/v1/journal?cursor=` | The crew's journal: `{kind: "check_in", "spin" or "served", activity_at, check_in or spin, day_summary}` |
+| `PUT/DELETE /api/v1/reactions/spin/{id}` | Reactions on a spin, shown on its drawn journal card (a new target) |
 | `/api/v1/proofs/...` | Unchanged URLs (parts, complete, resume, delete), now in the proofs app |
 | Challenge shape | `proof_required` (no `proof_kind`), `punishments` |
 
@@ -158,8 +158,9 @@ of punishments is a field error (`punishments`) of `validation_failed`.
     and the add tile (the same upload as check-ins);
   - spun, no proof: the punishment and a "Done" button;
   - served: the card leaves with a toast. Empty page: "Nothing to spin".
-- **Journal**: a spin card: who, the challenge, the dial mark with the drawn arc, the punishment,
-  its state (to serve, late, served), then its proofs as a mosaic and reactions.
+- **Journal**: two spin cards. Drawn: who spun the wheel, the challenge, the punishment's text (no
+  number), the day to serve by and what failed; it stays so. Served: who served it, the
+  punishment, its proofs as a mosaic. Reactions on the drawn card.
 - **Proposal wizard**: a "Punishments" step after proof: up to 8 rows (text, "Needs proof" toggle),
   add and remove; none is allowed, one is not. The proof step becomes one toggle.
 - **Challenge page**: the punishments, numbered, with a proof mark.
@@ -287,8 +288,9 @@ columns go in two releases.
     odds are `random.choice`'s); `serve_by` = draw day + 7 in the crew's time zone; late after it;
   - serving: a shown proof serves it, removing it un-serves it; "Done" only without proof; proofs
     only on a drawn spin that needs them; resume on its own spin;
-  - journal: spins appear when drawn, ordered with check-ins by activity, visible to participants
-    and admins only; reactions on a spin item.
+  - journal: spins appear when drawn, and again when served (at "Done" or the first shown proof,
+    on that day), ordered with check-ins by activity, visible to participants and admins only;
+    reactions on the spin (its drawn card).
 
 ### Stage 5 - Wheel screens - done
 
@@ -303,7 +305,8 @@ columns go in two releases.
   "Late") and the proof tiles or "Done"; an empty state.
 - Journal: `CrewFeed` and the crew page read `/api/v1/journal` (`useJournal`; `useFeed` is gone,
   the backend's `/feed` stays for a previous app); spin cards use `FeedCard` as it is (the
-  punishment's text as its highlight, no number), with proofs and reactions.
+  punishment's text as its highlight, no number), a drawn card with the reactions and a served one
+  with the proofs.
 - i18n (ro and en): the spins card and page, the journal card, the new error codes.
 - Seed: `seed_demo_spins` (in `make seed`, `make setup` and the e2e server) gives the demo crew
   "Roata (demo)" whose last week owes three spins each; every run starts over.

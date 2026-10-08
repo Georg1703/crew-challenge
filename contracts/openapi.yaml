@@ -676,8 +676,8 @@ paths:
   /api/v1/journal:
     get:
       operationId: journal_list
-      description: The crew's check-ins and drawn spins, with their proofs, latest
-        activity first.
+      description: The crew's check-ins, drawn spins and served ones, with their proofs,
+        latest first.
       parameters:
       - in: query
         name: cursor
@@ -1831,7 +1831,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/SpinItemOut'
           nullable: true
-          description: Set when `kind` is spin.
+          description: Set when `kind` is spin or served.
       required:
       - activity_at
       - check_in
@@ -1841,10 +1841,12 @@ components:
       enum:
       - check_in
       - spin
+      - served
       type: string
       description: |-
         * `check_in` - check_in
         * `spin` - spin
+        * `served` - served
     JournalPageOut:
       type: object
       properties:
@@ -2498,8 +2500,9 @@ components:
       - period_start
     SpinItemOut:
       type: object
-      description: 'A drawn spin in the crew''s journal: who drew what, and how it
-        is going.'
+      description: |-
+        A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
+        reactions), or who served it (kind `served`, with its proofs).
       properties:
         id:
           type: string
@@ -2512,7 +2515,7 @@ components:
         day:
           type: string
           format: date
-          description: The crew-local day it was drawn.
+          description: The crew-local day it was drawn, or served.
         window_first:
           type: string
           format: date
@@ -2543,7 +2546,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProofOut'
-          description: Processing and ready proofs.
+          description: Processing and ready proofs; empty on kind `spin`.
         reactions:
           $ref: '#/components/schemas/ReactionSummaryOut'
         day_summary:

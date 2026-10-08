@@ -414,7 +414,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The crew's check-ins and drawn spins, with their proofs, latest activity first. */
+        /** @description The crew's check-ins, drawn spins and served ones, with their proofs, latest first. */
         get: operations["journal_list"];
         put?: never;
         post?: never;
@@ -1054,15 +1054,16 @@ export interface components {
             activity_at: string;
             /** @description Set when `kind` is check_in. */
             check_in: components["schemas"]["FeedItemOut"] | null;
-            /** @description Set when `kind` is spin. */
+            /** @description Set when `kind` is spin or served. */
             spin: components["schemas"]["SpinItemOut"] | null;
         };
         /**
          * @description * `check_in` - check_in
          *     * `spin` - spin
+         *     * `served` - served
          * @enum {string}
          */
-        JournalKindEnum: "check_in" | "spin";
+        JournalKindEnum: "check_in" | "spin" | "served";
         JournalPageOut: {
             results: components["schemas"]["JournalEntryOut"][];
             /** @description Send as `cursor` for the next page. */
@@ -1362,7 +1363,10 @@ export interface components {
              */
             period_start: string;
         };
-        /** @description A drawn spin in the crew's journal: who drew what, and how it is going. */
+        /**
+         * @description A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
+         *     reactions), or who served it (kind `served`, with its proofs).
+         */
         SpinItemOut: {
             /**
              * Format: uuid
@@ -1373,7 +1377,7 @@ export interface components {
             challenge: components["schemas"]["ChallengeBriefOut"];
             /**
              * Format: date
-             * @description The crew-local day it was drawn.
+             * @description The crew-local day it was drawn, or served.
              */
             day: string;
             /** Format: date */
@@ -1392,7 +1396,7 @@ export interface components {
             /** Format: date */
             serve_by: string;
             late: boolean;
-            /** @description Processing and ready proofs. */
+            /** @description Processing and ready proofs; empty on kind `spin`. */
             proofs: components["schemas"]["ProofOut"][];
             reactions: components["schemas"]["ReactionSummaryOut"];
             /** @description The crew's whole day, for its divider. */

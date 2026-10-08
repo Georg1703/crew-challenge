@@ -33,24 +33,25 @@ def _spin_response(member: Member, spin_id: UUID) -> Response:
     return Response(SpinOut(spin_data(spin, punishments)).data)
 
 
-def drawn_day(spin: Spin) -> date:
-    assert spin.drawn_at is not None
-    return clock.local_date(spin.drawn_at, spin.challenge.crew.timezone)
+def journal_day(spin: Spin) -> date:
+    """The crew-local day of a spin's journal card: drawn or served (its `activity_at`)."""
+    return clock.local_date(spin.activity_at, spin.challenge.crew.timezone)  # type: ignore[attr-defined]
 
 
 def spin_items(
-    member: Member, spins: list[Spin], summaries: dict[date, DaySummary]
+    member: Member, spins: list[Spin], summaries: dict[date, DaySummary], *, served: bool
 ) -> list[dict[str, Any]]:
-    """Journal items for a page of drawn spins (see SpinItemOut), in a few queries."""
+    """Journal items for a page of drawn spins, or of served ones with their proofs (see
+    SpinItemOut), in a few queries. Reactions are the spin's; the drawn card shows them."""
     counts = challenges.punishments(challenges=list({s.challenge for s in spins}))
-    shown = selectors.shown_proofs(spins)
+    shown = selectors.shown_proofs(spins) if served else {}
     reacted = reactions.summaries(member=member, target="spin", ids=[s.pk for s in spins])
     return [
         {
             "id": spin.pk,
             "member": spin.member,
             "challenge": spin.challenge,
-            "day": drawn_day(spin),
+            "day": journal_day(spin),
             "window_first": spin.window_first,
             "window_last": spin.window_last,
             "need_kind": spin.challenge.need_kind,
@@ -61,9 +62,9 @@ def spin_items(
             "state": selectors.state(spin),
             "serve_by": spin.serve_by,
             "late": selectors.late(spin),
-            "proofs": [proof_data(p) for p in shown[spin.pk]],
+            "proofs": [proof_data(p) for p in shown.get(spin.pk, [])],
             "reactions": asdict(reacted[spin.pk]),
-            "day_summary": vars(summaries[drawn_day(spin)]),
+            "day_summary": vars(summaries[journal_day(spin)]),
         }
         for spin in spins
     ]

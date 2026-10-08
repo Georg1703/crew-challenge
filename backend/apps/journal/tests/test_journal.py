@@ -1,4 +1,4 @@
-"""The journal merges check-ins and drawn spins by activity, page by page."""
+"""The journal merges check-ins, drawn spins and served ones by activity, page by page."""
 
 from datetime import date
 
@@ -9,6 +9,7 @@ from apps.doom import services as doom
 from apps.doom.models import Spin
 from apps.doom.tests.test_services import Pick, at, check_in, scheduled
 from apps.journal import selectors
+from apps.proofs import services as proofs
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -63,3 +64,27 @@ def test_the_journal_endpoint(browser, week):
     assert body["results"][0]["check_in"] is None
     assert body["results"][1]["check_in"]["day"] == "2026-11-09"
     assert browser.get("/api/v1/journal?cursor=nope").status_code == 400
+
+
+def test_a_served_spin_adds_a_card_of_its_own_on_the_day_it_was_served(
+    browser, week, object_storage
+):
+    ana, bogdan, spin = week
+    with at("2026-11-11 10:00Z"):  # Wednesday: the first proof the crew can see serves it
+        plan = doom.start_proof(
+            by=bogdan, spin_id=spin.pk, kind="photo", content_type="image/jpeg", size=4
+        )
+        object_storage.put_object(key=plan.proof.original.key, data=b"jpeg", content_type="")
+        proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)
+    browser.force_login(ana.user)
+    with at("2026-11-11 11:00Z"):
+        body = browser.get("/api/v1/journal").json()
+    cards = [(r["kind"], (r["spin"] or r["check_in"])["day"]) for r in body["results"]]
+    assert cards == [
+        ("served", "2026-11-11"),
+        ("spin", "2026-11-09"),  # as it was drawn
+        ("check_in", "2026-11-09"),
+        ("check_in", "2026-11-02"),
+    ]
+    served, spun = body["results"][0]["spin"], body["results"][1]["spin"]
+    assert (served["state"], len(served["proofs"]), spun["proofs"]) == ("served", 1, [])

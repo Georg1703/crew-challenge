@@ -171,24 +171,27 @@ export function CrewFeed({
   function card(entry: JournalCard) {
     if (entry.kind === "item") return itemCard(entry.item, true);
     if (entry.kind === "spin") {
-      const { spin } = entry;
+      const { spin, served } = entry;
       const caption = `${spin.member.display_name}, ${spin.punishment.text}`;
       return (
         <SpinFeedCard
           item={spin}
+          served={served}
           time={formatWhen(entry.at, language, timeZone)}
           onOpenProof={(index) => {
             onOpenProofOf?.(spin.member.id);
             setViewing({ items: spin.proofs.map((p) => viewerItem(p, caption)), index });
           }}
           reactions={
-            <Reactions
-              target="spin"
-              id={spin.id}
-              summary={spin.reactions}
-              people={members}
-              onChange={(summary) => patchReactions("spin", spin.id, summary)}
-            />
+            served ? undefined : (
+              <Reactions
+                target="spin"
+                id={spin.id}
+                summary={spin.reactions}
+                people={members}
+                onChange={(summary) => patchReactions("spin", spin.id, summary)}
+              />
+            )
           }
         />
       );

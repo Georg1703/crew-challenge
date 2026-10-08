@@ -69,12 +69,13 @@ def spin_data(spin: Spin, punishments: list[Punishment]) -> dict[str, Any]:
 
 
 class SpinItemOut(serializers.Serializer):
-    """A drawn spin in the crew's journal: who drew what, and how it is going."""
+    """A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
+    reactions), or who served it (kind `served`, with its proofs)."""
 
     id = serializers.UUIDField(help_text="The spin.")
     member = PersonOut()
     challenge = ChallengeBriefOut()
-    day = serializers.DateField(help_text="The crew-local day it was drawn.")
+    day = serializers.DateField(help_text="The crew-local day it was drawn, or served.")
     window_first = serializers.DateField()
     window_last = serializers.DateField()
     need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
@@ -85,6 +86,6 @@ class SpinItemOut(serializers.Serializer):
     state = serializers.ChoiceField(choices=DRAWN_STATES)
     serve_by = serializers.DateField()
     late = serializers.BooleanField()
-    proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
+    proofs = ProofOut(many=True, help_text="Processing and ready proofs; empty on kind `spin`.")
     reactions = ReactionSummaryOut()
     day_summary = DaySummaryOut(help_text="The crew's whole day, for its divider.")
