@@ -59,6 +59,8 @@ def test_job_settings_write_hls_and_a_poster_next_to_the_original():
     assert poster["OutputGroupSettings"]["FileGroupSettings"]["Destination"] == (
         "s3://b/v/original/poster"
     )
+    capture = poster["Outputs"][0]["VideoDescription"]["CodecSettings"]["FrameCaptureSettings"]
+    assert (capture["FramerateNumerator"], capture["MaxCaptures"]) == (1, 5)  # 0..4 s
 
 
 @pytest.mark.parametrize(
