@@ -1,4 +1,4 @@
-import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -124,7 +124,9 @@ describe("UpdateBanner", () => {
     pwaMock.needRefresh = true;
     renderUi(<UpdateBanner />);
     await userEvent.click(screen.getByRole("button", { name: "Later" }));
-    // The banner slides out before it leaves the page.
-    await waitForElementToBeRemoved(() => screen.queryByText("A new version of the app is ready."));
+    // The banner slides out before it leaves the page; it may be gone already when this looks.
+    await waitFor(() =>
+      expect(screen.queryByText("A new version of the app is ready.")).not.toBeInTheDocument(),
+    );
   });
 });

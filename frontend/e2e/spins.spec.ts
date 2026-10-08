@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 // The Wheel of Doom against the real backend: seed_demo_spins (playwright.config.ts) leaves every
 // demo member three spins from last week of "Roata (demo)", whose punishments need no proof. Dan
 // spins one, serves it with "Gata", and the crew sees it in the journal. Every seed starts over.
-// Demo accounts use Romanian; reduced motion stops the dial at once.
+// Demo accounts use Romanian; reduced motion stops the dial at once. Locally the database is the
+// dev one, so Dan may owe other spins too: everything here stays on the Roata cards.
 
 const PASSWORD = "garden-flame-2026";
 
@@ -22,18 +23,20 @@ test("spin the wheel, serve the punishment, and the crew sees it", async ({ brow
   await owed.click();
   await expect(page).toHaveURL(/\/spins$/);
 
-  await page.getByRole("button", { name: "Învârte" }).first().click();
-  const result = page
-    .getByRole("status")
-    .filter({ has: page.getByRole("heading") })
-    .first();
-  await expect(result).toBeVisible();
-  const punishment = (await result.getByRole("heading").textContent()) ?? "";
-  await page.getByRole("button", { name: "Gata" }).first().click();
+  const roata = page.locator("section").filter({ hasText: "Roata (demo)" });
+  await roata.getByRole("button", { name: "Învârte" }).first().click();
+  const result = page.getByRole("status").filter({ has: page.getByRole("heading") });
+  const spun = roata.filter({ has: result }).last(); // the one card that just landed
+  await expect(spun).toBeVisible();
+  const punishment = (await spun.getByRole("status").getByRole("heading").textContent()) ?? "";
+  await spun.getByRole("button", { name: "Gata" }).click();
   await expect(page.getByText("Făcut", { exact: true })).toBeVisible();
 
   await page.goto("/crew");
-  const card = page.getByRole("article").filter({ hasText: "Dan și-a făcut pedeapsa" }).first();
+  const card = page
+    .getByRole("article")
+    .filter({ hasText: "Dan și-a făcut pedeapsa" })
+    .filter({ hasText: punishment })
+    .first();
   await expect(card).toBeVisible();
-  await expect(card.getByText(punishment)).toBeVisible();
 });

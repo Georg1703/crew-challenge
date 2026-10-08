@@ -62,7 +62,8 @@ test("a check-in fills the ring, a new photo shows on it, and the member page op
     await send(cristina, "post", `/api/v1/challenges/${walk.id}/check-ins`, { day: today.day });
     await cristina.reload();
     await expect.poll(async () => doneOf(await mine.getAttribute("aria-label"))).toBe(before + 1);
-    await expect(cristina.getByText("Cristina a bifat").first()).toBeVisible();
+    // Alone, or with whoever else checked in on it today (locally the database is the dev one).
+    await expect(cristina.getByText(/Cristina.* bifat/).first()).toBeVisible();
 
     await cristina.goto("/");
     const card = cristina
