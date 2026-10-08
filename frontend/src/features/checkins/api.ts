@@ -14,13 +14,14 @@ export type Today = components["schemas"]["TodayOut"];
 export type TodayChallenge = components["schemas"]["TodayChallengeOut"];
 export type Board = components["schemas"]["BoardOut"];
 export type FeedItem = components["schemas"]["FeedItemOut"];
+export type JournalEntry = components["schemas"]["JournalEntryOut"];
 export type MemberProgress = components["schemas"]["MemberProgressOut"];
 export type Window = components["schemas"]["WindowOut"];
 
 export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
 const boardKey = (id: string, month: string) => [...checkinsKey, "board", id, month] as const;
-const feedKey = [...checkinsKey, "feed"] as const;
+const journalKey = [...checkinsKey, "journal"] as const;
 const dayKey = (id: string, day: string) => [...checkinsKey, "day", id, day] as const;
 const memberKey = (id: string) => [...checkinsKey, "member", id] as const;
 type WindowsQuery = { start?: string; until?: string };
@@ -76,41 +77,48 @@ export function useWindows(id: string, query: WindowsQuery = {}, { enabled = tru
   });
 }
 
-const FEED_REFRESH_MS = 60_000;
+const JOURNAL_REFRESH_MS = 60_000;
 
 /**
- * The crew's check-ins with their proofs, latest activity first, 30 a page. Refreshed when the app
- * comes back to the front and every minute while it is open (a finished upload refreshes it too:
- * it lives under the check-ins key).
+ * The crew's journal: check-ins and drawn spins with their proofs, latest activity first, 30 a
+ * page. Refreshed when the app comes back to the front and every minute while it is open (a
+ * finished upload refreshes it too: it lives under the check-ins key).
  */
-export function useFeed() {
+export function useJournal() {
   return useInfiniteQuery({
-    queryKey: feedKey,
+    queryKey: journalKey,
     queryFn: ({ pageParam }) =>
-      call(api.GET("/api/v1/feed", { params: { query: pageParam ? { cursor: pageParam } : {} } })),
+      call(
+        api.GET("/api/v1/journal", { params: { query: pageParam ? { cursor: pageParam } : {} } }),
+      ),
     initialPageParam: "",
     getNextPageParam: (page) => page.next ?? undefined,
-    refetchInterval: FEED_REFRESH_MS,
+    refetchInterval: JOURNAL_REFRESH_MS,
   });
 }
 
-type FeedPages = InfiniteData<components["schemas"]["PaginatedFeedItemOutList"], string>;
+/** The check-ins among the journal's entries. */
+export const checkInsOf = (entries: JournalEntry[]): FeedItem[] =>
+  entries.flatMap((entry) => (entry.check_in ? [entry.check_in] : []));
 
-/** Put a check-in's new reactions into the cached feed (the reactions feature calls it). */
-export function usePatchFeedReactions() {
+type JournalPages = InfiniteData<components["schemas"]["JournalPageOut"], string>;
+
+/** Put an entry's new reactions into the cached journal (the reactions feature calls it). */
+export function usePatchJournalReactions() {
   const client = useQueryClient();
   return useCallback(
-    (id: string, reactions: FeedItem["reactions"]) => {
-      void client.cancelQueries({ queryKey: feedKey }); // a refresh in flight would undo it
-      client.setQueryData<FeedPages>(feedKey, (data) =>
+    (kind: "check_in" | "spin", id: string, reactions: FeedItem["reactions"]) => {
+      void client.cancelQueries({ queryKey: journalKey }); // a refresh in flight would undo it
+      client.setQueryData<JournalPages>(journalKey, (data) =>
         data
           ? {
               ...data,
               pages: data.pages.map((page) => ({
                 ...page,
-                results: page.results.map((item) =>
-                  item.id === id ? { ...item, reactions } : item,
-                ),
+                results: page.results.map((entry) => {
+                  const item = entry[kind];
+                  return item?.id === id ? { ...entry, [kind]: { ...item, reactions } } : entry;
+                }),
               })),
             }
           : data,

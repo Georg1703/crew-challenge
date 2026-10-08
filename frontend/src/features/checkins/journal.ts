@@ -1,11 +1,15 @@
-import type { FeedItem } from "./api";
+import type { SpinItem } from "@/features/doom";
+
+import type { FeedItem, JournalEntry } from "./api";
 
 export type JournalCard =
   | { kind: "item"; key: string; item: FeedItem }
   /** Plain check-ins of one challenge on one day, said in one card. */
   | { kind: "group"; key: string; items: FeedItem[] }
   /** Everyone finished everything due that day. */
-  | { kind: "crew"; key: string };
+  | { kind: "crew"; key: string }
+  /** A drawn spin (Wheel of Doom), at the time of its latest activity. */
+  | { kind: "spin"; key: string; spin: SpinItem; at: string };
 
 export interface JournalDay {
   day: string;
@@ -21,20 +25,34 @@ function plain(item: FeedItem): boolean {
 }
 
 /**
- * The feed as the crew's journal: one entry per day (latest day first), its cards in the order
+ * The crew's journal, day by day: one entry per day (latest day first), its cards in the order
  * things happened (latest first), plain check-ins of one challenge gathered where the latest of
- * them sits, and the crew's whole day on top when everyone finished.
+ * them sits, and the crew's whole day on top when everyone finished. Spins are cards of their own.
  */
-export function journal(items: FeedItem[]): JournalDay[] {
+export function journal(entries: JournalEntry[]): JournalDay[] {
   const days = new Map<string, JournalDay>();
   const groups = new Map<string, Extract<JournalCard, { kind: "group" }>>();
-  for (const item of items) {
-    let entry = days.get(item.day);
+  const dayOf = (day: string, summary: FeedItem["day_summary"]) => {
+    let entry = days.get(day);
     if (!entry) {
-      entry = { day: item.day, summary: item.day_summary, cards: [] };
-      if (item.day_summary.crew_done) entry.cards.push({ kind: "crew", key: `crew-${item.day}` });
-      days.set(item.day, entry);
+      entry = { day, summary, cards: [] };
+      if (summary.crew_done) entry.cards.push({ kind: "crew", key: `crew-${day}` });
+      days.set(day, entry);
     }
+    return entry;
+  };
+  for (const { check_in: item, spin, activity_at: at } of entries) {
+    if (spin) {
+      dayOf(spin.day, spin.day_summary).cards.push({
+        kind: "spin",
+        key: `spin-${spin.id}`,
+        spin,
+        at,
+      });
+      continue;
+    }
+    if (!item) continue;
+    const entry = dayOf(item.day, item.day_summary);
     if (!plain(item)) {
       entry.cards.push({ kind: "item", key: item.id, item });
       continue;

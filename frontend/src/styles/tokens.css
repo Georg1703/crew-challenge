@@ -181,6 +181,8 @@
   --avatar-md: 2.5rem;
   --avatar-lg: 4rem;
   --progress-ring-size: 10.5rem;
+  --dial-size: 15rem; /* the Wheel of Doom's dial on a spin card */
+  --dial-size-sm: 3.5rem; /* the dial as a mark: Today's card, the journal */
   --day-bar-height: 1.25rem; /* a day in a month of bars */
   --proof-tile-size: 4.5rem; /* a proof thumbnail: four fit across a card on a phone */
   --story-avatar-size: 4.25rem; /* the crew's avatars with their day rings */

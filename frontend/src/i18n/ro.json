@@ -207,7 +207,11 @@
     "upload_failed": "Fișierul nu s-a putut încărca. Verifică conexiunea și încearcă din nou.",
     "member_not_found": "Persoana nu face parte din echipa ta.",
     "target_not_found": "Aici nu se mai poate reacționa.",
-    "invalid_emoji": "Alege un singur emoji."
+    "invalid_emoji": "Alege un singur emoji.",
+    "spin_not_found": "Rotirea nu mai există.",
+    "not_drawn": "Învârte roata mai întâi.",
+    "proof_needed": "Pedeapsa asta se face cu o poză sau un video.",
+    "proof_not_needed": "Pedeapsa asta nu cere dovadă: atinge Gata."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -765,6 +769,40 @@
       "failed": "Ratat",
       "open": "Acum",
       "future": "Urmează"
+    }
+  },
+  "doom": {
+    "title": "Rotiri",
+    "toSpin_one": "{{count}} rotire",
+    "toSpin_few": "{{count}} rotiri",
+    "toSpin_other": "{{count}} de rotiri",
+    "toServe_one": "{{count}} pedeapsă de făcut",
+    "toServe_few": "{{count}} pedepse de făcut",
+    "toServe_other": "{{count}} de pedepse de făcut",
+    "cardBody": "Învârte roata pentru ce ai ratat.",
+    "lateCount_one": "{{count}} pedeapsă e întârziată",
+    "lateCount_few": "{{count}} pedepse sunt întârziate",
+    "lateCount_other": "{{count}} de pedepse sunt întârziate",
+    "open": "Deschide",
+    "missedDay": "Ratat: {{date}}",
+    "amount": "{{value}} {{unit}}",
+    "windowShort": "{{when}}: {{done}} din {{need}}",
+    "dial": "O roată cu {{count}} pedepse",
+    "dialDrawn": "O roată cu {{count}} pedepse: a ieșit {{position}}, {{text}}",
+    "withProof": "Poză sau video",
+    "noProof": "Fără dovadă",
+    "spin": "Învârte",
+    "odds": "Fiecare are șansa 1 din {{count}}, aleasă înainte să se învârtă roata.",
+    "late": "Întârziat",
+    "wasDue": "Trebuia făcut până {{date}}",
+    "serveBy": "De făcut până {{date}}",
+    "done": "Gata",
+    "served": "Făcut",
+    "emptyTitle": "Nimic de învârtit",
+    "emptyBody": "Când o zi sau o săptămână dintr-o provocare rămâne nefăcută, rotirile apar aici.",
+    "feed": {
+      "drew": "{{name}} a învârtit roata",
+      "served": "{{name}} și-a făcut pedeapsa"
     }
   }
 }

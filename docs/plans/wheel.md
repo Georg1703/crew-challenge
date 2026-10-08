@@ -1,6 +1,6 @@
 # Plan: Wheel of Doom, punishments and generic proofs
 
-Status: stages 0-4 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
+Status: stages 0-5 on `feat/wheel-of-doom` (2026-10-08); stage 6 ships in a later deploy. One branch for the whole plan, one
 commit per stage, committed after the owner's review. Screens: design C
 ("The dial") on the design canvas (private, the owner's):
 https://claude.ai/artifact/7UG7dkUWgTWXq3Mist9Xx9
@@ -290,22 +290,32 @@ columns go in two releases.
   - journal: spins appear when drawn, ordered with check-ins by activity, visible to participants
     and admins only; reactions on a spin item.
 
-### Stage 5 - Wheel screens
+### Stage 5 - Wheel screens - done
 
-- `shared/ui/Dial` (with its states and reduced motion), on `/design` and in the design system.
-- `features/doom`: `useSpins`, the Today card, the `/spins` route with its three card states,
-  `useDraw` (optimistic: the dial starts at once and lands when the answer comes), "Done".
-- Journal: `CrewFeed` reads `/api/v1/journal` and renders spin cards (`FeedCard` gains the spin
-  kind); reactions on them.
-- i18n (ro and en): the Today card, the spins page, the wizard step, the journal card, the errors.
-- e2e: a seeded failed week -> Today card -> spin -> proof photo -> journal shows it served.
+- `shared/ui/Dial`: the day ring's shape cut into 2-8 numbered arcs, a marker that turns to the
+  drawn arc (motion preset `dialTurn`, 3.6 s; at once with reduced motion or when already drawn)
+  and lights it when it stops; `size="sm"` is a mark. Tokens `--dial-size`, `--dial-size-sm`.
+  On `/design` and in the design system.
+- `features/doom`: `useSpins`, `useDraw` (the button waits for the server's draw, then the dial
+  turns), `useDone`, `spinProofs` (a `ProofSubject`); `SpinsCard` on Today, right under the day
+  ring (`TodayCheckIns` takes it as `afterRing` from `HomeRoute`); `/spins` with a card per spin:
+  what failed, the dial and the numbered punishments, then the punishment with "Serve by" (or
+  "Late") and the proof tiles or "Done"; an empty state.
+- Journal: `CrewFeed` and the crew page read `/api/v1/journal` (`useJournal`; `useFeed` is gone,
+  the backend's `/feed` stays for a previous app); spin cards use `FeedCard` as it is (the drawn
+  number as its highlight, the punishment as its line), with proofs and reactions.
+- i18n (ro and en): the spins card and page, the journal card, the new error codes.
+- Seed: `seed_demo_spins` (in `make seed`, `make setup` and the e2e server) gives the demo crew
+  "Roata (demo)" whose last week owes three spins each; every run starts over.
+- e2e (`e2e/spins.spec.ts`): Today card -> spins -> spin -> "Gata" -> the crew's journal shows it
+  served. Proof uploads on a spin share the engine the proof e2e already covers.
 
 ### Stage 6 - Clean-up
 
 - Deployed only after stages 1-5 are live (a release later), because the release before them
   still reads what this removes.
-- Removed: `GET /api/v1/feed`, `FeedView`, `useFeed` and its test fixtures (the journal replaced
-  them a release ago).
+- Removed: `GET /api/v1/feed` and `FeedView` (the journal replaced them a release ago; the app
+  stopped calling them in stage 5).
 - Migrations: drop `challenges_challenge.proof_kind`; fill `member` and `subject` again for proofs
   the old release started during the deploy (raw SQL from `check_in_id`), then, in a migration of
   its own, make them required and drop `checkins_proof.check_in_id`.
@@ -320,7 +330,8 @@ columns go in two releases.
 | `Proof.check_in` in the model (done) | backend | 2 |
 | `features/checkins/uploads`, `ProofRow` (done) | frontend | 2 |
 | `proof_kind` and `checkins_proof.check_in_id` columns | migrations | 6 |
-| `GET /api/v1/feed`, `FeedView`, `useFeed` | backend, frontend | 6 |
+| `useFeed` (done) | frontend | 5 |
+| `GET /api/v1/feed`, `FeedView` | backend | 6 |
 
 ## Out of scope
 

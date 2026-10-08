@@ -1,0 +1,84 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* Today's card: the dial mark beside what is owed. */
+.owed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  font-size: var(--text-title-s);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title-s);
+}
+
+.unknown {
+  color: var(--color-text-disabled);
+  font-size: var(--text-number);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-number);
+}
+
+.number {
+  color: var(--color-accent);
+  font-size: var(--text-number);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-number);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The punishments under the dial, by number. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--avatar-sm);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  font-weight: var(--weight-bold);
+}
+
+.text {
+  flex-grow: 1;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

@@ -103,7 +103,8 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
   `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
   `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`),
   `--reaction-chip-height` 26px (a `ReactionChips` pill; its tap area still reaches `--tap-min`),
-  `--emoji-picker-height` 352px (the `EmojiPicker` in a sheet).
+  `--emoji-picker-height` 352px (the `EmojiPicker` in a sheet), `--dial-size` 240px and
+  `--dial-size-sm` 56px (the `Dial` and its mark).
   `--ring-current` marks today in a week strip.
 - Layers: `--z-sticky` (a `DayDivider` over the cards under it), `--z-popover` (the quick row of reactions), `--z-tabbar`, `--z-sheet`, `--z-viewer` (above a sheet it opens from), `--z-toast`.
 
@@ -138,6 +139,7 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `IconPicker` | Pick one icon from a small set (a challenge's icon) |
 | `HoldButton` | Press and hold (0.6 s) to confirm a check-in; letting go cancels; keyboard confirms at once |
 | `ProgressRing` | Today's ring: one segment per thing to do, full / half / empty; closes with the center popping to "done" |
+| `Dial` | The Wheel of Doom's dial, in the day ring's shape: one arc per punishment (2 to 8, numbered inside, from the top clockwise) and a marker on the ring. When a punishment is drawn the marker makes a few turns and stops on its arc (`dialTurn`, 3.6 s; at once with reduced motion or when already drawn), which then lights up. `size="sm"` is a mark without numbers (Today's card) |
 | `ProgressBar` | Progress toward a goal (pages, km, times this week); full turns success |
 | `DayMark`, `WeekStrip` | A day as a shape (done check, half ring, ring, cross, dot, faint ring); seven of them, Monday to Sunday, with a small dot under the days with proof |
 | `DayBars`, `DayBar`, `DayBarsAxis` | A person's month as one row of thin bars (done tall and green, missed short and red, due outlined, coming up faint) and, with `proofs`, a dot under the days with proof; a single bar for a legend; the day numbers above the rows. With `onPick` the day numbers become buttons (named by `labels`) and a tap on a row picks the day under the finger |
@@ -175,6 +177,7 @@ Rules:
 | `snappy` | Fast, firm | Buttons, toggles, small feedback |
 | `bouncy` | Playful overshoot | A check mark popping in |
 | `gentle` | Soft, slower | Sheets, page and large-surface transitions |
+| `dialTurn` | A spin that slows to a stop (3.6 s) | Only the `Dial` turning to a drawn punishment |
 
 - Import from `@/shared/motion` only (enforced): `motion`, `AnimatePresence`, `useSpring(name)`,
   `variants` (`popIn`, `fadeUp`), `staggerStep`, `pressScale`.
@@ -192,7 +195,7 @@ for safe areas and `100dvh`.
 ## Not in this version
 
 Growing trees and other illustrations, confetti, custom reaction sets, push notifications. (The
-Wheel of Doom is in v1 from `docs/plans/wheel.md`; its `Dial` arrives with stage 5.)
+Wheel of Doom is in v1 from `docs/plans/wheel.md`; see `Dial`.)
 
 ## Guardrails (run by `make check`)
 

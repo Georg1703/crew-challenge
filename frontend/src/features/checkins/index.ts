@@ -1,4 +1,12 @@
-export { checkinsKey, useBoard, useFeed, useMemberProgress, useToday, useWindows } from "./api";
+export {
+  checkInsOf,
+  checkinsKey,
+  useBoard,
+  useJournal,
+  useMemberProgress,
+  useToday,
+  useWindows,
+} from "./api";
 export type { FeedItem, MemberProgress, Today, Window } from "./api";
 export { ChallengeBoard } from "./components/ChallengeBoard";
 export { ChallengeWindows } from "./components/ChallengeWindows";

@@ -67,7 +67,15 @@ function mockGets(member: MemberProgress | null, feed: FeedItem[] = []) {
     if (path === "/api/v1/today") {
       return ok({ day: "2026-11-10", deadline: "2026-11-10T22:00:00Z", challenges: [], crew: [] });
     }
-    if (path === "/api/v1/feed") return ok({ results: feed, next: null });
+    if (path === "/api/v1/journal") {
+      const results = feed.map((item) => ({
+        kind: "check_in",
+        activity_at: item.activity_at,
+        check_in: item,
+        spin: null,
+      }));
+      return ok({ results, next: null });
+    }
     if (path === "/api/v1/proposals") return ok({ proposals: [], size: 0, limit: 50 });
     if (path === "/api/v1/challenges") return ok([]);
     return ok(crewDetail);

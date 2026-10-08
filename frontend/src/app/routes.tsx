@@ -59,6 +59,10 @@ export const routes: RouteObject[] = [
               import("@/features/challenges").then((m) => ({ Component: m.ChallengeRoute })),
           },
           {
+            path: "spins",
+            lazy: () => import("@/features/doom").then((m) => ({ Component: m.SpinsRoute })),
+          },
+          {
             path: "me",
             lazy: () => import("@/features/me").then((m) => ({ Component: m.MeRoute })),
           },

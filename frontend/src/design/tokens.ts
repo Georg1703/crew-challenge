@@ -63,4 +63,6 @@ export const sizeTokens = [
   "mini-bar-height",
   "reaction-chip-height",
   "emoji-picker-height",
+  "dial-size",
+  "dial-size-sm",
 ] as const;

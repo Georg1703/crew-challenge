@@ -75,8 +75,18 @@ afterEach(() => {
 
 const members = [crewDetail.members[0], crewDetail.members[1]].filter((m) => m !== undefined);
 
+/** Check-ins as the journal's entries. */
+const entries = (items: FeedItem[]) =>
+  items.map((item) => ({
+    kind: "check_in" as const,
+    activity_at: item.activity_at,
+    check_in: item,
+    spin: null,
+  }));
+
 function showFeed(results: FeedItem[]) {
-  vi.spyOn(api, "GET").mockImplementation((() => ok({ results, next: null })) as never);
+  vi.spyOn(api, "GET").mockImplementation((() =>
+    ok({ results: entries(results), next: null })) as never);
   renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> }]);
 }
 
@@ -89,6 +99,41 @@ const plainWalk = (id: string, member: typeof ana, at: string): FeedItem => ({
 });
 
 describe("the crew journal", () => {
+  it("shows a drawn spin with its punishment and when it is due", async () => {
+    const spin = {
+      id: "s1",
+      member: person(bogdan),
+      challenge: { id: "swim", title: "Swim", icon: "water", measure: "check", unit: "" },
+      day: "2026-11-09",
+      window_first: "2026-11-02",
+      window_last: "2026-11-08",
+      need_kind: "count",
+      need: 3,
+      done: 1,
+      punishment: { position: 3, text: "Cold shower, 2 minutes", proof_required: true },
+      punishment_count: 5,
+      state: "spun",
+      serve_by: "2026-11-16",
+      late: false,
+      proofs: [],
+      reactions: { groups: [], mine: null },
+      day_summary: { check_ins: 0, proofs: 0, crew_done: false },
+    };
+    vi.spyOn(api, "GET").mockImplementation((() =>
+      ok({
+        results: [{ kind: "spin", activity_at: "2026-11-09T08:00:00Z", check_in: null, spin }],
+        next: null,
+      })) as never);
+    renderRoutes([
+      { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
+    ]);
+
+    expect(await screen.findByText("Bogdan spun the wheel")).toBeInTheDocument();
+    expect(screen.getByText("Cold shower, 2 minutes")).toBeInTheDocument();
+    expect(screen.getByText("Serve by Monday, November 16")).toBeInTheDocument();
+    expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
+  });
+
   it("shows each day under its divider, with cards that say who did what", async () => {
     showFeed([walked, read]);
 
@@ -143,11 +188,11 @@ describe("the crew journal", () => {
       path: string,
       options: { params: { query: { cursor?: string } } },
     ) =>
-      path !== "/api/v1/feed"
+      path !== "/api/v1/journal"
         ? ok({}) // who is asking (reactions)
         : options.params.query.cursor === "c2"
-          ? ok({ results: [read], next: null })
-          : ok({ results: [walked], next: "c2" })) as never);
+          ? ok({ results: entries([read]), next: null })
+          : ok({ results: entries([walked]), next: "c2" })) as never);
     renderRoutes([
       { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
     ]);
@@ -155,7 +200,7 @@ describe("the crew journal", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Show older" }));
 
     expect(await screen.findByText("Ana added")).toBeInTheDocument();
-    expect(get).toHaveBeenCalledWith("/api/v1/feed", { params: { query: { cursor: "c2" } } });
+    expect(get).toHaveBeenCalledWith("/api/v1/journal", { params: { query: { cursor: "c2" } } });
     expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
   });
 

@@ -9,6 +9,7 @@ export { DayBar, DayBars, DayBarsAxis } from "./DayBars";
 export { DayMark, type DayState } from "./DayMark";
 export { ChallengeChip } from "./ChallengeChip";
 export { DayDivider } from "./DayDivider";
+export { Dial } from "./Dial";
 export { EmojiFlight, type Flight } from "./EmojiFlight";
 export { EmojiPicker, preloadEmojiPicker, type EmojiPickerTexts } from "./EmojiPicker";
 export { FeedCard } from "./FeedCard";

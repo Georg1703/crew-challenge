@@ -1,0 +1,83 @@
+.dial {
+  position: relative;
+  flex: none;
+  margin: 0 auto;
+}
+
+.lg {
+  width: var(--dial-size);
+  height: var(--dial-size);
+}
+
+.sm {
+  width: var(--dial-size-sm);
+  height: var(--dial-size-sm);
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+}
+
+.arc {
+  fill: none;
+  stroke: var(--color-surface-sunken);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.sm .arc {
+  stroke-width: 16;
+}
+
+/* The drawn arc: lit once the marker stopped on it (see Dial.tsx). */
+.drawn {
+  stroke: var(--color-accent);
+}
+
+.number {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+}
+
+.drawnNumber {
+  color: var(--color-accent);
+}
+
+.turn {
+  position: absolute;
+  inset: 0;
+}
+
+/* The marker sits on the ring at the top; the whole layer turns. */
+.marker {
+  position: absolute;
+  top: 6.67%;
+  left: 50%;
+  width: var(--space-5);
+  height: var(--space-5);
+  border: var(--space-1) solid var(--color-text);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  transform: translate(-50%, -50%);
+}
+
+.sm .marker {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-width: var(--space-hair);
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

@@ -34,7 +34,7 @@ function mockGets(me: ReturnType<typeof meAs>, pending: unknown[] = [], crewToda
       });
     }
     if (path === "/api/v1/crew/invites") return ok(pending);
-    if (path === "/api/v1/feed") return ok({ results: [], next: null });
+    if (path === "/api/v1/journal") return ok({ results: [], next: null });
     if (path === "/api/v1/proposals") return ok({ proposals: [], size: 0, limit: 50 });
     if (path === "/api/v1/challenges") return ok([]);
     return ok(crewDetail);

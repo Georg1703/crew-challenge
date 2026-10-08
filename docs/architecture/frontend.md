@@ -40,6 +40,7 @@ src/
 |-- features/
 |   |-- auth/               # session (useMe), login, join by invite
 |   |-- crew/               # members list, invite sheet
+|   |-- doom/               # the Wheel of Doom: Today's spins card, /spins, the journal's spin card
 |   |-- home/               # garden (placeholder: greeting + members)
 |   `-- me/                 # profile, language, logout
 |-- features/proofs/uploads/     # the upload manager: store.ts (Zustand), engine.ts (Uppy), media.ts;

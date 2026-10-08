@@ -29,6 +29,12 @@ export const variants = {
   },
 } satisfies Record<string, Variants>;
 
+/**
+ * The Wheel of Doom's dial turning to the drawn punishment: a few full turns that slow down to a
+ * stop, long enough to feel like a spin (3.6 s). Reduced motion: it is there at once.
+ */
+export const dialTurn = { duration: 3.6, ease: [0.12, 0.7, 0.12, 1] } satisfies Transition;
+
 /** Delay between children of a staggered list, in seconds. */
 export const staggerStep = 0.06;
 

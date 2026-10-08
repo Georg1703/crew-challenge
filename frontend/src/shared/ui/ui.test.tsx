@@ -7,6 +7,7 @@ import { renderScreen } from "@/test/render";
 import { Avatar, AvatarStack, avatarColor, initials } from "./Avatar";
 import { Button } from "./Button";
 import { DayBar, DayBars, DayBarsAxis } from "./DayBars";
+import { Dial } from "./Dial";
 import { List, ListRow } from "./ListRow";
 import { QrCode } from "./QrCode";
 import { Sheet } from "./Sheet";
@@ -124,5 +125,15 @@ describe("DayBars", () => {
     render(<DayBar state="missed" label="missed" />);
 
     expect(screen.getByRole("img", { name: "missed" })).toBeInTheDocument();
+  });
+});
+
+describe("Dial", () => {
+  it("numbers one arc per punishment; the mark has no numbers", () => {
+    const { rerender } = render(<Dial count={5} label="A dial with 5 punishments" />);
+    expect(screen.getByRole("img", { name: "A dial with 5 punishments" })).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    rerender(<Dial size="sm" count={5} drawn={3} label="The mark" />);
+    expect(screen.queryByText("5")).toBeNull();
   });
 });

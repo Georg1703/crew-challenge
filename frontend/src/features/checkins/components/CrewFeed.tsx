@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
+import { SpinFeedCard } from "@/features/doom";
 import { Reactions } from "@/features/reactions";
 import { SHOWN_PROOFS, shownTile, viewerItem } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
@@ -19,7 +20,7 @@ import {
   type ViewerItem,
 } from "@/shared/ui";
 
-import { useFeed, usePatchFeedReactions, type FeedItem as Item } from "../api";
+import { useJournal, usePatchJournalReactions, type FeedItem as Item } from "../api";
 import styles from "../checkins.module.css";
 import { journal, type JournalCard, type JournalDay } from "../journal";
 
@@ -61,8 +62,8 @@ export function CrewFeed({
 }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
-  const feed = useFeed();
-  const patchReactions = usePatchFeedReactions();
+  const feed = useJournal();
+  const patchReactions = usePatchJournalReactions();
   const [viewing, setViewing] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const items = feed.data?.pages.flatMap((page) => page.results) ?? [];
   const today = todayIn(timeZone);
@@ -159,7 +160,7 @@ export function CrewFeed({
               id={item.id}
               summary={item.reactions}
               people={members}
-              onChange={(summary) => patchReactions(item.id, summary)}
+              onChange={(summary) => patchReactions("check_in", item.id, summary)}
             />
           ) : undefined
         }
@@ -169,6 +170,29 @@ export function CrewFeed({
 
   function card(entry: JournalCard) {
     if (entry.kind === "item") return itemCard(entry.item, true);
+    if (entry.kind === "spin") {
+      const { spin } = entry;
+      const caption = `${spin.member.display_name}, ${spin.punishment.text}`;
+      return (
+        <SpinFeedCard
+          item={spin}
+          time={formatWhen(entry.at, language, timeZone)}
+          onOpenProof={(index) => {
+            onOpenProofOf?.(spin.member.id);
+            setViewing({ items: spin.proofs.map((p) => viewerItem(p, caption)), index });
+          }}
+          reactions={
+            <Reactions
+              target="spin"
+              id={spin.id}
+              summary={spin.reactions}
+              people={members}
+              onChange={(summary) => patchReactions("spin", spin.id, summary)}
+            />
+          }
+        />
+      );
+    }
     if (entry.kind === "crew") {
       return (
         <FeedCard

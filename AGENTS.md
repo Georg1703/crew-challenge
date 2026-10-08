@@ -59,7 +59,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 | `make fmt` | Format all code |
 | `make schema` | Regenerate OpenAPI + TypeScript client. Run after any serializer or view change. |
 | `make migrate` / `make makemigrations` | Database migrations |
-| `make seed` | Demo crew with known users and a challenge running this month |
+| `make seed` | Demo crew with known users, a challenge running this month, and spins to try |
 | `make superuser` | Create a Django admin user (interactive) |
 | `make shell` / `make logs` | Django shell / service logs |
 | `make tunnel` / `make preview` | HTTPS URL for a phone: dev server / production build (to install) |

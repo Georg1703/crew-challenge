@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { useMe } from "@/features/auth";
 import { TodayCheckIns } from "@/features/checkins";
+import { SpinsCard } from "@/features/doom";
 import { InstallCard } from "@/pwa";
 import { Screen } from "@/shared/ui";
 
@@ -24,7 +25,7 @@ export function HomeRoute() {
   return (
     <Screen title={t("home.greeting", { name: member.display_name })}>
       <InstallCard dismissible />
-      <TodayCheckIns />
+      <TodayCheckIns afterRing={<SpinsCard />} />
     </Screen>
   );
 }

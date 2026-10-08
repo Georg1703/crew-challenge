@@ -35,6 +35,7 @@ import {
   OptionList,
   ProgressBar,
   ProgressRing,
+  Dial,
   ProofAddTile,
   ProofMosaic,
   ProofTile,
@@ -111,6 +112,8 @@ export function DesignRoute() {
   const [proof, setProof] = useState(true);
   const [icon, setIcon] = useState("dumbbell");
   const [ring, setRing] = useState<RingSegment[]>(["full", "partial", "empty"]);
+  const [drawn, setDrawn] = useState<number | null>(null);
+  const [dialRound, setDialRound] = useState(0); // a new dial for each try
   const [pages, setPages] = useState(12);
   const toast = useToast();
 
@@ -458,6 +461,26 @@ export function DesignRoute() {
           checked={proof}
           onChange={setProof}
         />
+      </Section>
+
+      <Section title="Wheel of Doom">
+        <Dial
+          key={dialRound}
+          count={5}
+          drawn={drawn}
+          label={drawn ? `A dial with 5 punishments: ${drawn} was drawn` : "A dial with 5"}
+        >
+          <span className={styles.muted}>{drawn ?? "?"}</span>
+        </Dial>
+        <Button
+          onClick={() => {
+            if (drawn !== null) setDialRound((r) => r + 1);
+            setDrawn(drawn === null ? 1 + Math.floor(Math.random() * 5) : null);
+          }}
+        >
+          {drawn === null ? "Spin" : "Again"}
+        </Button>
+        <Dial size="sm" count={5} drawn={3} label="The dial as a mark, 3 drawn" />
       </Section>
 
       <Section title="Check-in">

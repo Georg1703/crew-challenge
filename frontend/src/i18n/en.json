@@ -207,7 +207,11 @@
     "upload_failed": "The file could not be uploaded. Check your connection and try again.",
     "member_not_found": "This member is not in your crew.",
     "target_not_found": "You can't react to this any more.",
-    "invalid_emoji": "Pick one emoji."
+    "invalid_emoji": "Pick one emoji.",
+    "spin_not_found": "This spin no longer exists.",
+    "not_drawn": "Spin the wheel first.",
+    "proof_needed": "This punishment is served with a photo or video.",
+    "proof_not_needed": "This punishment needs no proof: tap Done."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -765,6 +769,40 @@
       "failed": "Missed",
       "open": "Now",
       "future": "To come"
+    }
+  },
+  "doom": {
+    "title": "Spins",
+    "toSpin_one": "{{count}} spin",
+    "toSpin_few": "{{count}} spins",
+    "toSpin_other": "{{count}} spins",
+    "toServe_one": "{{count}} to serve",
+    "toServe_few": "{{count}} to serve",
+    "toServe_other": "{{count}} to serve",
+    "cardBody": "Spin the wheel for what you missed.",
+    "lateCount_one": "{{count}} punishment is late",
+    "lateCount_few": "{{count}} punishments are late",
+    "lateCount_other": "{{count}} punishments are late",
+    "open": "Open",
+    "missedDay": "Missed {{date}}",
+    "amount": "{{value}} {{unit}}",
+    "windowShort": "{{when}}: {{done}} of {{need}}",
+    "dial": "A dial with {{count}} punishments",
+    "dialDrawn": "A dial with {{count}} punishments: {{position}} was drawn, {{text}}",
+    "withProof": "Photo or video",
+    "noProof": "No proof",
+    "spin": "Spin",
+    "odds": "Each one is 1 in {{count}}, drawn before the dial turns.",
+    "late": "Late",
+    "wasDue": "Was due {{date}}",
+    "serveBy": "Serve by {{date}}",
+    "done": "Done",
+    "served": "Served",
+    "emptyTitle": "Nothing to spin",
+    "emptyBody": "When a challenge's day or week falls short, its spins show up here.",
+    "feed": {
+      "drew": "{{name}} spun the wheel",
+      "served": "{{name}} served a punishment"
     }
   }
 }

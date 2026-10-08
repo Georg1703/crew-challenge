@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 
 import { useMe } from "@/features/auth";
 import { ProposalsRow } from "@/features/challenges";
-import { CrewFeed, useFeed, useToday } from "@/features/checkins";
+import { checkInsOf, CrewFeed, useJournal, useToday } from "@/features/checkins";
 import { errorMessage } from "@/i18n/errors";
 import { DAY_MS } from "@/shared/lib/dates";
 import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
@@ -24,13 +24,13 @@ export function CrewRoute() {
   const me = useMe();
   const crew = useCrew();
   const today = useToday();
-  const feed = useFeed();
+  const journal = useJournal();
   useSeenVersion();
   // Never looked at someone's proofs on this device: the last day's count as new.
   const [since] = useState(() => new Date(Date.now() - DAY_MS));
   const isAdmin = me.data?.member?.role === "admin";
   const meId = me.data?.member?.id;
-  const items = feed.data?.pages.flatMap((page) => page.results) ?? [];
+  const items = checkInsOf(journal.data?.pages.flatMap((page) => page.results) ?? []);
   const fresh = crew.data ? freshCounts(items, crew.data.id, meId, since) : {};
 
   return (
