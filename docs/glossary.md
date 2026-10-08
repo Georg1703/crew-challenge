@@ -44,6 +44,6 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Greenhouse | - | Archive of past months' trees. After v1. |
 | Reaction | `Reaction` | One member's emoji on something in the crew (v1: a check-in card in the journal). One per member per target; picking another replaces it. |
 | Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`check_in` now). |
-| Punishment | `Punishment` | An entry in the crew's pool of forfeits. After v1. |
-| Spin | `PunishmentSpin` | One pending or completed turn of the Wheel of Doom for one missed day. Status: `pending`, `spun`, `served`. After v1. |
-| Wheel of Doom | `doom` app | The feature that assigns a punishment after a missed day. After v1. |
+| Punishment | `Punishment` | One of a challenge's punishments: a short text and whether it needs proof. None, or 2 to 8, written by the creator; fixed once scheduled. |
+| Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
+| Wheel of Doom | `doom` app | Punishments for failed windows: spins are owed, drawn on the server, then served with proof (`docs/plans/wheel.md`). |

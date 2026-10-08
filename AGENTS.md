@@ -7,11 +7,12 @@ the owner's family.
 Read this file before changing anything. Then read the nested `AGENTS.md` of the area you touch.
 
 ## First version (v1) scope
-v1 ships five things: inviting members, flexible challenge creation, the daily check-in (you and
-your crew), proof upload (photo or video), and simple reactions on the crew's journal (one emoji
-per person). Everything below marked **after v1** stays in the docs as the long-term direction but
-must not be built yet: growing trees and the garden, streak flames as artwork, the Wheel of Doom,
-confetti and Rive animations, custom reaction sets and reaction notifications, and Web Push.
+v1 ships six things: inviting members, flexible challenge creation, the daily check-in (you and
+your crew), proof upload (photo or video), simple reactions on the crew's journal (one emoji
+per person), and the Wheel of Doom (punishments for failed windows, `docs/plans/wheel.md`).
+Everything below marked **after v1** stays in the docs as the long-term direction but must not be
+built yet: growing trees and the garden, streak flames as artwork, confetti and Rive animations,
+custom reaction sets and reaction notifications, and Web Push.
 If a task seems to need one of these, stop and ask.
 
 - How the system is built, and why: `docs/architecture/`
@@ -141,8 +142,12 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   challenge.
 - Proof (stage 3) attaches to the day's check-in. A proof upload that starts before midnight
   counts if it completes within 24 h after that day's deadline.
-- Missed day -> streak reset. After v1: tree wilted and one pending Wheel of Doom spin per missed day.
-- After v1: the Wheel of Doom result is chosen on the server before the client animation starts.
+- Missed day -> streak reset. On a challenge with punishments (none, or 2 to 8, set by its
+  creator), a failed window owes one spin per missing check-in, or one for a missed total. After
+  v1: tree wilted.
+- The Wheel of Doom result is drawn on the server before the client animation starts. A spun
+  punishment is served by a proof (or "Done" when it needs none), within 7 days. Plan:
+  `docs/plans/wheel.md`.
 
 ## Large uploads (up to 20 GB) - non-negotiable
 - Files never go through Django. Browser -> S3 multipart upload with presigned part URLs.
@@ -178,7 +183,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 ## UI and motion
 - Calm and clear first: every important action gets short feedback (a check mark, a toast,
   a progress change) through the `shared/motion` presets. Big celebrations (tree growth, confetti,
-  flame spark, spin, reveal flip) come after v1.
+  flame spark, reveal flip) come after v1. The wheel's dial turning is part of v1.
 - Every tap responds within 100 ms (optimistic updates with TanStack Query, rollback on error).
 - Animate only `transform` and `opacity`; target 60 fps on a mid-range Android phone.
 - Lazy-load hls.js (and the Rive runtime after v1); code-split routes; first load < 2 s on 4G.
