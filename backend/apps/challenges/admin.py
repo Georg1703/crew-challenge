@@ -1,5 +1,6 @@
 from typing import Any
 
+from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
@@ -87,6 +88,35 @@ class ChallengeAdmin(admin.ModelAdmin):
             else:
                 row.save()
         formset.save_m2m()
+
+
+class PunishmentForm(forms.ModelForm):
+    def clean(self) -> dict[str, Any]:
+        """The challenge's punishments stay different, with this one reworded."""
+        super().clean()
+        data = self.cleaned_data
+        if self.errors:
+            return data
+        others = Punishment.objects.filter(challenge=self.instance.challenge_id).exclude(
+            pk=self.instance.pk
+        )
+        shapes = [services.PunishmentShape(p.text, p.proof_required) for p in others]
+        shapes.append(services.PunishmentShape(data["text"], data["proof_required"]))
+        errors = services.punishment_errors(shapes)
+        if errors:
+            raise ValidationError(errors)
+        return data
+
+
+@admin.register(Punishment)
+class PunishmentAdmin(admin.ModelAdmin):
+    """Every challenge's punishments in one list, to find and reword. Adding and removing happen
+    on the challenge's page, where the count and the numbers 1 to N hold."""
+
+    form = PunishmentForm
+    list_display = ("text", "challenge", "position", "proof_required", "crew")
+    list_filter = ("crew", "proof_required")
+    search_fields = ("text", "challenge__title")
 
 
 @admin.register(Participant)
