@@ -137,7 +137,8 @@ test("only the people the creator chose see a challenge, and the creator can cha
   await expect(bogdan.getByRole("checkbox", { name: /^Bogdan/ })).toBeDisabled();
   await bogdan.getByRole("checkbox", { name: /^Dan/ }).uncheck({ force: true });
   await expect(bogdan.getByText(/Participă \d+ din \d+/)).toBeVisible();
-  for (let step = 0; step < 4; step += 1) {
+  // Measure, how often, proof, punishments, then the review.
+  for (let step = 0; step < 5; step += 1) {
     await bogdan.getByRole("button", { name: "Continuă" }).click();
   }
   await bogdan.getByRole("button", { name: "Publică propunerea" }).click();
