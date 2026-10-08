@@ -250,7 +250,10 @@ columns go in two releases.
   `propose_challenge` and `edit_proposal` write them (migration `0015_punishments`); editing a
   proposal replaces them as a whole and, when they changed, resets the votes. The challenge API
   takes and returns them (`position`, `text`, `proof_required`); lists load them in one query. The
-  admin shows them read only.
+  Django admin edits them on the challenge's page, any time (so running challenges can get
+  some): the same rules (`services.punishment_errors`), removed ones close the numbers up
+  (`number_punishments`), new ones go last, and one a spin drew can be reworded, not removed
+  (the spin protects it). Votes are not reset there.
 - Wizard step "Punishments" after "What proof?" (design D3: a card per punishment with its text,
   "Needs a photo or video" and remove; "Add a punishment" up to 8; "2 of 8"); it refuses a single
   one, a blank one and repeats before moving on. The summary says how many; the challenge page

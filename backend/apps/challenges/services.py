@@ -11,6 +11,7 @@ people cannot take the pool's last place.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -124,6 +125,29 @@ class Shape:
     punishments: tuple[PunishmentShape, ...] = ()
 
 
+def punishment_errors(punishments: Sequence[PunishmentShape]) -> list[str]:
+    """What is wrong with a challenge's punishments: they are none, or 2 to 8 different ones of 1
+    to 80 characters (the proposal wizard and the admin)."""
+    errors = []
+    if len(punishments) == 1 or len(punishments) > PUNISHMENTS_MAX:
+        errors.append("Add 2 to 8 punishments, or none.")
+    if any(not p.text or len(p.text) > PUNISHMENT_MAX for p in punishments):
+        errors.append("Write each punishment in 1 to 80 characters.")
+    if len({p.text.casefold() for p in punishments}) < len(punishments):
+        errors.append("Each punishment must be different.")
+    return errors
+
+
+def number_punishments(*, challenge: Challenge) -> None:
+    """Number a challenge's punishments 1 to N again (the dial's numbers) after some were removed.
+    Each one only moves down, in order, so no two ever share a number on the way."""
+    rows = Punishment.objects.filter(challenge=challenge).order_by("position")
+    for position, punishment in enumerate(rows, start=1):
+        if punishment.position != position:
+            punishment.position = position
+            punishment.save(update_fields=["position", "updated_at"])
+
+
 def clean_shape(raw: dict[str, Any]) -> Shape:
     """Normalize and check a challenge's shape; raise ValidationFailed with every bad field."""
     errors: dict[str, list[str]] = {}
@@ -210,12 +234,8 @@ def clean_shape(raw: dict[str, Any]) -> Shape:
         PunishmentShape(str(p.get("text", "")).strip(), bool(p.get("proof_required")))
         for p in raw.get("punishments") or []
     )
-    if len(punishments) == 1 or len(punishments) > PUNISHMENTS_MAX:
-        bad("punishments", "Add 2 to 8 punishments, or none.")
-    if any(not p.text or len(p.text) > PUNISHMENT_MAX for p in punishments):
-        bad("punishments", "Write each punishment in 1 to 80 characters.")
-    if len({p.text.casefold() for p in punishments}) < len(punishments):
-        bad("punishments", "Each punishment must be different.")
+    for message in punishment_errors(punishments):
+        bad("punishments", message)
 
     if errors:
         raise ValidationFailed(fields=errors)

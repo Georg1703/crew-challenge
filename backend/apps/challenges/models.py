@@ -181,7 +181,8 @@ class Challenge(CrewScopedSoftDeleteModel):
 
 class Punishment(CrewScopedModel):
     """One of a challenge's punishments: none, or 2 to 8. Written by its creator with the proposal
-    (replaced as a whole while it is one) and fixed once scheduled; the wheel draws one per spin."""
+    (replaced as a whole while it is one) and fixed in the app once scheduled; the Django admin can
+    still edit them (`admin.PunishmentInline`). The wheel draws one per spin."""
 
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="punishments")
     position = models.PositiveSmallIntegerField(help_text="1 to 8: its number on the dial.")
