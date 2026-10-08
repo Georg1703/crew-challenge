@@ -271,6 +271,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProofUploadOut'
           description: ''
+  /api/v1/challenges/{challenge_id}/check-ins/proofs/resume:
+    get:
+      operationId: proofs_resume
+      description: |-
+        My unfinished video upload of this file (name|size|lastModified) on one of my
+        check-ins of this challenge, also yesterday's while its grace runs; else 404.
+      parameters:
+      - in: path
+        name: challenge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: fingerprint
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
+          description: ''
   /api/v1/challenges/{challenge_id}/days/{day}:
     get:
       operationId: challenges_day_sheet
@@ -750,7 +779,7 @@ paths:
   /api/v1/proofs/{proof_id}:
     delete:
       operationId: proofs_delete
-      description: Remove my proof and its files (only on its own day).
+      description: Remove my proof and its files (only on the day it was added).
       parameters:
       - in: path
         name: proof_id
@@ -844,28 +873,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/proofs/resume:
-    get:
-      operationId: proofs_resume
-      description: My unfinished video upload for this file (name|size|lastModified),
-        or 404.
-      parameters:
-      - in: query
-        name: fingerprint
-        schema:
-          type: string
-        required: true
-      tags:
-      - proofs
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProofUploadOut'
-          description: ''
   /api/v1/proposals:
     get:
       operationId: proposals_list
@@ -2155,12 +2162,6 @@ components:
       properties:
         proof:
           $ref: '#/components/schemas/ProofOut'
-        challenge_id:
-          type: string
-          format: uuid
-        day:
-          type: string
-          format: date
         mode:
           $ref: '#/components/schemas/UploadModeEnum'
         content_type:
@@ -2187,9 +2188,7 @@ components:
           nullable: true
           description: PUT the thumbnail here, Content-Type image/jpeg.
       required:
-      - challenge_id
       - content_type
-      - day
       - mode
       - part_count
       - part_size

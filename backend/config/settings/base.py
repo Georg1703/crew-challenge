@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.challenges",
     "apps.checkins",
     "apps.media",
+    "apps.proofs",
     "apps.reactions",
 ]
 
@@ -144,9 +145,9 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "ChallengeStateEnum": "apps.challenges.models.Challenge.State",
         "DayStateEnum": "apps.checkins.api.serializers.DAY_STATES",
-        "MediaKindEnum": "apps.checkins.models.Proof.Kind",
+        "MediaKindEnum": "apps.proofs.models.Proof.Kind",
         "CheckInStatusEnum": "apps.checkins.models.CheckIn.Status",
-        "ProofStatusEnum": "apps.checkins.models.Proof.Status",
+        "ProofStatusEnum": "apps.proofs.models.Proof.Status",
         "UploadModeEnum": "apps.media.models.Upload.Mode",
         "VerdictEnum": "apps.checkins.api.serializers.VERDICTS",
         # The name the contract had before proofs also brought a "status".

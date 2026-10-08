@@ -246,13 +246,6 @@
   color: var(--color-success);
 }
 
-/* Today's proofs: up to four tiles a row, each at most --proof-tile-size. */
-.proofs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, var(--proof-tile-size)));
-  gap: var(--space-3);
-}
-
 /* The day sheet's day: arrows on the sides, the challenge between them. */
 .dayNav {
   display: flex;

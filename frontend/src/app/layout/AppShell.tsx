@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 
 import { useMe } from "@/features/auth";
-import { CheckInSheet, useCheckInAction, useMediaSession } from "@/features/checkins";
+import { CheckInSheet, useCheckInAction } from "@/features/checkins";
+import { useMediaSession } from "@/features/proofs";
 import { TabBar } from "@/shared/ui";
 
 export function AppShell() {

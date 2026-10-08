@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
@@ -14,9 +13,9 @@ import {
   type ProofTileState,
 } from "@/shared/ui";
 
-import { checkinsKey, proofApi, type Proof, type TodayChallenge } from "../api";
-import styles from "../checkins.module.css";
+import { proofApi, type Proof, type ProofSubject } from "../api";
 import { viewerItem } from "../proofs";
+import styles from "../proofs.module.css";
 import { cancel, retry, toggle, upload } from "../uploads/engine";
 import { useUploads } from "../uploads/store";
 
@@ -42,30 +41,39 @@ const SAVED_STATE: Record<Proof["status"], ProofTileState> = {
 const onPhone = () => window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
 /**
- * Today's proofs for one challenge, under its check-in: what the crew sees, this phone's uploads
- * in flight, and "+" while fewer than 5. Uploads keep going on other screens (uploads/engine.ts).
+ * A subject's proofs (today's check-in, a spin): what the API has, this phone's uploads in flight,
+ * and "+" while fewer than 5. Uploads keep going on other screens (uploads/engine.ts). `title`
+ * names them in the viewer; `onChanged` refreshes whatever shows `proofs`.
  */
-export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
+export function ProofTiles({
+  subject,
+  title,
+  proofs,
+  onChanged,
+}: {
+  subject: ProofSubject;
+  title: string;
+  proofs: Proof[];
+  onChanged: () => Promise<unknown>;
+}) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
-  const queryClient = useQueryClient();
   const local = useUploads(
-    useShallow((s) => Object.values(s.items).filter((u) => u.challengeId === card.id)),
+    useShallow((s) => Object.values(s.items).filter((u) => u.subject === subject.key)),
   );
   const [hidden, setHidden] = useState<string[]>([]); // removed, until "Undo" runs out
   const [viewing, setViewing] = useState<number | null>(null);
   const [big, setBig] = useState<File | null>(null);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: checkinsKey });
   const inFlight = new Set(local.map((u) => u.proofId));
-  const saved = card.proofs.filter((p) => !inFlight.has(p.id) && !hidden.includes(p.id));
+  const saved = proofs.filter((p) => !inFlight.has(p.id) && !hidden.includes(p.id));
   const sending = local.filter((u) => !hidden.includes(u.proofId));
   const viewable = saved.filter((p) => p.url);
   const counted = sending.length + saved.filter((p) => p.status !== "failed").length;
   const kind = (k: string) => t(`proofs.kind.${k}`);
 
   const send = (file: File) =>
-    void upload({ challengeId: card.id, day, file, onDone: refresh }).catch((error: unknown) =>
+    void upload({ subject, file, onDone: onChanged }).catch((error: unknown) =>
       toast(errorMessage(t, error), "error"),
     );
 
@@ -88,7 +96,7 @@ export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
         } catch (error) {
           toast(errorMessage(t, error), "error");
         }
-        await refresh();
+        await onChanged();
       })();
     }, UNDO_MS);
   };
@@ -147,7 +155,7 @@ export function ProofRow({ card, day }: { card: TodayChallenge; day: string }) {
       )}
 
       <ProofViewer
-        items={viewable.map((p) => viewerItem(p, card.title))}
+        items={viewable.map((p) => viewerItem(p, title))}
         index={viewing ?? 0}
         onIndexChange={setViewing}
         open={viewing !== null}

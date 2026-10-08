@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-from apps.checkins import services
 from apps.checkins.tests.test_proofs import DAY, at, photo, scheduled, send
+from apps.proofs import services as proofs
 from tests.factories import AdminFactory, MemberFactory
 
 
@@ -26,4 +26,4 @@ def crew():
 def shown_photo(storage, member, challenge, day=DAY):
     plan = photo(member, challenge, day=day)
     send(storage, plan)
-    return services.complete_proof(by=member, proof_id=plan.proof.pk)
+    return proofs.complete_proof(by=member, proof_id=plan.proof.pk)

@@ -3,8 +3,8 @@ from rest_framework import serializers
 from apps.challenges.api.serializers import PersonOut
 from apps.challenges.models import ICONS, Challenge
 from apps.checkins.days import DayState, Verdict
-from apps.checkins.models import CheckIn, Proof
-from apps.media.models import Upload
+from apps.checkins.models import CheckIn
+from apps.proofs.api.serializers import ProofOut
 from apps.reactions.api.serializers import ReactionSummaryOut
 
 DAY_STATES = (
@@ -55,29 +55,6 @@ class WindowOut(serializers.Serializer):
     )
     state = serializers.ChoiceField(
         choices=VERDICTS, allow_null=True, help_text="Null for someone who doesn't take part."
-    )
-
-
-class ProofOut(serializers.Serializer):
-    id = serializers.UUIDField()
-    kind = serializers.ChoiceField(choices=Proof.Kind.choices)
-    status = serializers.ChoiceField(choices=Proof.Status.choices)
-    url = serializers.CharField(allow_null=True, help_text="The file, once fully uploaded.")
-    hls_url = serializers.CharField(
-        allow_null=True,
-        help_text="A video's HLS playlist once transcoded (production only); else play `url`.",
-    )
-    thumb_url = serializers.CharField(
-        allow_null=True,
-        help_text="A video's poster once ready, else a small JPEG from the phone; else show `url`.",
-    )
-    phone_thumb_url = serializers.CharField(
-        allow_null=True,
-        help_text="The phone's own small JPEG, if it made one: show it when `thumb_url` fails.",
-    )
-    created_at = serializers.DateTimeField()
-    duration = serializers.IntegerField(
-        allow_null=True, help_text="A video's length in seconds, when the phone could read it."
     )
 
 
@@ -152,79 +129,6 @@ class BoardRowOut(serializers.Serializer):
 class BoardOut(serializers.Serializer):
     days = serializers.ListField(child=serializers.DateField())
     rows = BoardRowOut(many=True)
-
-
-class ProofStartIn(serializers.Serializer):
-    kind = serializers.ChoiceField(choices=Proof.Kind.choices)
-    duration = serializers.IntegerField(
-        required=False,
-        allow_null=True,
-        default=None,
-        help_text="A video's length in whole seconds, from the file's metadata.",
-    )
-    content_type = serializers.CharField(
-        max_length=100, help_text="The file's type, e.g. video/mp4."
-    )
-    size = serializers.IntegerField(min_value=1, help_text="Bytes.")
-    fingerprint = serializers.CharField(
-        max_length=300,
-        required=False,
-        default="",
-        allow_blank=True,
-        help_text="name|size|lastModified of the picked video, to resume it later.",
-    )
-    thumb_size = serializers.IntegerField(
-        min_value=1,
-        required=False,
-        allow_null=True,
-        default=None,
-        help_text="Bytes of the JPEG thumbnail made on the phone, if any.",
-    )
-
-
-class PartOut(serializers.Serializer):
-    number = serializers.IntegerField()
-    etag = serializers.CharField()
-
-
-class ProofUploadOut(serializers.Serializer):
-    """A proof being uploaded and how to send its files straight to storage."""
-
-    proof = ProofOut()
-    challenge_id = serializers.UUIDField()
-    day = serializers.DateField()
-    mode = serializers.ChoiceField(choices=Upload.Mode.choices)
-    content_type = serializers.CharField(help_text="Send this Content-Type with the original.")
-    put_url = serializers.CharField(
-        allow_null=True, help_text="Single mode (photos): PUT the whole file here."
-    )
-    part_size = serializers.IntegerField(
-        allow_null=True, help_text="Multipart (videos): bytes per part; the last one is smaller."
-    )
-    part_count = serializers.IntegerField(allow_null=True)
-    parts = PartOut(many=True, help_text="Parts already uploaded: skip them when resuming.")
-    thumb_put_url = serializers.CharField(
-        allow_null=True, help_text="PUT the thumbnail here, Content-Type image/jpeg."
-    )
-
-
-class PartsIn(serializers.Serializer):
-    numbers = serializers.ListField(
-        child=serializers.IntegerField(min_value=1), allow_empty=False, max_length=1000
-    )
-
-
-class PartUrlOut(serializers.Serializer):
-    number = serializers.IntegerField()
-    url = serializers.CharField()
-
-
-class PartsOut(serializers.Serializer):
-    parts = PartUrlOut(many=True)
-
-
-class PartIn(serializers.Serializer):
-    etag = serializers.CharField(max_length=100, help_text="The ETag header S3 answered with.")
 
 
 class DaySheetRowOut(serializers.Serializer):

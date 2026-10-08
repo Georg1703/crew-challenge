@@ -1,8 +1,8 @@
 /**
  * The upload engine: our API decides, Uppy moves the bytes.
  *
- * 1. Our API starts the proof (rules, 5 a day, the grace) or, for a video picked again, resumes
- *    it by fingerprint with the parts it already has.
+ * 1. The subject's API starts the proof (its rules, at most 5, the grace) or, for a video picked
+ *    again, resumes it by fingerprint with the parts it already has.
  * 2. Uppy (v5; v6 drives S3 itself) sends the file straight to S3: one presigned PUT for a
  *    photo; a video's parts 4 at a time, each retried 6 times with backoff and signed afresh,
  *    each part's ETag reported to the API so a closed app can resume.
@@ -13,9 +13,9 @@
  */
 import type { Body, Meta, UppyFile } from "@uppy/core";
 
-import { putFile } from "@/api";
+import { isApiError, putFile } from "@/api";
 
-import { proofApi, type ProofUpload } from "../api";
+import { proofApi, type ProofSubject, type ProofUpload } from "../api";
 import { fingerprint, prepareVideo, preparePhoto } from "./media";
 import { summary, useUploads } from "./store";
 
@@ -167,28 +167,32 @@ async function createUppy() {
 let engine: ReturnType<typeof createUppy> | null = null;
 const uppy = () => (engine ??= createUppy());
 
+/** Nothing to resume: start a new proof instead. */
+function nothingToResume(error: unknown): null {
+  if (isApiError(error) && error.status === 404) return null;
+  throw error;
+}
+
 /**
- * Send a picked photo or video as proof for today's check-in. Throws the API's error (not checked
- * in, 5 already, a type it does not take) before anything uploads. `onDone` refreshes the screens
- * once the proof is complete; the tile then comes from the API.
+ * Send a picked photo or video as proof for `subject` (today's check-in, a spin). Throws the API's
+ * error (not checked in, 5 already, a type it does not take) before anything uploads. `onDone`
+ * refreshes the screens once the proof is complete; the tile then comes from the API.
  */
 export async function upload({
-  challengeId,
-  day,
+  subject,
   file,
   onDone,
 }: {
-  challengeId: string;
-  day: string;
+  subject: ProofSubject;
   file: File;
   onDone: () => Promise<unknown>;
 }): Promise<void> {
   const kind = file.type.startsWith("video/") ? "video" : "photo";
   const prepared = kind === "video" ? await prepareVideo(file) : await preparePhoto(file);
   const print = fingerprint(file);
-  let plan: ProofUpload | null = kind === "video" ? await proofApi.resume(print) : null;
-  if (plan && plan.challenge_id !== challengeId) plan = null; // same file, another challenge
-  plan ??= await proofApi.start(challengeId, day, {
+  let plan: ProofUpload | null =
+    kind === "video" ? await subject.resume(print).catch(nothingToResume) : null;
+  plan ??= await subject.start({
     kind,
     content_type: prepared.contentType,
     size: prepared.body.size,
@@ -233,7 +237,7 @@ export async function upload({
   useUploads.getState().put({
     id,
     proofId,
-    challengeId,
+    subject: subject.key,
     kind,
     preview: shown ? URL.createObjectURL(shown) : null,
     state: "uploading",

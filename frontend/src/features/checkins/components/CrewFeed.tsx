@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
 import { Reactions } from "@/features/reactions";
+import { SHOWN_PROOFS, shownTile, viewerItem } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { addDays } from "@/shared/lib/dates";
 import { formatDayLong, formatList, formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
@@ -21,7 +22,6 @@ import {
 import { useFeed, usePatchFeedReactions, type FeedItem as Item } from "../api";
 import styles from "../checkins.module.css";
 import { journal, type JournalCard, type JournalDay } from "../journal";
-import { SHOWN_PROOFS, shownTile, viewerItem } from "../proofs";
 
 type T = ReturnType<typeof useTranslation>["t"];
 

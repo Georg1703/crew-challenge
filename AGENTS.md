@@ -140,8 +140,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   or the whole period, `apps/challenges/windows.py`): a window that ended below its need has failed, and a
   failed day window is a missed day. Verdicts are derived on read, not stored. Streaks are per
   challenge.
-- Proof (stage 3) attaches to the day's check-in. A proof upload that starts before midnight
-  counts if it completes within 24 h after that day's deadline.
+- Proof (`apps/proofs`) attaches to a subject: the day's check-in (later a spin). A check-in's
+  proof upload that starts before midnight counts if it completes within 24 h after that day's
+  deadline.
 - Missed day -> streak reset. On a challenge with punishments (none, or 2 to 8, set by its
   creator), a failed window owes one spin per missing check-in, or one for a missed total. After
   v1: tree wilted.
@@ -157,7 +158,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   pause on `offline`, resume on `online`.
 - Report each completed part (number + ETag) to the API, which keeps them with the upload. Resume =
   user re-picks the same file, its fingerprint (name + size + lastModified) finds the open upload
-  (`GET /api/v1/proofs/resume`), only missing parts are uploaded. No browser storage for this: it
+  (the subject's resume route, e.g. `GET /api/v1/challenges/{id}/check-ins/proofs/resume`), only
+  missing parts are uploaded. No browser storage for this: it
   may be evicted on iOS, and the server already has it.
 - The upload manager is a global store outside routes: the user is never blocked from using the
   app while an upload runs. Progress shows in the tab bar.

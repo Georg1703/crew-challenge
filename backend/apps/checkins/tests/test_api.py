@@ -5,8 +5,9 @@ import time_machine
 
 from apps.challenges import services as challenges
 from apps.checkins import services
-from apps.checkins.models import Proof
 from apps.media.models import MiB
+from apps.proofs import services as proofs
+from apps.proofs.models import Proof
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -116,11 +117,7 @@ def test_photo_proof_over_http(browser, setup, object_storage):
     assert (body["mode"], body["part_size"], body["parts"]) == ("single", None, [])
     assert body["put_url"]
     assert body["thumb_put_url"]
-    assert (body["day"], body["proof"]["status"], body["proof"]["url"]) == (
-        "2026-11-10",
-        "uploading",
-        None,
-    )
+    assert (body["proof"]["status"], body["proof"]["url"]) == ("uploading", None)
     proof_id = body["proof"]["id"]
     for name, data in (("original.jpg", b"jpeg"), ("thumb.jpg", b"tn")):
         key = f"crews/{member.crew_id}/proofs/{proof_id}/{name}"
@@ -175,9 +172,10 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     reported = browser.put(f"/api/v1/proofs/{proof_id}/parts/1", {"etag": etag}, format="json")
     assert reported.status_code == 204
 
-    resumed = browser.get("/api/v1/proofs/resume?fingerprint=a.mp4|10|1").json()
+    resume = f"/api/v1/challenges/{read.pk}/check-ins/proofs/resume?fingerprint="
+    resumed = browser.get(f"{resume}a.mp4|10|1").json()
     assert resumed["parts"] == [{"number": 1, "etag": etag}]
-    assert browser.get("/api/v1/proofs/resume?fingerprint=b").status_code == 404
+    assert browser.get(f"{resume}b").status_code == 404
     thumb = Proof.objects.get(pk=proof_id).thumb  # the phone's frame, PUT by the browser
     assert thumb is not None
     object_storage.put_object(key=thumb.key, data=b"tn", content_type="image/jpeg")
@@ -185,13 +183,13 @@ def test_video_proof_resumes_over_http(browser, setup, object_storage, transcode
     assert (done["status"], done["hls_url"]) == ("processing", None)  # renditions on their way
     assert "thumb" in done["thumb_url"]  # meanwhile the phone's frame stands in
 
-    services.finish_videos()  # starts the job
+    proofs.finish_videos()  # starts the job
     prefix = upload.key.rsplit(".", 1)[0]
     object_storage.put_object(
         key=f"{prefix}/poster.0000000.jpg", data=b"j" * 10_000, content_type="image/jpeg"
     )
     transcoder.finish(next(iter(transcoder.jobs)))
-    services.finish_videos()
+    proofs.finish_videos()
     shown = browser.get("/api/v1/today").json()["challenges"][0]["proofs"][0]
     assert shown["status"] == "ready"
     assert "poster" in shown["thumb_url"]  # the server's poster wins over the phone's frame

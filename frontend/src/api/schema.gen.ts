@@ -159,6 +159,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/challenges/{challenge_id}/check-ins/proofs/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description My unfinished video upload of this file (name|size|lastModified) on one of my
+         *     check-ins of this challenge, also yesterday's while its grace runs; else 404.
+         */
+        get: operations["proofs_resume"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/challenges/{challenge_id}/days/{day}": {
         parameters: {
             query?: never;
@@ -470,7 +490,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove my proof and its files (only on its own day). */
+        /** @description Remove my proof and its files (only on the day it was added). */
         delete: operations["proofs_delete"];
         options?: never;
         head?: never;
@@ -521,23 +541,6 @@ export interface paths {
         get?: never;
         /** @description Report a finished part and its ETag, so a later resume skips it. */
         put: operations["proofs_record_part"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/proofs/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description My unfinished video upload for this file (name|size|lastModified), or 404. */
-        get: operations["proofs_resume"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1166,10 +1169,6 @@ export interface components {
         /** @description A proof being uploaded and how to send its files straight to storage. */
         ProofUploadOut: {
             proof: components["schemas"]["ProofOut"];
-            /** Format: uuid */
-            challenge_id: string;
-            /** Format: date */
-            day: string;
             mode: components["schemas"]["UploadModeEnum"];
             /** @description Send this Content-Type with the original. */
             content_type: string;
@@ -1597,6 +1596,29 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
+                };
+            };
+        };
+    };
+    proofs_resume: {
+        parameters: {
+            query: {
+                fingerprint: string;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2153,27 +2175,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    proofs_resume: {
-        parameters: {
-            query: {
-                fingerprint: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProofUploadOut"];
-                };
             };
         };
     };

@@ -1,8 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { ChallengeIcon } from "@/features/challenges";
+import { ProofTiles } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { cx } from "@/shared/lib/cx";
 import { weekday } from "@/shared/lib/dates";
@@ -19,11 +21,16 @@ import {
   useToast,
 } from "@/shared/ui";
 
-import { useCheckIn, useUndoCheckIn, type TodayChallenge } from "../api";
+import {
+  checkInProofs,
+  checkinsKey,
+  useCheckIn,
+  useUndoCheckIn,
+  type TodayChallenge,
+} from "../api";
 import styles from "../checkins.module.css";
 import { shortWindow, windowKind } from "../windows";
 import { AmountSheet } from "./AmountSheet";
-import { ProofRow } from "./ProofRow";
 
 const QUICK_AMOUNTS = [1, 5, 10] as const;
 
@@ -40,6 +47,7 @@ export function CheckInCard({
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const checkIn = useCheckIn();
   const undo = useUndoCheckIn();
   const [typing, setTyping] = useState(false);
@@ -196,7 +204,12 @@ export function CheckInCard({
           {card.proof_required && card.proofs.length === 0 && (
             <p className={styles.meta}>{t("proofs.nudge")}</p>
           )}
-          <ProofRow card={card} day={day} />
+          <ProofTiles
+            subject={checkInProofs(card.id, day)}
+            title={card.title}
+            proofs={card.proofs}
+            onChanged={() => queryClient.invalidateQueries({ queryKey: checkinsKey })}
+          />
         </>
       )}
 

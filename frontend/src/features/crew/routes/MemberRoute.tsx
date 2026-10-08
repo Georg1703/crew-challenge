@@ -3,14 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
 
 import { CHALLENGE_ICONS } from "@/features/challenges";
-import {
-  type MemberProgress,
-  shownTile,
-  SHOWN_PROOFS,
-  useMemberProgress,
-  useToday,
-  viewerItem,
-} from "@/features/checkins";
+import { type MemberProgress, useMemberProgress, useToday } from "@/features/checkins";
+import { shownTile, SHOWN_PROOFS, viewerItem } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { dayOfMonth } from "@/shared/lib/dates";
 import { formatDayLong, monthAndYear, todayIn } from "@/shared/lib/format";

@@ -21,8 +21,9 @@ backend/
 `-- conftest.py          # fixtures for all tests: api_client, user, auth_client, object_storage
 ```
 
-Apps: `core`, `accounts`, `crews`, `challenges`, `checkins`, `media`, `reactions` (generic: any
-registered target, see `docs/architecture/backend.md`), `doom`, `notifications`.
+Apps: `core`, `accounts`, `crews`, `challenges`, `checkins`, `media`, `proofs` (generic: any
+subject), `reactions` (generic: any registered target, see `docs/architecture/backend.md`),
+`doom`, `notifications`.
 Create each one when it is first needed.
 
 ## Layer rules (enforced by import-linter in `make check`)

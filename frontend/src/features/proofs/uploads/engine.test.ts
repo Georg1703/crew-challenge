@@ -1,9 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, putFile } from "@/api";
+import { api, call, putFile } from "@/api";
 import type * as ApiModule from "@/api";
 import { fail, ok } from "@/test/render";
 
+import type { ProofSubject } from "../api";
 import { cancel, partSize, retry, toggle, upload } from "./engine";
 import { summary, useUploads } from "./store";
 
@@ -93,8 +94,6 @@ const proof = (id: string, kind: "photo" | "video") => ({
 });
 const PHOTO_PLAN = {
   proof: proof("p1", "photo"),
-  challenge_id: "walk",
-  day: "2026-11-10",
   mode: "single" as const,
   content_type: "image/jpeg",
   put_url: "https://s3/put",
@@ -115,6 +114,15 @@ const VIDEO_PLAN = {
   thumb_put_url: null,
 };
 const START = "/api/v1/challenges/{challenge_id}/check-ins/{day}/proofs";
+const RESUME = "/api/v1/challenges/{challenge_id}/check-ins/proofs/resume";
+/** A subject as Today's card builds one (features/checkins/api.ts checkInProofs). */
+const walk: ProofSubject = {
+  key: "check-in:walk",
+  start: (body) =>
+    call(api.POST(START, { params: { path: { challenge_id: "walk", day: "2026-11-10" } }, body })),
+  resume: (fingerprint) =>
+    call(api.GET(RESUME, { params: { path: { challenge_id: "walk" }, query: { fingerprint } } })),
+};
 const COMPLETE = "/api/v1/proofs/{proof_id}/complete";
 const sentinel = { release: vi.fn(async () => undefined), addEventListener: vi.fn() };
 const requestLock = vi.fn(async () => sentinel);
@@ -155,7 +163,7 @@ describe("upload engine", () => {
     const post = mockPost();
     const onDone = vi.fn(async () => undefined);
 
-    await upload({ challengeId: "walk", day: "2026-11-10", file: photo(), onDone });
+    await upload({ subject: walk, file: photo(), onDone });
 
     expect(post).toHaveBeenCalledWith(START, {
       params: { path: { challenge_id: "walk", day: "2026-11-10" } },
@@ -208,12 +216,7 @@ describe("upload engine", () => {
         (() => new Promise((resolve) => (land = () => resolve(ok(null, 204))))) as never,
       );
 
-    await upload({
-      challengeId: "walk",
-      day: "2026-11-10",
-      file: video(),
-      onDone: async () => null,
-    });
+    await upload({ subject: walk, file: video(), onDone: async () => null });
 
     expect(post).not.toHaveBeenCalledWith(START, expect.anything()); // resumed, not started
     const file = only();
@@ -241,8 +244,7 @@ describe("upload engine", () => {
   it("goes on with a video picked again while its upload is still here", async () => {
     vi.spyOn(api, "GET").mockImplementation((() => ok(VIDEO_PLAN)) as never);
     mockPost();
-    const pick = () =>
-      upload({ challengeId: "walk", day: "2026-11-10", file: video(), onDone: async () => null });
+    const pick = () => upload({ subject: walk, file: video(), onDone: async () => null });
     await pick();
     await uppy().emit("upload-error", only());
 
@@ -252,17 +254,12 @@ describe("upload engine", () => {
     expect(uppy().retryUpload).toHaveBeenCalledWith(only().id);
   });
 
-  it("starts a new proof when the same video was begun for another challenge", async () => {
+  it("starts a video with its fingerprint and length when there is nothing to resume", async () => {
     vi.spyOn(api, "GET").mockImplementation((() =>
-      ok({ ...VIDEO_PLAN, challenge_id: "read" })) as never);
+      fail(404, { code: "proof_not_found" })) as never);
     const post = mockPost(VIDEO_PLAN);
 
-    await upload({
-      challengeId: "walk",
-      day: "2026-11-10",
-      file: video(),
-      onDone: async () => null,
-    });
+    await upload({ subject: walk, file: video(), onDone: async () => null });
 
     expect(post).toHaveBeenCalledWith(
       START,
@@ -282,7 +279,7 @@ describe("upload engine", () => {
       fail(409, { code: "too_many_proofs" })) as never);
 
     await expect(
-      upload({ challengeId: "walk", day: "2026-11-10", file: photo(), onDone: async () => null }),
+      upload({ subject: walk, file: photo(), onDone: async () => null }),
     ).rejects.toMatchObject({ code: "too_many_proofs" });
 
     expect(uppy().files.size).toBe(0);
@@ -291,12 +288,7 @@ describe("upload engine", () => {
 
   it("pauses offline, goes on online; a tap pauses; a failed one can be tried again", async () => {
     mockPost();
-    await upload({
-      challengeId: "walk",
-      day: "2026-11-10",
-      file: photo(),
-      onDone: async () => null,
-    });
+    await upload({ subject: walk, file: photo(), onDone: async () => null });
     const id = only().id;
     const state = () => useUploads.getState().items[id]?.state;
 
@@ -317,12 +309,7 @@ describe("upload engine", () => {
 
   it("keeps the screen awake while something uploads", async () => {
     mockPost();
-    await upload({
-      challengeId: "walk",
-      day: "2026-11-10",
-      file: photo(),
-      onDone: async () => null,
-    });
+    await upload({ subject: walk, file: photo(), onDone: async () => null });
     await vi.waitFor(() => expect(requestLock).toHaveBeenCalledWith("screen"));
 
     await cancel(only().id);
@@ -334,7 +321,7 @@ describe("upload engine", () => {
   it("cuts videos like the server does and sums progress by bytes", () => {
     expect(partSize(1024 ** 3 - 1)).toBe(16 * 1024 * 1024);
     expect(partSize(1024 ** 3)).toBe(64 * 1024 * 1024);
-    const item = { proofId: "p", challengeId: "walk", kind: "photo" as const, preview: null };
+    const item = { proofId: "p", subject: "check-in:walk", kind: "photo" as const, preview: null };
     expect(
       summary({
         a: { ...item, id: "a", state: "uploading", progress: 0.5, size: 100 },

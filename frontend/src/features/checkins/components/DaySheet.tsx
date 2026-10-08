@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { SHOWN_PROOFS, shownTile, viewerItem } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { formatDayLong, formatNumber } from "@/shared/lib/format";
 import {
@@ -17,7 +18,6 @@ import {
 
 import { useDaySheet } from "../api";
 import styles from "../checkins.module.css";
-import { SHOWN_PROOFS, shownTile, viewerItem } from "../proofs";
 
 /**
  * One day of a challenge, opened from its board: everyone's state, total and proofs. The arrows

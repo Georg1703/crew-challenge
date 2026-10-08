@@ -22,8 +22,9 @@ backend/
 |   |-- accounts/           # User, login/logout/me
 |   |-- crews/              # Crew, Member, Invite, switching crews
 |   |-- challenges/         # Challenge (soft deleted), Participant, Vote; windows.py: what each window needs
-|   |-- checkins/           # CheckIn, CheckInEntry, Proof; days.py: day states, verdicts, streaks
+|   |-- checkins/           # CheckIn, CheckInEntry; days.py: day states, verdicts, streaks
 |   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
+|   |-- proofs/             # Proof on any subject (generic key): uploads, parts, transcoding, expiry
 |   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
@@ -87,7 +88,8 @@ flowchart TB
 - `apps.core` imports no domain app;
 - the apps build on each other in one direction: accounts, then crews, then challenges, then
   check-ins; nothing lower imports something higher;
-- media knows files, not challenges or check-ins; reactions know their targets only through the
+- media knows files, not challenges or check-ins; proofs know files and members, not what they
+  back (check-ins build on them); reactions know their targets only through the
   registry (no challenges, check-ins or media).
 
 ## Generic building blocks
@@ -110,6 +112,23 @@ kind of target needs no table, endpoint or client change:
 
 `PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
 Check-ins are the first target (`check_in`: single journal cards only).
+
+**Proofs (`apps/proofs`).** A photo or video backing a subject (a check-in now, a spin with the
+Wheel of Doom). A `Proof` points at its subject by a generic key (`subject_type` + `subject_id`)
+and keeps who added it (`member`, for ownership). No registry is needed:
+
+1. the subject model declares `proofs = GenericRelation("proofs.Proof",
+   content_type_field="subject_type", object_id_field="subject_id")` (with a
+   `related_query_name`, so `Proof.objects.filter(check_in__day=...)` works);
+2. its app checks its own rules, locks the subject's row and calls
+   `proofs.services.start_proof(member, subject, ..., expires_at)`, which checks the file, the
+   count (5) and starts the uploads; resuming is `resume_proof(by, fingerprint, subjects)` over the
+   subject's own rows;
+3. its API has a start route and a resume route; parts, complete and delete are the generic
+   `/api/v1/proofs/{id}/...`; a proof is removable on the crew-local day it was added.
+
+Deleting a subject deletes its proofs (the relation); call `discard_files(subject=...)` first to
+remove their files. The table is still named `checkins_proof` (the model moved without a copy).
 
 ## Core building blocks (`apps/core`)
 

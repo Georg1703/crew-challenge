@@ -28,10 +28,11 @@ from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant, PeriodKind
 from apps.challenges.windows import windows
 from apps.checkins import days
-from apps.checkins.models import CheckIn, CheckInEntry, Proof
+from apps.checkins.models import CheckIn, CheckInEntry
 from apps.core import clock
 from apps.crews.models import Crew, Member
 from apps.media.models import Upload, crew_folder
+from apps.proofs.models import Proof
 from integrations.storage import ObjectStorage, get_object_storage
 
 C = Challenge
@@ -350,7 +351,8 @@ class Seeder:
         Proof.objects.create(
             id=proof_id,
             crew=self.crew,
-            check_in=check_in,
+            member=check_in.member,
+            subject=check_in,
             kind=kind,
             status=Proof.Status.READY,
             original=original,

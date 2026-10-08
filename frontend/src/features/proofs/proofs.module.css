@@ -1,0 +1,10 @@
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* A subject's proofs: up to four tiles a row, each at most --proof-tile-size. */
+.proofs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, var(--proof-tile-size)));
+  gap: var(--space-3);
+}

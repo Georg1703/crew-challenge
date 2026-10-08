@@ -20,11 +20,11 @@ from apps.challenges.windows import windows
 from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Member
+from apps.proofs.models import Proof
+from apps.proofs.selectors import SHOWN
 
 from . import days
-from .models import CheckIn, CheckInEntry, Proof
-
-SHOWN = (Proof.Status.PROCESSING, Proof.Status.READY)  # proof the crew can see
+from .models import CheckIn, CheckInEntry
 
 
 def records(
@@ -62,11 +62,14 @@ def records(
 def todays_proofs(*, member: Member, day: date) -> dict[UUID, list[Proof]]:
     """The member's proofs on `day` per challenge, every status (uploads in flight too)."""
     result: dict[UUID, list[Proof]] = defaultdict(list)
-    rows = Proof.objects.filter(check_in__member=member, check_in__day=day).select_related(
-        "check_in", "original__transcode", "thumb"
+    challenge_of = dict(
+        CheckIn.objects.filter(member=member, day=day).values_list("pk", "challenge")
+    )
+    rows = Proof.objects.filter(check_in__in=list(challenge_of)).select_related(
+        "original__transcode", "thumb"
     )
     for proof in rows:
-        result[proof.check_in.challenge_id].append(proof)
+        result[challenge_of[proof.subject_id]].append(proof)
     return dict(result)
 
 
@@ -279,8 +282,8 @@ def day_sheet(*, member: Member, challenge_id: UUID, day: date) -> list[DaySheet
     shown: dict[UUID, list[Proof]] = defaultdict(list)
     for proof in Proof.objects.filter(
         check_in__challenge=challenge, check_in__day=day, status__in=SHOWN
-    ).select_related("check_in", "original__transcode", "thumb"):
-        shown[proof.check_in.member_id].append(proof)
+    ).select_related("original__transcode", "thumb"):
+        shown[proof.member_id].append(proof)
     return [
         DaySheetRow(
             member=participant.member,
@@ -528,20 +531,22 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
             )
         )
     by_challenge = {p.challenge_id: p.challenge for p in parts}
+    day_and_challenge = {
+        pk: (day, challenge_id)
+        for pk, day, challenge_id in CheckIn.objects.filter(
+            member=person, challenge_id__in=list(by_challenge), day__range=(first, last)
+        ).values_list("pk", "day", "challenge")
+    }
     grouped: dict[tuple[date, UUID], list[Proof]] = defaultdict(list)
     for proof in (
-        Proof.objects.filter(
-            check_in__member=person,
-            check_in__challenge_id__in=list(by_challenge),
-            check_in__day__range=(first, last),
-            status__in=SHOWN,
-        )
-        .select_related("check_in", "original__transcode", "thumb")
-        .order_by("-check_in__day", "check_in__challenge__title", "created_at")
+        Proof.objects.filter(check_in__in=list(day_and_challenge), status__in=SHOWN)
+        .select_related("original__transcode", "thumb")
+        .order_by("created_at")
     ):
-        grouped[(proof.check_in.day, proof.check_in.challenge_id)].append(proof)
+        grouped[day_and_challenge[proof.subject_id]].append(proof)
+    latest_first = sorted(grouped, key=lambda k: (-k[0].toordinal(), by_challenge[k[1]].title))
     result.proof_days = [
-        ProofDay(day=day, challenge=by_challenge[challenge_id], proofs=proofs)
-        for (day, challenge_id), proofs in grouped.items()
+        ProofDay(day=day, challenge=by_challenge[challenge_id], proofs=grouped[(day, challenge_id)])
+        for day, challenge_id in latest_first
     ]
     return result

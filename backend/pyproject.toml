@@ -175,6 +175,7 @@ forbidden_modules = [
     "apps.challenges",
     "apps.checkins",
     "apps.media",
+    "apps.proofs",
     "apps.reactions",
 ]
 ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
@@ -204,10 +205,22 @@ source_modules = ["apps.media"]
 forbidden_modules = ["apps.challenges", "apps.checkins"]
 
 [[tool.importlinter.contracts]]
+name = "Proofs know files and members, not what they back: check-ins build on them"
+type = "forbidden"
+source_modules = ["apps.proofs"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.reactions"]
+
+[[tool.importlinter.contracts]]
+name = "Media knows no proofs: proofs build on it"
+type = "forbidden"
+source_modules = ["apps.media"]
+forbidden_modules = ["apps.proofs"]
+
+[[tool.importlinter.contracts]]
 name = "Reactions know their targets only through the registry (targets register themselves)"
 type = "forbidden"
 source_modules = ["apps.reactions"]
-forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media", "apps.proofs"]
 
 [[tool.importlinter.contracts]]
 name = "Integrations do not depend on domain apps"

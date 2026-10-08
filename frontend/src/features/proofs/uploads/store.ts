@@ -10,7 +10,8 @@ export interface LocalUpload {
   /** Uppy's file id. */
   id: string;
   proofId: string;
-  challengeId: string;
+  /** The `ProofSubject.key` it was started for: the tiles that show it. */
+  subject: string;
   kind: "photo" | "video";
   /** Object URL of the thumbnail (or the shrunk photo) shown on the tile. */
   preview: string | null;

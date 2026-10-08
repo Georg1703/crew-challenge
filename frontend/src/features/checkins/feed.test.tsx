@@ -7,7 +7,9 @@ import { ana, bogdan, crewDetail } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
 import { ChallengeBoard, CrewFeed } from ".";
-import type { FeedItem, Proof } from "./api";
+import type { Proof } from "@/features/proofs";
+
+import type { FeedItem } from "./api";
 
 const person = (member: typeof ana) => ({
   id: member.id,

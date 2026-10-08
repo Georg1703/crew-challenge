@@ -30,7 +30,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Need | `Window.need` | What one window asks for: a number of check-ins or a total amount. |
 | Short window | `Window.need` < `Window.full_need` | A window cut by the period's edges, a late start or leaving; it asks for less, in proportion to its days that count (rounded half up; amounts to one decimal). A window that would ask for nothing is not judged. |
 | Verdict | `days.Verdict` | How a window stands: `met` (reached its need, even before it ends), `failed` (ended below it), `open` (today is in it), `future`. A failed day window is a missed day. |
-| Proof | `Proof` | What backs a check-in: a `photo` or `video` (v1), at most 5 a day, added after checking in. Status: `uploading`, `processing`, `ready`, `failed`. Removable only on its own day. Later also for a served punishment. |
+| Proof | `Proof` (`apps/proofs`) | A `photo` or `video` backing a subject: today's check-in (added after checking in), later a spun punishment. At most 5 per subject. Status: `uploading`, `processing`, `ready`, `failed`. Removable only on the day it was added. |
+| Proof subject | `Proof.subject` | What a proof backs, by a generic key (`subject_type` + `subject_id`); the subject's app starts and resumes its proofs. |
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `Transcode` (`hls_key`, `poster_key`) | Processed versions of a video for playback (HLS 720p/360p + poster image), made by a MediaConvert job that Celery polls. |
 | Grace period | `UPLOAD_GRACE` | 24 hours after the day's deadline for a proof's upload to finish (`Upload.expires_at`). |

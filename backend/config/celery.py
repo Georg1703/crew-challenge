@@ -13,6 +13,6 @@ app.autodiscover_tasks()
 # Synced into django-celery-beat's tables when beat starts. Intervals need no time zone; jobs
 # that follow crew-local days loop over crews and use apps.core.clock.
 app.conf.beat_schedule = {
-    "expire-proofs": {"task": "apps.checkins.tasks.expire_proofs", "schedule": 15 * 60},
-    "finish-videos": {"task": "apps.checkins.tasks.finish_videos", "schedule": 20},
+    "expire-proofs": {"task": "apps.proofs.tasks.expire_proofs", "schedule": 15 * 60},
+    "finish-videos": {"task": "apps.proofs.tasks.finish_videos", "schedule": 20},
 }

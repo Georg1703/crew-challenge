@@ -1,6 +1,8 @@
 # Plan: proof upload (stage 3, the last v1 step)
 
-Status: draft for review. Branch: `feat/proofs` from `feat/check-ins`.
+Status: built. Since the wheel plan's stage 2 (`docs/plans/wheel.md`) proofs live in `apps/proofs`
+and back any subject: the services below are there, the start and resume routes belong to the
+subject (check-ins: `/challenges/{id}/check-ins/...`). Branch: `feat/proofs` from `feat/check-ins`.
 Priorities, in order: efficiency (fast on a phone, cheap to run), user experience, architecture.
 
 ## Decisions (agreed)
@@ -84,7 +86,7 @@ POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   start: {kind, content_ty
 POST   /api/v1/proofs/{id}/parts                        {numbers} -> fresh part URLs
 PUT    /api/v1/proofs/{id}/parts/{number}               {etag} report a finished part
 POST   /api/v1/proofs/{id}/complete                     -> proof (ready or processing)
-GET    /api/v1/proofs/resume?fingerprint=...            -> proof + uploaded parts, or 404
+GET    /api/v1/challenges/{id}/check-ins/proofs/resume?fingerprint=...  -> proof + parts, or 404
 DELETE /api/v1/proofs/{id}                              today only, your own -> 204
 GET    /api/v1/challenges/{id}/days/{day}               everyone's state, amount and proofs
 GET    /api/v1/feed?cursor=...                          the crew's recent check-ins with proofs

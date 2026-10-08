@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { TabAction } from "@/shared/ui";
 
 import { useToday } from "./api";
-import { summary, useUploads } from "./uploads/store";
+import { summary, useUploads } from "@/features/proofs";
 
 /**
  * The tab bar's raised check-in button: shown when something runs today, with what is left; while

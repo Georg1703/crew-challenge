@@ -42,7 +42,8 @@ src/
 |   |-- crew/               # members list, invite sheet
 |   |-- home/               # garden (placeholder: greeting + members)
 |   `-- me/                 # profile, language, logout
-|-- features/checkins/uploads/   # the upload manager: store.ts (Zustand), engine.ts (Uppy), media.ts
+|-- features/proofs/uploads/     # the upload manager: store.ts (Zustand), engine.ts (Uppy), media.ts;
+|                               # any subject (a check-in, a spin) passes its start and resume calls
 |-- shared/
 |   |-- ui/                 # the design system's components (docs/design-system.md)
 |   |-- motion/             # presets.ts + the only import point for animation

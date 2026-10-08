@@ -1,6 +1,7 @@
 # Plan: Wheel of Doom, punishments and generic proofs
 
-Status: planned (2026-10-08). One branch and one pull request per stage. Screens: design C
+Status: stages 0-2 on `feat/wheel-of-doom` (2026-10-08). One branch for the whole plan, one
+commit per stage, committed after the owner's review. Screens: design C
 ("The dial") on the design canvas (private, the owner's):
 https://claude.ai/artifact/7UG7dkUWgTWXq3Mist9Xx9
 
@@ -167,7 +168,8 @@ or "Done" on the wrong kind of punishment), `not_drawn` (409), `punishments_coun
 
 ## Stages
 
-Each stage is one pull request, ends with `make check` green and is reviewed before the next.
+Each stage is one commit on `feat/wheel-of-doom`, ends with `make check` green and is reviewed
+before it is committed (the branch names below were the first idea).
 Every migration works with the previous release still serving (see `docs/recipes/new-migration.md`):
 columns go in two releases.
 
@@ -206,31 +208,38 @@ columns go in two releases.
 - Tests: the shape (old `proof_kind` input ignored), the data migration on each old value, a photo
   and a video accepted on a challenge with proof, both refused without.
 
-### Stage 2 - Generic proofs
+### Stage 2 - Generic proofs - done
 
-- New app `apps/proofs`: `Proof` moves here with a state-only migration (the table stays
-  `checkins_proof`). New columns `member`, `subject_type`, `subject_id`, filled from the check-in;
-  `check_in` becomes nullable and leaves the model (the column goes in stage 3).
-- Services move with it and stop knowing check-ins: `start_proof(subject, member, kind, ...,
-  expires_at, max_count)` (the caller checks its own rules and locks its subject row first),
-  `resume_proof`, `sign_parts`, `record_part`, `complete_proof`, `delete_proof` (owner, on the day
-  it was added), `finish_videos`, `expire_proofs`; the Celery tasks too. The views for
-  `/api/v1/proofs/...` move with the same URLs.
+- New app `apps/proofs`: `Proof` moves here without copying the table (still `checkins_proof`).
+  Checkins `0004_proof_subject` adds `member`, `subject_type`, `subject_id` (nullable for a
+  release) and lets `check_in` be empty; `0005_move_proof` fills them from the check-in and hands
+  the model over; proofs `0001` is state only. Two check-in migrations because Postgres refuses to
+  alter a table with updates pending in the same transaction (going back hit it).
+- Services move with it and stop knowing check-ins: `start_proof(member, subject, kind, ...,
+  expires_at)` (the caller checks its own rules and locks its subject row first),
+  `resume_proof(by, fingerprint, subjects)`, `sign_parts`, `record_part`, `complete_proof`,
+  `delete_proof` (owner, on the day it was added), `discard_files`, `finish_videos`,
+  `expire_proofs`; the Celery tasks too (beat names now `apps.proofs.tasks.*`; a message queued
+  under an old name during the deploy is dropped, and beat runs again in seconds). Parts, complete
+  and delete keep their URLs.
 - Check-ins become the first subject: `CheckIn.proofs` is a `GenericRelation`; the check-in start
   endpoint keeps its URL and its rules (today, checked in) and calls the generic service. The
   feed, the board, the day sheet and the Today card read proofs through the relation.
-- `ProofUploadOut`: `subject` (`check_in`) and `subject_id` added; `challenge_id` and `day` kept
-  for check-ins (resume uses them).
+- Resume belongs to the subject: `GET /api/v1/challenges/{id}/check-ins/proofs/resume` looks at
+  my check-ins of that challenge (so a file picked again after midnight still resumes yesterday's
+  upload within its grace). `GET /api/v1/proofs/resume` is gone (a previous app gets 404 and starts
+  a new upload), and `ProofUploadOut` lost `challenge_id` and `day` (nothing needs them now).
 - import-linter: "Proofs know files and members, not challenges, check-ins or spins"; check-ins
   (and doom later) build on proofs.
-- Frontend: `features/proofs` takes the upload engine, its store and `ProofRow` (as `ProofTiles`)
-  from `features/checkins`; an upload is started by a `start(body)` function the caller passes, and
-  tiles group by a subject key. Check-ins pass theirs.
+- Frontend: `features/proofs` takes the upload engine, its store, the proof helpers and `ProofRow`
+  (as `ProofTiles`) from `features/checkins`. A caller passes a `ProofSubject` (`key`, `start`,
+  `resume`); tiles group this phone's uploads by its key. Check-ins pass `checkInProofs(challenge,
+  day)`.
 - Docs: `docs/architecture/backend.md` (the app, its contract, "Generic building blocks"),
   `docs/plans/proof-upload.md` pointers, the glossary's Proof row.
-- Tests: the existing proof tests move and keep passing unchanged in substance; the migration
-  forward and back on a copy of the dev database (rows keep their files and subjects); ownership by
-  `member`; a proof on an unknown subject type is refused.
+- Tests: the existing proof tests pass against the moved code; resume stays on its own challenge
+  and works after midnight; the tile tests moved to `features/proofs`. The migrations ran forward
+  and back on a scratch database with a proof (filled, a new row without `check_in`, restored).
 
 ### Stage 3 - Punishments
 
@@ -291,11 +300,11 @@ columns go in two releases.
 
 | Item | Where | Stage |
 |---|---|---|
-| "After v1" for the wheel, punishments and spins | `AGENTS.md`, design system, glossary | 0 |
-| `Challenge.ProofKind` in the shape and API, `KINDS`, kind i18n keys and wizard options | backend, frontend | 1 |
-| Proof services, views, tasks and tests in `apps/checkins` | backend | 2 |
-| `Proof.check_in` in the model | backend | 2 |
-| `features/checkins/uploads`, `ProofRow` | frontend | 2 |
+| "After v1" for the wheel, punishments and spins (done) | `AGENTS.md`, design system, glossary | 0 |
+| `Challenge.ProofKind` in the shape and API, `KINDS`, kind i18n keys and wizard options (done) | backend, frontend | 1 |
+| Proof services, views, tasks and tests in `apps/checkins` (done) | backend | 2 |
+| `Proof.check_in` in the model (done) | backend | 2 |
+| `features/checkins/uploads`, `ProofRow` (done) | frontend | 2 |
 | `proof_kind` and `checkins_proof.check_in_id` columns | migrations | 3 |
 | `GET /api/v1/feed`, `FeedView`, `useFeed` | backend, frontend | 6 |
 
