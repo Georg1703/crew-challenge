@@ -9,6 +9,14 @@
   box-shadow: var(--shadow-card);
 }
 
+/* On a phone a long press on the card reacts (see Reactions): no text selection, no callout. */
+@media (hover: none) {
+  .card {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 .success {
   border-color: var(--color-success-line);
   background: var(--color-success-soft);

@@ -82,3 +82,65 @@ export function usePress({
     },
   };
 }
+
+/**
+ * Press and hold anywhere on an element we do not render (the card around a control): a finger
+ * held still for `delay` ms calls `onLongPress` with a haptic tick, and the click after it and the
+ * phone's own long-press menu are eaten. Presses that start inside `skip` (the control itself)
+ * are left alone, and so is a mouse (it has the control's button). Returns the clean-up.
+ */
+export function holdOn(
+  element: HTMLElement,
+  onLongPress: () => void,
+  { skip, delay = 500 }: { skip?: Element | null; delay?: number } = {},
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let start: { x: number; y: number } | null = null;
+  let held = false;
+  const cancel = () => {
+    clearTimeout(timer);
+    timer = undefined;
+    start = null;
+  };
+  const fire = () => {
+    cancel();
+    held = true;
+    tap();
+    onLongPress();
+  };
+  const down = (event: globalThis.PointerEvent) => {
+    held = false;
+    if (event.pointerType === "mouse" || skip?.contains(event.target as Node)) return;
+    start = { x: event.clientX, y: event.clientY };
+    timer = setTimeout(fire, delay);
+  };
+  const move = (event: globalThis.PointerEvent) => {
+    if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > MOVE_PX) cancel();
+  };
+  const menu = (event: Event) => {
+    if (!start && !held) return; // a right click: the browser's own menu
+    event.preventDefault();
+    if (!held) fire(); // Android's long press came first
+  };
+  const click = (event: Event) => {
+    if (!held) return;
+    held = false;
+    event.preventDefault();
+    event.stopPropagation(); // a proof tile under the finger does not open
+  };
+  element.addEventListener("pointerdown", down);
+  element.addEventListener("pointermove", move);
+  element.addEventListener("pointerup", cancel);
+  element.addEventListener("pointercancel", cancel);
+  element.addEventListener("contextmenu", menu);
+  element.addEventListener("click", click, true);
+  return () => {
+    cancel();
+    element.removeEventListener("pointerdown", down);
+    element.removeEventListener("pointermove", move);
+    element.removeEventListener("pointerup", cancel);
+    element.removeEventListener("pointercancel", cancel);
+    element.removeEventListener("contextmenu", menu);
+    element.removeEventListener("click", click, true);
+  };
+}

@@ -1,10 +1,11 @@
-import { startTransition, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { useMe } from "@/features/auth";
 import { errorMessage } from "@/i18n/errors";
 import { formatList } from "@/shared/lib/format";
+import { holdOn } from "@/shared/lib/usePress";
 import { useReducedMotion } from "@/shared/motion";
 import {
   Button,
@@ -27,7 +28,8 @@ import { ReactorsSheet } from "./ReactorsSheet";
 
 /**
  * Reactions on anything registered as a target: the chips, the react button with its quick row,
- * the full emoji picker and who reacted. The owner of the data passes the target's `summary`; the
+ * the full emoji picker and who reacted. On a phone, holding the card it sits in opens the quick
+ * row too. The owner of the data passes the target's `summary`; the
  * change shows here at once (with the picked emoji flying over the card into its chip), and
  * `onChange` gets the server's answer for the owner's cache, without redrawing the owner on every
  * tap.
@@ -74,6 +76,18 @@ export function Reactions({
     onSaved: (answer) => startTransition(() => onChange(answer)), // the owner redraws when idle
     onError: (error) => toast(errorMessage(t, error), "error"),
   });
+  useEffect(() => {
+    const card = root.current?.closest("article");
+    if (!card) return;
+    return holdOn(
+      card,
+      () => {
+        preloadEmojiPicker();
+        setMenu(true);
+      },
+      { skip: root.current },
+    );
+  }, []);
   const byId = useMemo(() => new Map(people.map((m) => [m.id, m])), [people]);
   const texts = useMemo(() => pickerTexts(t), [t]);
 

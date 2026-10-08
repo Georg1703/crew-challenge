@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -106,6 +106,27 @@ describe("Reactions", () => {
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: `${THUMBS}, from you` })).not.toBeInTheDocument(),
     );
+  });
+
+  it("opens the quick row when the card around it is held (phones)", async () => {
+    asAna();
+    renderScreen(
+      <article>
+        <p>Bogdan checked in</p>
+        <Owner initial={{ groups: [], mine: null }} />
+      </article>,
+    );
+    await screen.findByRole("button", { name: "React" });
+
+    vi.useFakeTimers();
+    const press = new Event("pointerdown", { bubbles: true });
+    Object.assign(press, { pointerType: "touch", clientX: 0, clientY: 0 });
+    screen.getByText("Bogdan checked in").dispatchEvent(press);
+    act(() => vi.advanceTimersByTime(500));
+    vi.useRealTimers();
+
+    expect(screen.getByRole("button", { name: "React" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menuitemradio", { name: THUMBS })).toBeInTheDocument();
   });
 
   it("lists who reacted, from the quick row", async () => {
