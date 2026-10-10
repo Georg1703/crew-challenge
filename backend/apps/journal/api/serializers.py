@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.challenges.api.serializers import PersonOut, PunishmentOut
 from apps.challenges.models import Challenge
 from apps.checkins.api.serializers import ChallengeBriefOut
+from apps.comments.api.serializers import CommentSummaryOut
 from apps.journal.models import JournalEntry
 from apps.proofs.api.serializers import ProofOut
 from apps.reactions.api.serializers import ReactionSummaryOut
@@ -60,6 +61,7 @@ class JournalEntryOut(serializers.Serializer):
     challenge = ChallengeBriefOut(allow_null=True, help_text="On what; null for the crew's day.")
     proofs = ProofOut(many=True, help_text="The photos and videos posted with it.")
     reactions = ReactionSummaryOut(help_text="Target `entry`, this card's id.")
+    comments = CommentSummaryOut(help_text="Target `entry`, this card's id.")
     check_in = CheckInFactsOut(allow_null=True)
     spin = SpinFactsOut(allow_null=True)
     served = ServedFactsOut(allow_null=True)

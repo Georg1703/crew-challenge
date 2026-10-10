@@ -293,6 +293,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Delete your comment in its first minute, while nobody has replied to it. */
+        delete: operations["comments_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/{target}/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A target's comments and replies, oldest first, each with its reactions. */
+        get: operations["comments_list"];
+        put?: never;
+        /** @description Comment, or reply to a comment (`parent_id`; a level 5 comment takes no reply). */
+        post: operations["comments_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -405,9 +440,26 @@ export interface paths {
         };
         /**
          * @description The crew's journal: one card per post, latest first, each as it was posted, with its
-         *     photos and videos, its reactions, and the counts of each day on the page.
+         *     photos and videos, its reactions and comments, and the counts of each day on the page.
          */
         get: operations["journal_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One card, as the journal shows it (the card's page). */
+        get: operations["journal_card"];
         put?: never;
         post?: never;
         delete?: never;
@@ -900,6 +952,41 @@ export interface components {
              */
             amount?: string | null;
         };
+        CommentInRequest: {
+            text: string;
+            /**
+             * Format: uuid
+             * @description The comment it answers, on the same target.
+             */
+            parent_id?: string | null;
+        };
+        CommentOut: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Its writer.
+             */
+            member_id: string;
+            /**
+             * Format: uuid
+             * @description The comment it answers.
+             */
+            parent_id: string | null;
+            /** @description 1 for a comment, up to 5 for replies. */
+            level: number;
+            text: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Target `comment`, this comment's id. */
+            reactions: components["schemas"]["ReactionSummaryOut"];
+        };
+        /** @description A target's comments, embedded where the target is shown (a journal card). */
+        CommentSummaryOut: {
+            count: number;
+            /** @description The last writers, latest first, up to 3. */
+            member_ids: string[];
+        };
         CrewChallengeOut: {
             /** Format: uuid */
             challenge_id: string;
@@ -1052,6 +1139,8 @@ export interface components {
             proofs: components["schemas"]["ProofOut"][];
             /** @description Target `entry`, this card's id. */
             reactions: components["schemas"]["ReactionSummaryOut"];
+            /** @description Target `entry`, this card's id. */
+            comments: components["schemas"]["CommentSummaryOut"];
             check_in: components["schemas"]["CheckInFactsOut"] | null;
             spin: components["schemas"]["SpinFactsOut"] | null;
             served: components["schemas"]["ServedFactsOut"] | null;
@@ -1428,6 +1517,10 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "valid" | "expired" | "used";
+        ThreadOut: {
+            /** @description Oldest first: a reply's parent comes before it. */
+            results: components["schemas"]["CommentOut"][];
+        };
         /** @description One of my challenges today: what to show on its card and in the ring. */
         TodayChallengeOut: {
             /** Format: uuid */
@@ -2024,6 +2117,76 @@ export interface operations {
             };
         };
     };
+    comments_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    comments_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "entry";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreadOut"];
+                };
+            };
+        };
+    };
+    comments_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "entry";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+        };
+    };
     crew_retrieve: {
         parameters: {
             query?: never;
@@ -2190,6 +2353,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JournalPageOut"];
+                };
+            };
+        };
+    };
+    journal_card: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryOut"];
                 };
             };
         };
@@ -2418,7 +2602,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "entry";
+                target: "comment" | "entry";
                 target_id: string;
             };
             cookie?: never;
@@ -2445,7 +2629,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "entry";
+                target: "comment" | "entry";
                 target_id: string;
             };
             cookie?: never;

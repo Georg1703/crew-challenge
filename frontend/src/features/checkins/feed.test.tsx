@@ -53,6 +53,7 @@ const card = (over: Partial<JournalEntry>): JournalEntry => ({
   challenge: WALK,
   proofs: [],
   reactions: { groups: [], mine: null },
+  comments: { count: 0, member_ids: [] },
   check_in: null,
   spin: null,
   served: null,

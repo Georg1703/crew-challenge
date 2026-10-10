@@ -7,9 +7,9 @@ class JournalConfig(AppConfig):
     verbose_name = "Journal"
 
     def ready(self) -> None:
-        from apps.reactions.targets import Target, register
+        from apps.crews.targets import Target, register
 
         from . import selectors
         from .models import JournalEntry
 
-        register(Target(key="entry", model=JournalEntry, find=selectors.reactable))
+        register(Target(key="entry", model=JournalEntry, visible=selectors.visible, comments=True))

@@ -4,9 +4,9 @@ from uuid import UUID
 
 from django.contrib.contenttypes.models import ContentType
 
+from apps.crews import targets
 from apps.crews.models import Member
 
-from . import targets
 from .models import Reaction
 
 

@@ -50,6 +50,9 @@ class JournalEntry(CrewScopedModel):
     reactions = GenericRelation(
         "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
     )
+    comments = GenericRelation(
+        "comments.Comment", content_type_field="target_type", object_id_field="target_id"
+    )
 
     class Meta:
         ordering = ("-created_at", "-id")  # when it was posted: its place, latest first

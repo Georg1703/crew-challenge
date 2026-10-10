@@ -1,6 +1,6 @@
 # Plan: comments on the crew's journal
 
-Status: agreed (2026-10-10), stage 1 next. Four stages after the plan, on one branch
+Status: agreed (2026-10-10); stages 1 and 2 built, stage 3 next. Four stages after the plan, on one branch
 (`feat/comments`), one commit per stage, each committed after the owner's review.
 Each stage works on its own and with the release before it still serving.
 
@@ -111,7 +111,7 @@ CommentRead(CrewScopedModel)           # stage 4
   by reactions and comments. `Target(key, model, visible, owner=None, comments=False)`:
   `visible(member)` is the queryset of targets the member may see (replaces `find`: one
   callable answers "this one?" and "which ones?"); `owner` names the member field of whoever
-  made it (for the badge); `comments` says whether it takes comments.
+  made it (for the badge, added in stage 4); `comments` says whether it takes comments.
 - Registered: `entry` (the journal: `owner="member"`, `comments=True`) and `comment` (the
   comments app itself: reactions only; replies are how comments answer comments).
 - `JournalEntry` declares `comments = GenericRelation(...)`, so deleting a card deletes its
@@ -134,7 +134,8 @@ GET    /api/v1/journal                         each card gains `comments`: {coun
 ```
 
 - No cursor on a thread: threads are short. Add one if a thread passes a few hundred.
-- New error codes: `comment_not_found` (404), `not_your_comment` (403), `reply_too_deep`,
+- New error codes: `comment_not_found`, `card_not_found` (404), `not_your_comment` (403),
+  `reply_too_deep`,
   `comment_has_replies`, `comment_too_old`, `post_has_comments` (409).
 - Names and avatars come from the crew's members, as for reactions; the thread carries ids only.
 

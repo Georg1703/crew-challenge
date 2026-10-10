@@ -18,8 +18,8 @@ from .models import JournalEntry
 Cursor = tuple[datetime, UUID]  # the last card's `created_at` and id
 
 
-def _visible(member: Member) -> QuerySet[JournalEntry]:
-    """My crew's cards on challenges I can see, or on none (the crew's day)."""
+def visible(member: Member) -> QuerySet[JournalEntry]:
+    """My crew's cards on challenges I can see, or on none (the crew's day): the `entry` target."""
     return JournalEntry.objects.filter(crew=member.crew).filter(
         Q(challenge__isnull=True) | Q(challenge__in=challenges.visible(member=member))
     )
@@ -31,7 +31,7 @@ def page(
     """Up to `size` cards I can see older than `cursor`, latest first. One query; cards never
     move, so walking the cursor never skips or repeats one. Also the cursor of the next page
     (None at the end)."""
-    rows = _visible(member).select_related("member", "challenge").order_by("-created_at", "-id")
+    rows = visible(member).select_related("member", "challenge").order_by("-created_at", "-id")
     if cursor is not None:
         at, pk = cursor
         rows = rows.filter(Q(created_at__lt=at) | Q(created_at=at, pk__lt=pk))
@@ -40,9 +40,9 @@ def page(
     return cards, ((cards[-1].created_at, cards[-1].pk) if len(found) > size else None)
 
 
-def reactable(member: Member, entry_id: UUID) -> JournalEntry | None:
-    """A card I can see: reaction target `entry`."""
-    return _visible(member).filter(pk=entry_id).first()
+def card(*, member: Member, entry_id: UUID) -> JournalEntry | None:
+    """One card I can see (its page), as a journal page reads it."""
+    return visible(member).select_related("member", "challenge").filter(pk=entry_id).first()
 
 
 def day_counts(*, member: Member, days: set[date]) -> dict[date, tuple[int, int]]:
@@ -54,7 +54,7 @@ def day_counts(*, member: Member, days: set[date]) -> dict[date, tuple[int, int]
     who = Concat(Cast("member_id", CharField()), Cast("challenge_id", CharField()))
     files = Cast(KeyTextTransform("proofs", "facts"), IntegerField())
     rows = (
-        _visible(member)
+        visible(member)
         .filter(day__in=days)
         .order_by()
         .values("day")

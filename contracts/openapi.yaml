@@ -500,6 +500,91 @@ paths:
                 items:
                   $ref: '#/components/schemas/WindowOut'
           description: ''
+  /api/v1/comments/{comment_id}:
+    delete:
+      operationId: comments_delete
+      description: Delete your comment in its first minute, while nobody has replied
+        to it.
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - comments
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/comments/{target}/{target_id}:
+    get:
+      operationId: comments_list
+      description: A target's comments and replies, oldest first, each with its reactions.
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - entry
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - comments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadOut'
+          description: ''
+    post:
+      operationId: comments_add
+      description: Comment, or reply to a comment (`parent_id`; a level 5 comment
+        takes no reply).
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - entry
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentOut'
+          description: ''
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -651,7 +736,7 @@ paths:
       operationId: journal_list
       description: |-
         The crew's journal: one card per post, latest first, each as it was posted, with its
-        photos and videos, its reactions, and the counts of each day on the page.
+        photos and videos, its reactions and comments, and the counts of each day on the page.
       parameters:
       - in: query
         name: cursor
@@ -668,6 +753,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JournalPageOut'
+          description: ''
+  /api/v1/journal/{entry_id}:
+    get:
+      operationId: journal_card
+      description: One card, as the journal shows it (the card's page).
+      parameters:
+      - in: path
+        name: entry_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - journal
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryOut'
           description: ''
   /api/v1/me:
     get:
@@ -896,6 +1003,7 @@ paths:
         schema:
           type: string
           enum:
+          - comment
           - entry
         description: What kind of thing the id is.
         required: true
@@ -931,6 +1039,7 @@ paths:
         schema:
           type: string
           enum:
+          - comment
           - entry
         description: What kind of thing the id is.
         required: true
@@ -1494,6 +1603,71 @@ components:
           description: 'For challenges that record a number: how much to add.'
       required:
       - day
+    CommentInRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The comment it answers, on the same target.
+      required:
+      - text
+    CommentOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+          description: Its writer.
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The comment it answers.
+        level:
+          type: integer
+          description: 1 for a comment, up to 5 for replies.
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reactions:
+          allOf:
+          - $ref: '#/components/schemas/ReactionSummaryOut'
+          description: Target `comment`, this comment's id.
+      required:
+      - created_at
+      - id
+      - level
+      - member_id
+      - parent_id
+      - reactions
+      - text
+    CommentSummaryOut:
+      type: object
+      description: A target's comments, embedded where the target is shown (a journal
+        card).
+      properties:
+        count:
+          type: integer
+        member_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The last writers, latest first, up to 3.
+      required:
+      - count
+      - member_ids
     CrewChallengeOut:
       type: object
       properties:
@@ -1789,6 +1963,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ReactionSummaryOut'
           description: Target `entry`, this card's id.
+        comments:
+          allOf:
+          - $ref: '#/components/schemas/CommentSummaryOut'
+          description: Target `entry`, this card's id.
         check_in:
           allOf:
           - $ref: '#/components/schemas/CheckInFactsOut'
@@ -1809,6 +1987,7 @@ components:
       - at
       - challenge
       - check_in
+      - comments
       - crew_day
       - day
       - id
@@ -2597,6 +2776,16 @@ components:
         * `valid` - valid
         * `expired` - expired
         * `used` - used
+    ThreadOut:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentOut'
+          description: 'Oldest first: a reply''s parent comes before it.'
+      required:
+      - results
     TodayChallengeOut:
       type: object
       description: 'One of my challenges today: what to show on its card and in the

@@ -25,7 +25,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Entry | `CheckInEntry` | One post of a check-in: a "+N", the tap, or photos and videos added later; a day's numbers add up. Undo removes the latest, with its files. |
 | Post | `CheckInEntry`, a served `Spin` | One thing a member shares in a challenge: a check-in, a "+N", photos or videos added later, a punishment served. Its files upload first as draft files and are published with it (`Proof.post_id`). Each post is one card (cards: being built, `docs/plans/journal.md`). |
 | Draft file | `Proof` with no `post_id` | A photo or video uploaded for the next post: seen by its owner only, removable, deleted at its day's midnight if not posted. |
-| Card | `JournalEntry` | One post as the crew's journal shows it (also a spin drawn or served, and the whole crew's finished day): written once, when the post is made, never edited, with what it said then (`facts`); reactions (later comments) attach to it. The app reads cards from `docs/plans/journal.md` stage 5. |
+| Card | `JournalEntry` | One post as the crew's journal shows it (also a spin drawn or served, and the whole crew's finished day): written once, when the post is made, never edited, with what it said then (`facts`); reactions and comments attach to it. The app reads cards from `docs/plans/journal.md` stage 5. |
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
 | Due day | `days.is_due` | A day a challenge judged day by day (daily or chosen weekdays) asks for. Challenges asked a number of times or a total per week or period have no due days: they are judged per window. |
 | Window | `windows.Window` | A stretch of days judged as one unit: a single day, a Monday-Sunday week, a calendar month (only in periods counted in months), or the whole period (`apps/challenges/windows.py`). |
@@ -46,7 +46,10 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Wilted | `wilted` | A tree's look while its member has an unserved punishment. After v1. |
 | Greenhouse | - | Archive of past months' trees. After v1. |
 | Reaction | `Reaction` | One member's emoji on something in the crew: a card in the journal. One per member per target; picking another replaces it. |
-| Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`entry`: a journal card). |
+| Reaction target | `target` | A kind of thing that takes reactions (and maybe comments), registered by its app in `apps/crews/targets.py` (`entry`: a journal card; `comment`). |
+| Comment | `Comment` | A member's words on a card (any target that takes comments), up to 500 characters. Never edited; its writer can delete it in its first minute while nobody has replied. |
+| Reply | `Comment.parent` | A comment that answers another one on the same card. |
+| Level | `Comment.level` | How deep a comment sits: 1 for a comment, 2 for a reply to it, down to 5 (a level 5 comment takes no reply). |
 | Punishment | `Punishment` | One of a challenge's punishments: a short text and whether it needs proof. None, or 2 to 8, written by the creator; fixed once scheduled. |
 | Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
 | Draw | `doom.services.draw` | Choosing a spin's punishment on the server, before the dial turns. Every punishment as likely. |

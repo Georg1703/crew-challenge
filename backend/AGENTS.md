@@ -22,8 +22,8 @@ backend/
 ```
 
 Apps: `core`, `accounts`, `crews`, `challenges`, `checkins`, `media`, `proofs` (generic: any
-subject), `reactions` (generic: any registered target, see `docs/architecture/backend.md`),
-`doom`, `notifications`.
+subject), `reactions` and `comments` (generic: any registered target, see
+`docs/architecture/backend.md`), `doom`, `journal`, `notifications`.
 Create each one when it is first needed.
 
 ## Layer rules (enforced by import-linter in `make check`)

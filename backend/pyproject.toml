@@ -177,6 +177,7 @@ forbidden_modules = [
     "apps.media",
     "apps.proofs",
     "apps.reactions",
+    "apps.comments",
     "apps.doom",
     "apps.journal",
 ]
@@ -186,13 +187,13 @@ ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
 name = "Accounts does not depend on crews (crews builds on accounts)"
 type = "forbidden"
 source_modules = ["apps.accounts"]
-forbidden_modules = ["apps.crews", "apps.reactions"]
+forbidden_modules = ["apps.crews", "apps.reactions", "apps.comments"]
 
 [[tool.importlinter.contracts]]
 name = "Crews and accounts do not depend on challenges (challenges builds on crews)"
 type = "forbidden"
 source_modules = ["apps.crews", "apps.accounts"]
-forbidden_modules = ["apps.challenges", "apps.reactions"]
+forbidden_modules = ["apps.challenges", "apps.reactions", "apps.comments"]
 
 [[tool.importlinter.contracts]]
 name = "Check-ins build on challenges: nothing below depends on them"
@@ -210,7 +211,7 @@ forbidden_modules = ["apps.challenges", "apps.checkins"]
 name = "Proofs know files and members, not what they back: check-ins build on them"
 type = "forbidden"
 source_modules = ["apps.proofs"]
-forbidden_modules = ["apps.challenges", "apps.checkins", "apps.reactions"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.reactions", "apps.comments"]
 
 [[tool.importlinter.contracts]]
 name = "Media knows no proofs: proofs build on it"
@@ -219,10 +220,16 @@ source_modules = ["apps.media"]
 forbidden_modules = ["apps.proofs"]
 
 [[tool.importlinter.contracts]]
-name = "Reactions know their targets only through the registry (targets register themselves)"
+name = "Reactions and comments know their targets only through the registry (targets register themselves)"
+type = "forbidden"
+source_modules = ["apps.reactions", "apps.comments"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media", "apps.proofs", "apps.journal"]
+
+[[tool.importlinter.contracts]]
+name = "Reactions sit under comments: a comment takes reactions, never the other way"
 type = "forbidden"
 source_modules = ["apps.reactions"]
-forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media", "apps.proofs"]
+forbidden_modules = ["apps.comments"]
 
 [[tool.importlinter.contracts]]
 name = "The Wheel of Doom builds on check-ins and proofs: nothing below imports it"
@@ -235,6 +242,7 @@ source_modules = [
     "apps.media",
     "apps.proofs",
     "apps.reactions",
+    "apps.comments",
 ]
 forbidden_modules = ["apps.doom"]
 
@@ -248,6 +256,7 @@ source_modules = [
     "apps.media",
     "apps.proofs",
     "apps.reactions",
+    "apps.comments",
 ]
 forbidden_modules = ["apps.journal"]
 
@@ -255,7 +264,14 @@ forbidden_modules = ["apps.journal"]
 name = "The journal's store knows no kind: the apps that make posts write their cards to it"
 type = "forbidden"
 source_modules = ["apps.journal.models", "apps.journal.services", "apps.journal.selectors"]
-forbidden_modules = ["apps.checkins", "apps.doom", "apps.proofs", "apps.media", "apps.reactions"]
+forbidden_modules = [
+    "apps.checkins",
+    "apps.doom",
+    "apps.proofs",
+    "apps.media",
+    "apps.reactions",
+    "apps.comments",
+]
 
 [[tool.importlinter.contracts]]
 name = "Only the journal's API puts the kinds together: they never import it"

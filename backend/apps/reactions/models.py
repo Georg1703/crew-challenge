@@ -6,10 +6,10 @@ from apps.crews.models import CrewScopedModel, Member
 
 
 class Reaction(CrewScopedModel):
-    """One member's emoji on one target (a check-in now; anything registered in `targets`).
+    """One member's emoji on one target (anything registered in `apps.crews.targets`).
 
     A generic key has no database foreign key: every target model declares a `GenericRelation`
-    to this model, so deleting the target deletes its reactions (see `targets.py`).
+    to this model, so deleting the target deletes its reactions.
     """
 
     target_type = models.ForeignKey(ContentType, on_delete=models.PROTECT, related_name="+")

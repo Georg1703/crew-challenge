@@ -23,6 +23,7 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.doom.api.urls")),
     path("", include("apps.journal.api.urls")),
     path("", include("apps.reactions.api.urls")),
+    path("", include("apps.comments.api.urls")),
 ]
 
 # JSON instead of HTML for unknown /api/ URLs and crashes (see apps/core/api/errors.py).

@@ -70,9 +70,9 @@ Every error, from any layer, has this shape:
 |---|---|---|
 | 400 | Input failed validation | `validation_failed`, `username_taken`, `display_name_taken`, `invalid_emoji`, `period_too_far` (with `fields`); `invalid_credentials` |
 | 401 | Not logged in | `not_authenticated` |
-| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_a_participant`, `not_taking_part`, `not_your_proposal`, `permission_denied` |
-| 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `spin_not_found`, `target_not_found`, `upload_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `uploads_running`, `proof_required`, `proof_posted`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch`, `not_drawn`, `proof_needed`, `proof_not_needed` |
+| 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_a_participant`, `not_taking_part`, `not_your_proposal`, `not_your_comment`, `permission_denied` |
+| 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `spin_not_found`, `target_not_found`, `upload_not_found`, `card_not_found`, `comment_not_found` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `uploads_running`, `proof_required`, `proof_posted`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch`, `not_drawn`, `proof_needed`, `proof_not_needed`, `post_has_comments`, `reply_too_deep`, `comment_has_replies`, `comment_too_old` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 
@@ -132,7 +132,7 @@ POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: post today's check-in
                                         files added later, with the day's uploaded draft files
                                         (refused while one uploads) -> today's card
 DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's latest post, with its files
-                                        -> today's card
+                                        and its card (refused once others commented) -> today's card
 GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
 GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whole period: need,
                                         full need, and for a participant done and verdict;
@@ -140,8 +140,16 @@ GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whol
 GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
 GET    /api/v1/journal?cursor=...       the crew's cards, latest first, each as it was posted:
                                         {id, kind, at, day, member, challenge, proofs, reactions,
-                                        and its kind's facts (check_in | spin | served |
-                                        crew_day)}, plus each day's counts (30 per page)
+                                        comments: {count, member_ids}, and its kind's facts
+                                        (check_in | spin | served | crew_day)}, plus each day's
+                                        counts (30 per page)
+GET    /api/v1/journal/{id}             one card, as in the journal (the card's page)
+
+GET    /api/v1/comments/{target}/{id}   a target's thread, oldest first: [{id, member_id,
+                                        parent_id, level, text, created_at, reactions}]
+POST   /api/v1/comments/{target}/{id}   {text, parent_id?}: a comment or a reply (levels 1-5)
+                                        -> 201 the comment
+DELETE /api/v1/comments/{id}            yours, in its first minute, while nobody replied -> 204
 
 GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
                                         to_serve (the Today card) and each challenge's punishments

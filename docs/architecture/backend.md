@@ -27,7 +27,8 @@ backend/
 |   |-- proofs/             # Proof on any subject (generic key): uploads, parts, transcoding, expiry
 |   |-- doom/               # Spin: the Wheel of Doom (open, draw, serve); builds on check-ins and proofs
 |   |-- journal/            # The crew's journal: stored cards (written by the apps that post), and its API
-|   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
+|   |-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
+|   `-- comments/           # Comment (and replies) on any registered target that takes comments
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
 |   |-- transcoding/        # Transcoder ABC, MediaConvert (job settings in code), in-memory, factory
@@ -91,8 +92,9 @@ flowchart TB
 - the apps build on each other in one direction: accounts, then crews, then challenges, then
   check-ins; nothing lower imports something higher;
 - media knows files, not challenges or check-ins; proofs know files and members, not what they
-  back (check-ins build on them); reactions know their targets only through the
-  registry (no challenges, check-ins or media);
+  back (check-ins build on them); reactions and comments know their targets only through the
+  registry (no challenges, check-ins, media or journal), and comments take reactions, never
+  the other way;
 - the Wheel of Doom (`doom`) builds on check-ins and proofs; nothing below imports it;
 - the journal's store (`JournalEntry`, `journal.services.post` / `drop`, `selectors.page`) sits
   on crews and challenges and knows no kind: check-ins and the wheel write their cards to it in
@@ -105,20 +107,29 @@ Some apps serve any kind of object instead of one. They know nothing about the a
 those apps register with them. Reach for this when a second kind of object will clearly want the
 same thing (see "How to work in this repo" in AGENTS.md).
 
-**Reactions (`apps/reactions`).** One emoji per member on any registered target. A `Reaction`
-points at its target by a generic key (`target_type` + `target_id`, every id is a UUID), so a new
-kind of target needs no table, endpoint or client change:
+**Targets (`apps/crews/targets.py`).** The registry of what members act on: react to and comment
+on. A target points nowhere; reactions and comments point at it by a generic key
+(`target_type` + `target_id`, every id is a UUID), so a new kind of target needs no table,
+endpoint or client change:
 
 1. the target model declares `reactions = GenericRelation("reactions.Reaction",
-   content_type_field="target_type", object_id_field="target_id")`, which deletes its reactions with
-   it (a generic key has no database foreign key; a test fails if a registered model lacks it);
-2. its app registers `Target(key, model, find)` in `AppConfig.ready()`; `find(member, id)` returns
-   the object only if that member may see it and react to it now;
-3. its API embeds `ReactionSummaryOut` (from `reactions.selectors.summaries`, one query per page),
-   and the frontend shows `<Reactions target=... />`.
+   content_type_field="target_type", object_id_field="target_id")` (and the same to
+   `comments.Comment` when it takes comments), which deletes them with it (a generic key has no
+   database foreign key; a test fails if a registered model lacks it);
+2. its app registers `Target(key, model, visible, comments=...)` in `AppConfig.ready()`;
+   `visible(member)` is the queryset of the targets that member may see and act on now;
+3. its API embeds `ReactionSummaryOut` and `CommentSummaryOut` (one query per page each), and the
+   frontend shows `<Reactions target=... />` and its comments.
 
+Targets now: `entry` (a journal card: reactions and comments) and `comment` (reactions only).
+
+**Reactions (`apps/reactions`).** One emoji per member on any target.
 `PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
-Journal cards are the target (`entry`: every card, each its own).
+
+**Comments (`apps/comments`).** Words on a target that takes comments, or a reply to a comment on
+it, down to 5 levels (`level` is stored: a comment never moves). Never edited; the writer
+deletes one (softly) in its first minute while nobody has replied. The thread is read whole,
+oldest first (`GET /api/v1/comments/{target}/{id}`), and the client builds the tree.
 
 **Proofs (`apps/proofs`).** A photo or video backing a subject (a check-in now, a spin with the
 Wheel of Doom). A `Proof` points at its subject by a generic key (`subject_type` + `subject_id`)

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.doom",
     "apps.journal",
     "apps.reactions",
+    "apps.comments",
 ]
 
 MIDDLEWARE = [

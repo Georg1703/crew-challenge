@@ -1,8 +1,10 @@
 import pytest
 
-from apps.reactions import selectors, services, targets
+from apps.crews import targets
+from apps.crews.targets import TargetNotFound
+from apps.reactions import selectors, services
 from apps.reactions.models import Reaction
-from apps.reactions.services import InvalidEmoji, TargetNotFound
+from apps.reactions.services import InvalidEmoji
 from tests.factories import MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -119,7 +121,7 @@ def test_registering_twice_is_fine_but_a_clash_is_not(member_target):
     assert same is not None
     targets.register(same)
     with pytest.raises(ImproperlyConfigured):
-        targets.register(targets.Target(key=member_target, model=Crew, find=same.find))  # type: ignore[arg-type]
+        targets.register(targets.Target(key=member_target, model=Crew, visible=same.visible))
 
 
 def test_every_registered_target_deletes_its_reactions():

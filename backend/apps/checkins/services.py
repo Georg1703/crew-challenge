@@ -21,6 +21,7 @@ from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
 from apps.challenges.services import ChallengeNotFound
 from apps.challenges.windows import counts_on
+from apps.comments import selectors as comments
 from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Crew, Member
@@ -57,6 +58,11 @@ class NotDueToday(Conflict):
 class NothingToUndo(Conflict):
     code = "nothing_to_undo"
     message = "There is nothing to undo for today."
+
+
+class PostHasComments(Conflict):
+    code = "post_has_comments"
+    message = "Someone commented on this post: it stays."
 
 
 class ProofRequired(Conflict):
@@ -149,8 +155,9 @@ def check_in(
 
 @transaction.atomic
 def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
-    """Delete today's latest post with its files. The check-in goes with its last post (then
-    None), unless draft files still wait on it (then it is `pending` again)."""
+    """Delete today's latest post with its files and its card (refused once someone else has
+    commented on the card). The check-in goes with its last post (then None), unless draft files
+    still wait on it (then it is `pending` again)."""
     participant = _participant(by, challenge_id, day)
     row = (
         CheckIn.objects.select_for_update()
@@ -160,6 +167,8 @@ def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
     last = row.entries.order_by("-number").first() if row is not None else None
     if row is None or last is None:
         raise NothingToUndo()
+    if comments.others_commented(member=by, on=last.journal_entries.all()):
+        raise PostHasComments()  # deleting the card would delete their words
     proofs.remove_post(subject=row, post_id=last.pk)
     last.delete()  # its card goes with it
     if row.entries.exists() or proofs.drafts(subject=row).exists():

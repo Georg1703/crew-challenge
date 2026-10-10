@@ -16,9 +16,15 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 from apps.challenges.models import Challenge
+from apps.core.errors import NotFound
 from apps.crews.models import Crew, Member
 
 from .models import JournalEntry
+
+
+class CardNotFound(NotFound):
+    code = "card_not_found"
+    message = "This card is not in the journal any more."
 
 
 def _key(kind: str, subject: models.Model, day: date) -> dict[str, Any]:

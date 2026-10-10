@@ -12,11 +12,14 @@ from django.test.utils import CaptureQueriesContext
 
 from apps.checkins import services as checkins
 from apps.checkins.models import CheckIn
+from apps.comments import services as comments
+from apps.comments.models import Comment
 from apps.doom import services as doom
 from apps.doom.models import Spin
 from apps.doom.tests.test_services import Pick, at, check_in, scheduled
 from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
+from apps.reactions import services as reactions
 from apps.reactions.models import Reaction
 from tests.factories import AdminFactory, MemberFactory
 
@@ -170,3 +173,42 @@ def test_old_reactions_move_to_their_cards(week):
     }
     assert cards == {(entry_type, "check_in"), (entry_type, "spin")}
     assert not Reaction.objects.filter(pk=lost.pk).exists()
+
+
+def test_cards_carry_their_comments_and_open_on_their_own(browser, week):
+    ana, bogdan, _ = week
+    swim = JournalEntry.objects.get(kind=JournalEntry.Kind.CHECK_IN, member=ana)
+    url = f"/api/v1/comments/entry/{swim.pk}"
+    browser.force_login(bogdan.user)
+    assert browser.post(url, {"text": "Bravo!"}, format="json").status_code == 201
+
+    with at("2026-11-09 09:00Z"):
+        page = journal(browser, ana)
+        one = browser.get(f"/api/v1/journal/{swim.pk}").json()
+    shown = next(r for r in page["results"] if r["id"] == str(swim.pk))
+    assert shown["comments"] == {"count": 1, "member_ids": [str(bogdan.pk)]}
+    assert one == shown
+    assert [c["text"] for c in browser.get(url).json()["results"]] == ["Bravo!"]
+
+    browser.force_login(AdminFactory.create().user)  # another crew
+    gone = browser.get(f"/api/v1/journal/{swim.pk}")
+    assert (gone.status_code, gone.json()["error"]["code"]) == (404, "card_not_found")
+    assert browser.get(url).status_code == 404
+
+
+def test_a_post_others_commented_on_cannot_be_undone(week):
+    ana, bogdan, _ = week
+    swim = JournalEntry.objects.get(kind=JournalEntry.Kind.CHECK_IN, member=ana)
+    undo = {"by": ana, "challenge_id": swim.challenge_id, "day": date(2026, 11, 9)}
+    with at("2026-11-09 10:00Z"):
+        mine = comments.add(member=ana, target="entry", target_id=swim.pk, text="Rece!")
+        reactions.react(member=bogdan, target="comment", target_id=mine.pk, emoji=FIRE)
+        theirs = comments.add(member=bogdan, target="entry", target_id=swim.pk, text="Bravo!")
+        with pytest.raises(checkins.PostHasComments):
+            checkins.undo_last(**undo)
+        comments.delete(member=bogdan, comment_id=theirs.pk)  # within its minute
+        checkins.undo_last(**undo)  # only her own words left: they go with the card
+
+    assert not JournalEntry.objects.filter(pk=swim.pk).exists()
+    assert not Comment.all_objects.filter(target_id=swim.pk).exists()
+    assert not Reaction.objects.filter(target_id=mine.pk).exists()

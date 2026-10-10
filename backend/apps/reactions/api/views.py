@@ -6,9 +6,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.crews import targets
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
-from apps.reactions import selectors, services, targets
+from apps.reactions import selectors, services
 
 from .serializers import ReactionIn, ReactionSummaryOut
 
