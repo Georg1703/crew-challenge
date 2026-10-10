@@ -192,8 +192,8 @@ def test_serving_with_proof_or_done(swim, object_storage):
         services.mark_done(by=bogdan, spin_id=second.pk)  # repeat-safe
         assert selectors.owed(member=bogdan).spins == []  # both served
 
-        proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)  # the same day: allowed
-        assert [s.pk for s in selectors.owed(member=bogdan).spins] == [first.pk]
+        with pytest.raises(proofs.ProofPosted):  # posted with the spin as it started
+            proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)
 
 
 def test_the_crew_sees_drawn_spins_only(swim):

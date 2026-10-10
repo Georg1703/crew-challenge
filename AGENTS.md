@@ -140,9 +140,11 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   or the whole period, `apps/challenges/windows.py`): a window that ended below its need has failed, and a
   failed day window is a missed day. Verdicts are derived on read, not stored. Streaks are per
   challenge.
-- Proof (`apps/proofs`) attaches to a subject: the day's check-in (later a spin). A check-in's
-  proof upload that starts before midnight counts if it completes within 24 h after that day's
-  deadline.
+- Proof (`apps/proofs`) attaches to a subject: the day's check-in, or a spin. Any check-in or
+  "+N" may carry 1 to 5 photos or videos; on a challenge that asks for proof (`proof_required`) it
+  cannot be posted without one. Files upload first as draft files (seen by their owner only); the
+  post publishes them, and the posting button waits while any uploads. Midnight ends the day for
+  its draft files too: not uploaded and posted by then, they expire. Plan: `docs/plans/journal.md`.
 - Missed day -> streak reset. On a challenge with punishments (none, or 2 to 8, set by its
   creator), a failed window owes one spin per missing check-in, or one for a missed total. After
   v1: tree wilted.

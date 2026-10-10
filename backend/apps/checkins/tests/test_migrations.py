@@ -15,10 +15,10 @@ from apps.proofs.models import Proof
 
 pytestmark = pytest.mark.django_db
 
-fill_post_ids = import_module("apps.checkins.migrations.0006_fill_proof_post_id").fill
 
-
-def test_a_check_ins_proofs_point_at_its_first_entry(crew, object_storage):
+@pytest.mark.parametrize("migration", ["0006_fill_proof_post_id", "0008_fill_proof_post_id_again"])
+def test_a_check_ins_proofs_point_at_its_first_entry(crew, object_storage, migration):
+    fill_post_ids = import_module(f"apps.checkins.migrations.{migration}").fill
     ana, bogdan, _, walk, _ = crew
     with at("2026-10-10 12:00Z"):
         run = scheduled(
@@ -28,7 +28,6 @@ def test_a_check_ins_proofs_point_at_its_first_entry(crew, object_storage):
             title="Run",
             measure="quantity",
             unit="km",
-            proof_required=True,
         )
     with at("2026-11-10 08:00Z"):
         for amount in (5, 3):
@@ -38,11 +37,12 @@ def test_a_check_ins_proofs_point_at_its_first_entry(crew, object_storage):
         services.check_in(by=ana, challenge_id=walk.pk, day=DAY)
         walked = shown_photo(object_storage, ana, walk)
 
+    Proof.objects.update(post_id=None)  # as the release before recorded them
     fill_post_ids(registry, None)
     fill_post_ids(registry, None)  # twice is once
 
     first = CheckInEntry.objects.get(check_in__member=bogdan, number=1)
-    ana_entry = CheckInEntry.objects.get(check_in__member=ana)
+    ana_entry = CheckInEntry.objects.get(check_in__member=ana, number=1)
     assert dict(Proof.objects.values_list("pk", "post_id")) == {
         shown.pk: first.pk,
         uploading.pk: first.pk,

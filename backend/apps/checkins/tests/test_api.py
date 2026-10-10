@@ -17,7 +17,6 @@ READ = {
     "measure": "quantity",
     "unit": "pages",
     "day_min": 20,
-    "proof_required": True,
 }
 
 
@@ -105,11 +104,6 @@ def start(browser, read, **body):
 def test_photo_proof_over_http(browser, setup, object_storage):
     admin, member, read = setup
     browser.force_login(member.user)
-    early = start(browser, read, kind="photo", content_type="image/jpeg", size=4)
-    assert (early.status_code, early.json()["error"]["code"]) == (409, "not_checked_in")
-    check_in = {"day": "2026-11-10", "amount": 5}
-    browser.post(f"/api/v1/challenges/{read.pk}/check-ins", check_in, format="json")
-
     response = start(browser, read, kind="photo", content_type="image/jpeg", size=4, thumb_size=2)
 
     assert response.status_code == 201
@@ -126,7 +120,16 @@ def test_photo_proof_over_http(browser, setup, object_storage):
     done = browser.post(f"/api/v1/proofs/{proof_id}/complete").json()
     assert (done["status"], bool(done["url"]), bool(done["thumb_url"])) == ("ready", True, True)
     card = browser.get("/api/v1/today").json()["challenges"][0]
-    assert ([p["id"] for p in card["proofs"]], card["proof_days"]) == ([proof_id], ["2026-11-10"])
+    assert [(p["id"], p["posted"]) for p in card["proofs"]] == [(proof_id, False)]  # a draft
+    assert card["proof_days"] == []
+
+    posted = browser.post(
+        f"/api/v1/challenges/{read.pk}/check-ins", {"day": "2026-11-10", "amount": 5}, format="json"
+    ).json()
+    assert ([p["posted"] for p in posted["proofs"]], posted["proof_days"]) == (
+        [True],
+        ["2026-11-10"],
+    )
     board = browser.get(f"/api/v1/challenges/{read.pk}/board").json()
     assert {r["member"]["display_name"]: r["proof_days"] for r in board["rows"]} == {
         "Ana": [],
@@ -138,7 +141,10 @@ def test_photo_proof_over_http(browser, setup, object_storage):
         "proof_not_found"
     )
     browser.force_login(member.user)
-    assert browser.delete(f"/api/v1/proofs/{proof_id}").status_code == 204
+    kept = browser.delete(f"/api/v1/proofs/{proof_id}")
+    assert (kept.status_code, kept.json()["error"]["code"]) == (409, "proof_posted")
+    draft = start(browser, read, kind="photo", content_type="image/jpeg", size=4).json()
+    assert browser.delete(f"/api/v1/proofs/{draft['proof']['id']}").status_code == 204
 
 
 def test_video_proof_resumes_over_http(browser, setup, object_storage, transcoder):
@@ -217,7 +223,6 @@ def test_windows_show_what_each_week_asks_for(browser):
         "need_value": 3,
         "period_kind": "day",
         "period_length": 10,
-        "proof_required": True,
     }
     with time_machine.travel("2026-10-10 12:00Z", tick=False):
         admin = AdminFactory.create(display_name="Ana")

@@ -187,8 +187,9 @@ paths:
   /api/v1/challenges/{challenge_id}/check-ins:
     post:
       operationId: challenges_check_in
-      description: Check in for today (numbers add up). Returns the challenge as on
-        today's card.
+      description: |-
+        Post: today's check-in, a "+N" or photos added later, with today's uploaded draft
+        files (numbers add up). Returns the challenge as on today's card.
       parameters:
       - in: path
         name: challenge_id
@@ -216,8 +217,7 @@ paths:
   /api/v1/challenges/{challenge_id}/check-ins/{day}/last:
     delete:
       operationId: challenges_undo
-      description: Undo today's last entry (`day` is today, YYYY-MM-DD). The last
-        one takes its proofs.
+      description: Undo today's latest post with its proofs (`day` is today, YYYY-MM-DD).
       parameters:
       - in: path
         name: challenge_id
@@ -240,8 +240,9 @@ paths:
   /api/v1/challenges/{challenge_id}/check-ins/{day}/proofs:
     post:
       operationId: proofs_start
-      description: Add a photo or video to today's check-in. Then send the file straight
-        to storage.
+      description: |-
+        Upload a photo or video as a draft file of today's check-in (any challenge due today):
+        the next post publishes it. Then send the file straight to storage.
       parameters:
       - in: path
         name: challenge_id
@@ -276,7 +277,7 @@ paths:
       operationId: proofs_resume
       description: |-
         My unfinished video upload of this file (name|size|lastModified) on one of my
-        check-ins of this challenge, also yesterday's while its grace runs; else 404.
+        check-ins of this challenge, while it can still finish (today); else 404.
       parameters:
       - in: path
         name: challenge_id
@@ -1465,10 +1466,12 @@ components:
       enum:
       - done
       - in_progress
+      - pending
       type: string
       description: |-
         * `done` - Done
         * `in_progress` - In progress (a number below the day's target)
+        * `pending` - Pending (only draft files, nothing posted yet)
     CrewChallengeOut:
       type: object
       properties:
@@ -2327,6 +2330,10 @@ components:
           type: integer
           nullable: true
           description: A video's length in seconds, when the phone could read it.
+        posted:
+          type: boolean
+          description: Posted (the crew sees it); else a draft file its owner can
+            still remove.
       required:
       - created_at
       - duration
@@ -2334,6 +2341,7 @@ components:
       - id
       - kind
       - phone_thumb_url
+      - posted
       - status
       - thumb_url
       - url

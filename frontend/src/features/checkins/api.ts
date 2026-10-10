@@ -170,7 +170,10 @@ function useReplaceCard() {
     );
 }
 
-/** Check in for today. Optimistic: the card fills at once and rolls back on error. */
+/**
+ * Post: today's check-in, a "+N", or files added later, with today's uploaded draft files.
+ * Optimistic: the card fills at once and rolls back on error.
+ */
 export function useCheckIn() {
   const queryClient = useQueryClient();
   const replace = useReplaceCard();
@@ -204,7 +207,7 @@ export function useCheckIn() {
   });
 }
 
-/** Undo today's last entry for a challenge. */
+/** Undo today's latest post for a challenge, with its files. */
 export function useUndoCheckIn() {
   const queryClient = useQueryClient();
   const replace = useReplaceCard();
@@ -221,13 +224,13 @@ export function useUndoCheckIn() {
 }
 
 /**
- * Today's check-in as a proof subject for the upload engine: start a proof on it, or resume this
- * file's unfinished upload on one of my check-ins of this challenge (also yesterday's, within its
- * grace). `key` groups this phone's uploads under the challenge's card.
+ * Today's check-in as a proof subject for the upload engine: start a draft file on it, or resume
+ * this file's unfinished upload on it (until midnight). `key` groups this phone's uploads under
+ * the challenge's card for that day.
  */
 export function checkInProofs(challengeId: string, day: string): ProofSubject {
   return {
-    key: `check-in:${challengeId}`,
+    key: `check-in:${challengeId}:${day}`,
     start: (body) =>
       call(
         api.POST("/api/v1/challenges/{challenge_id}/check-ins/{day}/proofs", {

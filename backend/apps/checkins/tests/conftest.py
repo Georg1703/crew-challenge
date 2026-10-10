@@ -4,8 +4,10 @@ from datetime import date
 
 import pytest
 
+from apps.checkins import services
 from apps.checkins.tests.test_proofs import DAY, at, photo, scheduled, send
 from apps.proofs import services as proofs
+from apps.proofs.models import Proof
 from tests.factories import AdminFactory, MemberFactory
 
 
@@ -16,14 +18,15 @@ def crew():
         ana = AdminFactory.create(display_name="Ana")
         bogdan = MemberFactory.create(crew=ana.crew, display_name="Bogdan")
         cristina = MemberFactory.create(crew=ana.crew, display_name="Cristina")
-        walk = scheduled(ana, bogdan, date(2026, 11, 1), proof_required=True)
-        read = scheduled(
-            ana, bogdan, date(2026, 11, 1), [ana.pk], title="Read", proof_required=True
-        )
+        walk = scheduled(ana, bogdan, date(2026, 11, 1))
+        read = scheduled(ana, bogdan, date(2026, 11, 1), [ana.pk], title="Read")
     return ana, bogdan, cristina, walk, read
 
 
 def shown_photo(storage, member, challenge, day=DAY):
+    """A photo uploaded and posted: with the day's check-in, or added after it."""
     plan = photo(member, challenge, day=day)
     send(storage, plan)
-    return proofs.complete_proof(by=member, proof_id=plan.proof.pk)
+    proofs.complete_proof(by=member, proof_id=plan.proof.pk)
+    services.check_in(by=member, challenge_id=challenge.pk, day=day)
+    return Proof.objects.get(pk=plan.proof.pk)

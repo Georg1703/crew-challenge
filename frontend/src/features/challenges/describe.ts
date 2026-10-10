@@ -105,7 +105,7 @@ export function describeDayMin(
   return t("challenges.describe.dayMin", { value, unit: shape.unit });
 }
 
-/** "Photo or video", "No proof" */
+/** "Proof required", "Proof optional" */
 export function describeProof(t: TFunction, shape: Pick<Shape, "proof_required">) {
   return t(shape.proof_required ? "challenges.describe.proof.yes" : "challenges.describe.proof.no");
 }
@@ -117,7 +117,7 @@ export function describePunishments(t: TFunction, count: number) {
     : t("challenges.describe.noPunishments");
 }
 
-/** One short line for lists: "1 month · Every day · 50 push-ups each check-in · Photo or video". */
+/** One short line for lists: "1 month · Every day · 50 push-ups each check-in · Proof required". */
 export function summaryLine(t: TFunction, shape: Shape, language: string) {
   return [
     describeLength(t, shape),

@@ -1,7 +1,7 @@
 /**
  * The upload engine: our API decides, Uppy moves the bytes.
  *
- * 1. The subject's API starts the proof (its rules, at most 5, the grace) or, for a video picked
+ * 1. The subject's API starts the proof (its rules, at most 5, the day's deadline) or, for a video picked
  *    again, resumes it by fingerprint with the parts it already has.
  * 2. Uppy (v5; v6 drives S3 itself) sends the file straight to S3: one presigned PUT for a
  *    photo; a video's parts 4 at a time, each retried 6 times with backoff and signed afresh,
@@ -40,7 +40,7 @@ export function partSize(size: number): number {
 
 const reports = new Map<string, Promise<unknown>[]>(); // proof id -> ETag reports in flight
 const thumbs = new Map<string, Promise<unknown>>(); // proof id -> thumbnail PUT
-const done = new Map<string, () => Promise<unknown>>(); // file id -> refresh the screens
+const done = new Map<string, (proofId: string) => Promise<unknown>>(); // file id -> refresh the screens
 const offline = new Set<string>(); // files paused because the phone went offline
 
 /** Report one part's ETag, retrying a little: resume depends on it. */
@@ -127,7 +127,7 @@ async function createUppy() {
     if (!file) return;
     try {
       if ((file as ProofFile).meta.kind === "photo") await finish((file as ProofFile).meta.proofId);
-      await done.get(file.id)?.();
+      await done.get(file.id)?.((file as ProofFile).meta.proofId);
       store().drop(file.id);
       done.delete(file.id);
       uppy.removeFile(file.id);
@@ -175,8 +175,9 @@ function nothingToResume(error: unknown): null {
 
 /**
  * Send a picked photo or video as proof for `subject` (today's check-in, a spin). Throws the API's
- * error (not checked in, 5 already, a type it does not take) before anything uploads. `onDone`
- * refreshes the screens once the proof is complete; the tile then comes from the API.
+ * error (a day that is over, 5 already, a type it does not take) before anything uploads. `onDone`
+ * refreshes the screens once the proof is complete (it gets the proof's id); the tile then comes
+ * from the API.
  */
 export async function upload({
   subject,
@@ -185,7 +186,7 @@ export async function upload({
 }: {
   subject: ProofSubject;
   file: File;
-  onDone: () => Promise<unknown>;
+  onDone: (proofId: string) => Promise<unknown>;
 }): Promise<void> {
   const kind = file.type.startsWith("video/") ? "video" : "photo";
   const prepared = kind === "video" ? await prepareVideo(file) : await preparePhoto(file);

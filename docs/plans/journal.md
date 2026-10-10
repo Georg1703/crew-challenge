@@ -126,13 +126,9 @@ removed until it is posted; a posted one cannot. The crew sees posted files only
 show on their owner's Today card and nowhere else. Up to 5 draft files at a time.
 
 Only posts count: the day's status and total, streaks, the board, verdicts, the day counts. A
-draft file belongs to its day. An upload started before midnight may finish within 24 h after the
-day's deadline (as today), so draft files started before the deadline can still be posted for
-their day during that time (Today shows "Check in for yesterday"); then `expire_proofs` deletes
-them (it already fails uploads past their grace; it now also deletes unposted finished files), and
-a beat task in check-ins deletes pending check-ins left with nothing. `open_spins` does not judge a
-participant's window while they hold an unexpired draft file in it, so that wait ends within
-24 h. A post for yesterday cannot be undone: its day is over.
+draft file belongs to its day, and midnight ends it (agreed 2026-10-10: no grace after the
+deadline): an upload must finish, and its post be made, before the day's deadline. Then
+`expire_proofs` deletes the day's draft files, and the next day starts with none.
 
 ### Cards
 
@@ -243,7 +239,7 @@ The data first, with no change in behaviour, so stage 2 only changes rules.
   are filled by stage 2's migration with the same rule.
 - Tests: each fill, run twice on today's models; forward and back on a copy of the dev database.
 
-### Stage 2 - Post with proof
+### Stage 2 - Post with proof (built, 2026-10-10)
 
 The rule change, backend and screens together (the old screens cannot post with proof).
 
@@ -257,26 +253,30 @@ The rule change, backend and screens together (the old screens cannot post with 
     files. A post that adds nothing and has no files is a no-op.
   - Undo: my latest post of today, with its files (the check-in goes with its last counting
     post, unless draft files keep it pending).
-  - `proofs.publish(subject, post_id)`; `delete_proof` refuses posted files (`ProofKept`, now
-    meaning "posted"; the same-day rule goes); `expire_proofs` also deletes unposted files past
-    their grace; every crew-facing read of proofs shows posted ones only (the seven reads:
-    `records`, `todays_proofs` for others, `day_sheet`, `feed`, `reactable_check_in`,
-    `day_summaries`, `member_progress`).
-  - A beat task deletes pending check-ins left with nothing; `open_spins` skips a participant's
-    window while they hold an unexpired draft file in it; day counts and the old journal skip
-    pending check-ins (verdicts already do: only `done` counts).
-  - An old app on a challenge that asks for proof gets `proof_needed` when it checks in first
-    (the update banner follows).
+  - `proofs.publish(subject, post_id)`, `remove_post`, `drafts`; `delete_proof` refuses posted
+    files (`proof_posted`; the same-day rule and `ProofKept` go); a draft's upload expires at its
+    day's deadline (the 24 h `UPLOAD_GRACE` goes) and `expire_proofs` then deletes it;
+    crew-facing reads show posted ones only (`VISIBLE` in
+    `records`, `day_sheet`, `feed`, `day_summaries`, `member_progress`); `todays_proofs` (mine)
+    shows drafts too, each with `posted`.
+  - Pending check-ins: skipped by `records`, day counts and the old journal (verdicts only count
+    `done`). One left with nothing (its drafts removed or expired) stays, skipped by every read:
+    no beat task until they pile up.
+  - New codes: `uploads_running`, `proof_required`, `proof_posted`; `not_checked_in` goes. An old
+    app on a challenge that asks for proof gets `proof_required` when it checks in first (the
+    update banner follows).
+  - Until stage 3, a spin's proofs are posted with the spin as they start (`post_id` = the spin),
+    so the shared draft rules leave them alone; in between a spin proof cannot be removed.
 - Frontend:
   - Today's card: picking files (any challenge) uploads them as draft tiles you can retry or
     remove; "Check in" is not available while any uploads, and on a challenge that asks for
     proof until one has finished. Without files it posts at once. After the check-in, "Add
-    photos or videos", then "Post". Draft files left from yesterday show with "Check in for
-    yesterday" until their grace ends.
+    photos or videos", then "Post N photos or videos".
   - The amount sheet: the number and its files; "Add" follows the same rule.
   - When the uploads finish while you are elsewhere, a toast says they are ready to post.
   - Undo deletes your latest post of today. Posted tiles lose "Delete".
-- Migration: `post_id` filled again for proofs the old release started during stage 1's deploy.
+- Migrations: `checkins` 0007 (the `pending` status), 0008 and `doom` 0003: `post_id` filled
+  again for proofs added while stage 1 ran (every spin proof now gets its spin).
 - Docs: `AGENTS.md` (game rules: any post may carry files, none without them where proof is
   required, "Proof never changes whether a day is done" goes; proof upload: draft files),
   glossary (Post, Draft file), `docs/plans/proof-upload.md`, `docs/design-system.md` for any new
@@ -284,10 +284,10 @@ The rule change, backend and screens together (the old screens cannot post with 
 - Tests: posting refused while a file uploads; refused without a finished file where proof is
   required (also a "+N"); files accepted on a challenge that does not ask for proof; a 6th draft
   file refused; failed files deleted at posting; posted files not removable, draft files
-  removable; the crew never sees draft files; draft files started before midnight post for
-  their day within the grace, then expire; a post for yesterday cannot be undone; only posts
+  removable; the crew never sees draft files; midnight ends a day's drafts (an upload cannot
+  finish after it, a post for yesterday is refused, `expire_proofs` deletes them); only posts
   count (status, total, streak, board, day counts); undo removes the latest post and its files;
-  a double tap posts once; `open_spins` waits for an unexpired draft file.
+  a double tap posts once.
 - `make e2e`: check in with a photo (the button waits for the upload); "+N" with its proof; a
   check-in with an optional photo on a challenge that does not ask for proof; add photos later;
   remove a draft file; undo.
@@ -386,16 +386,15 @@ Deployed a release after stage 5, because that release still serves what this re
 | Every file failed, proof optional | Remove them (or post: failed files are dropped and the check-in has none) |
 | The app is closed during an upload | Pick the same file again: the generic resume finds it; the draft waits |
 | Uploads finish while you are elsewhere | A toast says they are ready; Today keeps "Check in" waiting for your tap |
-| Picked at 23:50, finished at 00:30 | "Check in for yesterday" until 24 h after yesterday's deadline; counts for yesterday; the card sits under yesterday; it cannot be deleted |
-| Draft files never posted | They expire 24 h after their day's deadline; nothing counts |
-| A day's window judged while a draft file in it is open | Not judged until it is posted or expires (at most 24 h) |
+| Picked at 23:50, not posted by midnight | The day is over: the upload stops, the draft goes, nothing counts; pick again for the new day |
+| Draft files never posted | They expire at their day's deadline; nothing counts |
 | Checked in on another device while draft files wait | Posting them adds them as a post of their own (it counts nothing more) |
 | A double tap on "Check in" | The second finds nothing to post |
 | A 6th draft file | Refused: up to 5 at a time |
 | Deleting an earlier post of today | Refused: only the latest (the later cards' totals stay true) |
 | Deleting a post that finished the crew's day | The crew's card goes too (and its reactions) |
 | A day with only weekly or monthly challenges | No crew's day card |
-| Leaving a challenge with draft files | They are deleted; leaving today still counts today |
+| Leaving a challenge with draft files | Today still counts: they can be posted today, or expire |
 | A deleted challenge | Its cards are hidden with it (`visible` hides deleted challenges) |
 | A video whose conversion fails | Shown as today: the original plays where the browser can |
 | Deleting a post that has reactions | Its card and the reactions go |
@@ -422,8 +421,8 @@ Deployed a release after stage 5, because that release still serves what this re
 | Risk | Answer |
 |---|---|
 | Filling `post_id` goes wrong | Stage 1 fills one column and nothing reads it yet; run forward and back on a copy of the dev database; stragglers filled again in stage 2. |
-| A day counted wrong while an upload runs | Only posts count; draft files count nothing; tests at midnight and through the 24 h grace. |
-| A spin opened for a day whose proof is still uploading | `open_spins` waits for open draft files (at most 24 h). |
+| A day counted wrong while an upload runs | Only posts count; draft files count nothing; tests at midnight and on the 25-hour day. |
+| A long video started late is lost | Agreed: the day ends at midnight; the button shows the upload's progress, and a big video asks before it starts on a phone. |
 | Members think an upload is a check-in | The button stays visible but waiting, with the upload's progress; a toast when ready; Today keeps the draft files until posted. |
 | Draft files seen before posting | Crew-facing reads show posted files only; a test for each. |
 | Cards that do not match what happened | Stage 4 writes them for a release before anyone reads them; compare in the admin; `journal_backfill` repairs. |

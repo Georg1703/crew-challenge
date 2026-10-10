@@ -161,7 +161,8 @@ def start_proof(
     duration: int | None = None,
 ) -> proofs.ProofUpload:
     """Add a photo or video to my drawn punishment that needs proof (up to 5; any day). The
-    first one the crew can see serves it."""
+    first one the crew can see serves it. It is posted with the spin as it starts (not a draft),
+    so it cannot be removed after."""
     with transaction.atomic():
         spin = _own(by, spin_id)  # locked: one start at a time counts the proofs
         if spin.punishment is None:
@@ -178,6 +179,7 @@ def start_proof(
             fingerprint=fingerprint,
             thumb_size=thumb_size,
             duration=duration,
+            post_id=spin.pk,
         )
 
 

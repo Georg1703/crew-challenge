@@ -28,6 +28,7 @@ const proof = (id: string, at = "2026-11-10T08:00:00Z") => ({
   phone_thumb_url: null,
   created_at: at,
   duration: null,
+  posted: true,
 });
 
 const progress: MemberProgress = {

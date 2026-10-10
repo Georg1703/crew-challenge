@@ -198,8 +198,7 @@
     "not_due_today": "This challenge asks for nothing today.",
     "nothing_to_undo": "There's nothing to undo today.",
     "not_a_participant": "Only the people taking part can do this.",
-    "not_checked_in": "Check in first, then add proof.",
-    "too_many_proofs": "A day takes at most 5 proofs.",
+    "too_many_proofs": "A post takes at most 5 photos or videos.",
     "upload_closed": "This upload has ended. Pick the file again to start over.",
     "upload_incomplete": "The file is not fully uploaded yet. Try again.",
     "upload_size_mismatch": "The uploaded file is not the one that was picked. Pick it again.",
@@ -212,7 +211,10 @@
     "spin_not_found": "This spin no longer exists.",
     "not_drawn": "Spin the wheel first.",
     "proof_needed": "This punishment is served with a photo or video.",
-    "proof_not_needed": "This punishment needs no proof: tap Done."
+    "proof_not_needed": "This punishment needs no proof: tap Done.",
+    "uploads_running": "Wait for the photos and videos to finish uploading.",
+    "proof_required": "This challenge asks for a photo or video with each check-in.",
+    "proof_posted": "This photo or video is posted. Undo its post to remove it."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -304,7 +306,7 @@
         "title": "What do you record?"
       },
       "proof": {
-        "title": "What proof?"
+        "title": "Proof required?"
       },
       "review": {
         "title": "Check it"
@@ -418,8 +420,8 @@
       "quantity": "A number ({{unit}})",
       "abstain": "Holding back",
       "proof": {
-        "yes": "Photo or video",
-        "no": "No proof"
+        "yes": "Proof required",
+        "no": "Proof optional"
       },
       "period": {
         "month_one": "the month",
@@ -652,13 +654,21 @@
       "previous": "Previous day",
       "next": "Next day"
     },
-    "withProof": ", with proof"
+    "withProof": ", with proof",
+    "filesPosted": "Photos and videos posted",
+    "readyToPost": "{{title}}: uploaded, ready to post",
+    "postFiles_one": "Post {{count}} photo or video",
+    "postFiles_few": "Post {{count}} photos or videos",
+    "postFiles_other": "Post {{count}} photos or videos",
+    "waiting": {
+      "uploading": "Waiting for the uploads to finish",
+      "proof": "Add a photo or video to check in"
+    }
   },
   "proofs": {
     "add": "Add a photo or video",
     "addPhoto": "Add a photo",
     "addVideo": "Add a video",
-    "nudge": "Add a photo or video as proof for today.",
     "kind": {
       "photo": "Photo",
       "video": "Video"

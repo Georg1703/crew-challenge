@@ -39,7 +39,7 @@ Punishment, Spin and Wheel of Doom. Wilted trees and Web Push stay after v1.
 | Running challenges | Not changed: a scheduled challenge cannot get punishments, so the production challenge never spins. |
 | How many | None, or 2 to 8. One is refused (nothing to draw from). None means failed windows owe nothing. |
 | Proof on a punishment | Yes or no. Yes: a photo or a video. No: the person taps "Done". |
-| Proof on a challenge | Yes or no (`proof_required`). Yes: a photo or a video, with the nudge until one is added. No: no proof. Proof never changes whether a day is done. |
+| Proof on a challenge | Yes or no (`proof_required`). Yes: a photo or a video, with the nudge until one is added. No: no proof. Proof never changes whether a day is done. (Changed by `docs/plans/journal.md` stage 2: a challenge that asks for proof takes no post without one.) |
 | Spins per failed window | One per missing check-in (1 of 3 -> 2 spins; a missed daily day -> 1); one for a missed total. |
 | From when | Only challenges with punishments, which are all proposed after this ships: nothing for past misses. |
 | Leaving | Spins already owed stay. The window cut by leaving is judged like any other (its need is scaled). |

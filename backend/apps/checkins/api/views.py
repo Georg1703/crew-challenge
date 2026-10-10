@@ -125,7 +125,8 @@ class CheckInsView(APIView):
         request=CheckInIn, responses=TodayChallengeOut, operation_id="challenges_check_in"
     )
     def post(self, request: Request, challenge_id: UUID) -> Response:
-        """Check in for today (numbers add up). Returns the challenge as on today's card."""
+        """Post: today's check-in, a "+N" or photos added later, with today's uploaded draft
+        files (numbers add up). Returns the challenge as on today's card."""
         data = CheckInIn(data=request.data)
         data.is_valid(raise_exception=True)
         services.check_in(by=_member(request), challenge_id=challenge_id, **data.validated_data)
@@ -137,7 +138,7 @@ class UndoView(APIView):
 
     @extend_schema(request=None, responses=TodayChallengeOut, operation_id="challenges_undo")
     def delete(self, request: Request, challenge_id: UUID, day: str) -> Response:
-        """Undo today's last entry (`day` is today, YYYY-MM-DD). The last one takes its proofs."""
+        """Undo today's latest post with its proofs (`day` is today, YYYY-MM-DD)."""
         services.undo_last(by=_member(request), challenge_id=challenge_id, day=_day(day))
         return _card_response(request, challenge_id)
 
@@ -217,7 +218,8 @@ class ProofsView(APIView):
         request=ProofStartIn, responses={201: ProofUploadOut}, operation_id="proofs_start"
     )
     def post(self, request: Request, challenge_id: UUID, day: str) -> Response:
-        """Add a photo or video to today's check-in. Then send the file straight to storage."""
+        """Upload a photo or video as a draft file of today's check-in (any challenge due today):
+        the next post publishes it. Then send the file straight to storage."""
         data = ProofStartIn(data=request.data)
         data.is_valid(raise_exception=True)
         plan = services.start_proof(
@@ -236,7 +238,7 @@ class ResumeProofView(APIView):
     )
     def get(self, request: Request, challenge_id: UUID) -> Response:
         """My unfinished video upload of this file (name|size|lastModified) on one of my
-        check-ins of this challenge, also yesterday's while its grace runs; else 404."""
+        check-ins of this challenge, while it can still finish (today); else 404."""
         plan = services.resume_proof(
             by=_member(request),
             challenge_id=challenge_id,

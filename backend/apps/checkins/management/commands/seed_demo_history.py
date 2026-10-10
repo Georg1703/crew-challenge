@@ -326,11 +326,11 @@ class Seeder:
             status=CheckIn.Status.IN_PROGRESS if partial else CheckIn.Status.DONE,
             amount=total,
         )
-        for number, amount in enumerate(amounts, start=1):
-            entry = CheckInEntry.objects.create(
-                crew=self.crew, check_in=row, number=number, amount=amount
-            )
-            CheckInEntry.objects.filter(pk=entry.pk).update(created_at=when, updated_at=when)
+        entries = [
+            CheckInEntry.objects.create(crew=self.crew, check_in=row, number=number, amount=amount)
+            for number, amount in enumerate(amounts, start=1)
+        ]
+        CheckInEntry.objects.filter(check_in=row).update(created_at=when, updated_at=when)
         CheckIn.objects.filter(pk=row.pk).update(created_at=when, updated_at=when)
         self.check_ins += 1
         media = self.media.get(challenge.pk, "")
@@ -346,9 +346,10 @@ class Seeder:
                 for n in range(proofs)
             ]
         for n, kind in enumerate(kinds[:5]):
-            self.proof(row, kind, when + timedelta(minutes=n + 1))
+            self.proof(row, entries[0].pk, kind, when + timedelta(minutes=n + 1))
 
-    def proof(self, check_in: CheckIn, kind: str, when: datetime) -> None:
+    def proof(self, check_in: CheckIn, post_id: UUID, kind: str, when: datetime) -> None:
+        """A proof posted with the day's first post."""
         if kind == "video" and self.video is None:
             return
         proof_id = uuid4()
@@ -380,6 +381,7 @@ class Seeder:
             original=original,
             thumb=thumb,
             duration=self.random.randint(12, 140) if kind == "video" else None,
+            post_id=post_id,
         )
         Proof.objects.filter(pk=proof_id).update(created_at=when, updated_at=when)
 

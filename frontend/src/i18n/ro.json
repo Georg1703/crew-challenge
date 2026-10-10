@@ -198,8 +198,7 @@
     "not_due_today": "Provocarea asta nu cere nimic azi.",
     "nothing_to_undo": "Nu e nimic de anulat azi.",
     "not_a_participant": "Doar cei care participă pot face asta.",
-    "not_checked_in": "Bifează întâi, apoi adaugă dovada.",
-    "too_many_proofs": "O zi poate avea cel mult 5 dovezi.",
+    "too_many_proofs": "O postare poate avea cel mult 5 poze sau video-uri.",
     "upload_closed": "Încărcarea s-a încheiat. Alege din nou fișierul ca s-o iei de la capăt.",
     "upload_incomplete": "Fișierul nu e încărcat complet. Încearcă din nou.",
     "upload_size_mismatch": "Fișierul încărcat nu e cel ales. Alege-l din nou.",
@@ -212,7 +211,10 @@
     "spin_not_found": "Rotirea nu mai există.",
     "not_drawn": "Învârte roata mai întâi.",
     "proof_needed": "Pedeapsa asta se face cu o poză sau un video.",
-    "proof_not_needed": "Pedeapsa asta nu cere dovadă: atinge Gata."
+    "proof_not_needed": "Pedeapsa asta nu cere dovadă: atinge Gata.",
+    "uploads_running": "Așteaptă să se termine încărcarea pozelor și video-urilor.",
+    "proof_required": "Provocarea asta cere o poză sau un video la fiecare bifare.",
+    "proof_posted": "Poza sau video-ul e postat. Anulează postarea ca să-l ștergi."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -304,7 +306,7 @@
         "title": "Ce notezi la bifă?"
       },
       "proof": {
-        "title": "Ce dovadă cerem?"
+        "title": "Cerem dovadă?"
       },
       "review": {
         "title": "Verifică"
@@ -418,8 +420,8 @@
       "quantity": "Un număr ({{unit}})",
       "abstain": "Te abții",
       "proof": {
-        "yes": "Poză sau video",
-        "no": "Fără dovadă"
+        "yes": "Dovadă obligatorie",
+        "no": "Dovadă la alegere"
       },
       "period": {
         "month_one": "toată luna",
@@ -652,13 +654,21 @@
       "previous": "Ziua anterioară",
       "next": "Ziua următoare"
     },
-    "withProof": ", cu dovadă"
+    "withProof": ", cu dovadă",
+    "filesPosted": "Pozele și video-urile au fost postate",
+    "readyToPost": "{{title}}: încărcat, gata de postat",
+    "postFiles_one": "Postează {{count}} poză sau video",
+    "postFiles_few": "Postează {{count}} poze sau video-uri",
+    "postFiles_other": "Postează {{count}} de poze sau video-uri",
+    "waiting": {
+      "uploading": "Se așteaptă să se termine încărcarea",
+      "proof": "Adaugă o poză sau un video ca să bifezi"
+    }
   },
   "proofs": {
     "add": "Adaugă o poză sau un video",
     "addPhoto": "Adaugă o poză",
     "addVideo": "Adaugă un video",
-    "nudge": "Adaugă o poză sau un video ca dovadă pentru azi.",
     "kind": {
       "photo": "Poză",
       "video": "Video"

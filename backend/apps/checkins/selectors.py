@@ -21,7 +21,7 @@ from apps.core import clock
 from apps.crews import selectors as crews
 from apps.crews.models import Member
 from apps.proofs.models import Proof
-from apps.proofs.selectors import SHOWN
+from apps.proofs.selectors import VISIBLE
 
 from . import days
 from .models import CheckIn, CheckInEntry
@@ -30,10 +30,13 @@ from .models import CheckIn, CheckInEntry
 def records(
     *, challenge_ids: list[UUID], member_ids: list[UUID], proof_days: bool = True
 ) -> dict[tuple[UUID, UUID], days.Record]:
-    """Check-ins per (challenge, member): days done, in progress, totals, days with proof
-    (left out with `proof_days=False`, one query less)."""
+    """Check-ins per (challenge, member): days done, in progress, totals, days with posted proof
+    (left out with `proof_days=False`, one query less). A pending check-in (only draft files) is
+    no check-in yet."""
     result: dict[tuple[UUID, UUID], days.Record] = defaultdict(days.Record)
-    rows = CheckIn.objects.filter(challenge_id__in=challenge_ids, member_id__in=member_ids)
+    rows = CheckIn.objects.filter(challenge_id__in=challenge_ids, member_id__in=member_ids).exclude(
+        status=CheckIn.Status.PENDING
+    )
     for row in rows:
         record = result[(row.challenge_id, row.member_id)]
         if row.status == CheckIn.Status.DONE:
@@ -46,9 +49,9 @@ def records(
         return dict(result)
     proofs = (
         Proof.objects.filter(
+            VISIBLE,
             check_in__challenge_id__in=challenge_ids,
             check_in__member_id__in=member_ids,
-            status__in=SHOWN,
         )
         .order_by()
         .values_list("check_in__challenge_id", "check_in__member_id", "check_in__day")
@@ -60,7 +63,8 @@ def records(
 
 
 def todays_proofs(*, member: Member, day: date) -> dict[UUID, list[Proof]]:
-    """The member's proofs on `day` per challenge, every status (uploads in flight too)."""
+    """The member's proofs on `day` per challenge, posted and draft, every status (uploads in
+    flight too)."""
     result: dict[UUID, list[Proof]] = defaultdict(list)
     challenge_of = dict(
         CheckIn.objects.filter(member=member, day=day).values_list("pk", "challenge")
@@ -281,7 +285,7 @@ def day_sheet(*, member: Member, challenge_id: UUID, day: date) -> list[DaySheet
     challenge, today, everyone = found
     shown: dict[UUID, list[Proof]] = defaultdict(list)
     for proof in Proof.objects.filter(
-        check_in__challenge=challenge, check_in__day=day, status__in=SHOWN
+        VISIBLE, check_in__challenge=challenge, check_in__day=day
     ).select_related("original__transcode", "thumb"):
         shown[proof.member_id].append(proof)
     return [
@@ -302,13 +306,14 @@ def feed(*, member: Member) -> QuerySet[CheckIn]:
     newest shown proof. Order and page it with `-activity_at` (see api FeedPagination).
     """
     newest_proof = (
-        Proof.objects.filter(check_in=OuterRef("pk"), status__in=SHOWN)
+        Proof.objects.filter(VISIBLE, check_in=OuterRef("pk"))
         .order_by("-updated_at")
         .values("updated_at")[:1]
     )
-    shown = Proof.objects.filter(status__in=SHOWN).select_related("original__transcode", "thumb")
+    shown = Proof.objects.filter(VISIBLE).select_related("original__transcode", "thumb")
     return (
         CheckIn.objects.filter(challenge__in=challenges.visible(member=member))
+        .exclude(status=CheckIn.Status.PENDING)
         .annotate(activity_at=Greatest("updated_at", Subquery(newest_proof)))
         .select_related("member", "challenge")
         .prefetch_related(Prefetch("proofs", queryset=shown, to_attr="shown_proofs"))
@@ -401,13 +406,14 @@ def day_summaries(*, member: Member, on: set[date]) -> dict[date, DaySummary]:
     seen = challenges.visible(member=member)
     check_ins = dict(
         CheckIn.objects.filter(challenge__in=seen, day__in=on)
+        .exclude(status=CheckIn.Status.PENDING)
         .order_by()
         .values("day")
         .annotate(n=Count("id"))
         .values_list("day", "n")
     )
     proofs = dict(
-        Proof.objects.filter(check_in__challenge__in=seen, check_in__day__in=on, status__in=SHOWN)
+        Proof.objects.filter(VISIBLE, check_in__challenge__in=seen, check_in__day__in=on)
         .order_by()
         .values("check_in__day")
         .annotate(n=Count("id"))
@@ -539,7 +545,7 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
     }
     grouped: dict[tuple[date, UUID], list[Proof]] = defaultdict(list)
     for proof in (
-        Proof.objects.filter(check_in__in=list(day_and_challenge), status__in=SHOWN)
+        Proof.objects.filter(VISIBLE, check_in__in=list(day_and_challenge))
         .select_related("original__transcode", "thumb")
         .order_by("created_at")
     ):

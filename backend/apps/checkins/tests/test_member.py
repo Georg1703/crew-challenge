@@ -19,10 +19,8 @@ def crew():
         ana = AdminFactory.create(display_name="Ana")
         bogdan = MemberFactory.create(crew=ana.crew, display_name="Bogdan")
         cristina = MemberFactory.create(crew=ana.crew, display_name="Cristina")
-        walk = scheduled(ana, bogdan, date(2026, 11, 1), proof_required=True)
-        read = scheduled(
-            ana, bogdan, date(2026, 11, 1), [ana.pk], title="Read", proof_required=True
-        )
+        walk = scheduled(ana, bogdan, date(2026, 11, 1))
+        read = scheduled(ana, bogdan, date(2026, 11, 1), [ana.pk], title="Read")
     return ana, bogdan, cristina, walk, read
 
 

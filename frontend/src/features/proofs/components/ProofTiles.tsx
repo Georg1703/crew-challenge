@@ -19,7 +19,7 @@ import styles from "../proofs.module.css";
 import { cancel, retry, toggle, upload } from "../uploads/engine";
 import { useUploads } from "../uploads/store";
 
-const MAX_PROOFS = 5; // the API refuses a 6th too
+const MAX_PROOFS = 5; // a post's; the API refuses a 6th too
 const UNDO_MS = 5000; // as long as the toast with "Undo" stays
 const GiB = 1024 ** 3;
 const ASK_ABOVE = 2 * GiB; // on a phone, a bigger video asks first
@@ -41,20 +41,29 @@ const SAVED_STATE: Record<Proof["status"], ProofTileState> = {
 const onPhone = () => window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
 /**
- * A subject's proofs (today's check-in, a spin): what the API has, this phone's uploads in flight,
- * and "+" while fewer than 5. Uploads keep going on other screens (uploads/engine.ts). `title`
- * names them in the viewer; `onChanged` refreshes whatever shows `proofs`.
+ * A subject's proofs (a day's check-in, a spin): what the API has, this phone's uploads in flight,
+ * and "+" while the post to come has fewer than 5. Uploads keep going on other screens
+ * (uploads/engine.ts). `title` names them in the viewer; `onChanged` refreshes whatever shows
+ * `proofs`; `onUploaded` runs when the last upload in flight here has finished.
+ *
+ * With `drafts` (a check-in) new files are draft files of the next post: removable until posted,
+ * and the 5 count them only. Without (a spin, whose files are posted as they start) none is
+ * removable and the 5 count them all.
  */
 export function ProofTiles({
   subject,
   title,
   proofs,
   onChanged,
+  onUploaded,
+  drafts = true,
 }: {
   subject: ProofSubject;
   title: string;
   proofs: Proof[];
   onChanged: () => Promise<unknown>;
+  onUploaded?: () => void;
+  drafts?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -69,11 +78,19 @@ export function ProofTiles({
   const saved = proofs.filter((p) => !inFlight.has(p.id) && !hidden.includes(p.id));
   const sending = local.filter((u) => !hidden.includes(u.proofId));
   const viewable = saved.filter((p) => p.url);
-  const counted = sending.length + saved.filter((p) => p.status !== "failed").length;
+  const counted =
+    sending.length + saved.filter((p) => p.status !== "failed" && !(drafts && p.posted)).length;
   const kind = (k: string) => t(`proofs.kind.${k}`);
 
+  const finished = async (proofId: string) => {
+    await onChanged();
+    const others = Object.values(useUploads.getState().items).some(
+      (u) => u.subject === subject.key && u.proofId !== proofId && u.state !== "failed",
+    );
+    if (!others) onUploaded?.();
+  };
   const send = (file: File) =>
-    void upload({ subject, file, onDone: onChanged }).catch((error: unknown) =>
+    void upload({ subject, file, onDone: finished }).catch((error: unknown) =>
       toast(errorMessage(t, error), "error"),
     );
 
@@ -124,7 +141,7 @@ export function ProofTiles({
                   ? () => toast(t("proofs.pickAgain"))
                   : undefined
             }
-            onRemove={() => remove(proof.id)}
+            onRemove={drafts && !proof.posted ? () => remove(proof.id) : undefined}
             removeLabel={t("proofs.remove")}
           />
         );
@@ -141,7 +158,7 @@ export function ProofTiles({
             percent: Math.round(u.progress * 100),
           })}
           onOpen={() => void (u.state === "failed" ? retry(u.id) : toggle(u.id))}
-          onRemove={() => remove(u.proofId, u.id)}
+          onRemove={drafts ? () => remove(u.proofId, u.id) : undefined}
           removeLabel={t("proofs.remove")}
         />
       ))}

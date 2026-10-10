@@ -125,11 +125,15 @@ and keeps who added it (`member`, for ownership). No registry is needed:
    content_type_field="subject_type", object_id_field="subject_id")` (with a
    `related_query_name`, so `Proof.objects.filter(check_in__day=...)` works);
 2. its app checks its own rules, locks the subject's row and calls
-   `proofs.services.start_proof(member, subject, ..., expires_at)`, which checks the file, the
-   count (5) and starts the uploads; resuming is `resume_proof(by, fingerprint, subjects)` over the
-   subject's own rows;
-3. its API has a start route and a resume route; parts, complete and delete are the generic
-   `/api/v1/proofs/{id}/...`; a proof is removable on the crew-local day it was added.
+   `proofs.services.start_proof(member, subject, ..., expires_at, post_id=None)`, which checks the
+   file, the count (5 a post) and starts the uploads: a draft file, or part of `post_id` at once;
+   resuming is `resume_proof(by, fingerprint, subjects)` over the subject's own rows;
+3. its posting service publishes the draft files with the new post (`publish(subject, post_id)`)
+   and undoing a post removes them (`remove_post`); crew-facing reads show posted ones only
+   (`proofs.selectors.VISIBLE`);
+4. its API has a start route and a resume route; parts, complete and delete are the generic
+   `/api/v1/proofs/{id}/...`; a draft file can be deleted, a posted one cannot. Draft files never
+   posted by the end of their upload's time are deleted by `expire_proofs`.
 
 Deleting a subject deletes its proofs (the relation); call `discard_files(subject=...)` first to
 remove their files. The table is still named `checkins_proof` (the model moved without a copy).

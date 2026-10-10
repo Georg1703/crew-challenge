@@ -1,13 +1,16 @@
-"""Check-in rules: record today's check-in for a challenge, undo the last entry, add proof.
+"""Check-in rules: post (a check-in, a "+N", photos or videos added later), undo the latest
+post, upload draft files.
 
 Only today counts, in the crew's time zone: a request for any other day is refused
 (`day_closed`), so a tap at 23:59:59 that arrives after midnight never lands on the new day.
-A proof started today may still finish uploading up to `UPLOAD_GRACE` after the day's deadline.
+Photos and videos upload first, as draft files on the day's check-in (`pending` while it has no
+post); a post publishes the uploaded ones. Midnight ends the day for its draft files too: not
+posted by then, they expire with it.
 """
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -22,12 +25,13 @@ from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Member
 from apps.proofs import services as proofs
+from apps.proofs.models import Proof
+from apps.proofs.selectors import SHOWN
 
 from . import days
 from .models import CheckIn, CheckInEntry
 
 AMOUNT_MAX = Decimal(1_000_000)
-UPLOAD_GRACE = timedelta(hours=24)
 
 
 class MemberNotFound(NotFound):
@@ -55,9 +59,14 @@ class NothingToUndo(Conflict):
     message = "There is nothing to undo for today."
 
 
-class NotCheckedIn(Conflict):
-    code = "not_checked_in"
-    message = "Check in first, then add proof."
+class UploadsRunning(Conflict):
+    code = "uploads_running"
+    message = "Wait for the photos and videos to finish uploading."
+
+
+class ProofRequired(Conflict):
+    code = "proof_required"
+    message = "This challenge asks for a photo or a video with each check-in."
 
 
 def _participant(by: Member, challenge_id: UUID, day: date) -> Participant:
@@ -82,11 +91,13 @@ def _clean_amount(challenge: Challenge, amount: Decimal | None) -> Decimal | Non
 
 
 def _refresh(check_in: CheckIn) -> CheckIn:
-    """Recompute the total and the status from the entries."""
+    """Recompute the total and the status from the posts (`pending`: only draft files so far)."""
     total = check_in.entries.aggregate(total=Sum("amount"))["total"]
     check_in.amount = total if check_in.challenge.measure == Challenge.Measure.QUANTITY else None
     check_in.status = (
-        CheckIn.Status.DONE
+        CheckIn.Status.PENDING
+        if not check_in.entries.exists()
+        else CheckIn.Status.DONE
         if days.counts(check_in.challenge, check_in.amount)
         else CheckIn.Status.IN_PROGRESS
     )
@@ -94,49 +105,72 @@ def _refresh(check_in: CheckIn) -> CheckIn:
     return check_in
 
 
+def _day_row(by: Member, challenge: Challenge, day: date) -> CheckIn:
+    """My check-in of that day, locked (made `pending` when there is none yet)."""
+    # ponytail: a pending check-in whose draft files all went stays behind, skipped by every read;
+    # sweep them in a beat task if they ever pile up.
+    row, _ = CheckIn.objects.select_for_update().get_or_create(
+        challenge=challenge,
+        member=by,
+        day=day,
+        defaults={"crew": by.crew, "status": CheckIn.Status.PENDING},
+    )
+    return row
+
+
 @transaction.atomic
 def check_in(
     *, by: Member, challenge_id: UUID, day: date, amount: Decimal | None = None
 ) -> CheckIn:
-    """Record today's check-in. Numbers add up during the day; a plain check-in counts once."""
+    """Post: today's check-in, a "+N", or photos and videos added later, with the day's uploaded
+    draft files. Numbers add up during the day. Whether a post counts follows from what it is: a
+    "+N" has a number; on other challenges the day's first post is the check-in and later ones
+    only add files (a second tap with nothing to add changes nothing)."""
     participant = _participant(by, challenge_id, day)
     challenge = participant.challenge
     if not counts_on(challenge, day):
         raise NotDueToday()
-    value = _clean_amount(challenge, amount)
-    row, created = CheckIn.objects.select_for_update().get_or_create(
-        challenge=challenge,
-        member=by,
-        day=day,
-        defaults={"crew": by.crew, "status": CheckIn.Status.IN_PROGRESS},
-    )
-    if not created and value is None and row.status == CheckIn.Status.DONE:
-        return row  # tapping "done" twice changes nothing
+    quantity = challenge.measure == Challenge.Measure.QUANTITY
+    value = _clean_amount(challenge, amount) if amount is not None else None
+    row = _day_row(by, challenge, day)
+    drafts = list(proofs.drafts(subject=row))
+    if any(p.status == Proof.Status.UPLOADING for p in drafts):
+        raise UploadsRunning()
+    files = sum(p.status in SHOWN for p in drafts)
     last = row.entries.order_by("-number").first()
-    number = last.number + 1 if last else 1
-    CheckInEntry.objects.create(crew=by.crew, check_in=row, number=number, amount=value)
+    if quantity and last is None and value is None:
+        raise ValidationFailed(fields={"amount": ["Give a number above zero."]})
+    counting = value is not None if quantity else last is None
+    if counting and challenge.proof_required and not files:
+        raise ProofRequired()
+    if not counting and not files:
+        return row  # nothing to post
+    entry = CheckInEntry.objects.create(
+        crew=by.crew, check_in=row, number=last.number + 1 if last else 1, amount=value
+    )
+    proofs.publish(subject=row, post_id=entry.pk)
     return _refresh(row)
 
 
 @transaction.atomic
 def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
-    """Remove today's last entry; the check-in goes with the last one (then None)."""
+    """Delete today's latest post with its files. The check-in goes with its last post (then
+    None), unless draft files still wait on it (then it is `pending` again)."""
     participant = _participant(by, challenge_id, day)
     row = (
         CheckIn.objects.select_for_update()
         .filter(challenge=participant.challenge, member=by, day=day)
         .first()
     )
-    if row is None:
+    last = row.entries.order_by("-number").first() if row is not None else None
+    if row is None or last is None:
         raise NothingToUndo()
-    last = row.entries.order_by("-number").first()
-    if last is not None:
-        last.delete()
-    if not row.entries.exists():
-        proofs.discard_files(subject=row)  # the check-in goes, and its proofs with it
-        row.delete()
-        return None
-    return _refresh(row)
+    proofs.remove_post(subject=row, post_id=last.pk)
+    last.delete()
+    if row.entries.exists() or proofs.drafts(subject=row).exists():
+        return _refresh(row)
+    row.delete()
+    return None
 
 
 def start_proof(
@@ -151,26 +185,19 @@ def start_proof(
     thumb_size: int | None = None,
     duration: int | None = None,
 ) -> proofs.ProofUpload:
-    """Add a photo or video to today's check-in, on a challenge that asks for proof. Its files
-    must arrive within `UPLOAD_GRACE` after the day's deadline."""
+    """Upload a photo or video as a draft file of today's check-in, on any challenge due today; the
+    next post publishes it. Its files must arrive, and be posted, before the day's deadline."""
     challenge = _participant(by, challenge_id, day).challenge
-    if not challenge.proof_required:
-        raise ValidationFailed(fields={"kind": ["This challenge takes no proof."]})
+    if not counts_on(challenge, day):
+        raise NotDueToday()
     with transaction.atomic():
-        check_in = (
-            CheckIn.objects.select_for_update()  # one start at a time counts the proofs
-            .filter(challenge=challenge, member=by, day=day)
-            .first()
-        )
-        if check_in is None:
-            raise NotCheckedIn()
         return proofs.start_proof(
             member=by,
-            subject=check_in,
+            subject=_day_row(by, challenge, day),  # locked: one start at a time counts the files
             kind=kind,
             content_type=content_type,
             size=size,
-            expires_at=clock.deadline_utc(day, by.crew.timezone) + UPLOAD_GRACE,
+            expires_at=clock.deadline_utc(day, by.crew.timezone),
             fingerprint=fingerprint,
             thumb_size=thumb_size,
             duration=duration,
@@ -178,8 +205,7 @@ def start_proof(
 
 
 def resume_proof(*, by: Member, challenge_id: UUID, fingerprint: str) -> proofs.ProofUpload:
-    """My video upload still open for this file on one of my check-ins of this challenge, also
-    yesterday's while its grace runs."""
+    """My video upload still open for this file on today's check-in of this challenge."""
     return proofs.resume_proof(
         by=by,
         fingerprint=fingerprint,

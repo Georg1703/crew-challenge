@@ -117,7 +117,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Check in for today (numbers add up). Returns the challenge as on today's card. */
+        /**
+         * @description Post: today's check-in, a "+N" or photos added later, with today's uploaded draft
+         *     files (numbers add up). Returns the challenge as on today's card.
+         */
         post: operations["challenges_check_in"];
         delete?: never;
         options?: never;
@@ -135,7 +138,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Undo today's last entry (`day` is today, YYYY-MM-DD). The last one takes its proofs. */
+        /** @description Undo today's latest post with its proofs (`day` is today, YYYY-MM-DD). */
         delete: operations["challenges_undo"];
         options?: never;
         head?: never;
@@ -151,7 +154,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Add a photo or video to today's check-in. Then send the file straight to storage. */
+        /**
+         * @description Upload a photo or video as a draft file of today's check-in (any challenge due today):
+         *     the next post publishes it. Then send the file straight to storage.
+         */
         post: operations["proofs_start"];
         delete?: never;
         options?: never;
@@ -168,7 +174,7 @@ export interface paths {
         };
         /**
          * @description My unfinished video upload of this file (name|size|lastModified) on one of my
-         *     check-ins of this challenge, also yesterday's while its grace runs; else 404.
+         *     check-ins of this challenge, while it can still finish (today); else 404.
          */
         get: operations["proofs_resume"];
         put?: never;
@@ -866,9 +872,10 @@ export interface components {
         /**
          * @description * `done` - Done
          *     * `in_progress` - In progress (a number below the day's target)
+         *     * `pending` - Pending (only draft files, nothing posted yet)
          * @enum {string}
          */
-        CheckInStatusEnum: "done" | "in_progress";
+        CheckInStatusEnum: "done" | "in_progress" | "pending";
         CrewChallengeOut: {
             /** Format: uuid */
             challenge_id: string;
@@ -1284,6 +1291,8 @@ export interface components {
             created_at: string;
             /** @description A video's length in seconds, when the phone could read it. */
             duration: number | null;
+            /** @description Posted (the crew sees it); else a draft file its owner can still remove. */
+            posted: boolean;
         };
         ProofStartInRequest: {
             kind: components["schemas"]["MediaKindEnum"];

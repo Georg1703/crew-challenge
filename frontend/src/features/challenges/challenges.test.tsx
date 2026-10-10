@@ -384,7 +384,7 @@ describe("proposing", () => {
     expect(screen.queryByRole("radio", { name: /A few times a month/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "More" })); // 2 months
     await userEvent.click(screen.getByRole("radio", { name: /A few times a month/ }));
-    for (const heading of ["What proof?", "Punishments", "Check it"]) {
+    for (const heading of ["Proof required?", "Punishments", "Check it"]) {
       await userEvent.click(screen.getByRole("button", { name: "Continue" }));
       await screen.findByRole("heading", { name: heading });
     }
@@ -442,7 +442,7 @@ describe("proposing", () => {
     await userEvent.type(screen.getByLabelText("Total (pages)"), "50");
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    await screen.findByRole("heading", { name: "What proof?" });
+    await screen.findByRole("heading", { name: "Proof required?" });
     await userEvent.click(screen.getByRole("switch", { name: /A photo or a video/ }));
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
@@ -572,7 +572,7 @@ describe("one challenge", () => {
 
     expect(await screen.findByRole("heading", { name: "50 push-ups" })).toBeInTheDocument();
     expect(screen.getByText("At least 50 push-ups each check-in")).toBeInTheDocument();
-    expect(screen.getByText("Photo or video")).toBeInTheDocument();
+    expect(screen.getByText("Proof required")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vote" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Edit the proposal" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Withdraw the proposal" })).toBeInTheDocument();
@@ -629,6 +629,8 @@ describe("one challenge", () => {
       week: [],
       current: null,
       settled: false,
+      proofs: [],
+      proof_days: [],
     };
     vi.spyOn(api, "GET").mockImplementation(((path: string) => {
       if (path === "/api/v1/me") return ok(meAs(bogdan));

@@ -1,9 +1,9 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 // Echipa as the crew's journal, against the real backend and the demo crew from `make seed`:
-// Cristina checks in and her ring fills; she adds a photo; Dan sees a new-proof count on her
-// ring, opens her page and her photo, and the count is gone. Her check-in is undone at the end
-// (undo takes its proofs), so the test can run again the same day. Demo accounts use Romanian.
+// Cristina checks in with a photo (the walk asks for proof) and her ring fills; Dan sees a
+// new-proof count on her ring, opens her page and her photo, and the count is gone. Her day is
+// cleared before and after, so the test can run again the same day. Demo accounts use Romanian.
 
 const PASSWORD = "garden-flame-2026";
 const WALK = "Plimbare (demo)";
@@ -34,23 +34,58 @@ async function send(page: Page, method: "post" | "delete", path: string, data?: 
   expect(response.ok()).toBe(true);
 }
 
+type Day = {
+  day: string;
+  challenges: {
+    id: string;
+    title: string;
+    state: string;
+    proofs: { id: string; posted: boolean }[];
+  }[];
+};
+
+/** Today's walk with nothing on it: its draft files deleted, its posts undone. */
+async function clear(page: Page): Promise<void> {
+  for (;;) {
+    const today = (await (await page.request.get("/api/v1/today")).json()) as Day;
+    const walk = today.challenges.find((c) => c.title === WALK);
+    if (!walk) throw new Error(`${WALK} is not running: make seed`);
+    for (const draft of walk.proofs.filter((p) => !p.posted)) {
+      await send(page, "delete", `/api/v1/proofs/${draft.id}`);
+    }
+    if (walk.state !== "done" && walk.state !== "partial") return;
+    await send(page, "delete", `/api/v1/challenges/${walk.id}/check-ins/${today.day}/last`);
+  }
+}
+
+/** On Today: a photo on the walk's card first, then the check-in (it waits for the photo). */
+async function checkInWithPhoto(page: Page): Promise<void> {
+  await page.goto("/");
+  const card = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: WALK }) })
+    .last();
+  await card
+    .locator('input[accept="image/*"]') // the photo picker; videos have their own
+    .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
+  await expect(card.getByRole("button", { name: "Poză. Atinge pentru a deschide" })).toBeVisible();
+  const hold = card.getByRole("button", { name: "Ține apăsat ca să bifezi" });
+  await expect(hold).toBeEnabled();
+  await hold.focus();
+  await page.keyboard.press("Enter"); // the keyboard confirms at once
+  await expect(card.getByRole("button", { name: "Bifat azi" })).toBeVisible();
+}
+
 /** "azi 1 din 3" from a ring's label. */
 function doneOf(label: string | null): number {
   return Number(/azi (\d+) din/.exec(label ?? "")?.[1] ?? -1);
 }
 
-test("a check-in fills the ring, a new photo shows on it, and the member page opens it", async ({
+test("a check-in with a photo fills the ring, and the member page opens the photo", async ({
   browser,
 }) => {
   const cristina = await logIn(browser, "cristina");
-  const today = (await (await cristina.request.get("/api/v1/today")).json()) as {
-    day: string;
-    challenges: { id: string; title: string; state: string }[];
-  };
-  const walk = today.challenges.find((c) => c.title === WALK);
-  if (!walk) throw new Error(`${WALK} is not running: make seed`);
-  const undo = `/api/v1/challenges/${walk.id}/check-ins/${today.day}/last`;
-  if (walk.state === "done") await send(cristina, "delete", undo); // left by a failed run
+  await clear(cristina); // left by a failed run
 
   try {
     await cristina.goto("/crew");
@@ -59,23 +94,11 @@ test("a check-in fills the ring, a new photo shows on it, and the member page op
       .getByRole("link", { name: /^Cristina: azi/ });
     const before = doneOf(await mine.getAttribute("aria-label"));
 
-    await send(cristina, "post", `/api/v1/challenges/${walk.id}/check-ins`, { day: today.day });
-    await cristina.reload();
+    await checkInWithPhoto(cristina);
+    await cristina.goto("/crew");
     await expect.poll(async () => doneOf(await mine.getAttribute("aria-label"))).toBe(before + 1);
     // Alone, or with whoever else checked in on it today (locally the database is the dev one).
     await expect(cristina.getByText(/Cristina.* bifat/).first()).toBeVisible();
-
-    await cristina.goto("/");
-    const card = cristina
-      .locator("section")
-      .filter({ has: cristina.getByRole("heading", { name: WALK }) })
-      .last();
-    await card
-      .locator('input[accept="image/*"]') // the photo picker; videos have their own
-      .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
-    await expect(
-      card.getByRole("button", { name: "Poză. Atinge pentru a deschide" }),
-    ).toBeVisible();
 
     const dan = await logIn(browser, "dan");
     await dan.goto("/crew");
@@ -95,6 +118,6 @@ test("a check-in fills the ring, a new photo shows on it, and the member page op
     await expect(hers).toBeVisible();
     await expect(hers).not.toHaveAccessibleName(/dovad|dovezi/);
   } finally {
-    await send(cristina, "delete", undo);
+    await clear(cristina);
   }
 });

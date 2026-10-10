@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import UTC, date, datetime
 
 import pytest
@@ -80,19 +81,26 @@ def send(storage, plan, data=b"jpeg", thumb=b"tn"):
 
 
 def check_in(member, challenge, day=DAY):
+    """Post: the day's check-in with its uploaded draft files."""
     services.check_in(by=member, challenge_id=challenge.pk, day=day)
+
+
+def uploaded(storage, member, challenge, day=DAY) -> Proof:
+    """A photo uploaded as a draft file, not posted yet."""
+    plan = photo(member, challenge, day=day)
+    send(storage, plan)
+    return proofs.complete_proof(by=member, proof_id=plan.proof.pk)
 
 
 def test_photo_round_trip(object_storage, walk):
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
-    plan = photo(bogdan, challenge)
+    plan = photo(bogdan, challenge)  # before checking in: a draft file
     proof = plan.proof
 
     assert plan.put_url
     assert plan.thumb_put_url
     assert proof.original.key == f"crews/{bogdan.crew_id}/proofs/{proof.pk}/original.jpg"
-    assert proof.original.expires_at == datetime(2026, 11, 11, 22, tzinfo=UTC)  # day + 24 h
+    assert proof.original.expires_at == datetime(2026, 11, 10, 22, tzinfo=UTC)  # its midnight
     card = selectors.card(member=bogdan, challenge_id=challenge.pk)
     assert card is not None
     assert [p.status for p in card.proofs] == ["uploading"]
@@ -106,26 +114,31 @@ def test_photo_round_trip(object_storage, walk):
     assert (done.original.status, done.thumb.status) == ("complete", "complete")  # fresh rows
     assert proofs.complete_proof(by=bogdan, proof_id=proof.pk).status == Proof.Status.READY
     card = selectors.today(member=bogdan).cards[0]
-    assert [p.pk for p in card.proofs] == [proof.pk]
-    assert card.proof_days == [DAY]
+    assert ([p.pk for p in card.proofs], card.proof_days) == ([proof.pk], [])  # mine, a draft
+
+    check_in(bogdan, challenge)
+
+    card = selectors.today(member=bogdan).cards[0]
+    assert (card.state, card.proof_days) == ("done", [DAY])
+    first = CheckIn.objects.get().entries.get()
+    assert Proof.objects.get().post_id == first.pk
 
 
-def test_a_video_resumes_on_its_own_challenge_also_after_midnight(walk):
+def test_a_video_resumes_on_its_own_challenge_until_midnight(walk):
     ana, bogdan, challenge = walk
     with at("2026-10-10 12:00Z"):
         read = scheduled(ana, bogdan, date(2026, 11, 1), title="Read", proof_required=True)
-    check_in(bogdan, challenge)
     plan = video(bogdan, challenge)
     with pytest.raises(proofs.ProofNotFound):  # the same file on another challenge starts fresh
         services.resume_proof(by=bogdan, challenge_id=read.pk, fingerprint=CLIP)
-    with at("2026-11-10 22:30Z"):  # 00:30 the next day: its grace still runs
-        resumed = services.resume_proof(by=bogdan, challenge_id=challenge.pk, fingerprint=CLIP)
+    resumed = services.resume_proof(by=bogdan, challenge_id=challenge.pk, fingerprint=CLIP)
     assert resumed.proof.pk == plan.proof.pk
+    with at("2026-11-10 22:30Z"), pytest.raises(proofs.ProofNotFound):  # 00:30: the day is over
+        services.resume_proof(by=bogdan, challenge_id=challenge.pk, fingerprint=CLIP)
 
 
 def test_video_resumes_from_the_parts_it_reported(object_storage, walk):
     ana, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     plan = video(bogdan, challenge)
     original = plan.proof.original
     assert (plan.put_url, original.mode, original.part_count) == (None, "multipart", 2)
@@ -153,27 +166,29 @@ def test_video_resumes_from_the_parts_it_reported(object_storage, walk):
     assert done.status == Proof.Status.PROCESSING  # transcoding next
 
 
-def test_proof_needs_todays_check_in(walk):
-    _, bogdan, challenge = walk
-    with pytest.raises(services.NotCheckedIn):
-        photo(bogdan, challenge)
-    check_in(bogdan, challenge)
+def test_a_draft_file_needs_no_check_in_only_a_day_that_counts_today(walk):
+    ana, bogdan, challenge = walk
+    with at("2026-10-10 12:00Z"):
+        mondays = scheduled(ana, bogdan, date(2026, 11, 1), title="Swim", on_days=[0])
+    plan = photo(bogdan, challenge)
+
+    check_in = CheckIn.objects.get()
+    assert (check_in.status, plan.proof.post_id) == (CheckIn.Status.PENDING, None)
     with at("2026-11-11 08:00Z"), pytest.raises(services.DayClosed):
-        photo(bogdan, challenge)  # yesterday's check-in
+        photo(bogdan, challenge)  # yesterday's
     with pytest.raises(services.DayClosed):
         photo(bogdan, challenge, day=date(2026, 11, 9))
+    with pytest.raises(services.NotDueToday):
+        photo(bogdan, mondays)  # a Tuesday
 
 
-def test_proof_is_a_photo_or_a_video_when_the_challenge_asks_for_it(walk):
+def test_any_challenge_takes_a_photo_or_a_video(walk):
     ana, bogdan, challenge = walk
     with at("2026-10-10 12:00Z"):
         no_proof = scheduled(ana, bogdan, date(2026, 11, 1), title="Gym")
-    for c in (challenge, no_proof):
-        check_in(bogdan, c)
+    assert photo(bogdan, no_proof).proof.status == Proof.Status.UPLOADING
 
     for refused, field in [
-        (lambda: photo(bogdan, no_proof), "kind"),
-        (lambda: video(bogdan, no_proof), "kind"),
         (lambda: photo(bogdan, challenge, content_type="image/gif"), "content_type"),
         (lambda: photo(bogdan, challenge, size=50 * MiB + 1), "size"),
         (lambda: photo(bogdan, challenge, thumb_size=2 * MiB + 1), "thumb_size"),
@@ -187,9 +202,8 @@ def test_proof_is_a_photo_or_a_video_when_the_challenge_asks_for_it(walk):
     assert (webm.content_type, webm.key.rsplit(".", 1)[1]) == ("video/webm", "webm")
 
 
-def test_five_proofs_a_day_not_counting_failed_ones(walk):
+def test_five_draft_files_at_a_time_not_counting_failed_ones(walk):
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     plans = [photo(bogdan, challenge) for _ in range(5)]
     with pytest.raises(proofs.TooManyProofs):
         photo(bogdan, challenge)
@@ -197,10 +211,13 @@ def test_five_proofs_a_day_not_counting_failed_ones(walk):
     Proof.objects.filter(pk=plans[0].proof.pk).update(status=Proof.Status.FAILED)
     assert photo(bogdan, challenge).proof.status == Proof.Status.UPLOADING
 
+    Proof.objects.exclude(status=Proof.Status.FAILED).update(status=Proof.Status.READY)
+    check_in(bogdan, challenge)  # posted: the next post takes 5 again
+    assert photo(bogdan, challenge).proof.post_id is None
+
 
 def test_a_missing_thumbnail_is_dropped(object_storage, walk):
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     plan = photo(bogdan, challenge)
     thumb = plan.proof.thumb
     send(object_storage, plan, thumb=None)
@@ -213,7 +230,6 @@ def test_a_missing_thumbnail_is_dropped(object_storage, walk):
 
 def test_a_file_of_another_size_fails_the_proof(object_storage, walk):
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     plan = photo(bogdan, challenge)
     send(object_storage, plan, data=b"much bigger than announced")
 
@@ -226,67 +242,67 @@ def test_a_file_of_another_size_fails_the_proof(object_storage, walk):
     assert proofs.complete_proof(by=bogdan, proof_id=proof.pk).status == Proof.Status.FAILED
 
 
-def test_started_before_midnight_finishes_within_the_grace():
-    """25 October 2026 has 25 hours in Chisinau: the grace still ends 24 h after its midnight."""
+def test_an_upload_must_finish_before_its_days_midnight():
+    """25 October 2026 has 25 hours in Chisinau: its midnight is 22:00 UTC, not 21:00."""
     with at("2026-09-10 12:00Z"):
         ana = AdminFactory.create()
         challenge = scheduled(ana, ana, date(2026, 10, 1), proof_required=True)
     with at("2026-10-25 21:59Z"):  # 23:59 local
-        check_in(ana, challenge, day=date(2026, 10, 25))
         late = photo(ana, challenge, day=date(2026, 10, 25), thumb_size=None)
         too_late = photo(ana, challenge, day=date(2026, 10, 25), thumb_size=None)
-    assert late.proof.original.expires_at == datetime(2026, 10, 26, 22, tzinfo=UTC)
+    assert late.proof.original.expires_at == datetime(2026, 10, 25, 22, tzinfo=UTC)
     storage = media.get_object_storage()
     send(storage, late)
     send(storage, too_late)
 
-    with at("2026-10-26 21:59Z"):
+    with at("2026-10-25 21:59:30Z"):
         assert proofs.complete_proof(by=ana, proof_id=late.proof.pk).status == "ready"
-    with at("2026-10-26 22:00Z"), pytest.raises(media.UploadClosed):
+    with at("2026-10-25 22:00Z"), pytest.raises(media.UploadClosed):
         proofs.complete_proof(by=ana, proof_id=too_late.proof.pk)
 
 
-def test_remove_only_my_own_and_only_today(object_storage, walk):
+def test_only_my_own_draft_files_can_be_removed(object_storage, walk):
     ana, bogdan, challenge = walk
-    check_in(bogdan, challenge)
-    plan = photo(bogdan, challenge)
-    send(object_storage, plan)
-    proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)
+    draft = uploaded(object_storage, bogdan, challenge)
 
     with pytest.raises(proofs.ProofNotFound):
-        proofs.delete_proof(by=ana, proof_id=plan.proof.pk)
-    with at("2026-11-10 22:00Z"), pytest.raises(proofs.ProofKept):
-        proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)  # local midnight passed
+        proofs.delete_proof(by=ana, proof_id=draft.pk)
+    proofs.delete_proof(by=bogdan, proof_id=draft.pk)
 
-    proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)
-
-    assert Proof.all_objects.get(pk=plan.proof.pk).is_deleted
+    assert Proof.all_objects.get(pk=draft.pk).is_deleted
     assert object_storage.objects == {}
     card = selectors.card(member=bogdan, challenge_id=challenge.pk)
     assert card is not None
     assert card.proofs == []
 
-
-def test_stuck_uploads_expire_once(object_storage, walk):
-    _, bogdan, challenge = walk
+    posted = uploaded(object_storage, bogdan, challenge)
     check_in(bogdan, challenge)
-    plan = video(bogdan, challenge)
+    with pytest.raises(proofs.ProofPosted):
+        proofs.delete_proof(by=bogdan, proof_id=posted.pk)  # it goes only with its post
+
+
+def test_late_draft_files_go_and_late_posted_uploads_fail_once(object_storage, walk):
+    _, bogdan, challenge = walk
+    draft = video(bogdan, challenge).proof
+    ready = uploaded(object_storage, bogdan, challenge)  # uploaded, never posted
+    posted = photo(bogdan, challenge).proof  # as a spin's: posted as it starts
+    Proof.objects.filter(pk=posted.pk).update(post_id=uuid.uuid4())
 
     assert proofs.expire_proofs() == 0  # still within its time
-    with at("2026-11-11 22:00Z"):
-        assert tasks.expire_proofs.delay().get() == 1
+    with at("2026-11-10 22:00Z"):  # midnight
+        assert tasks.expire_proofs.delay().get() == 3
         assert proofs.expire_proofs() == 0
 
-    assert Proof.objects.get(pk=plan.proof.pk).status == Proof.Status.FAILED
-    assert object_storage.uploads == {}  # the multipart upload was aborted
+    assert Proof.all_objects.get(pk=draft.pk).is_deleted
+    assert Proof.all_objects.get(pk=ready.pk).is_deleted
+    assert Proof.objects.get(pk=posted.pk).status == Proof.Status.FAILED
+    assert (object_storage.uploads, object_storage.objects) == ({}, {})  # aborted and removed
 
 
 def test_undoing_the_check_in_takes_its_proofs(object_storage, walk):
     _, bogdan, challenge = walk
+    uploaded(object_storage, bogdan, challenge)
     check_in(bogdan, challenge)
-    plan = photo(bogdan, challenge)
-    send(object_storage, plan)
-    proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)
 
     assert services.undo_last(by=bogdan, challenge_id=challenge.pk, day=DAY) is None
 
@@ -297,12 +313,10 @@ def test_undoing_the_check_in_takes_its_proofs(object_storage, walk):
 
 def test_the_board_marks_days_with_proof(object_storage, walk):
     ana, bogdan, challenge = walk
+    uploaded(object_storage, bogdan, challenge)
     check_in(bogdan, challenge)
-    send(object_storage, ready := photo(bogdan, challenge))
-    proofs.complete_proof(by=bogdan, proof_id=ready.proof.pk)
     with at("2026-11-11 08:00Z"):
-        check_in(bogdan, challenge, day=date(2026, 11, 11))
-        photo(bogdan, challenge, day=date(2026, 11, 11))  # still uploading: no mark
+        uploaded(object_storage, bogdan, challenge, day=date(2026, 11, 11))  # a draft: no mark
 
         board = selectors.board(member=ana, challenge_id=challenge.pk, month=DAY)
 
@@ -315,9 +329,8 @@ def test_the_board_marks_days_with_proof(object_storage, walk):
 
 @pytest.fixture
 def sent_video(object_storage, walk):
-    """Bogdan checked in and sent every part of a 10-byte video; it is not completed yet."""
+    """Bogdan sent every part of a 10-byte video; it is not completed yet."""
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     plan = video(bogdan, challenge, size=10)
     original = plan.proof.original
     etag = object_storage.upload_part(
@@ -392,7 +405,6 @@ def test_without_transcoding_a_video_is_ready_at_once(sent_video):
 
 def test_a_videos_length_comes_from_the_phone(walk, browser):
     _, bogdan, challenge = walk
-    check_in(bogdan, challenge)
     browser.force_login(bogdan.user)
     url = f"/api/v1/challenges/{challenge.pk}/check-ins/2026-11-10/proofs"
     shape = {"kind": "video", "content_type": "video/mp4", "size": 20 * MiB, "duration": 42}

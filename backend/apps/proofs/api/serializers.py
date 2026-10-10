@@ -29,6 +29,9 @@ class ProofOut(serializers.Serializer):
     duration = serializers.IntegerField(
         allow_null=True, help_text="A video's length in seconds, when the phone could read it."
     )
+    posted = serializers.BooleanField(
+        help_text="Posted (the crew sees it); else a draft file its owner can still remove."
+    )
 
 
 def proof_data(proof: Proof) -> dict[str, Any]:
@@ -44,6 +47,7 @@ def proof_data(proof: Proof) -> dict[str, Any]:
         "phone_thumb_url": media.url(proof.thumb),
         "created_at": proof.created_at,
         "duration": proof.duration,
+        "posted": proof.post_id is not None,
     }
 
 

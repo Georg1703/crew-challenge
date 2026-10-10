@@ -27,6 +27,7 @@ const photo = (id: string): Proof => ({
   phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
   duration: null,
+  posted: true,
 });
 
 const walked: FeedItem = {

@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
@@ -21,6 +22,7 @@ const saved = (id: string, kind: Proof["kind"], status: Proof["status"]): Proof 
   phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
   duration: null,
+  posted: true,
 });
 
 const walk: TodayChallenge = {
@@ -52,6 +54,12 @@ const today = (card: TodayChallenge): Today => ({
   crew: [],
 });
 
+const draft = (id: string, status: Proof["status"]): Proof => ({
+  ...saved(id, "photo", status),
+  posted: false,
+});
+const todo: TodayChallenge = { ...walk, state: "todo", settled: false, proofs: [], proof_days: [] };
+
 function show(card: TodayChallenge = walk) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
     if (path === "/api/v1/me") return ok(meAs(bogdan));
@@ -77,15 +85,29 @@ describe("proofs on today's card", () => {
     expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
   });
 
-  it("nudges for proof when the challenge asks for it", async () => {
-    show({ ...walk, proofs: [] });
-    expect(await screen.findByText("Add a photo or video as proof for today.")).toBeInTheDocument();
+  it("waits for a photo or video before checking in where proof is asked", async () => {
+    show(todo);
+    expect(await screen.findByText("Add a photo or video to check in")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hold to check in" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
   });
 
-  it("offers no proof before the check-in", async () => {
-    show({ ...walk, state: "todo", settled: false, proofs: [] });
-    expect(await screen.findByRole("heading", { name: "Walk" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add a photo or video" })).toBeNull();
+  it("waits while a file uploads, on any challenge", async () => {
+    show({ ...todo, proof_required: false, proofs: [draft("p9", "uploading")] });
+    expect(await screen.findByText("Waiting for the uploads to finish")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hold to check in" })).toBeDisabled();
+  });
+
+  it("posts files added after the check-in on their own", async () => {
+    const post = vi.spyOn(api, "POST").mockImplementation((() => ok(walk)) as never);
+    show({ ...walk, proofs: [...walk.proofs, draft("p2", "ready")] });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Post 1 photo or video" }));
+
+    expect(post).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/check-ins", {
+      params: { path: { challenge_id: "walk" } },
+      body: { day: "2026-11-10", amount: null },
+    });
   });
 });
 

@@ -15,11 +15,13 @@ from apps.crews.models import CrewScopedModel, Member
 
 
 class CheckIn(CrewScopedModel):
-    """One participant, one challenge, one day. Created by the day's first entry."""
+    """One participant, one challenge, one day. Created by the day's first post, or by its first
+    draft file (then `pending` until something is posted)."""
 
     class Status(models.TextChoices):
         DONE = "done", "Done"
         IN_PROGRESS = "in_progress", "In progress (a number below the day's target)"
+        PENDING = "pending", "Pending (only draft files, nothing posted yet)"
 
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="check_ins")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="check_ins")
@@ -57,7 +59,8 @@ class CheckIn(CrewScopedModel):
 
 
 class CheckInEntry(CrewScopedModel):
-    """One "+N" (or the single tap of a check-in without a number). Undo removes the last one."""
+    """One post: a "+N", the single tap of a check-in without a number, or photos and videos
+    added later (no number, not the day's first). Undo removes the latest, with its proofs."""
 
     check_in = models.ForeignKey(CheckIn, on_delete=models.CASCADE, related_name="entries")
     number = models.PositiveSmallIntegerField(help_text="1, 2, 3... in the order they were added.")

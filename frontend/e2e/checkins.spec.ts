@@ -1,11 +1,16 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 // The daily check-in against the real backend: `make seed` gives Demo Crew "Plimbare (demo)",
-// running every day of the current month for everyone. Demo accounts use Romanian.
-// The test leaves Dan's day as it found it (unchecked), so it can run again the same day.
+// running every day of the current month for everyone; it asks for proof, so the check-in waits
+// for a photo. Demo accounts use Romanian. The test leaves Dan's day as it found it (unchecked,
+// no files: undo takes the photo), so it can run again the same day.
 
 const PASSWORD = "garden-flame-2026";
 const WALK = "Plimbare (demo)";
+const PIXEL = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+); // a 1x1 PNG
 
 async function logIn(browser: Browser, username: string): Promise<Page> {
   const page = await (await browser.newContext({ locale: "en-US" })).newPage();
@@ -17,20 +22,34 @@ async function logIn(browser: Browser, username: string): Promise<Page> {
   return page;
 }
 
-/** Undo today's check-in for a challenge if there is one; true if something was undone. */
+/** Clear today's check-in for a challenge (draft files, then posts); true if anything went. */
 async function uncheck(page: Page, title: string): Promise<boolean> {
-  const today = (await (await page.request.get("/api/v1/today")).json()) as {
-    day: string;
-    challenges: { id: string; title: string; state: string }[];
-  };
-  const challenge = today.challenges.find((c) => c.title === title);
-  if (!challenge || challenge.state !== "done") return false;
   const csrf =
     (await page.context().cookies()).find((c) => c.name === "crew_csrftoken")?.value ?? "";
-  await page.request.delete(`/api/v1/challenges/${challenge.id}/check-ins/${today.day}/last`, {
-    headers: { "X-CSRFToken": csrf, Referer: page.url() },
-  });
-  return true;
+  const headers = { "X-CSRFToken": csrf, Referer: page.url() };
+  let cleared = false;
+  for (;;) {
+    const today = (await (await page.request.get("/api/v1/today")).json()) as {
+      day: string;
+      challenges: {
+        id: string;
+        title: string;
+        state: string;
+        proofs: { id: string; posted: boolean }[];
+      }[];
+    };
+    const challenge = today.challenges.find((c) => c.title === title);
+    if (!challenge) return cleared;
+    for (const draft of challenge.proofs.filter((p) => !p.posted)) {
+      await page.request.delete(`/api/v1/proofs/${draft.id}`, { headers });
+      cleared = true;
+    }
+    if (challenge.state !== "done" && challenge.state !== "partial") return cleared;
+    await page.request.delete(`/api/v1/challenges/${challenge.id}/check-ins/${today.day}/last`, {
+      headers,
+    });
+    cleared = true;
+  }
 }
 
 /** The challenge's card on Today. */
@@ -52,7 +71,7 @@ async function hold(page: Page, button: Locator) {
   await page.mouse.up();
 }
 
-test("hold to check in, undo, and see the crew's month", async ({ browser }) => {
+test("a photo, hold to check in, undo, and see the crew's month", async ({ browser }) => {
   const dan = await logIn(browser, "dan");
   const walk = card(dan, WALK);
   await expect(walk).toBeVisible();
@@ -61,7 +80,13 @@ test("hold to check in, undo, and see the crew's month", async ({ browser }) => 
   if (await uncheck(dan, WALK)) await dan.reload();
 
   const button = walk.getByRole("button", { name: "Ține apăsat ca să bifezi" });
-  await expect(button).toBeVisible();
+  await expect(button).toBeDisabled(); // the walk asks for proof: a photo first
+  await expect(walk.getByText("Adaugă o poză sau un video ca să bifezi")).toBeVisible();
+  await walk
+    .locator('input[accept="image/*"]')
+    .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
+  await expect(walk.getByRole("button", { name: "Poză. Atinge pentru a deschide" })).toBeVisible();
+  await expect(button).toBeEnabled();
 
   // Letting go early does nothing.
   await button.evaluate((el) => el.scrollIntoView({ block: "center" }));

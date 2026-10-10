@@ -103,6 +103,7 @@ export function SpinCard({ spin }: { spin: Spin }) {
             </div>
             {drawn.proof_required ? (
               <ProofTiles
+                drafts={false}
                 subject={spinProofs(spin.id)}
                 title={drawn.text}
                 proofs={spin.proofs}

@@ -9,7 +9,7 @@ Priorities, in order: efficiency (fast on a phone, cheap to run), user experienc
 
 | Topic | Decision |
 |---|---|
-| Does a day need proof? | No. The check-in makes the day done; proof is extra. A day with proof gets a dot on the board and in the week strip. `proof_required` only nudges ("Adauga dovada") on the card. |
+| Does a day need proof? | Since `docs/plans/journal.md` stage 2: on a challenge that asks for proof, yes (no post without a photo or video); elsewhere photos and videos are optional. A day with posted proof gets a dot on the board and in the week strip. |
 | How many | Up to 5 proofs per check-in, photos and/or videos, when the challenge asks for proof (`proof_required`; it was `proof_kind` until the wheel plan's stage 1). |
 | Deleting | Only today: you can remove a proof (and add another) until midnight. After that proofs are permanent. |
 | Where the crew sees them | A feed on Echipa (who checked in what, when, with which proofs), and a day sheet: tap a day on a challenge's board to see everyone's proofs for that day. |
@@ -155,7 +155,7 @@ never upscaled), so portrait and landscape phone videos both stay sharp.
 
 | Case | Behaviour |
 |---|---|
-| Upload starts 23:59, finishes 00:30 | Counts for yesterday (started before midnight, within 24 h). |
+| Upload starts 23:59, finishes 00:30 | Counted for yesterday until `docs/plans/journal.md` stage 2; since then the day ends at midnight (no grace). |
 | App killed mid-video | Next time the same file is picked: resume from the recorded parts. |
 | Presigned URLs expire mid-upload | The engine asks for fresh ones (`/parts`). |
 | Phone goes offline | Paused, resumes when online; the tile says "In asteptare". |

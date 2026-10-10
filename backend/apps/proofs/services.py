@@ -1,8 +1,11 @@
-"""Proof rules that hold for every subject: files, sizes, at most 5, uploads, removal, expiry.
+"""Proof rules that hold for every subject: files, sizes, at most 5, uploads, posting, removal,
+expiry.
 
-The subject's app checks its own rules first (a check-in: today, checked in) and locks the
-subject's row, then calls `start_proof`. A photo takes one PUT; a video a resumable multipart
-upload. A proof is removable on the crew-local day it was added; after midnight it is kept.
+The subject's app checks its own rules first (a check-in: today, due) and locks the subject's
+row, then calls `start_proof`. A photo takes one PUT; a video a resumable multipart upload. A
+proof starts as a draft file (`post_id` empty), seen by its owner only, until the subject's app
+posts it (`publish`); a posted proof is kept and goes only with its post (`remove_post`). Draft
+files never posted by the end of their upload's time are deleted (`expire_proofs`).
 """
 
 from __future__ import annotations
@@ -24,10 +27,11 @@ from apps.media import services as media
 from apps.media.models import MiB, Transcode, Upload, crew_folder
 
 from .models import Proof
+from .selectors import SHOWN
 
 logger = logging.getLogger(__name__)
 
-MAX_PROOFS = 5  # per subject, not counting failed ones
+MAX_PROOFS = 5  # per post (a subject's draft files count as one), not counting failed ones
 PHOTO_MAX_SIZE = 50 * MiB  # phones send ~0.5 MB after shrinking; this is for originals
 THUMB_MAX_SIZE = 2 * MiB
 VIDEO_MAX_SECONDS = 3 * 60 * 60  # a video's length, as the phone reads it
@@ -44,7 +48,7 @@ EXTENSIONS: dict[str, dict[str, str]] = {  # allowed content types, the extensio
 
 class TooManyProofs(Conflict):
     code = "too_many_proofs"
-    message = "There can be at most 5 proofs."
+    message = "A post takes at most 5 photos or videos."
 
 
 class ProofNotFound(NotFound):
@@ -52,9 +56,9 @@ class ProofNotFound(NotFound):
     message = "This proof does not exist."
 
 
-class ProofKept(Conflict):
-    code = "day_closed"
-    message = "That day has ended; its proofs are kept."
+class ProofPosted(Conflict):
+    code = "proof_posted"
+    message = "This proof is posted: undo its post to remove it."
 
 
 @dataclass
@@ -107,6 +111,11 @@ def of_subject(subject: models.Model) -> models.QuerySet[Proof]:
     )
 
 
+def drafts(*, subject: models.Model) -> models.QuerySet[Proof]:
+    """`subject`'s draft files: not posted yet, every status."""
+    return of_subject(subject).filter(post_id__isnull=True)
+
+
 def start_proof(
     *,
     member: Member,
@@ -118,9 +127,11 @@ def start_proof(
     fingerprint: str = "",
     thumb_size: int | None = None,
     duration: int | None = None,
+    post_id: UUID | None = None,
 ) -> ProofUpload:
     """Add a photo or video to `subject`, whose row the caller has locked (so two starts at once
-    count right). The files must arrive before `expires_at`.
+    count right): a draft file, or part of `post_id` at once. The files must arrive before
+    `expires_at`.
 
     `thumb_size` announces a small JPEG made on the phone (a video's poster frame); `duration`
     is a video's length in seconds, read on the phone (kept for videos only).
@@ -136,7 +147,8 @@ def start_proof(
     if duration is not None and not 0 < duration <= VIDEO_MAX_SECONDS:
         raise ValidationFailed(fields={"duration": ["A video can be at most 3 hours long."]})
     with transaction.atomic():
-        if of_subject(subject).exclude(status=Proof.Status.FAILED).count() >= MAX_PROOFS:
+        same_post = of_subject(subject).filter(post_id=post_id).exclude(status=Proof.Status.FAILED)
+        if same_post.count() >= MAX_PROOFS:
             raise TooManyProofs()
         proof_id = uuid.uuid4()
         folder = f"{crew_folder(member.crew_id)}proofs/{proof_id}"
@@ -169,6 +181,7 @@ def start_proof(
             original=original,
             thumb=thumb,
             duration=duration if kind == Proof.Kind.VIDEO else None,
+            post_id=post_id,
         )
     return _upload(proof)
 
@@ -239,13 +252,27 @@ def complete_proof(*, by: Member, proof_id: UUID) -> Proof:
 
 @transaction.atomic
 def delete_proof(*, by: Member, proof_id: UUID) -> None:
-    """Remove my proof and its files, only on the day it was added; after midnight it is kept."""
+    """Remove my draft file and its files (stopping its upload). A posted one goes with its post."""
     proof = _own(by, proof_id)
-    start, end = clock.day_bounds_utc(clock.crew_today(by.crew), by.crew.timezone)
-    if not start <= proof.created_at < end:
-        raise ProofKept()
+    if proof.post_id is not None:
+        raise ProofPosted()
     _discard(proof)
     proof.delete()
+
+
+def publish(*, subject: models.Model, post_id: UUID) -> int:
+    """Post `subject`'s draft files with `post_id`: the uploaded ones join it, the failed ones go.
+    The caller has locked the subject and checked that none still uploads. Returns how many."""
+    subject_drafts = drafts(subject=subject)
+    subject_drafts.filter(status=Proof.Status.FAILED).delete()  # their files went when they failed
+    return subject_drafts.filter(status__in=SHOWN).update(post_id=post_id, updated_at=clock.now())
+
+
+def remove_post(*, subject: models.Model, post_id: UUID) -> None:
+    """Delete the proofs of a post being undone, with their files."""
+    for proof in of_subject(subject).filter(post_id=post_id):
+        _discard(proof)
+        proof.delete()
 
 
 def discard_files(*, subject: models.Model) -> None:
@@ -279,10 +306,14 @@ def finish_videos() -> int:
 
 
 def expire_proofs() -> int:
-    """Fail proofs whose upload ran past its grace, removing what was sent. Safe to run twice."""
-    stuck = list(
-        Proof.objects.filter(status=Proof.Status.UPLOADING, original__expires_at__lte=clock.now())
-    )
+    """Past their upload's time: delete draft files never posted, and fail posted uploads that
+    never finished (removing what was sent). Returns how many; safe to run twice."""
+    expired = Proof.objects.filter(original__expires_at__lte=clock.now())
+    late = list(expired.filter(post_id__isnull=True))
+    stuck = list(expired.filter(post_id__isnull=False, status=Proof.Status.UPLOADING))
+    for proof in late:
+        _discard(proof)
+        proof.delete()
     for proof in stuck:
         _fail(proof)
-    return len(stuck)
+    return len(late) + len(stuck)

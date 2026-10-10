@@ -28,6 +28,7 @@ const saved = (id: string, kind: Proof["kind"], status: Proof["status"]): Proof 
   phone_thumb_url: null,
   created_at: "2026-11-10T08:00:00Z",
   duration: null,
+  posted: false, // a draft file: removable until posted
 });
 
 const walk: ProofSubject = { key: "check-in:walk", start: vi.fn(), resume: vi.fn() };
@@ -35,11 +36,20 @@ const onChanged = vi.fn(async () => undefined);
 
 function show(
   proofs: Proof[] = [saved("p1", "photo", "ready"), saved("v1", "video", "processing")],
+  drafts = true,
 ) {
   return renderRoutes([
     {
       path: "/",
-      element: <ProofTiles subject={walk} title="Walk" proofs={proofs} onChanged={onChanged} />,
+      element: (
+        <ProofTiles
+          subject={walk}
+          title="Walk"
+          proofs={proofs}
+          onChanged={onChanged}
+          drafts={drafts}
+        />
+      ),
     },
   ]);
 }
@@ -67,7 +77,7 @@ describe("proof tiles", () => {
     const file = new File(["jpg"], "walk.jpg", { type: "image/jpeg" });
     await userEvent.upload(inputs[0] as HTMLInputElement, file);
 
-    expect(upload).toHaveBeenCalledWith({ subject: walk, file, onDone: onChanged });
+    expect(upload).toHaveBeenCalledWith({ subject: walk, file, onDone: expect.any(Function) });
   });
 
   it("shows this phone's uploads with their progress; a tap pauses", async () => {
@@ -110,11 +120,35 @@ describe("proof tiles", () => {
     });
   });
 
-  it("offers no + once the day has five proofs (failed ones do not count)", async () => {
+  it("offers no + once the next post has five files (failed ones do not count)", async () => {
     const five = ["a", "b", "c", "d", "e"].map((id) => saved(id, "photo", "ready"));
     show([...five, saved("f", "photo", "failed")]);
 
     expect(await screen.findAllByRole("button", { name: "Photo. Tap to open" })).toHaveLength(5);
+    expect(screen.queryByRole("button", { name: "Add a photo or video" })).toBeNull();
+  });
+
+  it("keeps posted proofs: no remove, and the next post takes five more", async () => {
+    const posted = ["a", "b", "c", "d", "e"].map((id) => ({
+      ...saved(id, "photo", "ready"),
+      posted: true,
+    }));
+    show(posted);
+
+    expect(await screen.findAllByRole("button", { name: "Photo. Tap to open" })).toHaveLength(5);
+    expect(screen.queryByRole("button", { name: "Remove this proof" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
+  });
+
+  it("without drafts (a spin) counts every file and removes none", async () => {
+    const five = ["a", "b", "c", "d", "e"].map((id) => ({
+      ...saved(id, "photo", "ready"),
+      posted: true,
+    }));
+    show(five, false);
+
+    expect(await screen.findAllByRole("button", { name: "Photo. Tap to open" })).toHaveLength(5);
+    expect(screen.queryByRole("button", { name: "Remove this proof" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add a photo or video" })).toBeNull();
   });
 

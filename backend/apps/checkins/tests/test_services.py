@@ -69,9 +69,11 @@ def test_numbers_add_up_and_count_once_the_target_is_reached(crew):
         assert (row.amount, row.status) == (Decimal(12), CheckIn.Status.IN_PROGRESS)
         row = services.check_in(by=bogdan, challenge_id=read.pk, day=TUE, amount=Decimal(8))
         assert (row.amount, row.status) == (Decimal(20), CheckIn.Status.DONE)
-        for bad in (None, Decimal(0), Decimal(-1), Decimal(1_000_001)):
+        for bad in (Decimal(0), Decimal(-1), Decimal(1_000_001)):
             with pytest.raises(ValidationFailed):
                 services.check_in(by=bogdan, challenge_id=read.pk, day=TUE, amount=bad)
+        nothing = services.check_in(by=bogdan, challenge_id=read.pk, day=TUE)  # no number, no file
+        assert (nothing.amount, nothing.entries.count()) == (Decimal(20), 2)
 
 
 def test_only_today_counts_in_the_crew_time_zone(crew):

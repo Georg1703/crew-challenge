@@ -72,7 +72,7 @@ Every error, from any layer, has this shape:
 | 401 | Not logged in | `not_authenticated` |
 | 403 | Not allowed | `csrf_failed`, `not_crew_member`, `not_crew_admin`, `not_a_participant`, `not_taking_part`, `not_your_proposal`, `permission_denied` |
 | 404 | Not found or not in your crew | `not_found`, `challenge_not_found`, `crew_not_found`, `member_not_found`, `invite_not_found`, `proof_not_found`, `spin_not_found`, `target_not_found`, `upload_not_found` |
-| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `not_checked_in`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch`, `not_drawn`, `proof_needed`, `proof_not_needed` |
+| 409 | Valid request that conflicts with state | `invite_expired`, `invite_used`, `already_member`, `already_signed_in`, `pool_full`, `not_a_proposal`, `not_chosen_yet`, `challenge_started`, `challenge_finished`, `period_over`, `too_few_days`, `day_closed`, `not_due_today`, `nothing_to_undo`, `uploads_running`, `proof_required`, `proof_posted`, `too_many_proofs`, `upload_closed`, `upload_incomplete`, `upload_size_mismatch`, `not_drawn`, `proof_needed`, `proof_not_needed` |
 | 429 | Rate limited | `throttled` |
 | 500 | Unexpected error on the server (details are only in the logs) | `server_error` |
 

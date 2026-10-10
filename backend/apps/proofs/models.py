@@ -17,7 +17,8 @@ from apps.media.models import Upload
 
 
 class Proof(CrewScopedSoftDeleteModel):
-    """A photo or video backing a subject (at most 5). Removable only on the day it was added."""
+    """A photo or video backing a subject: a draft file until its post publishes it (at most 5 a
+    post). A draft can be removed; a posted one goes only with its post."""
 
     class Kind(models.TextChoices):
         PHOTO = "photo", "Photo"
