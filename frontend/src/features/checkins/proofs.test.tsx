@@ -71,7 +71,7 @@ function show(card: TodayChallenge = walk) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useUploads.setState({ items: {} });
+  useUploads.setState({ items: {}, removing: {} });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -90,6 +90,20 @@ describe("proofs on today's card", () => {
     expect(await screen.findByText("Add a photo or video to check in")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hold to check in" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
+  });
+
+  it("waits again at once when the only photo is removed, until it is undone", async () => {
+    show({ ...todo, proofs: [draft("p1", "ready")] });
+    const hold = () => screen.getByRole("button", { name: "Hold to check in" });
+    await screen.findByRole("button", { name: "Photo. Tap to open" });
+    expect(hold()).toBeEnabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove this proof" }));
+
+    expect(hold()).toBeDisabled(); // not posted with the photo just removed
+    expect(screen.getByText("Add a photo or video to check in")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(hold()).toBeEnabled();
   });
 
   it("waits while a file uploads, on any challenge", async () => {

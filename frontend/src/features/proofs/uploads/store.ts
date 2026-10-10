@@ -23,13 +23,23 @@ export interface LocalUpload {
 
 interface Uploads {
   items: Record<string, LocalUpload>;
+  /** Proofs removed on this phone while their "Undo" runs (by proof id): gone for every screen. */
+  removing: Record<string, true>;
   put: (upload: LocalUpload) => void;
   patch: (id: string, change: Partial<LocalUpload>) => void;
   drop: (id: string) => void;
+  startRemoving: (proofId: string) => void;
+  stopRemoving: (proofId: string) => void;
 }
 
 export const useUploads = create<Uploads>()((set) => ({
   items: {},
+  removing: {},
+  startRemoving: (proofId) => set((s) => ({ removing: { ...s.removing, [proofId]: true } })),
+  stopRemoving: (proofId) =>
+    set((s) => ({
+      removing: Object.fromEntries(Object.entries(s.removing).filter(([id]) => id !== proofId)),
+    })),
   put: (upload) => set((s) => ({ items: { ...s.items, [upload.id]: upload } })),
   patch: (id, change) =>
     set((s) => {

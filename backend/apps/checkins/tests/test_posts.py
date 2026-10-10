@@ -61,6 +61,16 @@ def test_no_post_without_a_finished_file_where_proof_is_asked(object_storage, pe
         post(bogdan, run, amount=Decimal(3))
 
 
+def test_a_removed_draft_file_no_longer_lets_the_check_in_go(object_storage, people):
+    _, bogdan, walk, _, _ = people
+    draft = uploaded(object_storage, bogdan, walk)
+    proofs.delete_proof(by=bogdan, proof_id=draft.pk)
+
+    with pytest.raises(services.ProofRequired):
+        post(bogdan, walk)
+    assert not CheckIn.objects.filter(status=CheckIn.Status.DONE).exists()
+
+
 def test_files_are_optional_elsewhere_and_failed_ones_are_dropped(object_storage, people):
     _, bogdan, _, _, gym = people
     assert post(bogdan, gym).status == CheckIn.Status.DONE  # no file: posted at once

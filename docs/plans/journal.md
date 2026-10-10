@@ -390,6 +390,7 @@ Echipa until it takes the update), so stage 6's clean-up is done here.
 | Case | Behaviour |
 |---|---|
 | A file fails or is stuck | Retry it or remove it; the button waits only for the files still there |
+| A file is removed (its "Undo" still runs) | It counts as gone at once: the button waits again if it was the last one (`useDrafts`); "Undo" brings both back |
 | Every file failed, proof required | "Check in" stays unavailable until a file finishes; remove them and pick again |
 | Every file failed, proof optional | Remove them (or post: failed files are dropped and the check-in has none) |
 | The app is closed during an upload | Pick the same file again: the generic resume finds it; the draft waits |

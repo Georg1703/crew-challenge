@@ -65,13 +65,13 @@ export function ProofTiles({
   const local = useUploads(
     useShallow((s) => Object.values(s.items).filter((u) => u.subject === subject.key)),
   );
-  const [hidden, setHidden] = useState<string[]>([]); // removed, until "Undo" runs out
+  const removing = useUploads((s) => s.removing); // removed, until "Undo" runs out
   const [viewing, setViewing] = useState<number | null>(null);
   const [big, setBig] = useState<File | null>(null);
 
   const inFlight = new Set(local.map((u) => u.proofId));
-  const saved = proofs.filter((p) => !inFlight.has(p.id) && !hidden.includes(p.id));
-  const sending = local.filter((u) => !hidden.includes(u.proofId));
+  const saved = proofs.filter((p) => !inFlight.has(p.id) && !removing[p.id]);
+  const sending = local.filter((u) => !removing[u.proofId]);
   const viewable = saved.filter((p) => p.url);
   const counted = sending.length + saved.filter((p) => p.status !== "failed" && !p.posted).length;
   const kind = (k: string) => t(`proofs.kind.${k}`);
@@ -88,14 +88,16 @@ export function ProofTiles({
       toast(errorMessage(t, error), "error"),
     );
 
+  /** Gone at once for every screen (the posting buttons too), deleted once "Undo" runs out. */
   const remove = (proofId: string, uploadId?: string) => {
-    setHidden((h) => [...h, proofId]);
+    const { startRemoving, stopRemoving } = useUploads.getState();
+    startRemoving(proofId);
     let undone = false;
     toast(t("proofs.removed"), "info", {
       label: t("checkins.undo"),
       onClick: () => {
         undone = true;
-        setHidden((h) => h.filter((id) => id !== proofId));
+        stopRemoving(proofId);
       },
     });
     window.setTimeout(() => {
@@ -108,6 +110,7 @@ export function ProofTiles({
           toast(errorMessage(t, error), "error");
         }
         await onChanged();
+        stopRemoving(proofId); // deleted: the refreshed list no longer has it
       })();
     }, UNDO_MS);
   };

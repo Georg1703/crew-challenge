@@ -1,10 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useShallow } from "zustand/react/shallow";
 
 import { CHALLENGE_ICONS } from "@/features/challenges";
-import { ProofTiles, useUploads } from "@/features/proofs";
+import { ProofTiles, useDrafts } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { formatDayLong } from "@/shared/lib/format";
 import { Button, Card, ChallengeChip, Dial, StatusPill, useToast } from "@/shared/ui";
@@ -29,14 +28,7 @@ export function SpinCard({ spin }: { spin: Spin }) {
   const count = spin.punishments.length;
   const language = i18n.language;
   const subject = spinProofs(spin.id);
-  const sending = useUploads(
-    useShallow((s) =>
-      Object.values(s.items).filter((u) => u.subject === subject.key && u.state !== "failed"),
-    ),
-  );
-  const drafts = spin.proofs.filter((p) => !p.posted && p.status !== "failed");
-  const uploading = sending.length > 0 || drafts.some((p) => p.status === "uploading");
-  const ready = drafts.filter((p) => p.status === "processing" || p.status === "ready").length;
+  const { uploading, ready } = useDrafts(subject.key, spin.proofs);
   const serve = () =>
     done.mutate(spin.id, {
       onSuccess: () => toast(t("doom.served"), "success"),

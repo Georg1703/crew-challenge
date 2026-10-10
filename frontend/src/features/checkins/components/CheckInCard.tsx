@@ -2,10 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { useShallow } from "zustand/react/shallow";
 
 import { ChallengeIcon } from "@/features/challenges";
-import { ProofTiles, useUploads } from "@/features/proofs";
+import { ProofTiles, useDrafts } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { cx } from "@/shared/lib/cx";
 import { weekday } from "@/shared/lib/dates";
@@ -59,14 +58,7 @@ export function CheckInCard({
   const quantity = card.measure === "quantity";
   const notDue = card.state === "not_due";
   const subject = checkInProofs(card.id, day);
-  const sending = useUploads(
-    useShallow((s) =>
-      Object.values(s.items).filter((u) => u.subject === subject.key && u.state !== "failed"),
-    ),
-  );
-  const drafts = card.proofs.filter((p) => !p.posted && p.status !== "failed");
-  const uploading = sending.length > 0 || drafts.some((p) => p.status === "uploading");
-  const ready = drafts.filter((p) => p.status === "processing" || p.status === "ready").length;
+  const { uploading, ready } = useDrafts(subject.key, card.proofs);
   const opened = quantity ? (card.total ?? 0) > 0 : card.state === "done";
   // What keeps a check-in or a "+N" back: uploads still running, or proof asked and none ready.
   const waiting = uploading ? "uploading" : card.proof_required && ready === 0 ? "proof" : null;

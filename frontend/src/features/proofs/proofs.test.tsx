@@ -47,7 +47,7 @@ function show(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useUploads.setState({ items: {} });
+  useUploads.setState({ items: {}, removing: {} });
 });
 afterEach(() => {
   vi.useRealTimers();

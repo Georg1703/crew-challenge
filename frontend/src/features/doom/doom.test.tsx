@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
+import { useUploads } from "@/features/proofs";
 import { bogdan, meAs } from "@/test/fixtures";
 import { ok, renderRoutes } from "@/test/render";
 
@@ -40,6 +41,20 @@ const drawn = (position: number, overrides: Partial<Spin> = {}): Spin => ({
   serve_by: "2026-11-16",
   ...overrides,
 });
+
+/** An uploaded photo on a spin, not posted yet. */
+const draft: Spin["proofs"][number] = {
+  id: "f1",
+  kind: "photo",
+  status: "ready",
+  url: "/media/f1.jpg",
+  hls_url: null,
+  thumb_url: null,
+  phone_thumb_url: null,
+  created_at: "2026-11-09T09:00:00Z",
+  duration: null,
+  posted: false,
+};
 
 function mockSpins(spins: Spin[]) {
   return vi.spyOn(api, "GET").mockImplementation(((path: string) => {
@@ -132,20 +147,23 @@ describe("the spins page", () => {
     expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
   });
 
+  it("waits again at once when its only photo is removed, until it is undone", async () => {
+    useUploads.setState({ items: {}, removing: {} });
+    mockSpins([drawn(3, { proofs: [draft] })]);
+    renderRoutes([{ path: "/", element: <SpinsRoute /> }]);
+    const serve = () => screen.getByRole("button", { name: "Serve" });
+    await screen.findByRole("button", { name: "Photo. Tap to open" });
+    expect(serve()).toBeEnabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove this proof" }));
+
+    expect(serve()).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(serve()).toBeEnabled();
+  });
+
   it("serves with its uploaded photo or video", async () => {
-    const photo = {
-      id: "f1",
-      kind: "photo" as const,
-      status: "ready" as const,
-      url: "/media/f1.jpg",
-      hls_url: null,
-      thumb_url: null,
-      phone_thumb_url: null,
-      created_at: "2026-11-09T09:00:00Z",
-      duration: null,
-      posted: false,
-    };
-    mockSpins([drawn(3, { proofs: [photo] })]);
+    mockSpins([drawn(3, { proofs: [draft] })]);
     const post = vi
       .spyOn(api, "POST")
       .mockImplementation((() => ok(drawn(3, { state: "served" }))) as never);

@@ -82,6 +82,12 @@ test("check in with a photo and see it in the crew feed", async ({ browser }) =>
     await page.keyboard.press("Escape");
 
     await expect(hold).toBeEnabled(); // uploaded: the check-in can go
+
+    // Removing the only photo blocks the check-in again at once, until it is undone.
+    await card.getByRole("button", { name: "Șterge dovada" }).click();
+    await expect(hold).toBeDisabled();
+    await page.getByRole("button", { name: "Anulează" }).first().click();
+    await expect(hold).toBeEnabled();
     await hold.focus();
     await page.keyboard.press("Enter"); // the keyboard confirms at once
     await expect(card.getByRole("button", { name: "Bifat azi" })).toBeVisible();
