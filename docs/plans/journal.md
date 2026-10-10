@@ -323,8 +323,8 @@ delete their cards with them (generic relations). On a copy of the dev database 
 one card per post (445 for 318 check-ins), every drawn and served spin, and 6 crew days.
 
 - Backend:
-  - `apps/journal` store: `JournalEntry`, `post` / `drop`, the `page` selector, a read-only
-    admin (filter by day and kind). Contracts: the store imports no kind; check-ins and the wheel
+  - `apps/journal` store: `JournalEntry`, `post` / `drop`, the `page` selector, an admin
+    page (filter by day and kind; everything editable). Contracts: the store imports no kind; check-ins and the wheel
     never import `apps.journal.api`; the wheel's contract stops forbidding `apps.journal` to the
     apps below.
   - Writers, each next to its fact: a check-in post going live writes its card, and the crew's

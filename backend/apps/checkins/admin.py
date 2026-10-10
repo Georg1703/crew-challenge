@@ -16,3 +16,10 @@ class CheckInAdmin(admin.ModelAdmin):
     list_filter = ("crew", "status")
     date_hierarchy = "day"
     inlines = [EntryInline]
+
+
+@admin.register(CheckInEntry)
+class CheckInEntryAdmin(admin.ModelAdmin):
+    list_display = ("check_in", "number", "amount", "created_at")
+    list_filter = ("crew",)
+    raw_id_fields = ("check_in",)
