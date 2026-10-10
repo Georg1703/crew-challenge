@@ -28,8 +28,9 @@ import { ReactorsSheet } from "./ReactorsSheet";
 
 /**
  * Reactions on anything registered as a target: the chips, the react button with its quick row,
- * the full emoji picker and who reacted. On a phone, holding the card it sits in opens the quick
- * row too. The owner of the data passes the target's `summary`; the
+ * the full emoji picker and who reacted. The react button shows on computers; on a phone or
+ * tablet holding the card it sits in opens the quick row (the button stays for screen readers).
+ * The owner of the data passes the target's `summary`; the
  * change shows here at once (with the picked emoji flying over the card into its chip), and
  * `onChange` gets the server's answer for the owner's cache, without redrawing the owner on every
  * tap.

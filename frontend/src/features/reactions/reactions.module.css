@@ -18,6 +18,23 @@
   color: var(--color-text-muted);
 }
 
+/* On a phone or tablet the card is held to react: the button takes no room and shows nothing,
+   but screen readers still find it and the quick row still opens above its spot. */
+@media (hover: none), (pointer: coarse) {
+  .anchor .react {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    min-height: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
 .emoji {
   font-size: var(--text-title-m);
   line-height: var(--leading-title-m);
