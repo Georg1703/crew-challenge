@@ -10,7 +10,7 @@ posted by then, they expire with it.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -23,10 +23,12 @@ from apps.challenges.services import ChallengeNotFound
 from apps.challenges.windows import counts_on
 from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
-from apps.crews.models import Member
+from apps.crews.models import Crew, Member
+from apps.journal import services as journal
+from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
 
-from . import days
+from . import days, selectors
 from .models import CheckIn, CheckInEntry
 
 AMOUNT_MAX = Decimal(1_000_000)
@@ -139,7 +141,10 @@ def check_in(
         crew=by.crew, check_in=row, number=last.number + 1 if last else 1, amount=value
     )
     proofs.publish(subject=row, post_id=entry.pk)
-    return _refresh(row)
+    row = _refresh(row)
+    write_card(entry)
+    write_crew_day(crew=by.crew, day=day, at=entry.created_at)
+    return row
 
 
 @transaction.atomic
@@ -156,11 +161,46 @@ def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
     if row is None or last is None:
         raise NothingToUndo()
     proofs.remove_post(subject=row, post_id=last.pk)
-    last.delete()
+    last.delete()  # its card goes with it
     if row.entries.exists() or proofs.drafts(subject=row).exists():
-        return _refresh(row)
-    row.delete()
-    return None
+        row = _refresh(row)
+    else:
+        row.delete()
+        row = None
+    write_crew_day(crew=by.crew, day=day)  # gone if the day is no longer finished
+    return row
+
+
+def write_card(entry: CheckInEntry) -> None:
+    """The journal card of a check-in post, with its facts as of that post. Written once."""
+    check_in = entry.check_in
+    journal.post(
+        JournalEntry.Kind.CHECK_IN,
+        entry,
+        day=check_in.day,
+        facts=selectors.card_facts(entry),
+        member=check_in.member,
+        challenge=check_in.challenge,
+        at=entry.created_at,
+    )
+
+
+def write_crew_day(*, crew: Crew, day: date, at: datetime | None = None) -> None:
+    """The crew's day card: written once everyone due has finished, gone if that stops being
+    so (an undo the same day)."""
+    members = selectors.crew_day(crew=crew, day=day)
+    if members is None:
+        journal.drop(JournalEntry.Kind.CREW_DAY, crew, day=day)
+        return
+    journal.post(
+        JournalEntry.Kind.CREW_DAY,
+        crew,
+        day=day,
+        facts={"members": members},
+        member=None,
+        challenge=None,
+        at=at,
+    )
 
 
 def start_proof(

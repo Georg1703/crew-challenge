@@ -8,6 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from django.db.models import Count, OuterRef, Prefetch, Q, QuerySet, Subquery
@@ -19,7 +20,7 @@ from apps.challenges.periods import dates, month_of, scheduled_dates, week_of
 from apps.challenges.windows import windows
 from apps.core import clock
 from apps.crews import selectors as crews
-from apps.crews.models import Member
+from apps.crews.models import Crew, Member
 from apps.proofs.models import Proof
 from apps.proofs.selectors import VISIBLE
 
@@ -556,3 +557,73 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
         for day, challenge_id in latest_first
     ]
     return result
+
+
+def card_facts(entry: CheckInEntry) -> dict[str, Any]:
+    """What a check-in post's card says, as of that post: what it is (the check-in, a "+N", or
+    files added later), the day's total after it, the target, the streak, the milestone it reached,
+    how many photos and videos it carries. Frozen on the card (`apps.journal`)."""
+    check_in = entry.check_in
+    challenge, day = check_in.challenge, check_in.day
+    quantity = challenge.measure == Challenge.Measure.QUANTITY
+    counting = entry.amount is not None if quantity else entry.number == 1
+    added = list(check_in.entries.filter(number__lte=entry.number).values_list("amount", flat=True))
+    total = sum((a for a in added if a is not None), Decimal(0)) if quantity else None
+    done = days.counts(challenge, total)
+    before = (  # the day was done already, before this post
+        total is not None
+        and entry.number > 1
+        and days.counts(challenge, total - (entry.amount or Decimal(0)))
+    )
+    left_on = (
+        Participant.objects.filter(challenge=challenge, member_id=check_in.member_id)
+        .values_list("left_on", flat=True)
+        .first()
+    )
+    mine = records(
+        challenge_ids=[challenge.pk], member_ids=[check_in.member_id], proof_days=False
+    ).get((challenge.pk, check_in.member_id), days.Record())
+    mine.done.discard(day)
+    mine.partial.discard(day)
+    (mine.done if done else mine.partial).add(day)  # the day as this post left it
+    streak = days.streak(challenge, days.span(challenge, left_on), mine, day)
+    reached = counting and done and not before and days.is_fixed(challenge)
+    return {
+        "action": ("amount" if quantity else "check") if counting else "files",
+        "amount": added[-1],  # as stored (2 decimals), whoever reads it
+        "total": total,
+        "target": challenge.day_min,
+        "streak": streak,
+        "milestone": streak if reached and streak in MILESTONES else None,
+        "proofs": Proof.objects.filter(post_id=entry.pk).count(),
+    }
+
+
+def crew_day(*, crew: Crew, day: date) -> list[UUID] | None:
+    """Who was due on `day` (on the crew's challenges judged day by day), when every one of them
+    finished everything due that day; else None (a day nobody is due on is not finished)."""
+    people = list(
+        Participant.objects.filter(
+            challenge__in=Challenge.objects.filter(crew=crew, state=Challenge.State.CHOSEN),
+            challenge__start_date__lte=day,
+            challenge__end_date__gte=day,
+        )
+        .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
+        .select_related("challenge")
+    )
+    due = [
+        p
+        for p in people
+        if days.is_due(p.challenge, day) and day in days.span(p.challenge, p.left_on)
+    ]
+    if not due:
+        return None
+    loaded = records(
+        challenge_ids=list({p.challenge_id for p in due}),
+        member_ids=list({p.member_id for p in due}),
+        proof_days=False,
+    )
+    finished = all(
+        day in loaded.get((p.challenge_id, p.member_id), days.Record()).done for p in due
+    )
+    return sorted({p.member_id for p in due}) if finished else None

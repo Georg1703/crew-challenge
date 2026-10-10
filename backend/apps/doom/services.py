@@ -25,6 +25,8 @@ from apps.checkins import selectors as checkins
 from apps.core import clock
 from apps.core.errors import Conflict, NotFound
 from apps.crews.models import Member
+from apps.journal import services as journal
+from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
 
 from .models import Spin
@@ -138,6 +140,7 @@ def draw(*, by: Member, spin_id: UUID, rng: random.Random | None = None) -> Spin
     spin.drawn_at = clock.now()
     spin.serve_by = clock.crew_today(by.crew) + timedelta(days=SERVE_DAYS)
     spin.save(update_fields=["punishment", "drawn_at", "serve_by", "updated_at"])
+    write_cards(spin)
     return spin
 
 
@@ -156,7 +159,46 @@ def serve(*, by: Member, spin_id: UUID) -> Spin:
     proofs.publish(subject=spin, post_id=spin.pk)  # a spin is served once: its own post
     spin.done_at = clock.now()
     spin.save(update_fields=["done_at", "updated_at"])
+    write_cards(spin)
     return spin
+
+
+def write_cards(spin: Spin) -> None:
+    """A spin's journal cards, with their facts as of then: when drawn, and when served. Each is
+    written once."""
+    assert spin.punishment is not None
+    timezone = spin.challenge.crew.timezone
+    drawn = {
+        "position": spin.punishment.position,
+        "text": spin.punishment.text,
+        "proof_required": spin.punishment.proof_required,
+    }
+    cards = [
+        (JournalEntry.Kind.SPIN, spin.drawn_at, {
+            "window_first": spin.window_first,
+            "window_last": spin.window_last,
+            "need_kind": spin.challenge.need_kind,
+            "need": spin.need,
+            "done": spin.done,
+            "punishment": drawn,
+            "serve_by": spin.serve_by,
+        }),
+        (JournalEntry.Kind.SERVED, spin.done_at, {
+            "punishment": drawn,
+            "proofs": proofs.of_subject(spin).filter(post_id=spin.pk).count(),
+        }),
+    ]  # fmt: skip
+    for kind, at, facts in cards:
+        if at is not None:
+            journal.post(
+                kind,
+                spin,
+                day=clock.local_date(at, timezone),
+                facts=facts,
+                member=spin.member,
+                challenge=spin.challenge,
+                at=at,
+            )
 
 
 def start_proof(

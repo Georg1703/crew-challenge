@@ -1,53 +1,35 @@
-"""The crew's journal: check-ins, drawn spins and served ones, latest activity first.
-
-Its own app because it is the one place that knows both kinds (check-ins must not import the
-Wheel of Doom). Each kind pages its own rows after the cursor; the page is merged here, since
-Django cannot filter a union.
-"""
+"""Reading the stored journal: a page of cards, latest first."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 
-from apps.checkins import selectors as checkins
+from apps.challenges import selectors as challenges
 from apps.crews.models import Member
-from apps.doom import selectors as doom
 
-CHECK_IN, SPIN, SERVED = "check_in", "spin", "served"
-Cursor = tuple[datetime, UUID]  # the last item's activity_at and id
+from .models import JournalEntry
 
-
-@dataclass
-class Entry:
-    kind: str
-    activity_at: datetime
-    item: Any  # a CheckIn from checkins.selectors.feed, a Spin from doom.selectors.journal/served
+Cursor = tuple[datetime, UUID]  # the last card's `created_at` and id
 
 
-def _after(rows: QuerySet[Any], cursor: Cursor | None) -> QuerySet[Any]:
-    if cursor is None:
-        return rows
-    at, pk = cursor
-    return rows.filter(Q(activity_at__lt=at) | Q(activity_at=at, pk__lt=pk))
-
-
-def page(*, member: Member, cursor: Cursor | None, size: int) -> tuple[list[Entry], Cursor | None]:
-    """Up to `size` entries older than `cursor`, latest first, and the cursor of the next page
-    (None at the end)."""
-    found: list[Entry] = []
-    for kind, rows in (
-        (CHECK_IN, checkins.feed(member=member)),
-        (SPIN, doom.journal(member=member)),
-        (SERVED, doom.served(member=member)),
-    ):
-        newest = _after(rows, cursor).order_by("-activity_at", "-pk")[: size + 1]
-        found += [Entry(kind, row.activity_at, row) for row in newest]
-    found.sort(key=lambda entry: (entry.activity_at, entry.item.pk), reverse=True)
-    entries = found[:size]
-    more = len(found) > size
-    return entries, ((entries[-1].activity_at, entries[-1].item.pk) if more else None)
+def page(
+    *, member: Member, cursor: Cursor | None, size: int
+) -> tuple[list[JournalEntry], Cursor | None]:
+    """Up to `size` cards of my crew older than `cursor`, latest first: on challenges I can see, or
+    on none (the crew's day). One query; cards never move, so walking the cursor never skips or
+    repeats one. Also the cursor of the next page (None at the end)."""
+    rows = (
+        JournalEntry.objects.filter(crew=member.crew)
+        .filter(Q(challenge__isnull=True) | Q(challenge__in=challenges.visible(member=member)))
+        .select_related("member", "challenge")
+        .order_by("-created_at", "-id")
+    )
+    if cursor is not None:
+        at, pk = cursor
+        rows = rows.filter(Q(created_at__lt=at) | Q(created_at=at, pk__lt=pk))
+    found = list(rows[: size + 1])
+    cards = found[:size]
+    return cards, ((cards[-1].created_at, cards[-1].pk) if len(found) > size else None)

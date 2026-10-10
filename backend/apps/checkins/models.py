@@ -65,6 +65,10 @@ class CheckInEntry(CrewScopedModel):
     check_in = models.ForeignKey(CheckIn, on_delete=models.CASCADE, related_name="entries")
     number = models.PositiveSmallIntegerField(help_text="1, 2, 3... in the order they were added.")
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    # Its card in the journal points here by a generic key; this deletes it with the post.
+    journal_entries = GenericRelation(
+        "journal.JournalEntry", content_type_field="subject_type", object_id_field="subject_id"
+    )
 
     class Meta:
         ordering = ("number",)

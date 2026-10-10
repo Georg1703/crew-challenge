@@ -141,11 +141,12 @@ JournalEntry(CrewScopedModel)          one card, written once
   member        FK Member, null        who did it (none for the crew's day)
   challenge     FK Challenge, null     who may see it (none: the whole crew)
   day           DateField              the crew-local day it sits under
-  at            DateTimeField          when it went live: its place, latest first
+  created_at    (TimeStampedModel)     when it was posted: its place, latest first (no `at`
+                                       field: the backfill sets it to the post's time)
   facts         JSONField              what the card says, frozen (by kind)
   reactions     GenericRelation        deleting the card deletes its reactions (stage 7: FK)
   unique (kind, subject_type, subject_id, day)   writing twice is harmless
-  index  (crew, -at, -id)                        a page is one index range
+  index  (crew, -created_at, -id)                a page is one index range
 ```
 
 | Kind | Card | Written when | `facts` |
@@ -163,7 +164,8 @@ nothing is guessed from the subject:
 def post(kind: str, subject: Model, *, day: date, facts: dict[str, Any],
          member: Member | None, challenge: Challenge | None,
          at: datetime | None = None) -> JournalEntry:
-    """Write the card once, at `at` (default now). Writing it again changes nothing."""
+    """Write the card once, placed now, or at `at` for a post of the past (the backfill).
+    Writing it again changes nothing."""
 
 def drop(kind: str, subject: Model, *, day: date) -> None:
     """Delete the card and its reactions, if there is one."""
@@ -311,9 +313,14 @@ The rule change, backend and screens together (the old screens cannot post with 
 - Tests: serving refused while uploading or without a finished file where proof is needed;
   served at once without files where it is not; no files after; the migration.
 
-### Stage 4 - Write the cards
+### Stage 4 - Write the cards (built, 2026-10-10)
 
-Production fills the cards for a release while everyone still sees the old journal.
+Production fills the cards for a release while everyone still sees the old journal. As built:
+the old derived journal moved to `apps/journal/api/derived.py` (the store's `selectors.py` is the
+new `page`); writers are `checkins.services.write_card` / `write_crew_day` and
+`doom.services.write_cards`; facts store decimals as text (`"5.00"`); `CheckInEntry` and `Spin`
+delete their cards with them (generic relations). On a copy of the dev database the backfill gave
+one card per post (445 for 318 check-ins), every drawn and served spin, and 6 crew days.
 
 - Backend:
   - `apps/journal` store: `JournalEntry`, `post` / `drop`, the `page` selector, a read-only

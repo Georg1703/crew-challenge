@@ -26,7 +26,7 @@ backend/
 |   |-- media/              # Upload (straight to S3), Transcode (renditions), media links; knows no challenges
 |   |-- proofs/             # Proof on any subject (generic key): uploads, parts, transcoding, expiry
 |   |-- doom/               # Spin: the Wheel of Doom (open, draw, serve); builds on check-ins and proofs
-|   |-- journal/            # The crew's journal: check-ins, drawn and served spins (the top: nothing imports it)
+|   |-- journal/            # The crew's journal: stored cards (written by the apps that post), and its API
 |   `-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
@@ -93,8 +93,11 @@ flowchart TB
 - media knows files, not challenges or check-ins; proofs know files and members, not what they
   back (check-ins build on them); reactions know their targets only through the
   registry (no challenges, check-ins or media);
-- the Wheel of Doom (`doom`) builds on check-ins and proofs, and the journal on top of both;
-  nothing below imports them.
+- the Wheel of Doom (`doom`) builds on check-ins and proofs; nothing below imports it;
+- the journal's store (`JournalEntry`, `journal.services.post` / `drop`, `selectors.page`) sits
+  on crews and challenges and knows no kind: check-ins and the wheel write their cards to it in
+  the transaction that makes a post. Only the journal's API (`apps/journal/api`) puts the kinds
+  together, and nothing imports it.
 
 ## Generic building blocks
 

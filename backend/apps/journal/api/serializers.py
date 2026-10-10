@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from apps.checkins.api.serializers import FeedItemOut
 from apps.doom.api.serializers import SpinItemOut
-from apps.journal.selectors import CHECK_IN, SERVED, SPIN
+
+from .derived import CHECK_IN, SERVED, SPIN
 
 KINDS = (CHECK_IN, SPIN, SERVED)
 

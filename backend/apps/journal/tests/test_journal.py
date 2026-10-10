@@ -8,7 +8,7 @@ from apps.checkins import services as checkins
 from apps.doom import services as doom
 from apps.doom.models import Spin
 from apps.doom.tests.test_services import Pick, at, check_in, scheduled
-from apps.journal import selectors
+from apps.journal.api import derived
 from apps.proofs import services as proofs
 from tests.factories import AdminFactory, MemberFactory
 
@@ -39,7 +39,7 @@ def test_pages_merge_both_kinds_latest_first(week):
     seen = []
     cursor = None
     while True:
-        entries, cursor = selectors.page(member=ana, cursor=cursor, size=1)
+        entries, cursor = derived.page(member=ana, cursor=cursor, size=1)
         seen += [(e.kind, e.item.pk == spin.pk) for e in entries]
         if cursor is None:
             break

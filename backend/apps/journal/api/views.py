@@ -14,9 +14,9 @@ from apps.core.errors import ValidationFailed
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.doom.api.views import journal_day, spin_items
-from apps.journal import selectors
-from apps.journal.selectors import CHECK_IN, SERVED, SPIN, Cursor
 
+from . import derived
+from .derived import CHECK_IN, SERVED, SPIN, Cursor
 from .serializers import JournalPageOut
 
 PAGE_SIZE = 30
@@ -56,7 +56,7 @@ class JournalView(APIView):
     def get(self, request: Request) -> Response:
         """The crew's check-ins, drawn spins and served ones, with their proofs, latest first."""
         member = _member(request)
-        entries, cursor = selectors.page(
+        entries, cursor = derived.page(
             member=member, cursor=_decode(request.query_params.get("cursor")), size=PAGE_SIZE
         )
         check_ins = [e.item for e in entries if e.kind == CHECK_IN]
