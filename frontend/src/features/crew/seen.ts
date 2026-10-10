@@ -5,7 +5,7 @@
  */
 import { useSyncExternalStore } from "react";
 
-import type { FeedItem } from "@/features/checkins";
+import type { JournalEntry } from "@/features/checkins";
 
 const KEY = "crew-seen";
 
@@ -52,11 +52,11 @@ export function useSeenVersion(): number {
 }
 
 /**
- * New proofs per member in the loaded feed: added after you last looked, or after `since` (a
- * day ago, say) when you never have. Your own never count.
+ * New proofs per member on the loaded journal's cards: added after you last looked, or after
+ * `since` (a day ago, say) when you never have. Your own never count.
  */
 export function freshCounts(
-  items: FeedItem[],
+  items: JournalEntry[],
   crewId: string,
   meId: string | undefined,
   since: Date,
@@ -64,8 +64,8 @@ export function freshCounts(
   const all = read()[crewId] ?? {};
   const counts: Record<string, number> = {};
   for (const item of items) {
-    const id = item.member.id;
-    if (id === meId) continue;
+    const id = item.member?.id;
+    if (!id || id === meId) continue;
     const seen = all[id];
     const after = seen ? Date.parse(seen) : since.getTime();
     const fresh = item.proofs.filter((p) => Date.parse(p.created_at) > after).length;

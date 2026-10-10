@@ -61,7 +61,6 @@ export const sizeTokens = [
   "proof-tile-size",
   "story-avatar-size",
   "story-avatar-size-lg",
-  "mini-bar-height",
   "reaction-chip-height",
   "emoji-picker-height",
   "dial-size",

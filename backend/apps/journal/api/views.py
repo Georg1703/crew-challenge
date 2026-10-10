@@ -1,5 +1,6 @@
 import base64
 import binascii
+from dataclasses import asdict
 from datetime import datetime
 from uuid import UUID
 
@@ -8,15 +9,16 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.checkins import selectors as checkins
-from apps.checkins.api.views import feed_items
 from apps.core.errors import ValidationFailed
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
-from apps.doom.api.views import journal_day, spin_items
+from apps.journal import selectors
+from apps.journal.models import JournalEntry
+from apps.journal.selectors import Cursor
+from apps.proofs import selectors as proofs
+from apps.proofs.api.serializers import proof_data
+from apps.reactions import selectors as reactions
 
-from . import derived
-from .derived import CHECK_IN, SERVED, SPIN, Cursor
 from .serializers import JournalPageOut
 
 PAGE_SIZE = 30
@@ -45,6 +47,9 @@ def _member(request: Request) -> Member:
     return request.member  # type: ignore[attr-defined]
 
 
+WITH_PROOFS = (JournalEntry.Kind.CHECK_IN, JournalEntry.Kind.SERVED)  # their subject is the post
+
+
 class JournalView(APIView):
     permission_classes = [IsCrewMember]
 
@@ -54,28 +59,37 @@ class JournalView(APIView):
         operation_id="journal_list",
     )
     def get(self, request: Request) -> Response:
-        """The crew's check-ins, drawn spins and served ones, with their proofs, latest first."""
+        """The crew's journal: one card per post, latest first, each as it was posted, with its
+        photos and videos, its reactions, and the counts of each day on the page."""
         member = _member(request)
-        entries, cursor = derived.page(
+        cards, cursor = selectors.page(
             member=member, cursor=_decode(request.query_params.get("cursor")), size=PAGE_SIZE
         )
-        check_ins = [e.item for e in entries if e.kind == CHECK_IN]
-        spins = [e.item for e in entries if e.kind == SPIN]
-        served = [e.item for e in entries if e.kind == SERVED]
-        on = {c.day for c in check_ins} | {journal_day(s) for s in spins + served}
-        summaries = checkins.day_summaries(member=member, on=on)
-        data = {
-            **{(CHECK_IN, d["id"]): d for d in feed_items(member, check_ins, summaries)},
-            **{(SPIN, d["id"]): d for d in spin_items(member, spins, summaries, served=False)},
-            **{(SERVED, d["id"]): d for d in spin_items(member, served, summaries, served=True)},
-        }
+        shown = proofs.posted(post_ids=[c.subject_id for c in cards if c.kind in WITH_PROOFS])
+        reacted = reactions.summaries(member=member, target="entry", ids=[c.pk for c in cards])
+        counts = selectors.day_counts(member=member, days={c.day for c in cards})
         results = [
             {
-                "kind": e.kind,
-                "activity_at": e.activity_at,
-                "check_in": data[(e.kind, e.item.pk)] if e.kind == CHECK_IN else None,
-                "spin": data[(e.kind, e.item.pk)] if e.kind != CHECK_IN else None,
+                "id": card.pk,
+                "kind": card.kind,
+                "at": card.created_at,
+                "day": card.day,
+                "member": card.member,
+                "challenge": card.challenge,
+                "proofs": [
+                    proof_data(p)
+                    for p in shown.get(card.subject_id, [])
+                    if card.kind in WITH_PROOFS
+                ],
+                "reactions": asdict(reacted[card.pk]),
+                **{k.value: card.facts if card.kind == k else None for k in JournalEntry.Kind},
             }
-            for e in entries
+            for card in cards
         ]
-        return Response(JournalPageOut({"results": results, "next": _encode(cursor)}).data)
+        days = [
+            {"day": day, "check_ins": check_ins, "proofs": files}
+            for day, (check_ins, files) in sorted(counts.items(), reverse=True)
+        ]
+        return Response(
+            JournalPageOut({"results": results, "days": days, "next": _encode(cursor)}).data
+        )

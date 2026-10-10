@@ -90,7 +90,7 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
 - Radius: `--radius-md` 12px for buttons and inputs (about 23% of a 52px button),
   `--radius-lg` 16px for cards and lists, `--radius-xl` 24px for sheet tops, `--radius-sm` 8px for
   small cells and thumbnails, `--radius-media-inner` 4px between the proofs of a `ProofMosaic` (its
-  outer corners keep the card's), `--radius-xs` 2px only for the bars of `DayBars` and `MiniWeek`,
+  outer corners keep the card's), `--radius-xs` 2px only for the bars of `DayBars`,
   `--radius-full` for avatars and pills. No other values (enforced).
 - Space: 4px grid, `--space-1` .. `--space-12`. Screen gutter `--space-5`, sections `--space-6`
   apart, card padding `--space-4` (enforced for margin, padding and gap). `--space-hair` (2px) only
@@ -102,7 +102,6 @@ precached), weights `--weight-regular` (400) and `--weight-bold` (700) only.
   `--progress-ring-size` 168px (the day ring), `--day-bar-height` 20px (a bar in `DayBars`),
   `--proof-tile-size` 72px (the most a proof thumbnail grows; grids shrink it on narrow screens),
   `--story-avatar-size` 68px and `--story-avatar-size-lg` 88px (`StoryAvatar`),
-  `--mini-bar-height` 18px and `--mini-bar-width` 8px (a day in a `MiniWeek`),
   `--reaction-chip-height` 26px (a `ReactionChips` pill; its tap area still reaches `--tap-min`),
   `--emoji-picker-height` 352px (the `EmojiPicker` in a sheet), `--dial-size` 240px and
   `--dial-size-sm` 56px (the `Dial` and its mark).
@@ -147,13 +146,12 @@ Screens are built only from these plus layout CSS that uses tokens. In `src/feat
 | `ProofTile` | A proof as a square thumbnail that fills its grid cell, its state readable by shape: a play mark on a ready video, a filling ring while uploading, pause while waiting, a clock while a video is prepared, an alert when it failed. A ready video shows its length in a pill; a video being prepared with no poster shows calm stripes. A button when it opens something; an optional remove button (today only); `fill` fills a mosaic cell instead of staying square. If its image fails to load it shows `fallbackSrc` (a video's phone thumbnail), then the placeholder |
 | `ProofMosaic` | A check-in's proofs laid out by count: one in a 4:3 box, two side by side, three or more as one big and two small with "+N" over the third. The big tiles show the full photo (`full`), the small ones the thumbnail. Tapping a tile opens the viewer at that proof |
 | `ProofViewer` | Proofs full screen: swipe, arrows or arrow keys between them; pinch or double tap zooms a photo; a video plays inline with sound, opened by a tap (muted if the browser refuses, and after the person mutes one) (HLS, with hls.js loaded only where needed) |
-| `FeedCard` | One moment in the crew's journal, as a card of its own: who (an avatar with today's ring, or a stack for a group), what, the challenge as a chip and when; then by kind a `ProofMosaic`, an amount with a bar to the target, a milestone's big number, or a highlighted line alone (a drawn punishment); a footer with `MiniWeek` and short facts. `tone="success"` for a milestone or the whole crew finishing the day. `reactions` ends the footer's first row (chips and the react button), next to the week; the facts then take the row under it |
+| `FeedCard` | One moment in the crew's journal, as a card of its own: who (an avatar with today's ring, or a stack for a group), what, the challenge as a chip and when; then by kind a `ProofMosaic`, an amount with a bar to the target, a milestone's big number, or a highlighted line alone (a drawn punishment); a footer with short facts. `tone="success"` for a milestone or the whole crew finishing the day. `reactions` ends the footer's row (chips and the react button), next to the facts |
 | `ReactionChips` | The reactions under a card: one pill per emoji in the order each was first used, with the `xs` avatar of who used it, or how many when several did; yours highlighted and pressed. A tap toggles yours; press and hold (or the context menu) asks who reacted |
 | `ReactionMenu` | The quick row: a small popover above the react button with a few emojis, "+" for any emoji and "Who reacted". Picking, Escape or a tap outside closes it; focus goes in and back. On a phone, holding the card it belongs to opens it too (`holdOn` in `shared/lib/usePress`; feed cards then select no text) |
 | `EmojiFlight` | A picked reaction flying into place: from the finger it grows big over the card's photo (its `data-stage`), wiggles left and right, then shrinks into its chip, in about 0.6 s. Decorative; skipped with reduced motion |
 | `EmojiPicker` | Any emoji, with search, categories and skin tones (Emoji Mart, loaded on first use), in a `Sheet`; built once the sheet has slid in. Our colors and font are passed into it; its texts come from our translations |
 | `StoryAvatar` | A member with today's ring split into one segment per challenge due today (done green, started faint green, to do grey; nothing due: a plain grey ring), their name and "2/2" under it, and a count of new proofs. A link to the member's page; `lg` at the top of that page |
-| `MiniWeek` | The last seven days as small bars with the shapes of `DayBars`, today outlined; read as one summary |
 | `DayDivider` | A day in the crew's journal: its name, a line and what happened; sticks to the top while that day scrolls |
 | `StatGroup` | Up to three numbers in one card, divided, each with a short label under it; a number can be success green |
 | `ChallengeChip` | A challenge named inside a card: its icon in a small accent circle and its title, cut with an ellipsis |

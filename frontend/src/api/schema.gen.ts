@@ -345,23 +345,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/feed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The crew's check-ins with their proofs, latest activity first. */
-        get: operations["feed_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/invites/{code}": {
         parameters: {
             query?: never;
@@ -420,7 +403,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The crew's check-ins, drawn spins and served ones, with their proofs, latest first. */
+        /**
+         * @description The crew's journal: one card per post, latest first, each as it was posted, with its
+         *     photos and videos, its reactions, and the counts of each day on the page.
+         */
         get: operations["journal_list"];
         put?: never;
         post?: never;
@@ -730,6 +716,13 @@ export interface components {
              */
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
         };
+        /**
+         * @description * `check` - check
+         *     * `amount` - amount
+         *     * `files` - files
+         * @enum {string}
+         */
+        ActionEnum: "check" | "amount" | "files";
         ActiveCrewInRequest: {
             /** Format: uuid */
             crew_id: string;
@@ -863,6 +856,38 @@ export interface components {
          * @enum {string}
          */
         ChallengeStateEnum: "proposed" | "chosen";
+        /** @description A check-in post's card, as it was when posted. */
+        CheckInFactsOut: {
+            /**
+             * @description The day's check-in, a number added, or photos and videos added later.
+             *
+             *     * `check` - check
+             *     * `amount` - amount
+             *     * `files` - files
+             */
+            action: components["schemas"]["ActionEnum"];
+            /**
+             * Format: double
+             * @description The number added.
+             */
+            amount: number | null;
+            /**
+             * Format: double
+             * @description The day's total after this post.
+             */
+            total: number | null;
+            /**
+             * Format: double
+             * @description The least amount a day needs.
+             */
+            target: number | null;
+            /** @description Days or weeks in a row then. */
+            streak: number | null;
+            /** @description 3, 7, 14 or 30: the streak this post reached. */
+            milestone: number | null;
+            /** @description Photos and videos posted with it. */
+            proofs: number;
+        };
         CheckInInRequest: {
             /**
              * Format: date
@@ -875,13 +900,6 @@ export interface components {
              */
             amount?: string | null;
         };
-        /**
-         * @description * `done` - Done
-         *     * `in_progress` - In progress (a number below the day's target)
-         *     * `pending` - Pending (only draft files, nothing posted yet)
-         * @enum {string}
-         */
-        CheckInStatusEnum: "done" | "in_progress" | "pending";
         CrewChallengeOut: {
             /** Format: uuid */
             challenge_id: string;
@@ -901,6 +919,10 @@ export interface components {
          * @enum {string}
          */
         CrewChallengeOutStateEnum: "done" | "started" | "todo";
+        CrewDayFactsOut: {
+            /** @description Everyone who was due that day. */
+            members: string[];
+        };
         CrewDayOut: {
             member: components["schemas"]["PersonOut"];
             done: number;
@@ -953,68 +975,6 @@ export interface components {
          * @enum {string}
          */
         DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
-        DaySummaryOut: {
-            check_ins: number;
-            /** @description Processing and ready proofs. */
-            proofs: number;
-            /** @description Everyone finished everything due that day (challenges judged day by day). */
-            crew_done: boolean;
-        };
-        /**
-         * @description * `spun` - spun
-         *     * `served` - served
-         * @enum {string}
-         */
-        DrawnSpinStateEnum: "spun" | "served";
-        /** @description One check-in: who, on what, which day, and its proofs. */
-        FeedItemOut: {
-            /**
-             * Format: uuid
-             * @description The check-in.
-             */
-            id: string;
-            member: components["schemas"]["PersonOut"];
-            challenge: components["schemas"]["ChallengeBriefOut"];
-            /** Format: date */
-            day: string;
-            status: components["schemas"]["CheckInStatusEnum"];
-            /**
-             * Format: double
-             * @description The day's total (numbers only).
-             */
-            total: number | null;
-            /**
-             * Format: date-time
-             * @description The later of the check-in's last change and its newest proof; the feed's order.
-             */
-            activity_at: string;
-            /** @description Processing and ready proofs. */
-            proofs: components["schemas"]["ProofOut"][];
-            /** @description Days (or weeks) in a row as of this day; null without one. */
-            streak: number | null;
-            /** @description This day within the challenge, from 1. */
-            day_index: number;
-            /** @description Days the challenge runs. */
-            day_count: number;
-            /** @description The seven days ending on this day. */
-            week: components["schemas"]["DayOut"][];
-            /**
-             * Format: double
-             * @description The last amount added (numbers only).
-             */
-            last_amount: number | null;
-            /**
-             * Format: double
-             * @description The least amount a check-in needs (day_min), if there is one.
-             */
-            target: number | null;
-            /** @description Set when this check-in made the streak reach 3, 7, 14 or 30. */
-            milestone: components["schemas"]["MilestoneOut"] | null;
-            /** @description The crew's whole day (the same on every item of that day), for its divider. */
-            day_summary: components["schemas"]["DaySummaryOut"];
-            /** @description Reactions; only single cards (a proof, a number or a milestone) take new ones. */
-            reactions: components["schemas"]["ReactionSummaryOut"];
-        };
         /**
          * @description * `dumbbell` - dumbbell
          *     * `running` - running
@@ -1058,27 +1018,57 @@ export interface components {
         JoinWithAccountInRequest: {
             display_name: string;
         };
+        JournalDayOut: {
+            /** Format: date */
+            day: string;
+            /** @description One per person and challenge. */
+            check_ins: number;
+            /** @description Photos and videos posted that day. */
+            proofs: number;
+        };
+        /**
+         * @description One card: written once when its post was made, never changed. Its kind's facts are set,
+         *     the others null.
+         */
         JournalEntryOut: {
+            /** Format: uuid */
+            id: string;
             kind: components["schemas"]["JournalKindEnum"];
             /**
              * Format: date-time
-             * @description The journal's order, latest first.
+             * @description When it was posted: the journal's order.
              */
-            activity_at: string;
-            /** @description Set when `kind` is check_in. */
-            check_in: components["schemas"]["FeedItemOut"] | null;
-            /** @description Set when `kind` is spin or served. */
-            spin: components["schemas"]["SpinItemOut"] | null;
+            at: string;
+            /**
+             * Format: date
+             * @description The crew-local day it sits under.
+             */
+            day: string;
+            /** @description Who did it; null for the crew's day. */
+            member: components["schemas"]["PersonOut"] | null;
+            /** @description On what; null for the crew's day. */
+            challenge: components["schemas"]["ChallengeBriefOut"] | null;
+            /** @description The photos and videos posted with it. */
+            proofs: components["schemas"]["ProofOut"][];
+            /** @description Target `entry`, this card's id. */
+            reactions: components["schemas"]["ReactionSummaryOut"];
+            check_in: components["schemas"]["CheckInFactsOut"] | null;
+            spin: components["schemas"]["SpinFactsOut"] | null;
+            served: components["schemas"]["ServedFactsOut"] | null;
+            crew_day: components["schemas"]["CrewDayFactsOut"] | null;
         };
         /**
-         * @description * `check_in` - check_in
-         *     * `spin` - spin
-         *     * `served` - served
+         * @description * `check_in` - A check-in post
+         *     * `spin` - A spin drawn
+         *     * `served` - A punishment served
+         *     * `crew_day` - The whole crew finished the day
          * @enum {string}
          */
-        JournalKindEnum: "check_in" | "spin" | "served";
+        JournalKindEnum: "check_in" | "spin" | "served" | "crew_day";
         JournalPageOut: {
             results: components["schemas"]["JournalEntryOut"][];
+            /** @description The counts of each day on this page, for dividers. */
+            days: components["schemas"]["JournalDayOut"][];
             /** @description Send as `cursor` for the next page. */
             next: string | null;
         };
@@ -1167,16 +1157,6 @@ export interface components {
             display_name: string;
             role: string;
         };
-        MilestoneOut: {
-            kind: components["schemas"]["MilestoneOutKindEnum"];
-            /** @description Days in a row: 3, 7, 14 or 30. */
-            n: number;
-        };
-        /**
-         * @description * `streak` - streak
-         * @enum {string}
-         */
-        MilestoneOutKindEnum: "streak";
         /**
          * @description * `count` - A number of check-ins
          *     * `amount` - A total amount
@@ -1191,10 +1171,6 @@ export interface components {
             to_serve: number;
             /** @description Not served yet, oldest window first. */
             spins: components["schemas"]["SpinOut"][];
-        };
-        PaginatedFeedItemOutList: {
-            results: components["schemas"]["FeedItemOut"][];
-            next: string | null;
         };
         PartInRequest: {
             /** @description The ETag header S3 answered with. */
@@ -1378,23 +1354,13 @@ export interface components {
              */
             period_start: string;
         };
-        /**
-         * @description A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
-         *     reactions), or who served it (kind `served`, with its proofs).
-         */
-        SpinItemOut: {
-            /**
-             * Format: uuid
-             * @description The spin.
-             */
-            id: string;
-            member: components["schemas"]["PersonOut"];
-            challenge: components["schemas"]["ChallengeBriefOut"];
-            /**
-             * Format: date
-             * @description The crew-local day it was drawn, or served.
-             */
-            day: string;
+        ServedFactsOut: {
+            punishment: components["schemas"]["PunishmentOut"];
+            /** @description Photos and videos it was served with. */
+            proofs: number;
+        };
+        /** @description A spin's card when drawn: what failed and what was drawn. */
+        SpinFactsOut: {
             /** Format: date */
             window_first: string;
             /** Format: date */
@@ -1405,17 +1371,8 @@ export interface components {
             /** Format: double */
             done: number;
             punishment: components["schemas"]["PunishmentOut"];
-            /** @description Arcs on the dial. */
-            punishment_count: number;
-            state: components["schemas"]["DrawnSpinStateEnum"];
             /** Format: date */
-            serve_by: string;
-            late: boolean;
-            /** @description Processing and ready proofs; empty on kind `spin`. */
-            proofs: components["schemas"]["ProofOut"][];
-            reactions: components["schemas"]["ReactionSummaryOut"];
-            /** @description The crew's whole day, for its divider. */
-            day_summary: components["schemas"]["DaySummaryOut"];
+            serve_by: string | null;
         };
         /** @description One of my spins: what it is for, the dial's punishments, and what was drawn. */
         SpinOut: {
@@ -2144,30 +2101,6 @@ export interface operations {
             };
         };
     };
-    feed_list: {
-        parameters: {
-            query?: {
-                /** @description The pagination cursor value. */
-                cursor?: string;
-                /** @description Number of results to return per page. */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedFeedItemOutList"];
-                };
-            };
-        };
-    };
     invites_retrieve: {
         parameters: {
             query?: never;
@@ -2485,7 +2418,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "check_in" | "spin";
+                target: "entry";
                 target_id: string;
             };
             cookie?: never;
@@ -2512,7 +2445,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description What kind of thing the id is. */
-                target: "check_in" | "spin";
+                target: "entry";
                 target_id: string;
             };
             cookie?: never;

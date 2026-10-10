@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-import type { FeedItem, MemberProgress } from "@/features/checkins";
+import type { JournalEntry, MemberProgress } from "@/features/checkins";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 import { fail, ok, renderRoutes } from "@/test/render";
 
@@ -59,7 +59,7 @@ const routes = [
   { path: "/crew/members/:id", element: <MemberRoute /> },
 ];
 
-function mockGets(member: MemberProgress | null, feed: FeedItem[] = []) {
+function mockGets(member: MemberProgress | null) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) => {
     if (path === "/api/v1/me") return ok(meAs(ana));
     if (path === "/api/v1/members/{member_id}/progress") {
@@ -68,15 +68,7 @@ function mockGets(member: MemberProgress | null, feed: FeedItem[] = []) {
     if (path === "/api/v1/today") {
       return ok({ day: "2026-11-10", deadline: "2026-11-10T22:00:00Z", challenges: [], crew: [] });
     }
-    if (path === "/api/v1/journal") {
-      const results = feed.map((item) => ({
-        kind: "check_in",
-        activity_at: item.activity_at,
-        check_in: item,
-        spin: null,
-      }));
-      return ok({ results, next: null });
-    }
+    if (path === "/api/v1/journal") return ok({ results: [], days: [], next: null });
     if (path === "/api/v1/proposals") return ok({ proposals: [], size: 0, limit: 50 });
     if (path === "/api/v1/challenges") return ok([]);
     return ok(crewDetail);
@@ -132,7 +124,7 @@ describe("echipa", () => {
 
 describe("new proofs", () => {
   const item = (memberProofs: ReturnType<typeof proof>[], who = bogdan) =>
-    ({ member: person(who), proofs: memberProofs }) as unknown as FeedItem;
+    ({ member: person(who), proofs: memberProofs }) as unknown as JournalEntry;
 
   it("counts proofs after you last looked, never your own, and resets once seen", () => {
     const since = new Date("2026-11-10T00:00:00Z");

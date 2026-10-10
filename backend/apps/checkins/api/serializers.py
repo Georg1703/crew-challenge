@@ -3,9 +3,7 @@ from rest_framework import serializers
 from apps.challenges.api.serializers import PersonOut
 from apps.challenges.models import ICONS, Challenge
 from apps.checkins.days import DayState, Verdict
-from apps.checkins.models import CheckIn
 from apps.proofs.api.serializers import ProofOut
-from apps.reactions.api.serializers import ReactionSummaryOut
 
 DAY_STATES = (
     DayState.DONE,
@@ -136,55 +134,6 @@ class DaySheetRowOut(serializers.Serializer):
     state = serializers.ChoiceField(choices=DAY_STATES)
     total = serializers.FloatField(allow_null=True, help_text="The day's total (numbers only).")
     proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
-
-
-class DaySummaryOut(serializers.Serializer):
-    check_ins = serializers.IntegerField()
-    proofs = serializers.IntegerField(help_text="Processing and ready proofs.")
-    crew_done = serializers.BooleanField(
-        help_text="Everyone finished everything due that day (challenges judged day by day)."
-    )
-
-
-class MilestoneOut(serializers.Serializer):
-    kind = serializers.ChoiceField(choices=["streak"])
-    n = serializers.IntegerField(help_text="Days in a row: 3, 7, 14 or 30.")
-
-
-class FeedItemOut(serializers.Serializer):
-    """One check-in: who, on what, which day, and its proofs."""
-
-    id = serializers.UUIDField(help_text="The check-in.")
-    member = PersonOut()
-    challenge = ChallengeBriefOut()
-    day = serializers.DateField()
-    status = serializers.ChoiceField(choices=CheckIn.Status.choices)
-    total = serializers.FloatField(allow_null=True, help_text="The day's total (numbers only).")
-    activity_at = serializers.DateTimeField(
-        help_text="The later of the check-in's last change and its newest proof; the feed's order."
-    )
-    proofs = ProofOut(many=True, help_text="Processing and ready proofs.")
-    streak = serializers.IntegerField(
-        allow_null=True, help_text="Days (or weeks) in a row as of this day; null without one."
-    )
-    day_index = serializers.IntegerField(help_text="This day within the challenge, from 1.")
-    day_count = serializers.IntegerField(help_text="Days the challenge runs.")
-    week = DayOut(many=True, help_text="The seven days ending on this day.")
-    last_amount = serializers.FloatField(
-        allow_null=True, help_text="The last amount added (numbers only)."
-    )
-    target = serializers.FloatField(
-        allow_null=True, help_text="The least amount a check-in needs (day_min), if there is one."
-    )
-    milestone = MilestoneOut(
-        allow_null=True, help_text="Set when this check-in made the streak reach 3, 7, 14 or 30."
-    )
-    day_summary = DaySummaryOut(
-        help_text="The crew's whole day (the same on every item of that day), for its divider."
-    )
-    reactions = ReactionSummaryOut(
-        help_text="Reactions; only single cards (a proof, a number or a milestone) take new ones."
-    )
 
 
 class MemberChallengeOut(serializers.Serializer):

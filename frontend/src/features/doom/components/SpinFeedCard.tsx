@@ -1,28 +1,38 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { components } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
-import { SHOWN_PROOFS, shownTile } from "@/features/proofs";
+import { SHOWN_PROOFS, shownTile, type Proof } from "@/features/proofs";
 import { formatDayLong } from "@/shared/lib/format";
 import { FeedCard } from "@/shared/ui";
 
-import type { SpinItem } from "../api";
 import { describeFailed } from "../describe";
 
+type Person = components["schemas"]["PersonOut"];
+type Challenge = components["schemas"]["ChallengeBriefOut"];
+type Drawn = components["schemas"]["SpinFactsOut"];
+
 /**
- * A spin in the crew's journal, as one of two cards: who drew which punishment and by when to
- * serve it (it stays as it was drawn), or, once served, who served it, with the proofs.
+ * A spin in the crew's journal, as one of its two cards, each as it was then: who drew which
+ * punishment, what failed and by when to serve it (`drawn`), or who served it, with the photos
+ * and videos (`drawn` is null).
  */
 export function SpinFeedCard({
-  item,
-  served,
+  member,
+  challenge,
+  punishment,
+  drawn,
+  proofs,
   time,
   onOpenProof,
   reactions,
 }: {
-  item: SpinItem;
-  /** The served card, else the drawn one. */
-  served: boolean;
+  member: Person;
+  challenge: Challenge;
+  punishment: string;
+  drawn: Drawn | null;
+  proofs: Proof[];
   /** When, formatted by the journal. */
   time: string;
   onOpenProof: (index: number) => void;
@@ -30,24 +40,27 @@ export function SpinFeedCard({
 }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
-  const who = item.member.display_name;
-  const failed = describeFailed(t, item, language);
+  const who = member.display_name;
+  const facts = drawn
+    ? [
+        ...(drawn.serve_by
+          ? [t("doom.serveBy", { date: formatDayLong(drawn.serve_by, language) })]
+          : []),
+        describeFailed(t, { ...drawn, challenge }, language),
+      ]
+    : undefined;
   return (
     <FeedCard
-      person={{ id: item.member.id, name: who, seed: item.member.avatar_seed }}
-      text={t(served ? "doom.feed.served" : "doom.feed.drew", { name: who })}
-      challenge={{ icon: CHALLENGE_ICONS[item.challenge.icon], label: item.challenge.title }}
+      person={{ id: member.id, name: who, seed: member.avatar_seed }}
+      text={t(drawn ? "doom.feed.drew" : "doom.feed.served", { name: who })}
+      challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
       time={time}
-      tone={served ? "success" : "default"}
-      highlight={{ text: item.punishment.text }}
-      proofs={item.proofs.map((p) => shownTile(p, t, who))}
+      tone={drawn ? "default" : "success"}
+      highlight={{ text: punishment }}
+      proofs={proofs.map((p) => shownTile(p, t, who))}
       onOpenProof={onOpenProof}
-      moreLabel={t("feed.more", { count: item.proofs.length - SHOWN_PROOFS })}
-      facts={
-        served
-          ? [failed]
-          : [t("doom.serveBy", { date: formatDayLong(item.serve_by, language) }), failed]
-      }
+      moreLabel={t("feed.more", { count: proofs.length - SHOWN_PROOFS })}
+      facts={facts}
       reactions={reactions}
     />
   );

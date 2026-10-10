@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from "vitest";
 import { ChallengeChip } from "./ChallengeChip";
 import { DayDivider } from "./DayDivider";
 import { FeedCard } from "./FeedCard";
-import { MiniWeek } from "./MiniWeek";
 import { ProofMosaic, type FeedProof } from "./ProofMosaic";
 import { ProofTile } from "./ProofTile";
 import { StatGroup } from "./StatGroup";
@@ -118,20 +117,6 @@ describe("ProofTile", () => {
   });
 });
 
-describe("MiniWeek", () => {
-  it("is one image with a bar per day", () => {
-    render(
-      <MiniWeek
-        label="Last 7 days"
-        days={(["done", "missed", "todo", "not_due", "outside", "done", "todo"] as const).map(
-          (state, i) => ({ key: String(i), state, today: i === 6 }),
-        )}
-      />,
-    );
-    expect(screen.getByRole("img", { name: "Last 7 days" }).children).toHaveLength(7);
-  });
-});
-
 describe("DayDivider, StatGroup, ChallengeChip", () => {
   it("name the day, the numbers and the challenge", () => {
     render(
@@ -169,17 +154,12 @@ describe("FeedCard", () => {
         proofs={proofs(5)}
         onOpenProof={onOpenProof}
         moreLabel="2 more proofs"
-        week={{
-          label: "Last 7 days",
-          days: Array.from({ length: 7 }, (_, i) => ({ key: String(i), state: "done" as const })),
-        }}
-        facts={["7 days in a row", "day 5 of 30"]}
+        facts={["7 days in a row"]}
       />,
     );
     expect(screen.getByRole("article")).toHaveTextContent("Ana checked in");
     expect(screen.getByText("Walk")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Last 7 days" })).toBeInTheDocument();
-    expect(screen.getByText("day 5 of 30")).toBeInTheDocument();
+    expect(screen.getByText("7 days in a row")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "2 more proofs" }));
     expect(onOpenProof).toHaveBeenLastCalledWith(3);
   });

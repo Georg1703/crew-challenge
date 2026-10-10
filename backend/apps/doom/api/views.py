@@ -1,6 +1,3 @@
-from dataclasses import asdict
-from datetime import date
-from typing import Any
 from uuid import UUID
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -9,16 +6,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.challenges import selectors as challenges
-from apps.checkins.selectors import DaySummary
-from apps.core import clock
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.doom import selectors, services
-from apps.doom.models import Spin
-from apps.proofs.api.serializers import ProofStartIn, ProofUploadOut, proof_data, upload_data
-from apps.reactions import selectors as reactions
+from apps.proofs.api.serializers import ProofStartIn, ProofUploadOut, upload_data
 
-from .serializers import OwedOut, SpinOut, punishment_data, spin_data
+from .serializers import OwedOut, SpinOut, spin_data
 
 
 def _member(request: Request) -> Member:
@@ -31,43 +24,6 @@ def _spin_response(member: Member, spin_id: UUID) -> Response:
         raise services.SpinNotFound()
     punishments = challenges.punishments(challenges=[spin.challenge]).get(spin.challenge_id, [])
     return Response(SpinOut(spin_data(spin, punishments)).data)
-
-
-def journal_day(spin: Spin) -> date:
-    """The crew-local day of a spin's journal card: drawn or served (its `activity_at`)."""
-    return clock.local_date(spin.activity_at, spin.challenge.crew.timezone)  # type: ignore[attr-defined]
-
-
-def spin_items(
-    member: Member, spins: list[Spin], summaries: dict[date, DaySummary], *, served: bool
-) -> list[dict[str, Any]]:
-    """Journal items for a page of drawn spins, or of served ones with their proofs (see
-    SpinItemOut), in a few queries. Reactions are the spin's; the drawn card shows them."""
-    counts = challenges.punishments(challenges=list({s.challenge for s in spins}))
-    shown = selectors.shown_proofs(spins) if served else {}
-    reacted = reactions.summaries(member=member, target="spin", ids=[s.pk for s in spins])
-    return [
-        {
-            "id": spin.pk,
-            "member": spin.member,
-            "challenge": spin.challenge,
-            "day": journal_day(spin),
-            "window_first": spin.window_first,
-            "window_last": spin.window_last,
-            "need_kind": spin.challenge.need_kind,
-            "need": spin.need,
-            "done": spin.done,
-            "punishment": punishment_data(spin.punishment),
-            "punishment_count": len(counts.get(spin.challenge_id, [])),
-            "state": selectors.state(spin),
-            "serve_by": spin.serve_by,
-            "late": selectors.late(spin),
-            "proofs": [proof_data(p) for p in shown.get(spin.pk, [])],
-            "reactions": asdict(reacted[spin.pk]),
-            "day_summary": vars(summaries[journal_day(spin)]),
-        }
-        for spin in spins
-    ]
 
 
 class OwedView(APIView):

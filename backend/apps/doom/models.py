@@ -40,16 +40,12 @@ class Spin(CrewScopedModel):
         blank=True,
         help_text='When it was served: "Done", or its photos and videos posted.',
     )
-    # Proofs, reactions and its journal cards point here by a generic key; these delete them
-    # with the spin.
+    # Proofs and its journal cards point here by a generic key; these delete them with the spin.
     proofs = GenericRelation(
         "proofs.Proof",
         content_type_field="subject_type",
         object_id_field="subject_id",
         related_query_name="spin",
-    )
-    reactions = GenericRelation(
-        "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
     )
     journal_entries = GenericRelation(
         "journal.JournalEntry", content_type_field="subject_type", object_id_field="subject_id"

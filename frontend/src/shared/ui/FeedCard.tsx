@@ -4,10 +4,8 @@ import { cx } from "@/shared/lib/cx";
 
 import { Avatar, AvatarStack } from "./Avatar";
 import { ChallengeChip } from "./ChallengeChip";
-import type { DayState } from "./DayMark";
 import styles from "./FeedCard.module.css";
 import type { IconName } from "./Icon";
-import { MiniWeek } from "./MiniWeek";
 import { ProgressBar } from "./ProgressBar";
 import { ProofMosaic, type FeedProof } from "./ProofMosaic";
 
@@ -18,9 +16,8 @@ type Person = { id: string; name: string; seed: string };
  * today's ring, or a stack for a group), what in one line, the challenge as a chip and when. The
  * body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
  * target, or a big number for a streak milestone; a plain check-in or a group has none. The
- * footer holds the last seven days (`MiniWeek`) and short facts ("7 days in a row", "day 5 of
- * 30"). `tone="success"` marks a milestone or the whole crew finishing the day. `reactions` ends
- * the footer's first row: next to the week, whose facts then go on a row of their own.
+ * footer holds short facts ("7 days in a row") and, at its end, the `reactions`.
+ * `tone="success"` marks a milestone or the whole crew finishing the day.
  */
 export function FeedCard({
   person,
@@ -35,7 +32,6 @@ export function FeedCard({
   proofs = [],
   onOpenProof,
   moreLabel,
-  week,
   facts = [],
   reactions,
 }: {
@@ -63,13 +59,12 @@ export function FeedCard({
   onOpenProof?: (index: number) => void;
   /** Accessible name of "+N" on the mosaic. */
   moreLabel?: string;
-  week?: { days: { key: string; state: DayState; today?: boolean }[]; label: string };
-  /** Short facts in the footer: "7 days in a row", "day 5 of 30", "3 proofs". */
+  /** Short facts in the footer: "7 days in a row", "3 proofs". */
   facts?: ReactNode[];
   /** The reactions (chips and the react button), at the end of the footer row. */
   reactions?: ReactNode;
 }) {
-  const footer = week || facts.length > 0 || reactions;
+  const footer = facts.length > 0 || reactions;
   // One stage per card, the middle a reaction flies over: the photos when there are any.
   const stage = proofs.length > 0 ? undefined : "";
   return (
@@ -116,10 +111,9 @@ export function FeedCard({
       )}
       {footer && (
         <footer className={styles.foot}>
-          {week && <MiniWeek days={week.days} label={week.label} />}
           {reactions && <div className={styles.reactions}>{reactions}</div>}
           {facts.length > 0 && (
-            <div className={cx(styles.facts, week && styles.factsBelow)}>
+            <div className={styles.facts}>
               {facts.map((fact, i) => (
                 <span key={i} className={styles.fact}>
                   {fact}

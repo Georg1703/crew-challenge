@@ -9,7 +9,9 @@ import { fail, ok, renderRoutes } from "@/test/render";
 import { ChallengeBoard, CrewFeed } from ".";
 import type { Proof } from "@/features/proofs";
 
-import type { FeedItem } from "./api";
+import type { JournalEntry } from "./api";
+
+type Facts = NonNullable<JournalEntry["check_in"]>;
 
 const person = (member: typeof ana) => ({
   id: member.id,
@@ -30,44 +32,80 @@ const photo = (id: string): Proof => ({
   posted: true,
 });
 
-const walked: FeedItem = {
-  id: "c1",
-  member: person(bogdan),
-  challenge: { id: "walk", title: "Walk", icon: "walk", measure: "check", unit: "" },
+const WALK = { id: "walk", title: "Walk", icon: "walk", measure: "check", unit: "" } as const;
+const READ = {
+  id: "read",
+  title: "Read",
+  icon: "book",
+  measure: "quantity",
+  unit: "pages",
+} as const;
+const SWIM = { id: "swim", title: "Swim", icon: "water", measure: "check", unit: "" } as const;
+const SHOWER = { position: 3, text: "Cold shower, 2 minutes", proof_required: true };
+
+/** A card as the journal sends it: its kind's facts set, the others null. */
+const card = (over: Partial<JournalEntry>): JournalEntry => ({
+  id: "e1",
+  kind: "check_in",
+  at: "2026-11-10T08:30:00Z",
   day: "2026-11-10",
-  status: "done",
-  total: null,
-  activity_at: "2026-11-10T08:30:00Z",
-  proofs: ["a", "b", "c", "d", "e"].map(photo),
-  streak: 4,
-  day_index: 10,
-  day_count: 30,
-  week: [],
-  last_amount: null,
-  target: null,
-  milestone: null,
-  day_summary: { check_ins: 3, proofs: 5, crew_done: false },
+  member: person(bogdan),
+  challenge: WALK,
+  proofs: [],
   reactions: { groups: [], mine: null },
-};
-const read: FeedItem = {
+  check_in: null,
+  spin: null,
+  served: null,
+  crew_day: null,
+  ...over,
+});
+const facts = (over: Partial<Facts> = {}): Facts => ({
+  action: "check",
+  amount: null,
+  total: null,
+  target: null,
+  streak: 4,
+  milestone: null,
+  proofs: 0,
+  ...over,
+});
+
+const walked = card({
+  id: "c1",
+  proofs: ["a", "b", "c", "d", "e"].map(photo),
+  check_in: facts({ proofs: 5 }),
+});
+const read = card({
   id: "c2",
   member: person(ana),
-  challenge: { id: "read", title: "Read", icon: "book", measure: "quantity", unit: "pages" },
+  challenge: READ,
   day: "2026-11-09",
-  status: "in_progress",
-  total: 12,
-  activity_at: "2026-11-09T19:40:00Z",
-  proofs: [],
-  streak: 0,
-  day_index: 9,
-  day_count: 30,
-  week: [],
-  last_amount: 4,
-  target: 20,
-  milestone: null,
-  day_summary: { check_ins: 1, proofs: 0, crew_done: false },
-  reactions: { groups: [], mine: null },
-};
+  at: "2026-11-09T19:40:00Z",
+  check_in: facts({ action: "amount", amount: 4, total: 12, target: 20, streak: 0 }),
+});
+const plainWalk = (id: string, member: typeof ana, at: string) =>
+  card({ id, member: person(member), at, check_in: facts() });
+const drawn = card({
+  id: "s1",
+  kind: "spin",
+  day: "2026-11-09",
+  at: "2026-11-09T08:00:00Z",
+  challenge: SWIM,
+  spin: {
+    window_first: "2026-11-02",
+    window_last: "2026-11-08",
+    need_kind: "count",
+    need: 3,
+    done: 1,
+    punishment: SHOWER,
+    serve_by: "2026-11-16",
+  },
+});
+
+const DAYS = [
+  { day: "2026-11-10", check_ins: 3, proofs: 5 },
+  { day: "2026-11-09", check_ins: 1, proofs: 0 },
+];
 
 afterEach(() => {
   vi.useRealTimers();
@@ -76,59 +114,14 @@ afterEach(() => {
 
 const members = [crewDetail.members[0], crewDetail.members[1]].filter((m) => m !== undefined);
 
-/** Check-ins as the journal's entries. */
-const entries = (items: FeedItem[]) =>
-  items.map((item) => ({
-    kind: "check_in" as const,
-    activity_at: item.activity_at,
-    check_in: item,
-    spin: null,
-  }));
-
-function showFeed(results: FeedItem[]) {
-  vi.spyOn(api, "GET").mockImplementation((() =>
-    ok({ results: entries(results), next: null })) as never);
+function showFeed(results: JournalEntry[]) {
+  vi.spyOn(api, "GET").mockImplementation((() => ok({ results, days: DAYS, next: null })) as never);
   renderRoutes([{ path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> }]);
 }
 
-const plainWalk = (id: string, member: typeof ana, at: string): FeedItem => ({
-  ...walked,
-  id,
-  member: person(member),
-  activity_at: at,
-  proofs: [],
-});
-
 describe("the crew journal", () => {
-  const spin = {
-    id: "s1",
-    member: person(bogdan),
-    challenge: { id: "swim", title: "Swim", icon: "water", measure: "check", unit: "" },
-    day: "2026-11-09",
-    window_first: "2026-11-02",
-    window_last: "2026-11-08",
-    need_kind: "count",
-    need: 3,
-    done: 1,
-    punishment: { position: 3, text: "Cold shower, 2 minutes", proof_required: true },
-    punishment_count: 5,
-    state: "spun",
-    serve_by: "2026-11-16",
-    late: false,
-    proofs: [],
-    reactions: { groups: [], mine: null },
-    day_summary: { check_ins: 0, proofs: 0, crew_done: false },
-  };
-
   it("shows a drawn spin with its punishment and when it is due", async () => {
-    vi.spyOn(api, "GET").mockImplementation((() =>
-      ok({
-        results: [{ kind: "spin", activity_at: "2026-11-09T08:00:00Z", check_in: null, spin }],
-        next: null,
-      })) as never);
-    renderRoutes([
-      { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
-    ]);
+    showFeed([drawn]);
 
     expect(await screen.findByText("Bogdan spun the wheel")).toBeInTheDocument();
     expect(screen.getByText("Cold shower, 2 minutes")).toBeInTheDocument();
@@ -137,28 +130,25 @@ describe("the crew journal", () => {
     expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
   });
 
-  it("shows a served spin as a card of its own, with no date to serve by", async () => {
-    vi.spyOn(api, "GET").mockImplementation((() =>
-      ok({
-        results: [
-          {
-            kind: "served",
-            activity_at: "2026-11-11T10:00:00Z",
-            check_in: null,
-            spin: { ...spin, day: "2026-11-11", state: "served" },
-          },
-          { kind: "spin", activity_at: "2026-11-09T08:00:00Z", check_in: null, spin },
-        ],
-        next: null,
-      })) as never);
-    renderRoutes([
-      { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
+  it("shows a served spin as a card of its own, with its photo and no date to serve by", async () => {
+    showFeed([
+      card({
+        id: "s2",
+        kind: "served",
+        day: "2026-11-11",
+        at: "2026-11-11T10:00:00Z",
+        challenge: SWIM,
+        proofs: [photo("p1")],
+        served: { punishment: SHOWER, proofs: 1 },
+      }),
+      drawn,
     ]);
 
     expect(await screen.findByText("Bogdan served a punishment")).toBeInTheDocument();
     expect(screen.getByText("Bogdan spun the wheel")).toBeInTheDocument();
     expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(2);
     expect(screen.getAllByText(/^Serve by/)).toHaveLength(1); // the drawn card, as it was
+    expect(screen.getByRole("button", { name: "Photo by Bogdan" })).toBeInTheDocument();
   });
 
   it("shows each day under its divider, with cards that say who did what", async () => {
@@ -168,7 +158,6 @@ describe("the crew journal", () => {
     expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(2);
     expect(screen.getByText("3 check-ins, 5 proofs")).toBeInTheDocument();
     expect(screen.getByText("Streak 4")).toBeInTheDocument();
-    expect(screen.getByText("day 10 of 30")).toBeInTheDocument();
     expect(screen.getByText("Ana added")).toBeInTheDocument();
     expect(screen.getByText("+4 pages")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "12 of 20 pages" })).toBeInTheDocument();
@@ -185,24 +174,32 @@ describe("the crew journal", () => {
     expect(within(viewer).getByText("Bogdan, Walk")).toBeInTheDocument();
   });
 
-  it("says plain check-ins of one challenge in one card", async () => {
+  it("gives every check-in a card of its own, and says files added later", async () => {
     showFeed([
+      card({
+        id: "f1",
+        proofs: [photo("p1"), photo("p2")],
+        check_in: facts({ action: "files", proofs: 2 }),
+      }),
       plainWalk("w1", bogdan, "2026-11-10T09:00:00Z"),
       plainWalk("w2", ana, "2026-11-10T08:00:00Z"),
     ]);
 
-    expect(await screen.findByText("Bogdan and Ana checked in")).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(await screen.findByText("Bogdan added 2 photos and videos")).toBeInTheDocument();
+    expect(screen.getByText("Ana checked in")).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
   });
 
   it("gives a streak milestone and the crew's whole day cards of their own", async () => {
     showFeed([
-      {
-        ...plainWalk("w1", bogdan, "2026-11-10T09:00:00Z"),
-        streak: 7,
-        milestone: { kind: "streak", n: 7 },
-        day_summary: { check_ins: 2, proofs: 0, crew_done: true },
-      },
+      card({
+        id: "d1",
+        kind: "crew_day",
+        member: null,
+        challenge: null,
+        crew_day: { members: [ana.id, bogdan.id] },
+      }),
+      card({ id: "w1", check_in: facts({ streak: 7, milestone: 7 }) }),
     ]);
 
     expect(await screen.findByText("Bogdan keeps it up")).toBeInTheDocument();
@@ -218,8 +215,8 @@ describe("the crew journal", () => {
       path !== "/api/v1/journal"
         ? ok({}) // who is asking (reactions)
         : options.params.query.cursor === "c2"
-          ? ok({ results: entries([read]), next: null })
-          : ok({ results: entries([walked]), next: "c2" })) as never);
+          ? ok({ results: [read], days: DAYS, next: null })
+          : ok({ results: [walked], days: DAYS, next: "c2" })) as never);
     renderRoutes([
       { path: "/", element: <CrewFeed timeZone="Europe/Chisinau" members={members} /> },
     ]);
@@ -231,18 +228,18 @@ describe("the crew journal", () => {
     expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
   });
 
-  it("lets the crew react to cards of their own, not to grouped check-ins", async () => {
+  it("lets the crew react to every card, each its own", async () => {
     showFeed([
       {
         ...walked,
         reactions: { groups: [{ emoji: "\u{1F525}", member_ids: [ana.id] }], mine: null },
       },
       plainWalk("w1", bogdan, "2026-11-10T07:00:00Z"),
-      plainWalk("w2", ana, "2026-11-10T06:00:00Z"),
+      drawn,
     ]);
 
     expect(await screen.findByRole("button", { name: "\u{1F525}, from Ana" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "React" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "React" })).toHaveLength(3);
   });
 
   it("says what will appear while the crew has done nothing yet", async () => {

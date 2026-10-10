@@ -5,7 +5,6 @@ import type { ProofSubject } from "@/features/proofs";
 
 export type Owed = components["schemas"]["OwedOut"];
 export type Spin = components["schemas"]["SpinOut"];
-export type SpinItem = components["schemas"]["SpinItemOut"];
 
 export const spinsKey = ["spins"] as const;
 

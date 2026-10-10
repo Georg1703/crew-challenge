@@ -1,17 +1,14 @@
-"""Wheel of Doom reads: my open spins, and drawn and served spins for the crew's journal."""
+"""Wheel of Doom reads: my spins, open ones first (their cards are in the journal)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from uuid import UUID
 
-from django.db.models import F, QuerySet
+from django.db.models import QuerySet
 
-from apps.challenges import selectors as challenges
 from apps.core import clock
 from apps.crews.models import Member
-from apps.proofs.models import Proof
-from apps.proofs.selectors import VISIBLE
 
 from .models import Spin
 
@@ -67,39 +64,3 @@ def owed(*, member: Member) -> Owed:
     )
     to_spin = sum(1 for spin in rows if spin.punishment_id is None)
     return Owed(spins=rows, to_spin=to_spin, to_serve=len(rows) - to_spin)
-
-
-def _visible(member: Member) -> QuerySet[Spin]:
-    return _with_state(
-        Spin.objects.filter(challenge__in=challenges.visible(member=member))
-    ).select_related("challenge__crew")
-
-
-def journal(*, member: Member) -> QuerySet[Spin]:
-    """Drawn spins on challenges the member can see, at the draw (`activity_at`): the journal's
-    "spun the wheel" cards, which never change after."""
-    return _visible(member).filter(drawn_at__isnull=False).annotate(activity_at=F("drawn_at"))
-
-
-def served(*, member: Member) -> QuerySet[Spin]:
-    """Served spins on challenges the member can see, at the moment they were served
-    (`activity_at`: "Done", or its photos and videos posted). The journal's second card."""
-    return _visible(member).filter(done_at__isnull=False).annotate(activity_at=F("done_at"))
-
-
-def reactable_spin(member: Member, spin_id: UUID) -> Spin | None:
-    """A drawn spin the member sees in the journal (reaction target `spin`)."""
-    return journal(member=member).filter(pk=spin_id).first()
-
-
-def shown_proofs(spins: list[Spin]) -> dict[UUID, list[Proof]]:
-    """Each spin's proofs the crew can see, for a journal page, in one query."""
-    result: dict[UUID, list[Proof]] = {spin.pk: [] for spin in spins}
-    rows = (
-        Proof.objects.filter(VISIBLE, spin__in=spins)
-        .select_related("original__transcode", "thumb")
-        .order_by("created_at")
-    )
-    for proof in rows:
-        result[proof.subject_id].append(proof)
-    return result

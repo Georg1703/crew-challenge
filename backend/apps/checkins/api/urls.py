@@ -25,7 +25,6 @@ urlpatterns = [
         views.DaySheetView.as_view(),
         name="challenge-day-sheet",
     ),
-    path("feed", views.FeedView.as_view(), name="feed"),
     path(
         "members/<uuid:member_id>/progress",
         views.MemberProgressView.as_view(),

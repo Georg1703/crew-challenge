@@ -2,16 +2,14 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.challenges.api.serializers import PersonOut, PunishmentOut
+from apps.challenges.api.serializers import PunishmentOut
 from apps.challenges.models import Challenge, Punishment
-from apps.checkins.api.serializers import ChallengeBriefOut, DaySummaryOut
+from apps.checkins.api.serializers import ChallengeBriefOut
 from apps.doom import selectors
 from apps.doom.models import Spin
 from apps.proofs.api.serializers import ProofOut, proof_data
-from apps.reactions.api.serializers import ReactionSummaryOut
 
 STATES = (selectors.PENDING, selectors.SPUN, selectors.SERVED)
-DRAWN_STATES = (selectors.SPUN, selectors.SERVED)
 
 
 class SpinOut(serializers.Serializer):
@@ -66,26 +64,3 @@ def spin_data(spin: Spin, punishments: list[Punishment]) -> dict[str, Any]:
         "late": selectors.late(spin),
         "proofs": [proof_data(p) for p in spin.proofs.all()],
     }
-
-
-class SpinItemOut(serializers.Serializer):
-    """A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
-    reactions), or who served it (kind `served`, with its proofs)."""
-
-    id = serializers.UUIDField(help_text="The spin.")
-    member = PersonOut()
-    challenge = ChallengeBriefOut()
-    day = serializers.DateField(help_text="The crew-local day it was drawn, or served.")
-    window_first = serializers.DateField()
-    window_last = serializers.DateField()
-    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
-    need = serializers.FloatField()
-    done = serializers.FloatField()
-    punishment = PunishmentOut()
-    punishment_count = serializers.IntegerField(help_text="Arcs on the dial.")
-    state = serializers.ChoiceField(choices=DRAWN_STATES)
-    serve_by = serializers.DateField()
-    late = serializers.BooleanField()
-    proofs = ProofOut(many=True, help_text="Processing and ready proofs; empty on kind `spin`.")
-    reactions = ReactionSummaryOut()
-    day_summary = DaySummaryOut(help_text="The crew's whole day, for its divider.")

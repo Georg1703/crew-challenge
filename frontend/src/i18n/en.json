@@ -103,7 +103,6 @@
       "checked": "{{name}} checked in",
       "held": "{{name}} held on",
       "added": "{{name}} added",
-      "group": "{{names}} checked in",
       "crewDay": "The whole crew finished the day",
       "crewDayLabel": "The whole crew",
       "milestone": "{{name}} keeps it up",
@@ -111,14 +110,15 @@
       "inARow_few": "days in a row",
       "inARow_other": "days in a row",
       "streak": "Streak {{count}}",
-      "dayOf": "day {{n}} of {{total}}",
       "todayTotal": "{{total}} today",
       "dayTotal": "{{total}} that day",
       "ofTarget": "{{total}} of {{target}} {{unit}}",
-      "week": "Last 7 days: {{done}} done",
       "fresh_one": "{{count}} new proof",
       "fresh_few": "{{count}} new proofs",
-      "fresh_other": "{{count}} new proofs"
+      "fresh_other": "{{count}} new proofs",
+      "files_one": "{{name}} added a photo or video",
+      "files_few": "{{name}} added {{count}} photos and videos",
+      "files_other": "{{name}} added {{count}} photos and videos"
     },
     "members": {
       "title": "Members",

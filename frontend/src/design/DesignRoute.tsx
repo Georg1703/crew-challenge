@@ -31,7 +31,6 @@ import {
   IconTile,
   List,
   ListRow,
-  MiniWeek,
   OptionList,
   ProgressBar,
   ProgressRing,
@@ -637,13 +636,7 @@ export function DesignRoute() {
             }))}
             onOpenProof={(i) => setViewer(Math.min(i, VIEWER.length - 1))}
             moreLabel="2 more proofs"
-            week={{
-              label: "Last 7 days: 6 done, today done",
-              days: (["done", "done", "missed", "done", "done", "done", "done"] as DayState[]).map(
-                (state, i) => ({ key: String(i), state, today: i === 6 }),
-              ),
-            }}
-            facts={["5 days in a row", "day 12 of 30"]}
+            facts={["5 days in a row"]}
             reactions={<ReactionsDemo />}
           />
           <FeedCard
@@ -727,20 +720,6 @@ export function DesignRoute() {
           segments={["done", "started"]}
           label="Ana Pop, 1 of 2 today"
         />
-        <div className={styles.row}>
-          {(
-            [
-              ["done", "done", "missed", "done", "done", "not_due", "todo"],
-              ["done", "missed", "missed", "done", "outside", "outside", "done"],
-            ] as DayState[][]
-          ).map((week, w) => (
-            <MiniWeek
-              key={w}
-              label={`Last 7 days: ${week.join(", ")}`}
-              days={week.map((state, i) => ({ key: String(i), state, today: i === 6 }))}
-            />
-          ))}
-        </div>
         <DayDivider title="Today" summary="5 check-ins, 9 proofs" />
         <DayDivider title="Yesterday" />
         <StatGroup

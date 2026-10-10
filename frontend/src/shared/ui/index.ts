@@ -17,7 +17,6 @@ export { HoldButton } from "./HoldButton";
 export { Icon, type IconName } from "./Icon";
 export { IconPicker } from "./IconPicker";
 export { IconTile, List, ListRow } from "./ListRow";
-export { MiniWeek } from "./MiniWeek";
 export { OptionList, type Option } from "./OptionList";
 export { ProgressBar } from "./ProgressBar";
 export { ProgressRing, type RingSegment } from "./ProgressRing";

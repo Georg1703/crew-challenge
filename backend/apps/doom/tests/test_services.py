@@ -12,6 +12,7 @@ from apps.challenges import services as challenges
 from apps.checkins import services as checkins
 from apps.doom import selectors, services
 from apps.doom.models import Spin
+from apps.journal import selectors as journal
 from apps.proofs import services as proofs
 from apps.proofs.models import Proof
 from tests.factories import AdminFactory
@@ -206,22 +207,24 @@ def test_serving_with_proof_or_done(swim, object_storage):
             proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)
 
 
-def test_the_crew_sees_drawn_spins_only(swim):
+def test_the_crew_sees_a_card_when_drawn_and_one_when_served(swim):
     ana, bogdan, _ = swim
     with at("2026-11-08 22:01Z"):
         services.open_spins()
     spin = Spin.objects.filter(member=bogdan).first()
     assert spin is not None
-    assert not selectors.journal(member=ana).exists()  # nothing drawn yet
+
+    def cards(member):
+        found, _ = journal.page(member=member, cursor=None, size=10)
+        return [(c.kind, c.created_at) for c in found if c.kind != "check_in"]
+
+    assert cards(ana) == []  # nothing drawn yet
     with at("2026-11-09 08:00Z"):
         services.draw(by=bogdan, spin_id=spin.pk, rng=Pick(1))
-    assert [s.pk for s in selectors.journal(member=ana)] == [spin.pk]
-    assert not selectors.served(member=ana).exists()
     with at("2026-11-10 08:00Z"):
         services.serve(by=bogdan, spin_id=spin.pk)
-    served = [s.activity_at for s in selectors.served(member=ana)]  # type: ignore[attr-defined]
-    assert served == [datetime(2026, 11, 10, 8, tzinfo=UTC)]  # at "Done"
-    assert selectors.reactable_spin(ana, spin.pk) == spin
-    stranger = AdminFactory.create()
-    assert not selectors.journal(member=stranger).exists()
-    assert selectors.reactable_spin(stranger, spin.pk) is None
+    assert cards(ana) == [
+        ("served", datetime(2026, 11, 10, 8, tzinfo=UTC)),  # at "Done"
+        ("spin", datetime(2026, 11, 9, 8, tzinfo=UTC)),
+    ]
+    assert cards(AdminFactory.create()) == []  # another crew

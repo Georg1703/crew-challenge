@@ -128,36 +128,38 @@ DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or lea
                                         either way the challenge is gone for the member
 
 GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
-POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: check in for today -> today's card
-DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's last entry -> today's card
-                                        (the last one takes the day's proofs with it)
+POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: post today's check-in, a "+N" or
+                                        files added later, with the day's uploaded draft files
+                                        (refused while one uploads) -> today's card
+DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's latest post, with its files
+                                        -> today's card
 GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month
 GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whole period: need,
                                         full need, and for a participant done and verdict;
                                         `start` previews a start, `until` previews leaving that day
 GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
-GET    /api/v1/feed?cursor=...          the crew's check-ins with proofs, latest activity first
-                                        (30 per page, challenges you can see); replaced by journal
-GET    /api/v1/journal?cursor=...       check-ins, drawn spins and served ones, latest activity
-                                        first: each {kind, activity_at, check_in | spin}, kind
-                                        check_in, spin or served (30 per page)
+GET    /api/v1/journal?cursor=...       the crew's cards, latest first, each as it was posted:
+                                        {id, kind, at, day, member, challenge, proofs, reactions,
+                                        and its kind's facts (check_in | spin | served |
+                                        crew_day)}, plus each day's counts (30 per page)
 
 GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
                                         to_serve (the Today card) and each challenge's punishments
 POST   /api/v1/spins/{id}/draw          the server draws the punishment -> the spin; safe to repeat
-POST   /api/v1/spins/{id}/done          serve a punishment that needs no proof -> the spin
-POST   /api/v1/spins/{id}/proofs        start a proof on a drawn punishment that needs one -> 201
+POST   /api/v1/spins/{id}/done          serve: with its uploaded photos or videos when it needs
+                                        proof, at once when not -> the spin
+POST   /api/v1/spins/{id}/proofs        a draft file on a drawn punishment that needs proof -> 201
 GET    /api/v1/spins/{id}/proofs/resume?fingerprint=...   my open video upload on it, or 404
 
 POST   /api/v1/challenges/{id}/check-ins/{day}/proofs   {kind, content_type, size, fingerprint?,
-                                        thumb_size?}: add proof to today's check-in -> 201
+                                        thumb_size?}: a draft file of today's check-in -> 201
                                         proof + how to upload (one PUT, or multipart parts)
 GET    /api/v1/challenges/{id}/check-ins/proofs/resume?fingerprint=...   my open video upload
                                         of this file on my check-ins of this challenge, or 404
 POST   /api/v1/proofs/{id}/parts        {numbers} -> fresh part URLs
 PUT    /api/v1/proofs/{id}/parts/{number}   {etag}: report a finished part -> 204
 POST   /api/v1/proofs/{id}/complete     check the file -> the proof (ready); safe to repeat
-DELETE /api/v1/proofs/{id}              mine, only on the day it was added -> 204
+DELETE /api/v1/proofs/{id}              my draft file (a posted one goes with its post) -> 204
 
 POST   /api/v1/media/session            sets the CloudFront cookies for the crew's media
                                         -> {expires_at}; a no-op locally (expires_at null)

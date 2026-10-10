@@ -188,8 +188,6 @@
   --proof-tile-size: 4.5rem; /* a proof thumbnail: four fit across a card on a phone */
   --story-avatar-size: 4.25rem; /* the crew's avatars with their day rings */
   --story-avatar-size-lg: 5.5rem; /* the same, at the top of a member's page */
-  --mini-bar-height: 1.125rem; /* a day in a MiniWeek */
-  --mini-bar-width: 0.5rem;
   --reaction-chip-height: 1.625rem;
   --emoji-picker-height: 22rem; /* the full emoji picker in a sheet */ /* its tap area still reaches --tap-min */
   --tabbar-height: 64px;

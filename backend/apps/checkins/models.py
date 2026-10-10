@@ -34,10 +34,7 @@ class CheckIn(CrewScopedModel):
         blank=True,
         help_text="The day's total for challenges that record a number; empty otherwise.",
     )
-    # Reactions and proofs point here by a generic key; these delete them with the check-in.
-    reactions = GenericRelation(
-        "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
-    )
+    # Proofs point here by a generic key; this deletes them with the check-in.
     proofs = GenericRelation(
         "proofs.Proof",
         content_type_field="subject_type",

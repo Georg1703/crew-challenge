@@ -13,8 +13,8 @@ import type { ProofSubject } from "@/features/proofs";
 export type Today = components["schemas"]["TodayOut"];
 export type TodayChallenge = components["schemas"]["TodayChallengeOut"];
 export type Board = components["schemas"]["BoardOut"];
-export type FeedItem = components["schemas"]["FeedItemOut"];
 export type JournalEntry = components["schemas"]["JournalEntryOut"];
+export type JournalPage = components["schemas"]["JournalPageOut"];
 export type MemberProgress = components["schemas"]["MemberProgressOut"];
 export type Window = components["schemas"]["WindowOut"];
 
@@ -80,9 +80,9 @@ export function useWindows(id: string, query: WindowsQuery = {}, { enabled = tru
 const JOURNAL_REFRESH_MS = 60_000;
 
 /**
- * The crew's journal: check-ins and drawn spins with their proofs, latest activity first, 30 a
- * page. Refreshed when the app comes back to the front and every minute while it is open (a
- * finished upload refreshes it too: it lives under the check-ins key).
+ * The crew's journal: one card per post, each as it was posted, latest first, 30 a page.
+ * Refreshed when the app comes back to the front and every minute while it is open (a post
+ * refreshes it too: it lives under the check-ins key).
  */
 export function useJournal() {
   return useInfiniteQuery({
@@ -97,17 +97,13 @@ export function useJournal() {
   });
 }
 
-/** The check-ins among the journal's entries. */
-export const checkInsOf = (entries: JournalEntry[]): FeedItem[] =>
-  entries.flatMap((entry) => (entry.check_in ? [entry.check_in] : []));
+type JournalPages = InfiniteData<JournalPage, string>;
 
-type JournalPages = InfiniteData<components["schemas"]["JournalPageOut"], string>;
-
-/** Put an entry's new reactions into the cached journal (the reactions feature calls it). */
+/** Put a card's new reactions into the cached journal (the reactions feature calls it). */
 export function usePatchJournalReactions() {
   const client = useQueryClient();
   return useCallback(
-    (kind: "check_in" | "spin", id: string, reactions: FeedItem["reactions"]) => {
+    (id: string, reactions: JournalEntry["reactions"]) => {
       void client.cancelQueries({ queryKey: journalKey }); // a refresh in flight would undo it
       client.setQueryData<JournalPages>(journalKey, (data) =>
         data
@@ -115,10 +111,9 @@ export function usePatchJournalReactions() {
               ...data,
               pages: data.pages.map((page) => ({
                 ...page,
-                results: page.results.map((entry) => {
-                  const item = entry[kind];
-                  return item?.id === id ? { ...entry, [kind]: { ...item, reactions } } : entry;
-                }),
+                results: page.results.map((entry) =>
+                  entry.id === id ? { ...entry, reactions } : entry,
+                ),
               })),
             }
           : data,

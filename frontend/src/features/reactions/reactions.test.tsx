@@ -48,7 +48,7 @@ function Owner({ initial }: { initial: ReactionSummary }) {
   const [summary, setSummary] = useState(initial);
   return (
     <Reactions
-      target="check_in"
+      target="entry"
       id={ID}
       summary={summary}
       people={[ana, bogdan]}
@@ -80,7 +80,7 @@ describe("Reactions", () => {
     await userEvent.click(chip);
 
     expect(remove).toHaveBeenCalledWith("/api/v1/reactions/{target}/{target_id}", {
-      params: { path: { target: "check_in", target_id: ID } },
+      params: { path: { target: "entry", target_id: ID } },
     });
     expect(await screen.findByRole("button", { name: `${FIRE}, from Bogdan` })).toHaveAttribute(
       "aria-pressed",

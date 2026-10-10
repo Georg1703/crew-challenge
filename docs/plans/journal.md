@@ -217,8 +217,8 @@ columns kept for deploys) is rebased and shipped first.
 | 2. Post with proof | `feat/posts` | Any check-in or "+N" may carry photos or videos, required where the challenge asks for proof; proofs added later are a post | L |
 | 3. Serve with one post | `feat/serve-posts` | "Serve" serves a punishment with its uploaded files (or none when it needs none) | M |
 | 4. Write the cards | `feat/journal-cards` | Every post, draw, serving and finished day writes its frozen card; the history too; the app still shows the old journal | L |
-| 5. Read the cards | `feat/journal-entries` | Echipa shows one frozen card per post; every card takes its own reactions | L |
-| 6. Clean-up | `chore/journal-cleanup` | Old endpoints, derived reads and columns are gone; a release after 5 | M |
+| 5. Read the cards, clean up | `feat/journal-entries` | Echipa shows one frozen card per post; every card takes its own reactions; the derived journal and what only it used are gone | L |
+| 6. A release later | `chore/journal-cleanup` | The backfill migration's body is a no-op | S |
 | 7. Reactions on cards (optional) | `refactor/reactions-on-cards` | Same screens; reactions are a plain foreign key to the card | S |
 
 Every stage ends with `make check` green (and `make e2e` from stage 2) and is reviewed before it
@@ -344,41 +344,39 @@ one card per post (445 for 318 check-ins), every drawn and served spin, and 6 cr
 - Before stage 5: compare the cards with the old journal in production, in the admin (cards per
   day and kind against the old journal's).
 
-### Stage 5 - Read the cards
+### Stage 5 - Read the cards, and clean up (built, 2026-10-10)
+
+Agreed: no release keeps the old journal for phones on the old app (it shows an empty or broken
+Echipa until it takes the update), so stage 6's clean-up is done here.
 
 - Backend:
-  - `GET /api/v1/journal/entries` as above; the old `GET /api/v1/journal` stays a release.
-  - Reactions on cards: the journal registers the `entry` target; a data migration moves each
-    reaction to its card. The `check_in` and `spin` targets stay a release.
-  - The migration runs `journal_backfill` again, for posts the old release made during the
-    deploy.
-- Frontend:
-  - The journal reads entries; `journal.ts` keeps only the days (`entry.day`): no grouping, no
-    crew card of its own, no `plain`.
-  - `CrewFeed` draws each card from its facts; `SpinFeedCard` from the spin's facts; every card
-    has reactions on target `entry`, patched by entry id. `FeedCard` loses `week`.
-  - The new-proofs badge (`freshCounts`, from `checkInsOf`) counts the proofs on cards.
-- Docs: `backend.md` (the journal's layers), `api-conventions.md`, glossary (Journal: stored,
-  "Derived, nothing stored" goes), `docs/plans/reactions.md` (targets).
-- Tests: a reaction on the served card is not on the drawn card; the crew's day takes one; each
-  moved reaction is on the right card; the badge counts proofs on cards.
-- `make e2e`: react to a check-in card, a served card and the crew's day.
+  - `GET /api/v1/journal` reads the cards (same path, new shape): each `{id, kind, at, day,
+    member, challenge, proofs, reactions, check_in | spin | served | crew_day}` (the kind's facts,
+    typed per kind) and `days` (check-ins and proofs per day, for the dividers). About 5 queries
+    a page: the cards, their proofs (`proofs.selectors.posted`, by the post's id), their
+    reactions, the day counts (`journal.selectors.day_counts`).
+  - Reactions on cards: the journal registers the `entry` target (`selectors.reactable`); the
+    data migration `journal` 0003 moves each reaction to its card (a check-in's to its first
+    post's card, a spin's to its drawn card; one without a card is dropped). The `check_in` and
+    `spin` targets go, with the `reactions` relations on `CheckIn` and `Spin`.
+  - Removed: the derived journal (`api/derived.py`), `GET /api/v1/feed` (`FeedView`,
+    `FeedPagination`), `checkins.feed`, `feed_details` / `FeedDetail`, `day_summaries` /
+    `DaySummary` (the crew's day is a card now), `reactable_check_in`, `FeedItemOut`,
+    `DaySummaryOut`, `MilestoneOut`; `doom.journal`, `doom.served`, `_visible`, `shown_proofs`,
+    `reactable_spin`, `journal_day`, `spin_items`, `SpinItemOut` (with `punishment_count`),
+    `DRAWN_STATES`.
+- Frontend: `journal.ts` only groups cards by day; `CrewFeed` draws each card from its facts
+  ("Ana added 2 photos and videos" for files added later), with reactions on every card (target
+  `entry`, patched by card id); `SpinFeedCard` takes the frozen facts; the new-proofs badge counts
+  the proofs on cards. Removed: grouping, the derived crew card, `checkInsOf`, `FeedItem`,
+  `SpinItem`, `FeedCard.week`, and `MiniWeek` with its tokens (nothing else used them).
+- Tests: every kind as posted, a served card with its photo, each card's own reactions (and a
+  hidden one refused), a fuller page costs no more queries, old reactions moved to their cards.
 
-### Stage 6 - Clean-up
+### Stage 6 - A release later
 
-Deployed a release after stage 5, because that release still serves what this removes.
-
-- Endpoints: `GET /api/v1/journal` (derived).
-- Code: `checkins.feed`, `feed_details`, `FeedDetail`, `day_summaries`, `DaySummary`,
-  `reactable_check_in`, `FeedItemOut`; `doom.journal`,
-  `doom.served`, `_visible`, `shown_proofs`, `reactable_spin`, `journal_day`, `spin_items`,
-  `SpinItemOut` (with the unused `punishment_count`);
-  `JournalEntryOut` and `JournalPageOut` of the old journal; the `check_in` and `spin` reaction
-  targets and the `reactions` relations on `CheckIn` and `Spin`, after moving the reactions made
-  on them since stage 5. Frontend: `checkInsOf`, `FeedItem` and the old journal types.
-- Migrations: the stage 4 and 5 data migrations' bodies become no-ops (an old migration must
-  not run today's code; `journal_backfill` stays as the repair tool).
-- `make schema`; docs lose every mention of the removed parts.
+- The body of `journal` 0002 (the backfill: it runs today's code) becomes a no-op;
+  `journal_backfill` stays as the repair tool.
 
 ### Stage 7 - Reactions on cards (optional)
 
@@ -418,11 +416,12 @@ Deployed a release after stage 5, because that release still serves what this re
 | "This challenge takes no proof"; the per-subject limit of 5 (now 5 draft files at a time) | backend | 2 |
 | The "add a photo" nudge after a plain check-in | frontend | 2 |
 | `has_shown` for a spin's state | backend | 3 |
-| Grouping, `plain` and the crew card in `journal.ts`; `FeedCard.week` | frontend | 5 |
-| `GET /api/v1/journal` (derived) | backend | 6 |
-| `feed`, `feed_details`, `day_summaries`, `reactable_*`, `journal_day`, `spin_items`, `punishment_count`, old serializers | backend | 6 |
-| `checkInsOf`, `FeedItem`, old journal types | frontend | 6 |
-| `check_in` and `spin` reaction targets, `reactions` relations on `CheckIn` and `Spin` | backend | 6 |
+| Grouping, `plain` and the crew card in `journal.ts`; `FeedCard.week`, `MiniWeek` | frontend | 5 |
+| The derived journal, `GET /api/v1/feed` | backend | 5 |
+| `feed`, `feed_details`, `day_summaries`, `reactable_*`, `journal_day`, `spin_items`, `punishment_count`, old serializers | backend | 5 |
+| `checkInsOf`, `FeedItem`, `SpinItem`, old journal types | frontend | 5 |
+| `check_in` and `spin` reaction targets, `reactions` relations on `CheckIn` and `Spin` | backend | 5 |
+| The body of the `journal` 0002 backfill migration | migrations | 6 |
 | `reactions/targets.py`, the generic key on `Reaction` | backend | 7 |
 
 ## Risks

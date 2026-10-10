@@ -5,7 +5,7 @@ from datetime import date
 import pytest
 
 from apps.checkins import selectors
-from apps.checkins.tests.test_feed import shown_photo
+from apps.checkins.tests.conftest import shown_photo
 from apps.checkins.tests.test_proofs import at, check_in, scheduled
 from tests.factories import AdminFactory, MemberFactory
 

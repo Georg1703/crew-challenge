@@ -8,6 +8,7 @@ import pytest
 from apps.checkins import selectors, services
 from apps.checkins.models import CheckIn
 from apps.checkins.tests.test_proofs import DAY, at, photo, scheduled, send, uploaded
+from apps.journal import selectors as journal
 from apps.media import services as media
 from apps.proofs import services as proofs
 from apps.proofs.models import Proof
@@ -116,8 +117,8 @@ def test_only_posts_count_and_the_crew_sees_only_posted_files(object_storage, pe
         sheet = selectors.day_sheet(member=ana, challenge_id=walk.pk, day=DAY)
         assert sheet is not None
         row = next(r for r in sheet if r.member == bogdan)
-        feed = [c.member for c in selectors.feed(member=ana)]
-        return row.state, [p.pk for p in row.proofs], feed.count(bogdan)
+        cards, _ = journal.page(member=ana, cursor=None, size=10)
+        return row.state, [p.pk for p in row.proofs], [c.member for c in cards].count(bogdan)
 
     assert bogdan_on_walk() == ("todo", [], 0)
     assert selectors.today(member=bogdan).cards[0].state == "todo"

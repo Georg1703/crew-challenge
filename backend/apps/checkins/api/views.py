@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from datetime import date
 from typing import Any
 from uuid import UUID
@@ -9,20 +8,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.checkins import days, selectors, services
-from apps.checkins.models import CheckIn
 from apps.core import clock
 from apps.core.errors import ValidationFailed
-from apps.core.pagination import CursorPagination
 from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.proofs.api.serializers import ProofStartIn, ProofUploadOut, proof_data, upload_data
-from apps.reactions import selectors as reactions
 
 from .serializers import (
     BoardOut,
     CheckInIn,
     DaySheetRowOut,
-    FeedItemOut,
     MemberProgressOut,
     TodayChallengeOut,
     TodayOut,
@@ -267,63 +262,6 @@ class DaySheetView(APIView):
             for r in rows
         ]
         return Response(DaySheetRowOut(data, many=True).data)
-
-
-def feed_detail_data(d: selectors.FeedDetail) -> dict[str, Any]:
-    return {
-        "streak": d.streak,
-        "day_index": d.day_index,
-        "day_count": d.day_count,
-        "week": [{"day": day, "state": state} for day, state in d.week],
-        "last_amount": d.last_amount,
-        "target": d.target,
-        "milestone": {"kind": "streak", "n": d.milestone} if d.milestone else None,
-    }
-
-
-class FeedPagination(CursorPagination):
-    page_size = 30
-    ordering = "-activity_at"
-
-
-def feed_items(
-    member: Member, page: list[CheckIn], summaries: dict[date, selectors.DaySummary]
-) -> list[dict[str, Any]]:
-    """Journal items for a page of check-ins from `selectors.feed` (see FeedItemOut)."""
-    details = selectors.feed_details(page)
-    reacted = reactions.summaries(member=member, target="check_in", ids=[c.pk for c in page])
-    return [
-        {
-            "id": c.pk,
-            "member": c.member,
-            "challenge": c.challenge,
-            "day": c.day,
-            "status": c.status,
-            "total": c.amount,
-            "activity_at": c.activity_at,  # type: ignore[attr-defined]
-            "proofs": [proof_data(p) for p in c.shown_proofs],  # type: ignore[attr-defined]
-            **feed_detail_data(details[c.pk]),
-            "day_summary": vars(summaries[c.day]),
-            "reactions": asdict(reacted[c.pk]),
-        }
-        for c in page
-    ]
-
-
-class FeedView(APIView):
-    permission_classes = [IsCrewMember]
-    pagination_class = FeedPagination  # also gives the schema its {results, next} and cursor
-
-    @extend_schema(responses=FeedItemOut(many=True), operation_id="feed_list")
-    def get(self, request: Request) -> Response:
-        """The crew's check-ins with their proofs, latest activity first."""
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(selectors.feed(member=_member(request)), request, self)
-        assert page is not None  # always paginated
-        member = _member(request)
-        summaries = selectors.day_summaries(member=member, on={c.day for c in page})
-        items = feed_items(member, page, summaries)
-        return paginator.get_paginated_response(FeedItemOut(items, many=True).data)
 
 
 class MemberProgressView(APIView):

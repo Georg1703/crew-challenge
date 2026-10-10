@@ -567,34 +567,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/feed:
-    get:
-      operationId: feed_list
-      description: The crew's check-ins with their proofs, latest activity first.
-      parameters:
-      - name: cursor
-        required: false
-        in: query
-        description: The pagination cursor value.
-        schema:
-          type: string
-      - name: page_size
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      tags:
-      - feed
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedFeedItemOutList'
-          description: ''
   /api/v1/invites/{code}:
     get:
       operationId: invites_retrieve
@@ -677,8 +649,9 @@ paths:
   /api/v1/journal:
     get:
       operationId: journal_list
-      description: The crew's check-ins, drawn spins and served ones, with their proofs,
-        latest first.
+      description: |-
+        The crew's journal: one card per post, latest first, each as it was posted, with its
+        photos and videos, its reactions, and the counts of each day on the page.
       parameters:
       - in: query
         name: cursor
@@ -923,8 +896,7 @@ paths:
         schema:
           type: string
           enum:
-          - check_in
-          - spin
+          - entry
         description: What kind of thing the id is.
         required: true
       - in: path
@@ -959,8 +931,7 @@ paths:
         schema:
           type: string
           enum:
-          - check_in
-          - spin
+          - entry
         description: What kind of thing the id is.
         required: true
       - in: path
@@ -1141,6 +1112,16 @@ components:
       - display_name
       - password
       - username
+    ActionEnum:
+      enum:
+      - check
+      - amount
+      - files
+      type: string
+      description: |-
+        * `check` - check
+        * `amount` - amount
+        * `files` - files
     ActiveCrewInRequest:
       type: object
       properties:
@@ -1451,6 +1432,53 @@ components:
       description: |-
         * `proposed` - Proposed
         * `chosen` - Chosen
+    CheckInFactsOut:
+      type: object
+      description: A check-in post's card, as it was when posted.
+      properties:
+        action:
+          allOf:
+          - $ref: '#/components/schemas/ActionEnum'
+          description: |-
+            The day's check-in, a number added, or photos and videos added later.
+
+            * `check` - check
+            * `amount` - amount
+            * `files` - files
+        amount:
+          type: number
+          format: double
+          nullable: true
+          description: The number added.
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: The day's total after this post.
+        target:
+          type: number
+          format: double
+          nullable: true
+          description: The least amount a day needs.
+        streak:
+          type: integer
+          nullable: true
+          description: Days or weeks in a row then.
+        milestone:
+          type: integer
+          nullable: true
+          description: '3, 7, 14 or 30: the streak this post reached.'
+        proofs:
+          type: integer
+          description: Photos and videos posted with it.
+      required:
+      - action
+      - amount
+      - milestone
+      - proofs
+      - streak
+      - target
+      - total
     CheckInInRequest:
       type: object
       properties:
@@ -1466,16 +1494,6 @@ components:
           description: 'For challenges that record a number: how much to add.'
       required:
       - day
-    CheckInStatusEnum:
-      enum:
-      - done
-      - in_progress
-      - pending
-      type: string
-      description: |-
-        * `done` - Done
-        * `in_progress` - In progress (a number below the day's target)
-        * `pending` - Pending (only draft files, nothing posted yet)
     CrewChallengeOut:
       type: object
       properties:
@@ -1504,6 +1522,17 @@ components:
         * `done` - done
         * `started` - started
         * `todo` - todo
+    CrewDayFactsOut:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Everyone who was due that day.
+      required:
+      - members
     CrewDayOut:
       type: object
       properties:
@@ -1617,120 +1646,6 @@ components:
         * `not_due` - not_due
         * `future` - future
         * `outside` - outside
-    DaySummaryOut:
-      type: object
-      properties:
-        check_ins:
-          type: integer
-        proofs:
-          type: integer
-          description: Processing and ready proofs.
-        crew_done:
-          type: boolean
-          description: Everyone finished everything due that day (challenges judged
-            day by day).
-      required:
-      - check_ins
-      - crew_done
-      - proofs
-    DrawnSpinStateEnum:
-      enum:
-      - spun
-      - served
-      type: string
-      description: |-
-        * `spun` - spun
-        * `served` - served
-    FeedItemOut:
-      type: object
-      description: 'One check-in: who, on what, which day, and its proofs.'
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: The check-in.
-        member:
-          $ref: '#/components/schemas/PersonOut'
-        challenge:
-          $ref: '#/components/schemas/ChallengeBriefOut'
-        day:
-          type: string
-          format: date
-        status:
-          $ref: '#/components/schemas/CheckInStatusEnum'
-        total:
-          type: number
-          format: double
-          nullable: true
-          description: The day's total (numbers only).
-        activity_at:
-          type: string
-          format: date-time
-          description: The later of the check-in's last change and its newest proof;
-            the feed's order.
-        proofs:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProofOut'
-          description: Processing and ready proofs.
-        streak:
-          type: integer
-          nullable: true
-          description: Days (or weeks) in a row as of this day; null without one.
-        day_index:
-          type: integer
-          description: This day within the challenge, from 1.
-        day_count:
-          type: integer
-          description: Days the challenge runs.
-        week:
-          type: array
-          items:
-            $ref: '#/components/schemas/DayOut'
-          description: The seven days ending on this day.
-        last_amount:
-          type: number
-          format: double
-          nullable: true
-          description: The last amount added (numbers only).
-        target:
-          type: number
-          format: double
-          nullable: true
-          description: The least amount a check-in needs (day_min), if there is one.
-        milestone:
-          allOf:
-          - $ref: '#/components/schemas/MilestoneOut'
-          nullable: true
-          description: Set when this check-in made the streak reach 3, 7, 14 or 30.
-        day_summary:
-          allOf:
-          - $ref: '#/components/schemas/DaySummaryOut'
-          description: The crew's whole day (the same on every item of that day),
-            for its divider.
-        reactions:
-          allOf:
-          - $ref: '#/components/schemas/ReactionSummaryOut'
-          description: Reactions; only single cards (a proof, a number or a milestone)
-            take new ones.
-      required:
-      - activity_at
-      - challenge
-      - day
-      - day_count
-      - day_index
-      - day_summary
-      - id
-      - last_amount
-      - member
-      - milestone
-      - proofs
-      - reactions
-      - status
-      - streak
-      - target
-      - total
-      - week
     IconEnum:
       enum:
       - dumbbell
@@ -1820,40 +1735,101 @@ components:
           maxLength: 40
       required:
       - display_name
-    JournalEntryOut:
+    JournalDayOut:
       type: object
       properties:
+        day:
+          type: string
+          format: date
+        check_ins:
+          type: integer
+          description: One per person and challenge.
+        proofs:
+          type: integer
+          description: Photos and videos posted that day.
+      required:
+      - check_ins
+      - day
+      - proofs
+    JournalEntryOut:
+      type: object
+      description: |-
+        One card: written once when its post was made, never changed. Its kind's facts are set,
+        the others null.
+      properties:
+        id:
+          type: string
+          format: uuid
         kind:
           $ref: '#/components/schemas/JournalKindEnum'
-        activity_at:
+        at:
           type: string
           format: date-time
-          description: The journal's order, latest first.
+          description: 'When it was posted: the journal''s order.'
+        day:
+          type: string
+          format: date
+          description: The crew-local day it sits under.
+        member:
+          allOf:
+          - $ref: '#/components/schemas/PersonOut'
+          nullable: true
+          description: Who did it; null for the crew's day.
+        challenge:
+          allOf:
+          - $ref: '#/components/schemas/ChallengeBriefOut'
+          nullable: true
+          description: On what; null for the crew's day.
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: The photos and videos posted with it.
+        reactions:
+          allOf:
+          - $ref: '#/components/schemas/ReactionSummaryOut'
+          description: Target `entry`, this card's id.
         check_in:
           allOf:
-          - $ref: '#/components/schemas/FeedItemOut'
+          - $ref: '#/components/schemas/CheckInFactsOut'
           nullable: true
-          description: Set when `kind` is check_in.
         spin:
           allOf:
-          - $ref: '#/components/schemas/SpinItemOut'
+          - $ref: '#/components/schemas/SpinFactsOut'
           nullable: true
-          description: Set when `kind` is spin or served.
+        served:
+          allOf:
+          - $ref: '#/components/schemas/ServedFactsOut'
+          nullable: true
+        crew_day:
+          allOf:
+          - $ref: '#/components/schemas/CrewDayFactsOut'
+          nullable: true
       required:
-      - activity_at
+      - at
+      - challenge
       - check_in
+      - crew_day
+      - day
+      - id
       - kind
+      - member
+      - proofs
+      - reactions
+      - served
       - spin
     JournalKindEnum:
       enum:
       - check_in
       - spin
       - served
+      - crew_day
       type: string
       description: |-
-        * `check_in` - check_in
-        * `spin` - spin
-        * `served` - served
+        * `check_in` - A check-in post
+        * `spin` - A spin drawn
+        * `served` - A punishment served
+        * `crew_day` - The whole crew finished the day
     JournalPageOut:
       type: object
       properties:
@@ -1861,11 +1837,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JournalEntryOut'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalDayOut'
+          description: The counts of each day on this page, for dividers.
         next:
           type: string
           nullable: true
           description: Send as `cursor` for the next page.
       required:
+      - days
       - next
       - results
     LoginInRequest:
@@ -2058,22 +2040,6 @@ components:
       - crew_name
       - display_name
       - role
-    MilestoneOut:
-      type: object
-      properties:
-        kind:
-          $ref: '#/components/schemas/MilestoneOutKindEnum'
-        n:
-          type: integer
-          description: 'Days in a row: 3, 7, 14 or 30.'
-      required:
-      - kind
-      - n
-    MilestoneOutKindEnum:
-      enum:
-      - streak
-      type: string
-      description: '* `streak` - streak'
     NeedKindEnum:
       enum:
       - count
@@ -2102,19 +2068,6 @@ components:
       - spins
       - to_serve
       - to_spin
-    PaginatedFeedItemOutList:
-      type: object
-      required:
-      - results
-      - next
-      properties:
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/FeedItemOut'
-        next:
-          type: string
-          nullable: true
     PartInRequest:
       type: object
       properties:
@@ -2510,24 +2463,21 @@ components:
             weeks, any day from tomorrow for days. Its length comes from the challenge.'
       required:
       - period_start
-    SpinItemOut:
+    ServedFactsOut:
       type: object
-      description: |-
-        A spin in the crew's journal: who drew what (kind `spin`, as it was drawn, with the
-        reactions), or who served it (kind `served`, with its proofs).
       properties:
-        id:
-          type: string
-          format: uuid
-          description: The spin.
-        member:
-          $ref: '#/components/schemas/PersonOut'
-        challenge:
-          $ref: '#/components/schemas/ChallengeBriefOut'
-        day:
-          type: string
-          format: date
-          description: The crew-local day it was drawn, or served.
+        punishment:
+          $ref: '#/components/schemas/PunishmentOut'
+        proofs:
+          type: integer
+          description: Photos and videos it was served with.
+      required:
+      - proofs
+      - punishment
+    SpinFactsOut:
+      type: object
+      description: 'A spin''s card when drawn: what failed and what was drawn.'
+      properties:
         window_first:
           type: string
           format: date
@@ -2544,43 +2494,16 @@ components:
           format: double
         punishment:
           $ref: '#/components/schemas/PunishmentOut'
-        punishment_count:
-          type: integer
-          description: Arcs on the dial.
-        state:
-          $ref: '#/components/schemas/DrawnSpinStateEnum'
         serve_by:
           type: string
           format: date
-        late:
-          type: boolean
-        proofs:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProofOut'
-          description: Processing and ready proofs; empty on kind `spin`.
-        reactions:
-          $ref: '#/components/schemas/ReactionSummaryOut'
-        day_summary:
-          allOf:
-          - $ref: '#/components/schemas/DaySummaryOut'
-          description: The crew's whole day, for its divider.
+          nullable: true
       required:
-      - challenge
-      - day
-      - day_summary
       - done
-      - id
-      - late
-      - member
       - need
       - need_kind
-      - proofs
       - punishment
-      - punishment_count
-      - reactions
       - serve_by
-      - state
       - window_first
       - window_last
     SpinOut:

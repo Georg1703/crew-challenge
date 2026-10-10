@@ -7,7 +7,7 @@ said when it was posted is frozen in `facts`; who people are and the media are r
 
 from __future__ import annotations
 
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
@@ -47,6 +47,9 @@ class JournalEntry(CrewScopedModel):
     )
     day = models.DateField(help_text="The crew-local day it sits under.")
     facts = models.JSONField(default=dict, help_text="What the card says, frozen when posted.")
+    reactions = GenericRelation(
+        "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
+    )
 
     class Meta:
         ordering = ("-created_at", "-id")  # when it was posted: its place, latest first

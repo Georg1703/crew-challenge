@@ -37,8 +37,7 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Proof subject | `Proof.subject` | What a proof backs, by a generic key (`subject_type` + `subject_id`); the subject's app starts and resumes its proofs. |
 | Upload | `Upload` | One file the browser sends straight to the media bucket: one presigned PUT (photos) or a resumable S3 multipart upload (videos). Status: `uploading`, `complete`, `failed`. Must complete before `expires_at`. |
 | Rendition | `Transcode` (`hls_key`, `poster_key`) | Processed versions of a video for playback (HLS 720p/360p + poster image), made by a MediaConvert job that Celery polls. |
-| Feed | `selectors.feed` | The crew's check-ins with their proofs on challenges you can see, latest activity first (the check-in or its newest proof). Derived, nothing stored. UI: "Activitate" on Echipa. Becomes part of the journal. |
-| Journal | `apps/journal` | The feed with spins in it: check-ins, drawn spins and served ones (a card each), latest activity first. Derived, nothing stored. |
+| Journal | `apps/journal` | The crew's stored cards, latest first: one per post (a check-in, a "+N", photos added later), a spin drawn or served, the whole crew's finished day; on challenges you can see. UI: Echipa. |
 | Day sheet | `selectors.day_sheet` | One day of a challenge: every participant's state, total and proofs. Opened by tapping a day on the board. |
 | Streak | `days.streak` | Per challenge: windows met in a row (due days, or weeks), counting back from the newest; the window still open today never breaks it. Challenges judged over the whole period have progress instead. |
 | Flame tier | `flame_tier` | Derived from the streak: `ember` 1-2, `flame` 3-6, `blaze` 7-13, `blue` 14-29, `legendary` 30+. After v1. |
@@ -46,8 +45,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Tree stage | `tree_stage` | Derived from done days this challenge: `seed` 0, `sprout` 1-3, `sapling` 4-9, `bloom` 10-19, `fruit` 20+. After v1. |
 | Wilted | `wilted` | A tree's look while its member has an unserved punishment. After v1. |
 | Greenhouse | - | Archive of past months' trees. After v1. |
-| Reaction | `Reaction` | One member's emoji on something in the crew (v1: a check-in card in the journal). One per member per target; picking another replaces it. |
-| Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`check_in` now). |
+| Reaction | `Reaction` | One member's emoji on something in the crew: a card in the journal. One per member per target; picking another replaces it. |
+| Reaction target | `target` | A kind of thing that takes reactions, registered by its app (`entry`: a journal card). |
 | Punishment | `Punishment` | One of a challenge's punishments: a short text and whether it needs proof. None, or 2 to 8, written by the creator; fixed once scheduled. |
 | Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
 | Draw | `doom.services.draw` | Choosing a spin's punishment on the server, before the dial turns. Every punishment as likely. |

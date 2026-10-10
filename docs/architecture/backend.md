@@ -118,7 +118,7 @@ kind of target needs no table, endpoint or client change:
    and the frontend shows `<Reactions target=... />`.
 
 `PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
-Check-ins are the first target (`check_in`: single journal cards only).
+Journal cards are the target (`entry`: every card, each its own).
 
 **Proofs (`apps/proofs`).** A photo or video backing a subject (a check-in now, a spin with the
 Wheel of Doom). A `Proof` points at its subject by a generic key (`subject_type` + `subject_id`)

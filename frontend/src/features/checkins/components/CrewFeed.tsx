@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
 import { SpinFeedCard } from "@/features/doom";
-import { Reactions } from "@/features/reactions";
 import { SHOWN_PROOFS, shownTile, viewerItem } from "@/features/proofs";
+import { Reactions } from "@/features/reactions";
 import { errorMessage } from "@/i18n/errors";
 import { addDays } from "@/shared/lib/dates";
-import { formatDayLong, formatList, formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
+import { formatDayLong, formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
 import {
   Banner,
   Button,
@@ -20,19 +20,18 @@ import {
   type ViewerItem,
 } from "@/shared/ui";
 
-import { useJournal, usePatchJournalReactions, type FeedItem as Item } from "../api";
+import { useJournal, usePatchJournalReactions, type JournalEntry } from "../api";
 import styles from "../checkins.module.css";
-import { journal, type JournalCard, type JournalDay } from "../journal";
+import { journal, type JournalDay } from "../journal";
 
 type T = ReturnType<typeof useTranslation>["t"];
+type Person = NonNullable<JournalEntry["member"]>;
 
-function person(item: Item) {
-  return { id: item.member.id, name: item.member.display_name, seed: item.member.avatar_seed };
-}
-
-function chip(item: Item) {
-  return { icon: CHALLENGE_ICONS[item.challenge.icon], label: item.challenge.title };
-}
+const person = (member: Person) => ({
+  id: member.id,
+  name: member.display_name,
+  seed: member.avatar_seed,
+});
 
 /** "Today", "Yesterday", else "Monday, 5 October"; then "5 check-ins, 9 proofs". */
 function divider(entry: JournalDay, t: T, language: string, today: string) {
@@ -49,7 +48,11 @@ function divider(entry: JournalDay, t: T, language: string, today: string) {
   return { title, summary: parts.join(", ") };
 }
 
-/** The crew's journal on Echipa: day by day, a card per moment, latest first. */
+/**
+ * The crew's journal on Echipa: day by day, one card per post, latest first, each as it was
+ * posted (a check-in, a "+N", photos added later, a spin drawn or served, the crew's day), each
+ * with its own reactions.
+ */
 export function CrewFeed({
   timeZone,
   members,
@@ -65,40 +68,83 @@ export function CrewFeed({
   const feed = useJournal();
   const patchReactions = usePatchJournalReactions();
   const [viewing, setViewing] = useState<{ items: ViewerItem[]; index: number } | null>(null);
-  const items = feed.data?.pages.flatMap((page) => page.results) ?? [];
+  const pages = feed.data?.pages ?? [];
   const today = todayIn(timeZone);
 
-  /** A check-in's card; `reactable` when it is a card of its own (the server's rule too). */
-  function itemCard(item: Item, reactable = false) {
-    const who = item.member.display_name;
-    const caption = `${who}, ${item.challenge.title}`;
-    const unit = item.challenge.unit;
-    const quantity = item.challenge.measure === "quantity";
-    const milestone = item.milestone?.n;
-    const alone = milestone !== undefined && item.proofs.length === 0;
-    const total = item.total ?? 0;
-    const facts = [t("crew.journal.dayOf", { n: item.day_index, total: item.day_count })];
-    if (item.streak !== null && item.streak > 1 && !alone) {
-      facts.unshift(t("crew.journal.streak", { count: item.streak }));
+  const opener = (entry: JournalEntry, caption: string) => (index: number) => {
+    if (entry.member) onOpenProofOf?.(entry.member.id);
+    setViewing({ items: entry.proofs.map((p) => viewerItem(p, caption)), index });
+  };
+
+  function card(entry: JournalEntry) {
+    const time = formatWhen(entry.at, language, timeZone);
+    const reactions = (
+      <Reactions
+        target="entry"
+        id={entry.id}
+        summary={entry.reactions}
+        people={members}
+        onChange={(summary) => patchReactions(entry.id, summary)}
+      />
+    );
+    if (entry.crew_day) {
+      const due = new Set(entry.crew_day.members);
+      return (
+        <FeedCard
+          tone="success"
+          people={{
+            members: members.filter((m) => due.has(m.id)).map(person),
+            label: t("crew.journal.crewDayLabel"),
+          }}
+          text={t("crew.journal.crewDay")}
+          time={time}
+          reactions={reactions}
+        />
+      );
     }
-    const done = item.week.filter((d) => d.state === "done").length;
+    const { member, challenge } = entry;
+    if (!member || !challenge) return null;
+    const who = member.display_name;
+    const punishment = (entry.spin ?? entry.served)?.punishment.text;
+    if (punishment !== undefined) {
+      return (
+        <SpinFeedCard
+          member={member}
+          challenge={challenge}
+          punishment={punishment}
+          drawn={entry.spin}
+          proofs={entry.proofs}
+          time={time}
+          onOpenProof={opener(entry, `${who}, ${punishment}`)}
+          reactions={reactions}
+        />
+      );
+    }
+    const facts = entry.check_in;
+    if (!facts) return null;
+    const unit = challenge.unit;
+    const milestone = facts.milestone ?? undefined;
+    const alone = milestone !== undefined && entry.proofs.length === 0;
+    const total = facts.total ?? 0;
+    const text =
+      facts.action === "files"
+        ? t("crew.journal.files", { name: who, count: facts.proofs })
+        : alone
+          ? t("crew.journal.milestone", { name: who })
+          : t(
+              facts.action === "amount"
+                ? "crew.journal.added"
+                : challenge.measure === "abstain"
+                  ? "crew.journal.held"
+                  : "crew.journal.checked",
+              { name: who },
+            );
     return (
       <FeedCard
-        person={person(item)}
-        text={
-          alone
-            ? t("crew.journal.milestone", { name: who })
-            : t(
-                quantity
-                  ? "crew.journal.added"
-                  : item.challenge.measure === "abstain"
-                    ? "crew.journal.held"
-                    : "crew.journal.checked",
-                { name: who },
-              )
-        }
-        challenge={chip(item)}
-        time={formatWhen(item.activity_at, language, timeZone)}
+        person={person(member)}
+        text={text}
+        challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
+        time={time}
         tone={alone ? "success" : "default"}
         highlight={
           alone
@@ -106,23 +152,21 @@ export function CrewFeed({
             : undefined
         }
         amount={
-          quantity
+          facts.action === "amount"
             ? {
-                value: `+${formatNumber(item.last_amount ?? total, language)} ${unit}`.trim(),
+                value: `+${formatNumber(facts.amount ?? 0, language)} ${unit}`.trim(),
                 detail: t(
-                  item.day === today ? "crew.journal.todayTotal" : "crew.journal.dayTotal",
-                  {
-                    total: formatNumber(total, language),
-                  },
+                  entry.day === today ? "crew.journal.todayTotal" : "crew.journal.dayTotal",
+                  { total: formatNumber(total, language) },
                 ),
                 progress:
-                  item.target !== null
+                  facts.target !== null
                     ? {
                         value: total,
-                        max: item.target,
+                        max: facts.target,
                         label: t("crew.journal.ofTarget", {
                           total: formatNumber(total, language),
-                          target: formatNumber(item.target, language),
+                          target: formatNumber(facts.target, language),
                           unit,
                         }),
                       }
@@ -130,112 +174,33 @@ export function CrewFeed({
               }
             : undefined
         }
-        proofs={item.proofs.map((p) => shownTile(p, t, who))}
-        onOpenProof={(index) => {
-          onOpenProofOf?.(item.member.id);
-          setViewing({ items: item.proofs.map((p) => viewerItem(p, caption)), index });
-        }}
-        moreLabel={t("feed.more", { count: item.proofs.length - SHOWN_PROOFS })}
-        week={
-          alone
-            ? undefined
-            : {
-                label: t("crew.journal.week", { done }),
-                days: item.week.map((d, i) => ({
-                  key: d.day,
-                  state: d.state,
-                  today: i === item.week.length - 1,
-                })),
-              }
-        }
+        proofs={entry.proofs.map((p) => shownTile(p, t, who))}
+        onOpenProof={opener(entry, `${who}, ${challenge.title}`)}
+        moreLabel={t("feed.more", { count: entry.proofs.length - SHOWN_PROOFS })}
         facts={
           milestone !== undefined && !alone
-            ? [`${milestone} ${t("crew.journal.inARow", { count: milestone })}`, ...facts.slice(1)]
-            : facts
+            ? [`${milestone} ${t("crew.journal.inARow", { count: milestone })}`]
+            : facts.streak !== null && facts.streak > 1
+              ? [t("crew.journal.streak", { count: facts.streak })]
+              : []
         }
-        reactions={
-          reactable ? (
-            <Reactions
-              target="check_in"
-              id={item.id}
-              summary={item.reactions}
-              people={members}
-              onChange={(summary) => patchReactions("check_in", item.id, summary)}
-            />
-          ) : undefined
-        }
+        reactions={reactions}
       />
     );
   }
 
-  function card(entry: JournalCard) {
-    if (entry.kind === "item") return itemCard(entry.item, true);
-    if (entry.kind === "spin") {
-      const { spin, served } = entry;
-      const caption = `${spin.member.display_name}, ${spin.punishment.text}`;
-      return (
-        <SpinFeedCard
-          item={spin}
-          served={served}
-          time={formatWhen(entry.at, language, timeZone)}
-          onOpenProof={(index) => {
-            onOpenProofOf?.(spin.member.id);
-            setViewing({ items: spin.proofs.map((p) => viewerItem(p, caption)), index });
-          }}
-          reactions={
-            served ? undefined : (
-              <Reactions
-                target="spin"
-                id={spin.id}
-                summary={spin.reactions}
-                people={members}
-                onChange={(summary) => patchReactions("spin", spin.id, summary)}
-              />
-            )
-          }
-        />
-      );
-    }
-    if (entry.kind === "crew") {
-      return (
-        <FeedCard
-          tone="success"
-          people={{
-            members: members.map((m) => ({ id: m.id, name: m.display_name, seed: m.avatar_seed })),
-            label: t("crew.journal.crewDayLabel"),
-          }}
-          text={t("crew.journal.crewDay")}
-        />
-      );
-    }
-    const [first] = entry.items;
-    if (!first) return null;
-    if (entry.items.length === 1) return itemCard(first);
-    const names = formatList(
-      entry.items.map((i) => i.member.display_name),
-      language,
-    );
-    return (
-      <FeedCard
-        people={{ members: entry.items.map(person), label: names }}
-        text={t("crew.journal.group", { names })}
-        challenge={chip(first)}
-        time={formatWhen(first.activity_at, language, timeZone)}
-      />
-    );
-  }
-
+  const days = journal(pages);
   return (
     <section className={styles.section} aria-label={t("crew.journal.label")}>
       {feed.isPending && <Skeleton lines={3} />}
       {feed.isError && <Banner tone="danger" title={errorMessage(t, feed.error)} />}
-      {feed.data && items.length === 0 && <p className={styles.muted}>{t("feed.empty")}</p>}
-      {journal(items).map((entry) => (
+      {feed.data && days.length === 0 && <p className={styles.muted}>{t("feed.empty")}</p>}
+      {days.map((entry) => (
         <Fragment key={entry.day}>
           <DayDivider {...divider(entry, t, language, today)} />
           <Stack gap="sm">
             {entry.cards.map((c) => (
-              <Fragment key={c.key}>{card(c)}</Fragment>
+              <Fragment key={c.id}>{card(c)}</Fragment>
             ))}
           </Stack>
         </Fragment>

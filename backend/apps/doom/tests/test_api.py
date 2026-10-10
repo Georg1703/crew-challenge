@@ -70,14 +70,3 @@ def test_proof_on_a_spin_starts_and_resumes(browser, owed, object_storage):
     assert served.json()["error"]["code"] == "uploads_running"  # the video is a draft, uploading
     assert browser.delete(f"/api/v1/proofs/{started.json()['proof']['id']}").status_code == 204
     assert browser.post(f"/api/v1/spins/{spin.pk}/done").json()["error"]["code"] == "proof_needed"
-
-
-def test_the_crew_reacts_to_a_drawn_spin(browser, owed):
-    ana, bogdan, _ = owed
-    spin = Spin.objects.filter(member=bogdan).first()
-    assert spin is not None
-    browser.force_login(ana.user)
-    url = f"/api/v1/reactions/spin/{spin.pk}"
-    assert browser.put(url, {"emoji": "\U0001f525"}, format="json").status_code == 404  # not drawn
-    services.draw(by=bogdan, spin_id=spin.pk)
-    assert browser.put(url, {"emoji": "\U0001f525"}, format="json").status_code == 200
