@@ -107,8 +107,9 @@ class DoneView(APIView):
 
     @extend_schema(request=None, responses=SpinOut, operation_id="spins_done")
     def post(self, request: Request, spin_id: UUID) -> Response:
-        """Serve a drawn punishment that needs no proof."""
-        services.mark_done(by=_member(request), spin_id=spin_id)
+        """Serve my drawn punishment: with its uploaded photos or videos when it needs proof,
+        at once when it needs none. Safe to repeat."""
+        services.serve(by=_member(request), spin_id=spin_id)
         return _spin_response(_member(request), spin_id)
 
 
@@ -119,7 +120,8 @@ class SpinProofsView(APIView):
         request=ProofStartIn, responses={201: ProofUploadOut}, operation_id="spins_proofs_start"
     )
     def post(self, request: Request, spin_id: UUID) -> Response:
-        """Add a photo or video to a drawn punishment that needs proof."""
+        """Upload a photo or video as a draft file of a drawn punishment that needs proof;
+        serving posts it."""
         data = ProofStartIn(data=request.data)
         data.is_valid(raise_exception=True)
         plan = services.start_proof(by=_member(request), spin_id=spin_id, **data.validated_data)

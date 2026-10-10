@@ -25,8 +25,6 @@ from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 from apps.crews.models import Member
 from apps.proofs import services as proofs
-from apps.proofs.models import Proof
-from apps.proofs.selectors import SHOWN
 
 from . import days
 from .models import CheckIn, CheckInEntry
@@ -57,11 +55,6 @@ class NotDueToday(Conflict):
 class NothingToUndo(Conflict):
     code = "nothing_to_undo"
     message = "There is nothing to undo for today."
-
-
-class UploadsRunning(Conflict):
-    code = "uploads_running"
-    message = "Wait for the photos and videos to finish uploading."
 
 
 class ProofRequired(Conflict):
@@ -133,10 +126,7 @@ def check_in(
     quantity = challenge.measure == Challenge.Measure.QUANTITY
     value = _clean_amount(challenge, amount) if amount is not None else None
     row = _day_row(by, challenge, day)
-    drafts = list(proofs.drafts(subject=row))
-    if any(p.status == Proof.Status.UPLOADING for p in drafts):
-        raise UploadsRunning()
-    files = sum(p.status in SHOWN for p in drafts)
+    files = proofs.uploaded_drafts(subject=row)
     last = row.entries.order_by("-number").first()
     if quantity and last is None and value is None:
         raise ValidationFailed(fields={"amount": ["Give a number above zero."]})

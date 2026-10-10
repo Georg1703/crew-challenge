@@ -52,5 +52,5 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
 | Draw | `doom.services.draw` | Choosing a spin's punishment on the server, before the dial turns. Every punishment as likely. |
 | Serve by | `Spin.serve_by` | The last day to serve a drawn punishment: the draw's crew-local day + 7. After it the spin is late. |
-| Served | - | A drawn punishment with a proof the crew can see, or "Done" when it needs no proof. Derived. |
+| Served | `Spin.done_at` | A drawn punishment whose photos or videos were posted ("Serve"), or "Done" when it needs no proof; `done_at` says when. |
 | Wheel of Doom | `doom` app | Punishments for failed windows: spins are owed, drawn on the server, then served with proof (`docs/plans/wheel.md`). |

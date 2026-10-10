@@ -48,7 +48,7 @@ Punishment, Spin and Wheel of Doom. Wilted trees and Web Push stay after v1.
 | Serving | Within 7 days of the draw (`serve_by`); after that the card says "Late". No other penalty in v1. |
 | Today card | Shows while anything is owed ("2 spins - 1 proof to add"), right under the day ring card, above the challenge cards; at the top when there is no ring. |
 | Journal | Two items per spin: one when drawn, which never changes after (the punishment, the day to serve by), and one when served ("Done" or the first shown proof), with the proofs. The crew reacts on the drawn one (reactions per card wait for the journal refactor). Seen by the challenge's participants and admins. |
-| Proofs on a spin | Same as check-ins: up to 5, photo or video, straight to storage, removable on the day they were added. Any day; the first one the crew can see serves it. |
+| Proofs on a spin | Same as check-ins: up to 5, photo or video, straight to storage, removable on the day they were added. Any day; the first one the crew can see serves it. (Changed by `docs/plans/journal.md` stage 3: they upload as draft files and "Serve" posts them; `done_at` says when it was served.) |
 | Proof model | One generic `Proof` for any subject (a check-in, a spin), in its own app. |
 | Screens | Design C: a dial (the day ring's shape) with one arc per punishment. |
 

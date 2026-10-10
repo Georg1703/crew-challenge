@@ -43,7 +43,7 @@ def test_no_post_without_a_finished_file_where_proof_is_asked(object_storage, pe
     with pytest.raises(services.ProofRequired):
         post(bogdan, walk)
     plan = photo(bogdan, walk)
-    with pytest.raises(services.UploadsRunning):
+    with pytest.raises(proofs.UploadsRunning):
         post(bogdan, walk)
     send(object_storage, plan)
     proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)

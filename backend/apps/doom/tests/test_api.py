@@ -66,6 +66,9 @@ def test_proof_on_a_spin_starts_and_resumes(browser, owed, object_storage):
     resume = f"/api/v1/spins/{spin.pk}/proofs/resume?fingerprint="
     assert browser.get(f"{resume}a|10|1").json()["proof"]["id"] == started.json()["proof"]["id"]
     assert browser.get(f"{resume}b").status_code == 404
+    served = browser.post(f"/api/v1/spins/{spin.pk}/done")
+    assert served.json()["error"]["code"] == "uploads_running"  # the video is a draft, uploading
+    assert browser.delete(f"/api/v1/proofs/{started.json()['proof']['id']}").status_code == 204
     assert browser.post(f"/api/v1/spins/{spin.pk}/done").json()["error"]["code"] == "proof_needed"
 
 

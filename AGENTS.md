@@ -149,8 +149,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   creator), a failed window owes one spin per missing check-in, or one for a missed total. After
   v1: tree wilted.
 - The Wheel of Doom result is drawn on the server before the client animation starts. A spun
-  punishment is served by a proof (or "Done" when it needs none), within 7 days. Plan:
-  `docs/plans/wheel.md`.
+  punishment is served within 7 days: by posting its photos or videos (uploaded first as draft
+  files; "Serve" waits for them), or by "Done" when it needs none. Plan: `docs/plans/wheel.md`.
 
 ## Large uploads (up to 20 GB) - non-negotiable
 - Files never go through Django. Browser -> S3 multipart upload with presigned part URLs.

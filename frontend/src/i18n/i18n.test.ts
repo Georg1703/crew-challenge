@@ -38,6 +38,7 @@ describe("translations", () => {
       "uploads_running",
       "proof_required",
       "proof_posted",
+      "spin_served",
       "too_many_proofs",
       "upload_closed",
       "target_not_found",

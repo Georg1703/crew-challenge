@@ -995,7 +995,9 @@ paths:
   /api/v1/spins/{spin_id}/done:
     post:
       operationId: spins_done
-      description: Serve a drawn punishment that needs no proof.
+      description: |-
+        Serve my drawn punishment: with its uploaded photos or videos when it needs proof,
+        at once when it needs none. Safe to repeat.
       parameters:
       - in: path
         name: spin_id
@@ -1040,7 +1042,9 @@ paths:
   /api/v1/spins/{spin_id}/proofs:
     post:
       operationId: spins_proofs_start
-      description: Add a photo or video to a drawn punishment that needs proof.
+      description: |-
+        Upload a photo or video as a draft file of a drawn punishment that needs proof;
+        serving posts it.
       parameters:
       - in: path
         name: spin_id

@@ -92,7 +92,8 @@ Proof
                         empty: a draft file, seen by its owner only
 
 Spin
-  served_at   new       when it was served (replaces done_at)
+  done_at               now "served at": "Done", or its photos and videos posted (kept, not
+                        renamed: served is done)
 ```
 
 The endpoints stay; only their rules change:
@@ -293,20 +294,22 @@ The rule change, backend and screens together (the old screens cannot post with 
   remove a draft file; undo.
 - Acceptance: a multi-GB video draft interrupted and resumed on a phone, then posted.
 
-### Stage 3 - Serve with one post
+### Stage 3 - Serve with one post (built, 2026-10-10)
 
-- Backend: a spin's files are drafts until it is served (not shown to the crew before);
-  `/spins/{id}/done` serves in one transaction: refused while a file uploads, refused without a
-  finished file when the punishment needs proof, failed files deleted, the rest published with
-  the spin's id, `served_at` set. No files after serving. The spin's state reads `served_at`
-  (the "has a shown proof" subquery goes).
-- Frontend: the spins page picks files, then "Serve" when they have finished (or at once when the
-  punishment needs no proof).
-- Migration: `served_at` from `done_at`, else the first shown proof's time. Spins the old release
-  serves during the deploy are filled again in stage 4's migration.
+- Backend: a spin's files are draft files until it is served (not shown to the crew before);
+  `serve` (the `/spins/{id}/done` endpoint, which `mark_done` was) serves in one transaction:
+  refused while a file uploads (`proofs.uploaded_drafts`, shared with check-ins), refused without
+  a finished file when the punishment needs proof, failed files deleted, the rest published with
+  the spin's id, `done_at` set (it now means "served at"; no `served_at` column). No files after
+  serving (`spin_served`). The spin's state reads `done_at` only (the "has a shown proof"
+  subquery goes); the old journal's served card sits at `done_at`.
+- Frontend: the spins page picks files, then "Serve" once they have finished (or "Done" at once
+  when the punishment needs no proof); `ProofTiles` loses its stage 2 `drafts` option.
+- Migration (`doom` 0004): spins served by a proof the crew could see get that proof's time in
+  `done_at`; the files of spins still to serve become draft files. Spins the old release serves
+  during the deploy are filled again in stage 4's migration.
 - Tests: serving refused while uploading or without a finished file where proof is needed;
-  served at once without files where it is not; no files after; the old journal's served card at
-  `served_at`.
+  served at once without files where it is not; no files after; the migration.
 
 ### Stage 4 - Write the cards
 
@@ -323,8 +326,8 @@ Production fills the cards for a release while everyone still sees the old journ
   - `card_facts(post)`: today's `feed_details`, for one post, at the moment it goes live.
   - `journal_backfill`: a management command, idempotent, that writes the cards of the history
     with the same writers (facts as of each post).
-- Migration: the table; a data migration that calls `journal_backfill` and fills `served_at`
-  again.
+- Migration: the table; a data migration that calls `journal_backfill` and fills `done_at` again
+  for spins the old release served by a proof during the deploy (as `doom` 0004).
 - Tests: one card per live post, never changed by a later one (an earlier "+N" keeps its total);
   deleting a post deletes its card and its reactions; the crew's day appears with the last due
   post, not for weekly challenges, and goes when a deletion un-finishes the day; facts at 23:30
@@ -366,8 +369,8 @@ Deployed a release after stage 5, because that release still serves what this re
   `JournalEntryOut` and `JournalPageOut` of the old journal; the `check_in` and `spin` reaction
   targets and the `reactions` relations on `CheckIn` and `Spin`, after moving the reactions made
   on them since stage 5. Frontend: `checkInsOf`, `FeedItem` and the old journal types.
-- Migrations: drop `Spin.done_at`; the stage 4 and 5 data migrations' bodies become no-ops (an
-  old migration must not run today's code; `journal_backfill` stays as the repair tool).
+- Migrations: the stage 4 and 5 data migrations' bodies become no-ops (an old migration must
+  not run today's code; `journal_backfill` stays as the repair tool).
 - `make schema`; docs lose every mention of the removed parts.
 
 ### Stage 7 - Reactions on cards (optional)
@@ -413,7 +416,6 @@ Deployed a release after stage 5, because that release still serves what this re
 | `feed`, `feed_details`, `day_summaries`, `reactable_*`, `journal_day`, `spin_items`, `punishment_count`, old serializers | backend | 6 |
 | `checkInsOf`, `FeedItem`, old journal types | frontend | 6 |
 | `check_in` and `spin` reaction targets, `reactions` relations on `CheckIn` and `Spin` | backend | 6 |
-| `Spin.done_at` | migrations | 6 |
 | `reactions/targets.py`, the generic key on `Reaction` | backend | 7 |
 
 ## Risks

@@ -5,41 +5,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Exists, F, OuterRef, Q, QuerySet, Subquery
-from django.db.models.functions import Coalesce
+from django.db.models import F, QuerySet
 
 from apps.challenges import selectors as challenges
 from apps.core import clock
 from apps.crews.models import Member
 from apps.proofs.models import Proof
-from apps.proofs.selectors import SHOWN
+from apps.proofs.selectors import VISIBLE
 
 from .models import Spin
 
 PENDING, SPUN, SERVED = "pending", "spun", "served"
 
 
-def _shown_proofs() -> QuerySet[Proof]:
-    """Shown proofs of the spin in the outer query."""
-    return Proof.objects.filter(
-        subject_type=ContentType.objects.get_for_model(Spin),
-        subject_id=OuterRef("pk"),
-        status__in=SHOWN,
-    )
-
-
 def _with_state(rows: QuerySet[Spin]) -> QuerySet[Spin]:
-    return rows.annotate(has_shown=Exists(_shown_proofs())).select_related(
-        "challenge", "member", "punishment"
-    )
+    return rows.select_related("challenge", "member", "punishment")
 
 
 def state(spin: Spin) -> str:
-    """`pending` (not drawn), `spun` (drawn, not served) or `served`, on a spin from these reads."""
+    """`pending` (not drawn), `spun` (drawn, not served) or `served`."""
     if spin.punishment_id is None:
         return PENDING
-    return SERVED if spin.done_at or spin.has_shown else SPUN  # type: ignore[attr-defined]
+    return SERVED if spin.done_at else SPUN
 
 
 def late(spin: Spin) -> bool:
@@ -58,7 +45,8 @@ class Owed:
 
 
 def _mine(member: Member) -> QuerySet[Spin]:
-    """My spins (on challenges I left too), with my proofs on them, every status."""
+    """My spins (on challenges I left too), with my proofs on them: posted and draft, every
+    status."""
     return (
         _with_state(Spin.objects.for_crew(member.crew).filter(member=member))
         .select_related("challenge__crew")
@@ -74,7 +62,7 @@ def owed(*, member: Member) -> Owed:
     """My spins not served yet, oldest window first (the Today card and the spins page)."""
     rows = list(
         _mine(member)
-        .filter(Q(punishment__isnull=True) | Q(done_at__isnull=True, has_shown=False))
+        .filter(done_at__isnull=True)
         .order_by("window_first", "challenge__title", "number")
     )
     to_spin = sum(1 for spin in rows if spin.punishment_id is None)
@@ -95,13 +83,8 @@ def journal(*, member: Member) -> QuerySet[Spin]:
 
 def served(*, member: Member) -> QuerySet[Spin]:
     """Served spins on challenges the member can see, at the moment they were served
-    (`activity_at`): "Done", or the first proof the crew could see. The journal's second card."""
-    first_proof = _shown_proofs().order_by("updated_at").values("updated_at")[:1]
-    return (
-        _visible(member)
-        .filter(Q(done_at__isnull=False) | Q(has_shown=True))
-        .annotate(activity_at=Coalesce("done_at", Subquery(first_proof)))
-    )
+    (`activity_at`: "Done", or its photos and videos posted). The journal's second card."""
+    return _visible(member).filter(done_at__isnull=False).annotate(activity_at=F("done_at"))
 
 
 def reactable_spin(member: Member, spin_id: UUID) -> Spin | None:
@@ -113,7 +96,7 @@ def shown_proofs(spins: list[Spin]) -> dict[UUID, list[Proof]]:
     """Each spin's proofs the crew can see, for a journal page, in one query."""
     result: dict[UUID, list[Proof]] = {spin.pk: [] for spin in spins}
     rows = (
-        Proof.objects.filter(spin__in=spins, status__in=SHOWN)
+        Proof.objects.filter(VISIBLE, spin__in=spins)
         .select_related("original__transcode", "thumb")
         .order_by("created_at")
     )

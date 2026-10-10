@@ -41,14 +41,11 @@ const SAVED_STATE: Record<Proof["status"], ProofTileState> = {
 const onPhone = () => window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
 /**
- * A subject's proofs (a day's check-in, a spin): what the API has, this phone's uploads in flight,
- * and "+" while the post to come has fewer than 5. Uploads keep going on other screens
+ * A subject's proofs (today's check-in, a spin): what the API has, this phone's uploads in flight,
+ * and "+" while the post to come has fewer than 5. New files are draft files of that post,
+ * removable until it is made; posted ones stay. Uploads keep going on other screens
  * (uploads/engine.ts). `title` names them in the viewer; `onChanged` refreshes whatever shows
  * `proofs`; `onUploaded` runs when the last upload in flight here has finished.
- *
- * With `drafts` (a check-in) new files are draft files of the next post: removable until posted,
- * and the 5 count them only. Without (a spin, whose files are posted as they start) none is
- * removable and the 5 count them all.
  */
 export function ProofTiles({
   subject,
@@ -56,14 +53,12 @@ export function ProofTiles({
   proofs,
   onChanged,
   onUploaded,
-  drafts = true,
 }: {
   subject: ProofSubject;
   title: string;
   proofs: Proof[];
   onChanged: () => Promise<unknown>;
   onUploaded?: () => void;
-  drafts?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -78,8 +73,7 @@ export function ProofTiles({
   const saved = proofs.filter((p) => !inFlight.has(p.id) && !hidden.includes(p.id));
   const sending = local.filter((u) => !hidden.includes(u.proofId));
   const viewable = saved.filter((p) => p.url);
-  const counted =
-    sending.length + saved.filter((p) => p.status !== "failed" && !(drafts && p.posted)).length;
+  const counted = sending.length + saved.filter((p) => p.status !== "failed" && !p.posted).length;
   const kind = (k: string) => t(`proofs.kind.${k}`);
 
   const finished = async (proofId: string) => {
@@ -141,7 +135,7 @@ export function ProofTiles({
                   ? () => toast(t("proofs.pickAgain"))
                   : undefined
             }
-            onRemove={drafts && !proof.posted ? () => remove(proof.id) : undefined}
+            onRemove={proof.posted ? undefined : () => remove(proof.id)}
             removeLabel={t("proofs.remove")}
           />
         );
@@ -158,7 +152,7 @@ export function ProofTiles({
             percent: Math.round(u.progress * 100),
           })}
           onOpen={() => void (u.state === "failed" ? retry(u.id) : toggle(u.id))}
-          onRemove={drafts ? () => remove(u.proofId, u.id) : undefined}
+          onRemove={() => remove(u.proofId, u.id)}
           removeLabel={t("proofs.remove")}
         />
       ))}

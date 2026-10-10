@@ -56,6 +56,11 @@ class ProofNotFound(NotFound):
     message = "This proof does not exist."
 
 
+class UploadsRunning(Conflict):
+    code = "uploads_running"
+    message = "Wait for the photos and videos to finish uploading."
+
+
 class ProofPosted(Conflict):
     code = "proof_posted"
     message = "This proof is posted: undo its post to remove it."
@@ -114,6 +119,15 @@ def of_subject(subject: models.Model) -> models.QuerySet[Proof]:
 def drafts(*, subject: models.Model) -> models.QuerySet[Proof]:
     """`subject`'s draft files: not posted yet, every status."""
     return of_subject(subject).filter(post_id__isnull=True)
+
+
+def uploaded_drafts(*, subject: models.Model) -> int:
+    """How many of `subject`'s draft files are uploaded, ready to post; `UploadsRunning` while one
+    still uploads (the caller has locked the subject)."""
+    statuses = list(drafts(subject=subject).values_list("status", flat=True))
+    if Proof.Status.UPLOADING in statuses:
+        raise UploadsRunning()
+    return sum(status in SHOWN for status in statuses)
 
 
 def start_proof(

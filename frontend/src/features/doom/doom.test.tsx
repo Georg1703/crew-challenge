@@ -127,7 +127,35 @@ describe("the spins page", () => {
     expect(screen.getByText("Late")).toBeInTheDocument();
     expect(screen.getByText("Was due Monday, November 16")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
+    expect(screen.getByText("Add a photo or video to serve it")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Serve" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+  });
+
+  it("serves with its uploaded photo or video", async () => {
+    const photo = {
+      id: "f1",
+      kind: "photo" as const,
+      status: "ready" as const,
+      url: "/media/f1.jpg",
+      hls_url: null,
+      thumb_url: null,
+      phone_thumb_url: null,
+      created_at: "2026-11-09T09:00:00Z",
+      duration: null,
+      posted: false,
+    };
+    mockSpins([drawn(3, { proofs: [photo] })]);
+    const post = vi
+      .spyOn(api, "POST")
+      .mockImplementation((() => ok(drawn(3, { state: "served" }))) as never);
+    renderRoutes([{ path: "/", element: <SpinsRoute /> }]);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Serve" }));
+
+    expect(post).toHaveBeenCalledWith("/api/v1/spins/{spin_id}/done", {
+      params: { path: { spin_id: "s1" } },
+    });
   });
 
   it("says when there is nothing to spin", async () => {

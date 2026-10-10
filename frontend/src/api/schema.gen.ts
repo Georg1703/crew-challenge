@@ -632,7 +632,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Serve a drawn punishment that needs no proof. */
+        /**
+         * @description Serve my drawn punishment: with its uploaded photos or videos when it needs proof,
+         *     at once when it needs none. Safe to repeat.
+         */
         post: operations["spins_done"];
         delete?: never;
         options?: never;
@@ -666,7 +669,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Add a photo or video to a drawn punishment that needs proof. */
+        /**
+         * @description Upload a photo or video as a draft file of a drawn punishment that needs proof;
+         *     serving posts it.
+         */
         post: operations["spins_proofs_start"];
         delete?: never;
         options?: never;

@@ -214,7 +214,8 @@
     "proof_not_needed": "This punishment needs no proof: tap Done.",
     "uploads_running": "Wait for the photos and videos to finish uploading.",
     "proof_required": "This challenge asks for a photo or video with each check-in.",
-    "proof_posted": "This photo or video is posted. Undo its post to remove it."
+    "proof_posted": "This photo or video is posted. Undo its post to remove it.",
+    "spin_served": "This punishment is served."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -813,6 +814,10 @@
     "feed": {
       "drew": "{{name}} spun the wheel",
       "served": "{{name}} served a punishment"
-    }
+    },
+    "serve": "Serve",
+    "readyToServe": "Uploaded: tap Serve",
+    "waitingUploads": "Waiting for the uploads to finish",
+    "addProof": "Add a photo or video to serve it"
   }
 }

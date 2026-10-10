@@ -36,20 +36,11 @@ const onChanged = vi.fn(async () => undefined);
 
 function show(
   proofs: Proof[] = [saved("p1", "photo", "ready"), saved("v1", "video", "processing")],
-  drafts = true,
 ) {
   return renderRoutes([
     {
       path: "/",
-      element: (
-        <ProofTiles
-          subject={walk}
-          title="Walk"
-          proofs={proofs}
-          onChanged={onChanged}
-          drafts={drafts}
-        />
-      ),
+      element: <ProofTiles subject={walk} title="Walk" proofs={proofs} onChanged={onChanged} />,
     },
   ]);
 }
@@ -138,18 +129,6 @@ describe("proof tiles", () => {
     expect(await screen.findAllByRole("button", { name: "Photo. Tap to open" })).toHaveLength(5);
     expect(screen.queryByRole("button", { name: "Remove this proof" })).toBeNull();
     expect(screen.getByRole("button", { name: "Add a photo or video" })).toBeInTheDocument();
-  });
-
-  it("without drafts (a spin) counts every file and removes none", async () => {
-    const five = ["a", "b", "c", "d", "e"].map((id) => ({
-      ...saved(id, "photo", "ready"),
-      posted: true,
-    }));
-    show(five, false);
-
-    expect(await screen.findAllByRole("button", { name: "Photo. Tap to open" })).toHaveLength(5);
-    expect(screen.queryByRole("button", { name: "Remove this proof" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add a photo or video" })).toBeNull();
   });
 
   it("opens a saved proof full screen", async () => {

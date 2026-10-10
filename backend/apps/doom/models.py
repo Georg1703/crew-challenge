@@ -36,7 +36,9 @@ class Spin(CrewScopedModel):
     drawn_at = models.DateTimeField(null=True, blank=True)
     serve_by = models.DateField(null=True, blank=True, help_text="The draw's crew-local day + 7.")
     done_at = models.DateTimeField(
-        null=True, blank=True, help_text='"Done", for a punishment that needs no proof.'
+        null=True,
+        blank=True,
+        help_text='When it was served: "Done", or its photos and videos posted.',
     )
     # Proofs and reactions point here by a generic key; these delete them with the spin.
     proofs = GenericRelation(

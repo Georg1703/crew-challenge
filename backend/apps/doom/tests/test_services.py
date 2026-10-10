@@ -13,6 +13,7 @@ from apps.checkins import services as checkins
 from apps.doom import selectors, services
 from apps.doom.models import Spin
 from apps.proofs import services as proofs
+from apps.proofs.models import Proof
 from tests.factories import AdminFactory
 
 pytestmark = pytest.mark.django_db
@@ -173,26 +174,35 @@ def test_serving_with_proof_or_done(swim, object_storage):
     photo: dict[str, Any] = {"kind": "photo", "content_type": "image/jpeg", "size": 4}
     with at("2026-11-09 08:00Z"):
         with pytest.raises(services.NotDrawn):
-            services.mark_done(by=bogdan, spin_id=first.pk)
+            services.serve(by=bogdan, spin_id=first.pk)
         with pytest.raises(services.NotDrawn):
             services.start_proof(by=bogdan, spin_id=first.pk, **photo)
         services.draw(by=bogdan, spin_id=first.pk, rng=Pick(0))  # 20 burpees: needs proof
         services.draw(by=bogdan, spin_id=second.pk, rng=Pick(1))  # no phone: "Done"
 
         with pytest.raises(services.ProofNeeded):
-            services.mark_done(by=bogdan, spin_id=first.pk)
+            services.serve(by=bogdan, spin_id=first.pk)
         with pytest.raises(services.ProofNotNeeded):
             services.start_proof(by=bogdan, spin_id=second.pk, **photo)
 
         plan = services.start_proof(by=bogdan, spin_id=first.pk, **photo)
-        assert plan.proof.subject == first
+        assert (plan.proof.subject, plan.proof.post_id) == (first, None)  # a draft file
+        with pytest.raises(proofs.UploadsRunning):
+            services.serve(by=bogdan, spin_id=first.pk)
         object_storage.put_object(key=plan.proof.original.key, data=b"jpeg", content_type="")
         proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)
-        services.mark_done(by=bogdan, spin_id=second.pk)
-        services.mark_done(by=bogdan, spin_id=second.pk)  # repeat-safe
-        assert selectors.owed(member=bogdan).spins == []  # both served
+        assert len(selectors.owed(member=bogdan).spins) == 2  # uploaded is not served
 
-        with pytest.raises(proofs.ProofPosted):  # posted with the spin as it started
+        served = services.serve(by=bogdan, spin_id=first.pk)
+        services.serve(by=bogdan, spin_id=second.pk)
+        services.serve(by=bogdan, spin_id=second.pk)  # repeat-safe
+
+        assert served.done_at == datetime(2026, 11, 9, 8, tzinfo=UTC)
+        assert Proof.objects.get(pk=plan.proof.pk).post_id == first.pk
+        assert selectors.owed(member=bogdan).spins == []  # both served
+        with pytest.raises(services.Served):  # no files after serving
+            services.start_proof(by=bogdan, spin_id=first.pk, **photo)
+        with pytest.raises(proofs.ProofPosted):
             proofs.delete_proof(by=bogdan, proof_id=plan.proof.pk)
 
 
@@ -208,7 +218,7 @@ def test_the_crew_sees_drawn_spins_only(swim):
     assert [s.pk for s in selectors.journal(member=ana)] == [spin.pk]
     assert not selectors.served(member=ana).exists()
     with at("2026-11-10 08:00Z"):
-        services.mark_done(by=bogdan, spin_id=spin.pk)
+        services.serve(by=bogdan, spin_id=spin.pk)
     served = [s.activity_at for s in selectors.served(member=ana)]  # type: ignore[attr-defined]
     assert served == [datetime(2026, 11, 10, 8, tzinfo=UTC)]  # at "Done"
     assert selectors.reactable_spin(ana, spin.pk) == spin

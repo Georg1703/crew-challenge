@@ -3,8 +3,9 @@
 A window that ended below its need owes one spin per missing check-in, or one for a missed total,
 on a challenge with punishments (the others never spin). Spins are opened by a job, never on
 read, and once only (a unique key per window and number). Drawing happens before the dial turns;
-a drawn punishment is served by a shown proof or, when it needs none, by "Done", by `serve_by`
-(after that it is late, nothing more in v1).
+a drawn punishment is served, by `serve_by` (after that it is late, nothing more in v1), with its
+photos or videos (uploaded first as draft files, posted together) or, when it needs none, by
+"Done".
 """
 
 from __future__ import annotations
@@ -45,6 +46,11 @@ class NotDrawn(Conflict):
 class ProofNeeded(Conflict):
     code = "proof_needed"
     message = "This punishment is served with a photo or a video."
+
+
+class Served(Conflict):
+    code = "spin_served"
+    message = "This punishment is served."
 
 
 class ProofNotNeeded(Conflict):
@@ -136,16 +142,20 @@ def draw(*, by: Member, spin_id: UUID, rng: random.Random | None = None) -> Spin
 
 
 @transaction.atomic
-def mark_done(*, by: Member, spin_id: UUID) -> Spin:
-    """Serve a drawn punishment that needs no proof. Repeat-safe."""
+def serve(*, by: Member, spin_id: UUID) -> Spin:
+    """Serve my drawn punishment: with its uploaded draft files when it needs proof (at least
+    one), at once when it needs none ("Done"). Repeat-safe."""
     spin = _own(by, spin_id)
     if spin.punishment is None:
         raise NotDrawn()
-    if spin.punishment.proof_required:
+    if spin.done_at is not None:
+        return spin
+    files = proofs.uploaded_drafts(subject=spin)
+    if spin.punishment.proof_required and not files:
         raise ProofNeeded()
-    if spin.done_at is None:
-        spin.done_at = clock.now()
-        spin.save(update_fields=["done_at", "updated_at"])
+    proofs.publish(subject=spin, post_id=spin.pk)  # a spin is served once: its own post
+    spin.done_at = clock.now()
+    spin.save(update_fields=["done_at", "updated_at"])
     return spin
 
 
@@ -160,15 +170,16 @@ def start_proof(
     thumb_size: int | None = None,
     duration: int | None = None,
 ) -> proofs.ProofUpload:
-    """Add a photo or video to my drawn punishment that needs proof (up to 5; any day). The
-    first one the crew can see serves it. It is posted with the spin as it starts (not a draft),
-    so it cannot be removed after."""
+    """Upload a photo or video as a draft file of my drawn punishment that needs proof (up to 5;
+    any day, until it is served); serving posts them."""
     with transaction.atomic():
         spin = _own(by, spin_id)  # locked: one start at a time counts the proofs
         if spin.punishment is None:
             raise NotDrawn()
         if not spin.punishment.proof_required:
             raise ProofNotNeeded()
+        if spin.done_at is not None:
+            raise Served()
         return proofs.start_proof(
             member=by,
             subject=spin,
@@ -179,7 +190,6 @@ def start_proof(
             fingerprint=fingerprint,
             thumb_size=thumb_size,
             duration=duration,
-            post_id=spin.pk,
         )
 
 

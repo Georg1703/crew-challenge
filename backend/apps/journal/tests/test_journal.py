@@ -70,12 +70,13 @@ def test_a_served_spin_adds_a_card_of_its_own_on_the_day_it_was_served(
     browser, week, object_storage
 ):
     ana, bogdan, spin = week
-    with at("2026-11-11 10:00Z"):  # Wednesday: the first proof the crew can see serves it
+    with at("2026-11-11 10:00Z"):  # Wednesday: its photo is uploaded, then posted
         plan = doom.start_proof(
             by=bogdan, spin_id=spin.pk, kind="photo", content_type="image/jpeg", size=4
         )
         object_storage.put_object(key=plan.proof.original.key, data=b"jpeg", content_type="")
         proofs.complete_proof(by=bogdan, proof_id=plan.proof.pk)
+        doom.serve(by=bogdan, spin_id=spin.pk)
     browser.force_login(ana.user)
     with at("2026-11-11 11:00Z"):
         body = browser.get("/api/v1/journal").json()

@@ -214,7 +214,8 @@
     "proof_not_needed": "Pedeapsa asta nu cere dovadă: atinge Gata.",
     "uploads_running": "Așteaptă să se termine încărcarea pozelor și video-urilor.",
     "proof_required": "Provocarea asta cere o poză sau un video la fiecare bifare.",
-    "proof_posted": "Poza sau video-ul e postat. Anulează postarea ca să-l ștergi."
+    "proof_posted": "Poza sau video-ul e postat. Anulează postarea ca să-l ștergi.",
+    "spin_served": "Pedeapsa asta e făcută."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -813,6 +814,10 @@
     "feed": {
       "drew": "{{name}} a învârtit roata",
       "served": "{{name}} și-a făcut pedeapsa"
-    }
+    },
+    "serve": "Trimite",
+    "readyToServe": "S-a încărcat: atinge Trimite",
+    "waitingUploads": "Se așteaptă să se termine încărcarea",
+    "addProof": "Adaugă o poză sau un video ca dovadă"
   }
 }

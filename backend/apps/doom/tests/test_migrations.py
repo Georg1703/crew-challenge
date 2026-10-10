@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 from django.apps import apps as registry
+from django.db.models import F
 
 from apps.doom import services
 from apps.doom.models import Spin
@@ -58,4 +59,28 @@ def test_then_every_proof_of_a_spin_points_at_it(spin_proofs):
     assert dict(Proof.objects.values_list("pk", "post_id")) == {
         shown.pk: spin.pk,
         uploading.pk: spin.pk,
+    }
+
+
+def test_a_spin_its_shown_proof_served_gets_that_time_the_rest_are_drafts(crew, spin_proofs):
+    ana, _ = crew
+    spin, shown, uploading = spin_proofs
+    other = Spin.objects.filter(member=ana).exclude(pk=spin.pk).first()
+    assert other is not None
+    with at("2026-11-09 08:00Z"):
+        services.draw(by=ana, spin_id=other.pk, rng=Pick(0))
+        waiting = services.start_proof(by=ana, spin_id=other.pk, **PHOTO).proof
+    Proof.objects.update(post_id=F("subject_id"))  # as the release before posted them all
+    Spin.objects.update(done_at=None)
+
+    import_module("apps.doom.migrations.0004_served_by_posting").fill(registry, None)
+
+    spin.refresh_from_db()
+    other.refresh_from_db()
+    assert spin.done_at == Proof.objects.get(pk=shown.pk).updated_at
+    assert other.done_at is None
+    assert dict(Proof.objects.values_list("pk", "post_id")) == {
+        shown.pk: spin.pk,
+        uploading.pk: spin.pk,
+        waiting.pk: None,  # its spin is still to serve: a draft
     }
