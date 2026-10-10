@@ -23,6 +23,8 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Challenge day | `day` | A local calendar date in the crew's time zone. Deadline is local midnight. |
 | Check-in | `CheckIn` (not "Checkin") | What a participant recorded for one challenge on one day (today only). Status: `done`, or `in_progress` (a number below the day's target); later `excused`. A missed day has no row: it is derived. |
 | Entry | `CheckInEntry` | One "+N" of a check-in; a day's entries add up. Undo removes the last one. |
+| Post | `CheckInEntry`, a served `Spin` | One thing a member shares in a challenge: a check-in, a "+N", photos or videos added later, a punishment served. Its files upload first as draft files and are published with it (`Proof.post_id`). Each post is one card. Being built: `docs/plans/journal.md`. |
+| Card | `JournalEntry` | One post as the crew's journal shows it: written once, when the post is made, and never edited; reactions (later comments) attach to it. Being built: `docs/plans/journal.md`. |
 | Day state | `days.DayState` | How a day looks for one participant and challenge: `done`, `partial`, `todo`, `open`, `missed`, `not_due`, `future`, `outside`. |
 | Due day | `days.is_due` | A day a challenge judged day by day (daily or chosen weekdays) asks for. Challenges asked a number of times or a total per week or period have no due days: they are judged per window. |
 | Window | `windows.Window` | A stretch of days judged as one unit: a single day, a Monday-Sunday week, a calendar month (only in periods counted in months), or the whole period (`apps/challenges/windows.py`). |

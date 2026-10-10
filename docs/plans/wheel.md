@@ -342,7 +342,8 @@ columns go in two releases.
 ## Out of scope
 
 Punishments on a running challenge, an admin forgiving a spin, weighted odds, "spin all", wilted
-trees, Web Push reminders, proof that decides whether a day is done, excused days.
+trees, Web Push reminders, excused days. Proof that decides whether a day is done is planned in
+`docs/plans/journal.md`.
 
 ## Risks
 
