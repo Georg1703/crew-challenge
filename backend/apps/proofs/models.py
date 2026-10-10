@@ -47,6 +47,12 @@ class Proof(CrewScopedSoftDeleteModel):
     duration = models.PositiveIntegerField(
         null=True, blank=True, help_text="A video's length in seconds, read on the phone."
     )
+    post_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="The post that published it (a check-in's entry, a served spin); empty: a draft.",
+    )
 
     class Meta(CrewScopedSoftDeleteModel.Meta):
         db_table = "checkins_proof"  # it moved here from check-ins; the table stayed
