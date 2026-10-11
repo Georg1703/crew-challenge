@@ -6,12 +6,13 @@ weekdays, three times a week), check-ins with streaks that reach every milestone
 a day the whole crew finished, misses, partial days, and photos and videos as proof (1 to 5 a
 day). `--username` is the member the history is built around (the longest streaks, the most
 challenges). Photos are drawn here; videos are copies of the newest video the crew uploaded
-(none uploaded: no videos). Writes rows directly, like seed_demo_challenge, and only with DEBUG.
-Runs once: it stops when the demo challenges exist. Two challenges have punishments, so their
-missed days and weeks owe spins (the beat opens them every 15 minutes, or run
-`apps.doom.services.open_spins()` in a shell).
+(none uploaded: no videos). Writes rows directly, like seed_demo_challenge, and only with DEBUG,
+then `journal_backfill` writes their cards. Runs once: it stops when the demo challenges exist.
+Two challenges have punishments, so their missed days and weeks owe spins (the beat opens them
+every 15 minutes, or run `apps.doom.services.open_spins()` in a shell).
 """
 
+import io
 import random
 import struct
 import zlib
@@ -23,6 +24,7 @@ from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 
@@ -181,6 +183,7 @@ class Command(BaseCommand):
         for spec in SPECS:
             self.seeder.challenge(spec)
         self.seeder.perfect_day(viewer=chosen)
+        call_command("journal_backfill", stdout=io.StringIO())  # the cards of what it wrote
         s = self.seeder
         self.stdout.write(
             self.style.SUCCESS(
