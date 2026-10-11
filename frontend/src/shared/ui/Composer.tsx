@@ -1,4 +1,11 @@
-import { useId, type FormEvent, type Ref } from "react";
+import {
+  useId,
+  useRef,
+  type ClipboardEvent,
+  type FormEvent,
+  type ReactNode,
+  type Ref,
+} from "react";
 
 import { Button } from "./Button";
 import styles from "./Composer.module.css";
@@ -6,10 +13,12 @@ import { Icon } from "./Icon";
 import { Quote } from "./Quote";
 
 /**
- * A message box under a conversation: a text box that grows with what is typed (up to about five
- * lines, then it scrolls) and a send button. `replying` shows what the message answers (a reply
- * icon and the quote), with a button to stop. Enter is a new line; the button sends, once there is
- * text and nothing is sending.
+ * A message box under a conversation: an emoji button, a text box that grows with what is typed
+ * (up to about five lines, then it scrolls), an image button and a send button. `replying` shows
+ * what the message answers (a reply icon and the quote), with a button to stop; `above` holds the
+ * files picked for it (their tiles). Images can also be pasted. Enter is a new line; the button
+ * sends once there is text or an `attached` file, nothing is `waiting` (uploading) and nothing is
+ * sending.
  */
 export function Composer({
   value,
@@ -21,6 +30,13 @@ export function Composer({
   sending = false,
   maxLength,
   replying,
+  onEmoji,
+  emojiLabel,
+  onFiles,
+  filesLabel,
+  attached = 0,
+  waiting = false,
+  above,
   ref,
 }: {
   value: string;
@@ -40,13 +56,32 @@ export function Composer({
     stopLabel: string;
     onStop: () => void;
   };
+  /** The emoji button (it opens a picker the caller shows). */
+  onEmoji?: () => void;
+  emojiLabel?: string;
+  /** Images picked with the image button, or pasted. */
+  onFiles?: (files: File[]) => void;
+  filesLabel?: string;
+  /** Files ready to go with it: the text may then be empty. */
+  attached?: number;
+  /** A file still uploads: sending waits. */
+  waiting?: boolean;
+  /** Over the box: the picked files' tiles. */
+  above?: ReactNode;
   ref?: Ref<HTMLTextAreaElement>;
 }) {
   const id = useId();
-  const empty = value.trim() === "";
+  const picker = useRef<HTMLInputElement>(null);
+  const ready = (value.trim() !== "" || attached > 0) && !waiting;
   const send = (event: FormEvent) => {
     event.preventDefault();
-    if (!empty && !sending) onSend();
+    if (ready && !sending) onSend();
+  };
+  const paste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const images = [...event.clipboardData.files].filter((f) => f.type.startsWith("image/"));
+    if (!onFiles || images.length === 0) return; // text pastes as text
+    event.preventDefault();
+    onFiles(images);
   };
   return (
     <form className={styles.composer} onSubmit={send}>
@@ -67,7 +102,17 @@ export function Composer({
           />
         </div>
       )}
+      {above}
       <div className={styles.row}>
+        {onEmoji && (
+          <Button
+            variant="ghost"
+            className={styles.tool}
+            icon={<Icon name="smilePlus" size={22} />}
+            aria-label={emojiLabel}
+            onClick={onEmoji}
+          />
+        )}
         <label className={styles.label} htmlFor={id}>
           {label}
         </label>
@@ -82,15 +127,38 @@ export function Composer({
             placeholder={placeholder}
             maxLength={maxLength}
             onChange={(event) => onChange(event.target.value)}
+            onPaste={paste}
           />
         </div>
+        {onFiles && (
+          <>
+            <Button
+              variant="ghost"
+              className={styles.tool}
+              icon={<Icon name="image" size={22} />}
+              aria-label={filesLabel}
+              onClick={() => picker.current?.click()}
+            />
+            <input
+              ref={picker}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(event) => {
+                onFiles([...(event.target.files ?? [])]);
+                event.target.value = ""; // the same file can be picked again
+              }}
+            />
+          </>
+        )}
         <Button
           type="submit"
           className={styles.send}
           icon={<Icon name="send" size={20} />}
           aria-label={sendLabel}
           loading={sending}
-          disabled={empty}
+          disabled={!ready}
         />
       </div>
     </form>

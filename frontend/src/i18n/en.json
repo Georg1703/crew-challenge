@@ -780,7 +780,11 @@
     "unread_other": "{{count}} new",
     "badge_one": "{{count}} new comment",
     "badge_few": "{{count}} new comments",
-    "badge_other": "{{count}} new comments"
+    "badge_other": "{{count}} new comments",
+    "emoji": "Emoji",
+    "addPhoto": "Add a photo or GIF",
+    "photo": "Photo",
+    "yourPhotos": "Photos for your comment"
   },
   "windows": {
     "progress": {

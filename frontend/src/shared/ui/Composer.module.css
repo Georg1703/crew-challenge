@@ -84,6 +84,14 @@
   outline-offset: 0;
 }
 
+/* The emoji and image buttons: quiet icons, the tap area kept. */
+.tool {
+  flex: none;
+  min-width: var(--tap-min);
+  padding: 0;
+  color: var(--color-text-muted);
+}
+
 .send {
   flex: none;
   width: var(--tap-min);

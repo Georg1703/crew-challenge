@@ -780,7 +780,11 @@
     "unread_other": "{{count}} de noi",
     "badge_one": "{{count}} comentariu nou",
     "badge_few": "{{count}} comentarii noi",
-    "badge_other": "{{count}} de comentarii noi"
+    "badge_other": "{{count}} de comentarii noi",
+    "emoji": "Emoji",
+    "addPhoto": "Adaugă o poză sau un GIF",
+    "photo": "Poză",
+    "yourPhotos": "Pozele comentariului tău"
   },
   "windows": {
     "progress": {

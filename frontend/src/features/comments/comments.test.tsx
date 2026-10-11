@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
+import type { Proof } from "@/features/proofs";
+import type * as UI from "@/shared/ui";
 import { ana, bogdan, meAs } from "@/test/fixtures";
 import { fail, ok, renderScreen } from "@/test/render";
 
@@ -10,6 +12,29 @@ import { Comments, type Comment } from ".";
 import { deletable } from "./thread";
 
 afterEach(() => vi.restoreAllMocks());
+
+// The full picker (Emoji Mart) is loaded on demand: here it is one button that picks a fire.
+vi.mock("@/shared/ui", async (load) => ({
+  ...(await load<typeof UI>()),
+  EmojiPicker: ({ onPick }: { onPick: (emoji: string) => void }) => (
+    <button type="button" onClick={() => onPick("\u{1F525}")}>
+      Pick a fire
+    </button>
+  ),
+}));
+
+const photo = (id: string, status: Proof["status"] = "ready", posted = false): Proof => ({
+  id,
+  kind: "photo",
+  status,
+  url: status === "ready" ? `/media/${id}.gif` : null,
+  hls_url: null,
+  thumb_url: status === "ready" ? `/media/${id}-thumb.jpg` : null,
+  phone_thumb_url: null,
+  created_at: new Date(NOW).toISOString(),
+  duration: null,
+  posted,
+});
 
 const NOW = Date.parse("2026-11-10T08:00:00Z");
 const NONE = { groups: [], mine: null };
@@ -35,12 +60,12 @@ describe("deletable", () => {
   });
 });
 
-function serve(thread: Comment[]) {
+function serve(thread: Comment[], drafts: Proof[] = []) {
   vi.spyOn(api, "GET").mockImplementation(((path: string) =>
     path === "/api/v1/me"
       ? ok(meAs(ana))
       : path === "/api/v1/comments/{target}/{target_id}"
-        ? ok({ results: thread, drafts: [] })
+        ? ok({ results: thread, drafts })
         : ok({})) as never);
 }
 
@@ -166,5 +191,60 @@ describe("Comments", () => {
 
     expect(await screen.findByText("This is not here any more.")).toBeInTheDocument();
     expect(box).toHaveValue("Hello");
+  });
+
+  it("waits for a photo that uploads, then sends it alone", async () => {
+    serve([], [photo("p1", "uploading")]);
+    const { unmount } = show();
+    const box = await screen.findByRole("textbox", { name: "Comment" });
+    await userEvent.type(box, "Look");
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled(); // still uploading
+    unmount();
+    vi.restoreAllMocks();
+
+    serve([], [photo("p1")]);
+    const post = vi
+      .spyOn(api, "POST")
+      .mockImplementation((() =>
+        ok(
+          say("r", "", { member_id: ana.id, proofs: [photo("p1", "ready", true)] }),
+          201,
+        )) as never);
+    show();
+    const send = screen.getByRole("button", { name: "Send" });
+    await waitFor(() => expect(send).toBeEnabled()); // a photo alone is a whole message
+    await userEvent.click(send);
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith("/api/v1/comments/{target}/{target_id}", {
+        params: { path: { target: "entry", target_id: "e1" } },
+        body: { text: "" },
+      }),
+    );
+  });
+
+  it("shows a comment's photos in its bubble, and quotes one with no text as a photo", async () => {
+    serve([
+      say("a", "", { proofs: [photo("g1", "ready", true)] }),
+      say("b", "Ha!", { member_id: ana.id, parent_id: "a" }),
+    ]);
+    show();
+
+    const reply = await message("Ha!");
+    expect(
+      within(reply).getByRole("button", { name: "Go to the comment it answers" }),
+    ).toHaveTextContent("Photo");
+    const quoted = screen.getAllByRole("article")[0];
+    if (!quoted) throw new Error("no first message");
+    expect(within(quoted).getAllByRole("button").length).toBeGreaterThan(1); // its photo
+  });
+
+  it("puts an emoji where the cursor is", async () => {
+    serve([]);
+    show();
+    const box = await screen.findByRole("textbox", { name: "Comment" });
+    await userEvent.type(box, "Bravo ");
+    await userEvent.click(screen.getByRole("button", { name: "Emoji" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Pick a fire" }));
+    await waitFor(() => expect(box).toHaveValue("Bravo \u{1F525}"));
   });
 });

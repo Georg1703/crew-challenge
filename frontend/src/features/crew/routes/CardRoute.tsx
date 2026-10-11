@@ -70,7 +70,7 @@ export function CardRoute() {
           />
           <h1 className={styles.topTitle}>
             {t("comments.title")}
-            {thread.data && <span className={styles.count}> {thread.data.length}</span>}
+            {thread.data && <span className={styles.count}> {thread.data.results.length}</span>}
           </h1>
         </div>
         {entry && crew.data && !cardShown && (

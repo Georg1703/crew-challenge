@@ -1,3 +1,3 @@
 export { applyReaction, QUICK_REACTIONS } from "./api";
 export type { ReactionSummary, ReactionTarget } from "./api";
-export { Reactions, useReactions } from "./components/Reactions";
+export { pickerTexts, Reactions, useReactions } from "./components/Reactions";

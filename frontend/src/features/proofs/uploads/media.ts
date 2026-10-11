@@ -1,7 +1,8 @@
 /**
  * Getting a picked file ready on the phone: photos shrink to at most 2048 px (JPEG ~0.8, usually
- * 300-700 KB instead of 3-8 MB) with a 480 px thumbnail; videos go as they are, with a poster
- * frame as their thumbnail. Anything the browser cannot decode goes as it is, without a thumbnail.
+ * 300-700 KB instead of 3-8 MB) with a 480 px thumbnail; a GIF goes as it is (a JPEG would stop
+ * it), its first frame the thumbnail; videos go as they are, with a poster frame as their
+ * thumbnail. Anything the browser cannot decode goes as it is, without a thumbnail.
  */
 const PHOTO_MAX_PX = 2048;
 const THUMB_MAX_PX = 480;
@@ -47,6 +48,15 @@ function draw(source: CanvasImageSource, width: number, height: number, max: num
 }
 
 export async function preparePhoto(file: File): Promise<Prepared> {
+  if (file.type === "image/gif") {
+    const thumb = await Promise.resolve() // a browser without it throws at once: no thumbnail
+      .then(() => createImageBitmap(file))
+      .then((first) =>
+        draw(first, first.width, first.height, THUMB_MAX_PX).finally(() => first.close()),
+      )
+      .catch(() => null);
+    return { body: file, contentType: "image/gif", thumb };
+  }
   try {
     const image = await createImageBitmap(file, { imageOrientation: "from-image" });
     try {

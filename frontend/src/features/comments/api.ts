@@ -2,9 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 import { api, call, type components, type paths } from "@/api";
+import type { ProofSubject } from "@/features/proofs";
 import type { ReactionSummary } from "@/features/reactions";
 
 export type Comment = components["schemas"]["CommentOut"];
+/** A target's comments, and my photos picked for my next one there (drafts only I see). */
+export type Thread = components["schemas"]["ThreadOut"];
 export type CommentSummary = components["schemas"]["CommentSummaryOut"];
 /** What can be commented on, as the API names it ("entry"). */
 export type CommentTarget =
@@ -23,7 +26,7 @@ const commentsKey = ["comments"] as const;
 const unreadKey = [...commentsKey, "unread"] as const;
 const threadKey = (target: CommentTarget, id: string) => [...commentsKey, target, id] as const;
 
-/** A target's comments, oldest first, refreshed every 5 s while the page is visible. */
+/** A target's comments, oldest first, and my drafts; refreshed every 5 s while visible. */
 export function useThread(target: CommentTarget, id: string) {
   return useQuery({
     queryKey: threadKey(target, id),
@@ -32,9 +35,24 @@ export function useThread(target: CommentTarget, id: string) {
         api.GET("/api/v1/comments/{target}/{target_id}", {
           params: { path: { target, target_id: id } },
         }),
-      ).then((thread) => thread.results),
+      ),
     refetchInterval: REFRESH_MS,
   });
+}
+
+/** Where photos for my next comment on a target upload (`features/proofs`): photos only. */
+export function commentSubject(target: CommentTarget, id: string): ProofSubject {
+  return {
+    key: `comment:${target}:${id}`,
+    start: (body) =>
+      call(
+        api.POST("/api/v1/comments/{target}/{target_id}/images", {
+          params: { path: { target, target_id: id } },
+          body,
+        }),
+      ),
+    resume: () => Promise.reject(new Error("Photos are sent whole: nothing to resume.")),
+  };
 }
 
 /** Comment on the target, or reply (`parent_id`); the thread shows it once the server has it. */
@@ -49,10 +67,13 @@ export function useAddComment(target: CommentTarget, id: string) {
         }),
       ),
     onSuccess: (comment) =>
-      client.setQueryData<Comment[]>(threadKey(target, id), (thread) => [
-        ...(thread ?? []).filter((c) => c.id !== comment.id), // a refresh may have brought it
-        comment,
-      ]),
+      client.setQueryData<Thread>(threadKey(target, id), (thread) => ({
+        results: [
+          ...(thread?.results ?? []).filter((c) => c.id !== comment.id), // a refresh brought it
+          comment,
+        ],
+        drafts: [], // my photos went with it
+      })),
   });
 }
 
@@ -67,8 +88,10 @@ export function useDeleteComment(target: CommentTarget, id: string) {
         }),
       ),
     onSuccess: (_, commentId) =>
-      client.setQueryData<Comment[]>(threadKey(target, id), (thread) =>
-        thread?.filter((c) => c.id !== commentId),
+      client.setQueryData<Thread>(
+        threadKey(target, id),
+        (thread) =>
+          thread && { ...thread, results: thread.results.filter((c) => c.id !== commentId) },
       ),
   });
 }
@@ -79,8 +102,13 @@ export function usePatchCommentReactions(target: CommentTarget, id: string) {
   return useCallback(
     (commentId: string, reactions: ReactionSummary) => {
       void client.cancelQueries({ queryKey: threadKey(target, id) }); // a refresh would undo it
-      client.setQueryData<Comment[]>(threadKey(target, id), (thread) =>
-        thread?.map((c) => (c.id === commentId ? { ...c, reactions } : c)),
+      client.setQueryData<Thread>(
+        threadKey(target, id),
+        (thread) =>
+          thread && {
+            ...thread,
+            results: thread.results.map((c) => (c.id === commentId ? { ...c, reactions } : c)),
+          },
       );
     },
     [client, target, id],

@@ -107,3 +107,26 @@ test("the crew comments on a card, replies, reacts and deletes", async ({ browse
   await dan.getByRole("menuitem", { name: "Șterge" }).click();
   await expect(his).toHaveCount(0);
 });
+
+const GIF = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64"); // 1x1
+
+test("a GIF alone is a whole comment", async ({ browser }) => {
+  const dan = await logIn(browser, "dan");
+  await dan.goto(`/crew/cards/${await earlierCard(dan)}`);
+  const send = dan.getByRole("button", { name: "Trimite" });
+  await expect(send).toBeDisabled(); // nothing to send yet
+  const withImages = dan.getByRole("article").filter({ has: dan.locator("img") });
+  const before = await withImages.count();
+
+  await dan
+    .locator('form input[type="file"]') // the box's image button picks through it
+    .setInputFiles({ name: "dance.gif", mimeType: "image/gif", buffer: GIF });
+  await expect(send).toBeEnabled({ timeout: 10_000 }); // uploaded: it can go alone
+  await send.click();
+
+  await expect(withImages).toHaveCount(before + 1);
+  await hold(dan, withImages.last());
+  await expect(dan.getByRole("menuitem", { name: "Copiază textul" })).toHaveCount(0); // no text
+  await dan.getByRole("menuitem", { name: "Șterge" }).click(); // within its first minute
+  await expect(withImages).toHaveCount(before);
+});

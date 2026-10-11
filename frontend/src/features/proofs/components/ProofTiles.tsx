@@ -53,15 +53,19 @@ export function ProofTiles({
   proofs,
   onChanged,
   onUploaded,
+  add = true,
 }: {
   subject: ProofSubject;
   title: string;
   proofs: Proof[];
   onChanged: () => Promise<unknown>;
   onUploaded?: () => void;
+  /** The "+" tile; off where something else picks the files (a message box's button). */
+  add?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const send = useProofUpload(subject, onChanged, onUploaded);
   const local = useUploads(
     useShallow((s) => Object.values(s.items).filter((u) => u.subject === subject.key)),
   );
@@ -75,18 +79,6 @@ export function ProofTiles({
   const viewable = saved.filter((p) => p.url);
   const counted = sending.length + saved.filter((p) => p.status !== "failed" && !p.posted).length;
   const kind = (k: string) => t(`proofs.kind.${k}`);
-
-  const finished = async (proofId: string) => {
-    await onChanged();
-    const others = Object.values(useUploads.getState().items).some(
-      (u) => u.subject === subject.key && u.proofId !== proofId && u.state !== "failed",
-    );
-    if (!others) onUploaded?.();
-  };
-  const send = (file: File) =>
-    void upload({ subject, file, onDone: finished }).catch((error: unknown) =>
-      toast(errorMessage(t, error), "error"),
-    );
 
   /** Gone at once for every screen (the posting buttons too), deleted once "Undo" runs out. */
   const remove = (proofId: string, uploadId?: string) => {
@@ -159,7 +151,7 @@ export function ProofTiles({
           removeLabel={t("proofs.remove")}
         />
       ))}
-      {counted < MAX_PROOFS && (
+      {add && counted < MAX_PROOFS && (
         <ProofAddTile
           choices={PICKERS.map((picker) => ({ ...picker, label: t(picker.label) }))}
           label={t("proofs.add")}
@@ -202,4 +194,29 @@ export function ProofTiles({
       </Sheet>
     </div>
   );
+}
+
+/**
+ * Starting uploads of picked files for a subject, as its tiles do (for a button of its own, a
+ * pasted image): each goes on in the background; `onChanged` runs as each one finishes and
+ * `onUploaded` once the last running here has. Errors show as a toast.
+ */
+export function useProofUpload(
+  subject: ProofSubject,
+  onChanged: () => Promise<unknown>,
+  onUploaded?: () => void,
+): (file: File) => void {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const finished = async (proofId: string) => {
+    await onChanged();
+    const others = Object.values(useUploads.getState().items).some(
+      (u) => u.subject === subject.key && u.proofId !== proofId && u.state !== "failed",
+    );
+    if (!others) onUploaded?.();
+  };
+  return (file: File) =>
+    void upload({ subject, file, onDone: finished }).catch((error: unknown) =>
+      toast(errorMessage(t, error), "error"),
+    );
 }

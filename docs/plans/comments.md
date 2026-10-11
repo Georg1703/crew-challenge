@@ -1,6 +1,6 @@
 # Plan: comments on the crew's journal
 
-Status: agreed (2026-10-10); stages 1 to 4 built; photos and GIFs (stages 5 and 6) agreed 2026-10-11, stage 5 built. Four stages after the plan, on one branch
+Status: agreed (2026-10-10); stages 1 to 4 built; photos and GIFs (stages 5 and 6) agreed 2026-10-11 and built. Four stages after the plan, on one branch
 (`feat/comments`), one commit per stage, each committed after the owner's review.
 Each stage works on its own and with the release before it still serving.
 
@@ -261,7 +261,9 @@ box takes none: they come in as files, with no outside GIF service.
 
 ### Stage 6 - Photos and GIFs in comments: the app
 
-- The box gets an image button (photos and GIFs only) and takes pasted images (a computer, or a
+- The box gets an emoji button of its own (the reactions' picker; it works with any keyboard, which
+  refuses its stickers and GIFs in a plain text box), an image button (photos and GIFs only) and
+  takes pasted images (a computer, or a
   keyboard that copies a GIF); the picked files show as tiles above the box while they upload
   (`ProofTiles`), and Send waits for them, as a check-in does.
 - GIFs are sent as they are (shrinking a GIF to a JPEG would stop it), with a first-frame

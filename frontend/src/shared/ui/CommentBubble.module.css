@@ -42,6 +42,11 @@
   background: var(--color-surface);
 }
 
+/* With photos: as wide as a message gets, so they show big. */
+.withMedia {
+  width: var(--comment-max-width);
+}
+
 .mine .bubble {
   border-color: var(--color-accent-soft);
   background: var(--color-accent-soft);

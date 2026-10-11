@@ -1028,6 +1028,25 @@ function CommentsDemo() {
           flash
         />
         <CommentBubble
+          name="Ana"
+          seed="ana"
+          time="08:25"
+          text=""
+          media={
+            <ProofMosaic
+              proofs={PICTURES.slice(0, 1).map((src) => ({
+                key: src,
+                kind: "photo",
+                state: "ready",
+                src,
+                label: "Photo by Ana",
+              }))}
+              onOpen={() => toast("The viewer opens")}
+            />
+          }
+          actions={reply}
+        />
+        <CommentBubble
           name="Bogdan"
           seed="bogdan"
           time="08:27"
@@ -1055,6 +1074,10 @@ function CommentsDemo() {
         sendLabel="Send"
         sending={sending}
         maxLength={500}
+        onEmoji={() => setText((now) => `${now}\u{1F525}`)}
+        emojiLabel="Emoji"
+        onFiles={(files) => toast(`${files.length} picked`)}
+        filesLabel="Add a photo or GIF"
         replying={
           replying
             ? {

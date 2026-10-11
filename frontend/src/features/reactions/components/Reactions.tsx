@@ -238,7 +238,8 @@ export function useReactions({ target, id, summary, people, onChange, actions }:
   };
 }
 
-function pickerTexts(t: ReturnType<typeof useTranslation>["t"]): EmojiPickerTexts {
+/** The emoji picker's texts, translated (the comment box's picker uses them too). */
+export function pickerTexts(t: ReturnType<typeof useTranslation>["t"]): EmojiPickerTexts {
   const categories = [
     "activity",
     "custom",

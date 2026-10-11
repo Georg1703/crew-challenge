@@ -3,7 +3,15 @@ import { useTranslation } from "react-i18next";
 
 import { isApiError, type Member } from "@/api";
 import { useMe } from "@/features/auth";
-import { useReactions, type ReactionSummary } from "@/features/reactions";
+import {
+  ProofTiles,
+  SHOWN_PROOFS,
+  shownTile,
+  useDrafts,
+  useProofUpload,
+  viewerItem,
+} from "@/features/proofs";
+import { pickerTexts, useReactions, type ReactionSummary } from "@/features/reactions";
 import { errorMessage } from "@/i18n/errors";
 import { addDays } from "@/shared/lib/dates";
 import { formatDayLong, formatTime, todayIn } from "@/shared/lib/format";
@@ -13,14 +21,20 @@ import {
   Button,
   CommentBubble,
   Composer,
+  EmojiPicker,
   Icon,
+  ProofMosaic,
+  ProofViewer,
+  Sheet,
   Skeleton,
   StatusPill,
   useToast,
   type MenuAction,
+  type ViewerItem,
 } from "@/shared/ui";
 
 import {
+  commentSubject,
   MAX_LENGTH,
   useAddComment,
   useDeleteComment,
@@ -38,7 +52,9 @@ const FLASH_MS = 1_000;
 /**
  * A target's comments as a chat, like Telegram: oldest first, each writer's run of messages
  * together, a reply showing a quote of what it answers (tap it to go there), reactions inside the
- * bubbles, new ones every 5 s and the message box docked at the bottom. On a phone, holding a
+ * bubbles, photos and GIFs at the top of theirs, new ones every 5 s and the message box docked
+ * at the bottom (emojis of its own; photos picked or pasted upload as tiles over it, and sending
+ * waits for them; a photo alone is a whole message). On a phone, holding a
  * message opens its menu: the quick emojis, "Reply", "Copy text" and, in its
  * first minute while nobody has replied, "Delete". On a computer Reply and the react button show
  * beside a message under the pointer. At the end of the chat new messages come into view; above
@@ -71,13 +87,20 @@ export function Comments({
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [emojis, setEmojis] = useState(false);
+  const [viewing, setViewing] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  const subject = useMemo(() => commentSubject(target, id), [target, id]);
+  const drafts = thread.data?.drafts ?? [];
+  const { uploading, ready } = useDrafts(subject.key, drafts);
+  const pick = useProofUpload(subject, () => thread.refetch());
+  const texts = useMemo(() => pickerTexts(t), [t]);
   const byId = useMemo(() => new Map(people.map((m) => [m.id, m])), [people]);
   const behavior: ScrollBehavior = still ? "auto" : "smooth";
 
-  const list = thread.data ?? [];
+  const list = thread.data?.results ?? [];
   const { end, fresh, toEnd } = useNewest(list, me, behavior);
-  useReadMark(target, id, thread.data, onRead);
+  useReadMark(target, id, thread.data?.results, onRead);
   const byComment = new Map(list.map((c) => [c.id, c]));
   const answered = new Set(list.map((c) => c.parent_id));
   const writer = (memberId: string) => ({
@@ -88,6 +111,20 @@ export function Comments({
   const reply = (comment: Comment) => {
     setReplyTo(comment);
     box.current?.focus();
+  };
+  /** An emoji where the cursor is (or over what is selected), the cursor after it. */
+  const insert = (emoji: string) => {
+    setEmojis(false);
+    const field = box.current;
+    const start = field?.selectionStart ?? text.length;
+    const stop = field?.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + emoji + text.slice(stop);
+    if (next.length > MAX_LENGTH) return;
+    setText(next);
+    window.requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
   };
   const goTo = (commentId: string) => {
     document.getElementById(anchorOf(commentId))?.scrollIntoView({ block: "center", behavior });
@@ -112,12 +149,18 @@ export function Comments({
   /** A message's menu rows, worked out when it opens. */
   const menuOf = (comment: Comment) => (): MenuAction[] => [
     { label: t("comments.reply"), icon: "reply", onSelect: () => reply(comment) },
-    {
-      label: t("comments.copy"),
-      icon: "copy",
-      onSelect: () =>
-        void navigator.clipboard.writeText(comment.text).then(() => toast(t("comments.copied"))),
-    },
+    ...(comment.text
+      ? [
+          {
+            label: t("comments.copy"),
+            icon: "copy",
+            onSelect: () =>
+              void navigator.clipboard
+                .writeText(comment.text)
+                .then(() => toast(t("comments.copied"))),
+          } as const,
+        ]
+      : []),
     ...(deletable(comment, answered.has(comment.id), me)
       ? [
           {
@@ -156,6 +199,7 @@ export function Comments({
             const newDay = !before || dayOf(before) !== day;
             const parent = comment.parent_id ? byComment.get(comment.parent_id) : undefined;
             const quoted = parent && writer(parent.member_id);
+            const who = writer(comment.member_id);
             return (
               <li key={comment.id}>
                 {newDay && (
@@ -165,7 +209,7 @@ export function Comments({
                 )}
                 <Message
                   comment={comment}
-                  {...writer(comment.member_id)}
+                  {...who}
                   people={people}
                   mine={comment.member_id === me}
                   first={newDay || before.member_id !== comment.member_id}
@@ -175,10 +219,24 @@ export function Comments({
                     parent &&
                     quoted && {
                       ...quoted,
-                      text: parent.text,
+                      text: parent.text || t("comments.photo"),
                       onClick: () => goTo(parent.id),
                       label: t("comments.goTo", { name: quoted.name }),
                     }
+                  }
+                  media={
+                    comment.proofs.length > 0 && (
+                      <ProofMosaic
+                        proofs={comment.proofs.map((p) => shownTile(p, t, who.name))}
+                        onOpen={(index) =>
+                          setViewing({
+                            items: comment.proofs.map((p) => viewerItem(p, who.name)),
+                            index,
+                          })
+                        }
+                        moreLabel={t("feed.more", { count: comment.proofs.length - SHOWN_PROOFS })}
+                      />
+                    )
                   }
                   flash={flash === comment.id}
                   menu={menuOf(comment)}
@@ -222,8 +280,49 @@ export function Comments({
                 }
               : undefined
           }
+          onEmoji={() => setEmojis(true)}
+          emojiLabel={t("comments.emoji")}
+          onFiles={(files) => files.forEach(pick)}
+          filesLabel={t("comments.addPhoto")}
+          attached={ready}
+          waiting={uploading}
+          above={
+            (drafts.length > 0 || uploading) && (
+              <ProofTiles
+                subject={subject}
+                title={t("comments.yourPhotos")}
+                proofs={drafts}
+                onChanged={() => thread.refetch()}
+                add={false}
+              />
+            )
+          }
         />
       </div>
+      <Sheet
+        open={emojis}
+        onClose={() => setEmojis(false)}
+        title={t("comments.emoji")}
+        closeLabel={t("common.close")}
+      >
+        <EmojiPicker
+          texts={texts}
+          errorText={t("reactions.pickerFailed")}
+          retryLabel={t("common.retry")}
+          onPick={insert}
+        />
+      </Sheet>
+      <ProofViewer
+        items={viewing?.items ?? []}
+        index={viewing?.index ?? 0}
+        onIndexChange={(index) => setViewing((v) => v && { ...v, index })}
+        open={viewing !== null}
+        onClose={() => setViewing(null)}
+        label={t("proofs.viewer.label")}
+        closeLabel={t("common.close")}
+        previousLabel={t("proofs.viewer.previous")}
+        nextLabel={t("proofs.viewer.next")}
+      />
     </section>
   );
 }
@@ -241,6 +340,7 @@ function Message({
   last,
   time,
   quote,
+  media,
   flash,
   menu,
   onReply,
@@ -255,6 +355,7 @@ function Message({
   last: boolean;
   time: string;
   quote: ComponentProps<typeof CommentBubble>["quote"];
+  media: ComponentProps<typeof CommentBubble>["media"];
   flash: boolean;
   menu: () => MenuAction[];
   onReply: () => void;
@@ -280,6 +381,7 @@ function Message({
       first={first}
       last={last}
       quote={quote}
+      media={media}
       flash={flash}
       reactions={chips}
       actions={

@@ -9,8 +9,8 @@ import { Quote } from "./Quote";
 /**
  * One message of a chat, as Telegram draws it. Others' are on the left: their name (in their
  * avatar color) on the first of a run, their avatar beside the last. Yours are on the right,
- * tinted, without either. Inside the bubble: the `quote` of what it answers, the text, then the
- * `reactions` at the bottom left and the time at the bottom right. `actions` sit beside the
+ * tinted, without either. Inside the bubble: the `quote` of what it answers, its `media` (photos,
+ * a GIF) across the bubble, the text, then the `reactions` at the bottom left and the time at the bottom right. `actions` sit beside the
  * bubble; on a computer they show on hover. The whole message is an `article`, so holding it
  * opens its reactions' menu; `flash` lights it up once (a quote led here).
  */
@@ -24,6 +24,7 @@ export function CommentBubble({
   first = true,
   last = true,
   quote,
+  media,
   reactions,
   actions,
   flash = false,
@@ -42,6 +43,8 @@ export function CommentBubble({
   /** The last of a run: shows their avatar and the bubble's tail. */
   last?: boolean;
   quote?: ComponentProps<typeof Quote>;
+  /** Its photos or GIF (a `ProofMosaic`): the bubble then takes its widest. */
+  media?: ReactNode;
   /** Its reactions' chips; an empty `[data-empty]` one takes no room. */
   reactions?: ReactNode;
   /** "Reply" and the react button, beside the bubble. */
@@ -70,13 +73,14 @@ export function CommentBubble({
         ) : (
           <span className={styles.gutter} aria-hidden="true" />
         ))}
-      <div className={cx(styles.bubble, last && styles.tail)}>
+      <div className={cx(styles.bubble, last && styles.tail, Boolean(media) && styles.withMedia)}>
         {!mine && first && (
           <p className={styles.name} data-color={avatarColor(seed)}>
             {name}
           </p>
         )}
         {quote && <Quote {...quote} />}
+        {media}
         <p className={styles.text}>
           {text}
           {room}
