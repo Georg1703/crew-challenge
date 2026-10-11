@@ -22,7 +22,6 @@ import {
 
 import {
   MAX_LENGTH,
-  MAX_LEVEL,
   useAddComment,
   useDeleteComment,
   useMarkRead,
@@ -40,7 +39,7 @@ const FLASH_MS = 1_000;
  * A target's comments as a chat, like Telegram: oldest first, each writer's run of messages
  * together, a reply showing a quote of what it answers (tap it to go there), reactions inside the
  * bubbles, new ones every 5 s and the message box docked at the bottom. On a phone, holding a
- * message opens its menu: the quick emojis, "Reply" (not on level 5), "Copy text" and, in its
+ * message opens its menu: the quick emojis, "Reply", "Copy text" and, in its
  * first minute while nobody has replied, "Delete". On a computer Reply and the react button show
  * beside a message under the pointer. At the end of the chat new messages come into view; above
  * it a button says how many came and leads down to them.
@@ -112,9 +111,7 @@ export function Comments({
     );
   /** A message's menu rows, worked out when it opens. */
   const menuOf = (comment: Comment) => (): MenuAction[] => [
-    ...(comment.level < MAX_LEVEL
-      ? [{ label: t("comments.reply"), icon: "reply", onSelect: () => reply(comment) } as const]
-      : []),
+    { label: t("comments.reply"), icon: "reply", onSelect: () => reply(comment) },
     {
       label: t("comments.copy"),
       icon: "copy",
@@ -287,15 +284,13 @@ function Message({
       reactions={chips}
       actions={
         <>
-          {comment.level < MAX_LEVEL && (
-            <Button
-              variant="ghost"
-              className={styles.reply}
-              icon={<Icon name="reply" size={18} />}
-              aria-label={t("comments.reply")}
-              onClick={onReply}
-            />
-          )}
+          <Button
+            variant="ghost"
+            className={styles.reply}
+            icon={<Icon name="reply" size={18} />}
+            aria-label={t("comments.reply")}
+            onClick={onReply}
+          />
           {button}
         </>
       }

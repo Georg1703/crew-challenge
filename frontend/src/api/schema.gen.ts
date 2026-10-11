@@ -320,7 +320,7 @@ export interface paths {
         /** @description A target's comments and replies, oldest first, each with its reactions. */
         get: operations["comments_list"];
         put?: never;
-        /** @description Comment, or reply to a comment (`parent_id`; a level 5 comment takes no reply). */
+        /** @description Comment, or reply to a comment on the same target (`parent_id`). */
         post: operations["comments_add"];
         delete?: never;
         options?: never;
@@ -1007,8 +1007,6 @@ export interface components {
              * @description The comment it answers.
              */
             parent_id: string | null;
-            /** @description 1 for a comment, up to 5 for replies. */
-            level: number;
             text: string;
             /** Format: date-time */
             created_at: string;

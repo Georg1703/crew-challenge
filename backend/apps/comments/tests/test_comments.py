@@ -6,7 +6,7 @@ import time_machine
 from django.contrib.contenttypes.fields import GenericRelation
 
 from apps.comments import selectors, services
-from apps.comments.models import MAX_LENGTH, MAX_LEVEL, Comment
+from apps.comments.models import MAX_LENGTH, Comment
 from apps.core.errors import ValidationFailed
 from apps.crews import targets
 from apps.crews.models import Member
@@ -50,14 +50,13 @@ def say(member, on, text="Bravo!", parent=None):
     )
 
 
-def test_replies_go_five_levels_deep(people):
+def test_any_comment_can_be_answered_however_long_the_chain(people):
     ana, bogdan = people
     comment = say(ana, bogdan)
-    for level in range(2, MAX_LEVEL + 1):
-        comment = say(bogdan if level % 2 else ana, bogdan, parent=comment)
-        assert comment.level == level
-    with pytest.raises(services.ReplyTooDeep):
-        say(ana, bogdan, parent=comment)
+    for turn in range(8):
+        reply = say(bogdan if turn % 2 else ana, bogdan, parent=comment)
+        assert reply.parent_id == comment.pk
+        comment = reply
 
 
 def test_the_text_is_trimmed_and_kept_short(people):
@@ -199,9 +198,8 @@ def test_the_api(browser, people):
     made = browser.post(url, {"text": "Bravo!"}, format="json")
     assert made.status_code == 201
     first = made.json()
-    assert (first["member_id"], first["level"], first["parent_id"], first["reactions"]) == (
+    assert (first["member_id"], first["parent_id"], first["reactions"]) == (
         str(ana.pk),
-        1,
         None,
         {"groups": [], "mine": None},
     )
@@ -212,9 +210,9 @@ def test_the_api(browser, people):
     )
     assert reacted.status_code == 200
     thread = browser.get(url).json()["results"]
-    assert [(c["text"], c["level"], c["parent_id"]) for c in thread] == [
-        ("Bravo!", 1, None),
-        ("Mersi", 2, first["id"]),
+    assert [(c["text"], c["parent_id"]) for c in thread] == [
+        ("Bravo!", None),
+        ("Mersi", first["id"]),
     ]
     assert thread[0]["reactions"]["mine"] == FIRE
     blank = browser.post(url, {"text": " "}, format="json")

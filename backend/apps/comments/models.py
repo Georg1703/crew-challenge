@@ -5,13 +5,12 @@ from django.db import models
 from apps.crews.models import CrewScopedModel, CrewScopedSoftDeleteModel, Member
 
 MAX_LENGTH = 500  # characters
-MAX_LEVEL = 5  # a comment is level 1, a reply to it level 2, ...
 
 
 class Comment(CrewScopedSoftDeleteModel):
     """A member's words on a target that takes comments (anything registered in
     `apps.crews.targets` with `comments=True`: a journal card now), or a reply to another comment
-    on it, down to `MAX_LEVEL`. Never edited; deleting is soft.
+    on it (any comment, however long the chain). Never edited; deleting is soft.
 
     A generic key has no database foreign key: every target model that takes comments declares a
     `GenericRelation` to this model, so deleting the target deletes its comments.
@@ -27,10 +26,7 @@ class Comment(CrewScopedSoftDeleteModel):
         null=True,
         blank=True,
         related_name="replies",
-        help_text="The comment it answers; empty on level 1.",
-    )
-    level = models.PositiveSmallIntegerField(
-        default=1, help_text="The parent's level + 1 (stored: a comment never moves)."
+        help_text="The comment it answers; empty on a comment that answers none.",
     )
     text = models.CharField(max_length=MAX_LENGTH)
     reactions = GenericRelation(
@@ -40,11 +36,6 @@ class Comment(CrewScopedSoftDeleteModel):
     class Meta(CrewScopedSoftDeleteModel.Meta):
         ordering = ("created_at",)
         indexes = [models.Index(fields=["target_type", "target_id", "created_at"])]
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(level__gte=1, level__lte=MAX_LEVEL), name="comment_level"
-            )
-        ]
 
     def __str__(self) -> str:
         return f"{self.member}: {self.text[:40]}"

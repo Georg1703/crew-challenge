@@ -15,7 +15,6 @@ class CommentOut(serializers.Serializer):
     id = serializers.UUIDField()
     member_id = serializers.UUIDField(help_text="Its writer.")
     parent_id = serializers.UUIDField(allow_null=True, help_text="The comment it answers.")
-    level = serializers.IntegerField(help_text="1 for a comment, up to 5 for replies.")
     text = serializers.CharField()
     created_at = serializers.DateTimeField()
     reactions = ReactionSummaryOut(help_text="Target `comment`, this comment's id.")

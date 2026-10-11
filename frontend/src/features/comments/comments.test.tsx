@@ -18,7 +18,6 @@ const say = (id: string, text: string, over: Partial<Comment> = {}): Comment => 
   id,
   member_id: bogdan.id,
   parent_id: null,
-  level: 1,
   text,
   created_at: new Date(NOW - 10 * 60_000).toISOString(),
   reactions: NONE,
@@ -79,7 +78,7 @@ describe("Comments", () => {
     serve([
       say("a", "Bravo!"),
       say("b", "Five in a row"),
-      say("c", "Mersi", { member_id: ana.id, parent_id: "a", level: 2 }),
+      say("c", "Mersi", { member_id: ana.id, parent_id: "a" }),
     ]);
     const jump = vi.spyOn(Element.prototype, "scrollIntoView");
     show();
@@ -94,10 +93,10 @@ describe("Comments", () => {
     expect(jump.mock.contexts[0]).toBe(await message("Bravo!"));
   });
 
-  it("offers Reply above level 5, Copy always, Delete on my fresh message", async () => {
+  it("offers Reply and Copy always, Delete on my fresh message", async () => {
     serve([
       say("a", "Bravo!"),
-      say("b", "Deep", { parent_id: "a", level: 5 }),
+      say("b", "Deep", { parent_id: "a" }),
       say("c", "Typo here", { member_id: ana.id, created_at: new Date().toISOString() }),
     ]);
     show();
@@ -108,8 +107,8 @@ describe("Comments", () => {
     expect(within(top).queryByRole("menuitem", { name: "Delete" })).not.toBeInTheDocument();
     await closeMenu();
 
-    const deep = await menuOf("Deep");
-    expect(within(deep).queryByRole("menuitem", { name: "Reply" })).not.toBeInTheDocument();
+    const deep = await menuOf("Deep"); // a reply to a reply takes replies too
+    expect(within(deep).getByRole("menuitem", { name: "Reply" })).toBeInTheDocument();
     await closeMenu();
 
     const mine = await menuOf("Typo here");
@@ -121,7 +120,7 @@ describe("Comments", () => {
     const post = vi
       .spyOn(api, "POST")
       .mockImplementation((() =>
-        ok(say("r", "Mersi", { member_id: ana.id, parent_id: "a", level: 2 }), 201)) as never);
+        ok(say("r", "Mersi", { member_id: ana.id, parent_id: "a" }), 201)) as never);
     show();
 
     await userEvent.click(within(await message("Bravo!")).getByRole("button", { name: "Reply" }));
@@ -155,7 +154,7 @@ describe("Comments", () => {
   it("keeps the text when sending fails", async () => {
     serve([]);
     vi.spyOn(api, "POST").mockImplementation((() =>
-      fail(409, { code: "reply_too_deep" })) as never);
+      fail(404, { code: "target_not_found" })) as never);
     show();
 
     expect(await screen.findByText("No comments yet. Say something nice.")).toBeInTheDocument();
@@ -164,7 +163,7 @@ describe("Comments", () => {
     await userEvent.type(box, "Hello");
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
-    expect(await screen.findByText("Replies go 5 levels deep at most.")).toBeInTheDocument();
+    expect(await screen.findByText("This is not here any more.")).toBeInTheDocument();
     expect(box).toHaveValue("Hello");
   });
 });

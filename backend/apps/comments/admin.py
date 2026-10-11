@@ -11,7 +11,7 @@ from .models import Comment, CommentRead
 class CommentAdmin(admin.ModelAdmin):
     """Every comment, deleted ones too (restore one by clearing `deleted_at`)."""
 
-    list_display = ("created_at", "member", "level", "text", "target_type", "deleted_at")
+    list_display = ("created_at", "member", "text", "target_type", "deleted_at")
     list_filter = ("crew", "deleted_at")
     search_fields = ("text",)
     raw_id_fields = ("member", "parent")

@@ -10,7 +10,7 @@ from apps.crews import targets
 from apps.crews.models import Member
 
 from . import selectors
-from .models import MAX_LENGTH, MAX_LEVEL, Comment, CommentRead
+from .models import MAX_LENGTH, Comment, CommentRead
 
 DELETE_WINDOW = timedelta(minutes=1)
 
@@ -23,11 +23,6 @@ class CommentNotFound(NotFound):
 class NotYourComment(PermissionDenied):
     code = "not_your_comment"
     message = "Only its writer can delete a comment."
-
-
-class ReplyTooDeep(Conflict):
-    code = "reply_too_deep"
-    message = f"Replies go {MAX_LEVEL} levels deep at most."
 
 
 class CommentHasReplies(Conflict):
@@ -56,13 +51,10 @@ def add(
             parent = Comment.objects.select_for_update().filter(pk=parent_id, **on).first()
             if parent is None:
                 raise CommentNotFound()
-            if parent.level >= MAX_LEVEL:
-                raise ReplyTooDeep()
         return Comment.objects.create(
             crew_id=found.crew_id,
             member=member,
             parent=parent,
-            level=parent.level + 1 if parent is not None else 1,
             text=text,
             **on,
         )

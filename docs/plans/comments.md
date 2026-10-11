@@ -16,7 +16,7 @@ members notice comments meant for them without hunting; comments attach to anyth
 ## Goal
 
 Every card in the crew's journal (`JournalEntry`: a check-in post, a spin drawn or served, the
-crew's finished day) can be commented on, every comment can be answered (down to 5 levels) and
+crew's finished day) can be commented on, every comment can be answered and
 reacted to. The feed shows each card's comment count, who wrote last and a dot when something
 is unread; the Crew tab shows a badge for new comments meant for you.
 
@@ -42,8 +42,8 @@ Agreed (2026-10-10):
   commented on.
 - Comments are generic: they attach to any registered target, like reactions. Journal cards
   are the only target now.
-- Replies nest at most 5 levels (a comment is level 1, a reply to it level 2, ...). A level 5
-  comment has no "Reply".
+- Any comment can be answered, however long the chain; the reply quotes it (2026-10-11: the
+  5-level limit was there for the indented thread and went with it).
 - Deleting: only the writer, only within 1 minute of writing, only while it has no replies.
   Comments are soft deleted: the comment leaves the thread, the row stays (the admin can
   restore it).
@@ -60,21 +60,19 @@ Agreed (2026-10-10):
   comment selects no text on a phone).
 
 With a proposed default (confirm or change):
-1. **Replies keep the 5-level limit** although nothing is indented: a level 5 comment shows no
-   "Reply" (the owner's rule; dropping it is one line in `services.add`).
-2. **On a computer**, Reply and the react button show beside a comment under the pointer; the
+1. **On a computer**, Reply and the react button show beside a comment under the pointer; the
    react button opens the same menu as a hold.
-3. **Undoing a post someone else commented on is refused** (`409 post_has_comments`). Today an
+2. **Undoing a post someone else commented on is refused** (`409 post_has_comments`). Today an
    undo deletes the card with its reactions; deleting others' words silently is worse. Not
    checked: the crew's day card an undo removes when the day is no longer finished (its
    comments go with it; it needs a commented crew card and an undo after it, the same day).
-4. **The card's page is full screen** (no tab bar), like the proposal form: the composer sits
+3. **The card's page is full screen** (no tab bar), like the proposal form: the composer sits
    at the bottom.
-5. **Sending waits for the server** (about 0.2 s): the send button shows it at once, the
+4. **Sending waits for the server** (about 0.2 s): the send button shows it at once, the
    comment appears with the answer, the box empties; on an error the text stays. No
    optimistic insert: a comment with a temporary id would race the 5 s refresh and need a
    rollback.
-6. **New members** see older comments as read: what was said before they joined never counts
+5. **New members** see older comments as read: what was said before they joined never counts
    as unread.
 
 ## How new comments reach people
@@ -101,12 +99,10 @@ New app `apps/comments`, generic like `apps/reactions`:
 Comment(CrewScopedSoftDeleteModel)     # id, crew, created_at, updated_at, deleted_at
   target_type, target_id               # generic key: the commented thing (a card now)
   member    FK Member, cascade         # the writer
-  parent    FK Comment, null, cascade  # the comment it answers; empty on level 1
-  level     small int, 1..5            # parent's level + 1; stored (a comment never moves)
+  parent    FK Comment, null, cascade  # the comment it answers, on the same target
   text      up to 500 characters
   reactions GenericRelation(Reaction)  # comments are a reaction target
   index (target_type, target_id, created_at)
-  check level between 1 and 5
 
 CommentRead(CrewScopedModel)           # stage 4
   member FK Member, cascade
@@ -130,7 +126,7 @@ CommentRead(CrewScopedModel)           # stage 4
 
 ```
 GET    /api/v1/comments/{target}/{id}          the whole thread, oldest first: [{id, member_id,
-                                               parent_id, level, text, created_at, reactions}]
+                                               parent_id, text, created_at, reactions}]
 POST   /api/v1/comments/{target}/{id}          {text, parent_id?} -> 201 the comment
 DELETE /api/v1/comments/{comment_id}           yours, within a minute, without replies -> 204
 PUT    /api/v1/comments/{target}/{id}/read     marks the thread read up to now -> 204 (stage 4)
@@ -143,15 +139,14 @@ GET    /api/v1/journal                         each card gains `comments`: {coun
 
 - No cursor on a thread: threads are short. Add one if a thread passes a few hundred.
 - New error codes: `comment_not_found`, `card_not_found` (404), `not_your_comment` (403),
-  `reply_too_deep`,
   `comment_has_replies`, `comment_too_old`, `post_has_comments` (409).
 - Names and avatars come from the crew's members, as for reactions; the thread carries ids only.
 
 ## Rules in services
 
 - `add(member, target, id, text, parent_id)`: the target takes comments and is visible to the
-  member; the text is trimmed, 1 to 500 characters; a parent must be on the same target and
-  below level 5; the parent row is locked (`select_for_update`) so a reply and a delete never
+  member; the text is trimmed, 1 to 500 characters; a parent must be on the same target; the
+  parent row is locked (`select_for_update`) so a reply and a delete never
   cross.
 - `delete(member, comment_id)`: the writer only; `clock.now()` within 1 minute of
   `created_at`; no replies that are not deleted; the row is locked; soft.
@@ -192,13 +187,13 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
   test covers it), `GET /journal/{id}`.
 - Check-ins: the undo rule.
 - import-linter: comments know their targets only through the registry.
-- Tests: levels 1 to 5 and the refusal at 6; delete at 59 s and at 61 s (time-machine), with a
+- Tests: a chain of replies; delete at 59 s and at 61 s (time-machine), with a
   reply, with a deleted reply, someone else's; a deleted comment leaves the thread and the
   counts; a reply racing a delete; a hidden card (left challenge, deleted challenge, another
   crew) -> 404; a reaction on a comment, and on a hidden one -> 404; undo refused with others'
   comments, allowed with only your own; deleting a card deletes its comments.
 - Docs: `api-conventions.md` (endpoints, codes), `backend.md` (the registry), glossary
-  (Comment, Reply, Level), AGENTS.md (comments join the v1 list: seven things).
+  (Comment, Reply), AGENTS.md (comments join the v1 list: seven things).
 
 ### Stage 3 - The card's page
 
@@ -225,8 +220,8 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
 - "Delete" is offered when the menu opens: your comment, no replies, under a minute old. No
   timers; the server decides at the edge.
 - i18n: en and ro.
-- Tests: Vitest for a writer's name once per run, a quote leading to its message, Reply missing
-  at level 5, Copy text, Delete offered only when allowed, sending a reply and an error keeping
+- Tests: Vitest for a writer's name once per run, a quote leading to its message, Reply and
+  Copy text on every comment, Delete offered only when allowed, sending a reply and an error keeping
   the text. e2e: Ana comments, Bogdan's open page shows it within
   5 s, he holds it and replies, reacts to it; Ana deletes hers within the minute, and cannot
   once replied.
@@ -248,7 +243,6 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
 | Case | Behaviour |
 |---|---|
 | Replying to a comment deleted meanwhile | `404 comment_not_found`; the text stays in the box, the reply's quote goes, a toast says why |
-| Replying at level 5 | No "Reply"; the API answers `409 reply_too_deep` |
 | Deleting at the minute's edge | The server decides; after it, `409 comment_too_old` |
 | A reply and a delete at the same moment | Row locks: either the reply lands and the delete is refused, or the delete wins and the reply gets 404 |
 | Deleting a reply, then its parent | Allowed within the parent's minute: deleted replies do not count |

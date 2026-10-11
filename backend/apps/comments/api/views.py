@@ -35,7 +35,6 @@ def _data(comment: Comment, reacted: reactions.Summary) -> dict[str, Any]:
         "id": comment.pk,
         "member_id": comment.member_id,
         "parent_id": comment.parent_id,
-        "level": comment.level,
         "text": comment.text,
         "created_at": comment.created_at,
         "reactions": asdict(reacted),
@@ -60,7 +59,7 @@ class ThreadView(APIView):
         operation_id="comments_add",
     )
     def post(self, request: Request, target: str, target_id: UUID) -> Response:
-        """Comment, or reply to a comment (`parent_id`; a level 5 comment takes no reply)."""
+        """Comment, or reply to a comment on the same target (`parent_id`)."""
         data = CommentIn(data=request.data)
         data.is_valid(raise_exception=True)
         comment = services.add(

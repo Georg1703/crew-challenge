@@ -10,8 +10,6 @@ export type CommentSummary = components["schemas"]["CommentSummaryOut"];
 export type CommentTarget =
   paths["/api/v1/comments/{target}/{target_id}"]["get"]["parameters"]["path"]["target"];
 
-/** A comment of level 5 takes no reply. */
-export const MAX_LEVEL = 5;
 export const MAX_LENGTH = 500;
 /** A comment can be deleted in its first minute (the server decides at the edge). */
 export const DELETE_MS = 60_000;

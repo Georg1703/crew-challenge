@@ -102,7 +102,7 @@ describe("Reactions", () => {
     expect(screen.getByRole("button", { name: `${THUMBS}, from you` })).toBeInTheDocument();
 
     answer(await fail(404, { code: "target_not_found" }));
-    expect(await screen.findByText("You can't react to this any more.")).toBeInTheDocument();
+    expect(await screen.findByText("This is not here any more.")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: `${THUMBS}, from you` })).not.toBeInTheDocument(),
     );
