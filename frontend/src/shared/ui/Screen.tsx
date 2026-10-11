@@ -4,7 +4,10 @@ import { cx } from "@/shared/lib/cx";
 
 import styles from "./Screen.module.css";
 
-/** Page layout: centered column, safe areas, room for the tab bar. Every route uses it. */
+/**
+ * Page layout: centered column, safe areas, room for the tab bar, at least as tall as the screen
+ * (a page can keep something at its bottom). Every route uses it.
+ */
 export function Screen({
   title,
   action,

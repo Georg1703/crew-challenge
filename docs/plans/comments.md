@@ -1,12 +1,13 @@
 # Plan: comments on the crew's journal
 
-Status: agreed (2026-10-10); stages 1 and 2 built, stage 3 next. Four stages after the plan, on one branch
+Status: agreed (2026-10-10); stages 1 to 3 built, stage 4 next. Four stages after the plan, on one branch
 (`feat/comments`), one commit per stage, each committed after the owner's review.
 Each stage works on its own and with the release before it still serving.
 
 Design: variant C of the "Comments designs" canvas
 (https://claude.ai/artifact/21HUX8FPpoGdy45FQLPURc): the feed card says who commented and how
-many; tapping it opens the card's own page with the comments under it.
+many; tapping it opens the card's own page with the comments under it, drawn like Telegram
+(row T of the canvas, 2026-10-11).
 
 Priorities, in order: a new comment reaches the people looking at the card within seconds;
 members notice comments meant for them without hunting; comments attach to anything registered
@@ -25,7 +26,7 @@ is unread; the Crew tab shows a badge for new comments meant for you.
 |---|---|---|
 | Feed card footer | Reaction chips and a react button | Reaction chips; the react button on computers only (on a phone, hold the card); a comments line: the last writers' avatars, "3 comments", a dot when unread |
 | Talking about a post | Not possible in the app | Tap the comments line (or "Comment"): the card's page with its thread and a box to write |
-| Answering or reacting to a comment | - | Phone: hold the comment, then an emoji, "Reply" or "Delete". Computer: "Reply" and the react button under it |
+| Answering or reacting to a comment | - | Phone: hold the comment, then an emoji, "Reply", "Copy text" or "Delete". Computer: Reply and the react button beside it, on hover |
 | Fixing a typo | - | Delete your comment within a minute, if nobody has replied, and write it again |
 | Knowing someone answered you | - | A badge on the Crew tab, a dot on the card |
 
@@ -50,12 +51,19 @@ Agreed (2026-10-10):
   "Delete". Comments take reactions like cards (one per person).
 - Text up to 500 characters; no editing (delete within the minute and write again).
 
+- The page is a chat like Telegram (2026-10-11, replacing an indented thread): one flat list,
+  oldest first; a reply shows a quote of what it answers (tap it to go there); each writer's run
+  together, name on the first, avatar beside the last; yours on the right in clay-soft;
+  reactions inside the bubble at the bottom left, the time at the bottom right; a day pill when
+  the day changes. The card stays pinned as a line under the bar once it scrolls away; scrolled
+  up when new comments come, a button says how many. The menu adds "Copy text" (holding a
+  comment selects no text on a phone).
+
 With a proposed default (confirm or change):
-1. **Thread layout.** All comments left-aligned, each level indented one step under its parent
-   (level 5: four steps), a thin line joining a comment to its replies; your own bubbles in
-   clay-soft. C2's right-aligned own bubbles fit a chat, not a tree.
-2. **On a computer**, each comment shows "Reply" and the react button; the react button opens
-   the same menu as a hold (emojis, "Reply", "Delete").
+1. **Replies keep the 5-level limit** although nothing is indented: a level 5 comment shows no
+   "Reply" (the owner's rule; dropping it is one line in `services.add`).
+2. **On a computer**, Reply and the react button show beside a comment under the pointer; the
+   react button opens the same menu as a hold.
 3. **Undoing a post someone else commented on is refused** (`409 post_has_comments`). Today an
    undo deletes the card with its reactions; deleting others' words silently is worse. Not
    checked: the crew's day card an undo removes when the day is no longer finished (its
@@ -198,24 +206,28 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
   - `ReactionMenu`: `actions` (rows under the emojis: "Reply", "Delete", "Who reacted"); the
     separate "Who reacted" props become one of them.
   - `Composer`: a growing text box (up to about 5 lines, native `maxlength` 500), the send
-    button with its sending state, a "Replying to Ana" line with a cancel button.
-  - `CommentBubble`: avatar, name, time, text (long words wrap), indent by level, your own
-    tint, a slot for reactions.
-  - `FeedCard`: a `comments` slot under the footer.
-- Reactions: `<Reactions actions=...>` passes them to its menu; a hold on the comment (its own
-  `article`) opens it, as on cards.
+    button with its sending state, and when replying the `Quote` of what it answers with a stop
+    button.
+  - `CommentBubble`: a chat message (see Decisions), with its `Quote`, its reactions inside and
+    its actions beside it; `Quote`: what a message answers.
+  - `FeedCard`: `comments`, a last row linking to the card's page (last writers, "3 comments").
+  - `Screen`: at least as tall as the screen, so the composer sits at the bottom of a short page.
+- Reactions: `actions` rows for the menu; `useReactions` gives the chips and the button apart (a
+  message puts its chips in the bubble and its button beside it); the menu is placed inside the
+  screen wherever its button is. A hold on the message (its own `article`) opens it, as on cards.
 - Check-ins: the card drawing moves out of `CrewFeed` into `JournalCard`, used by the feed and
-  the card's page; route `/crew/cards/:id` (full screen): back to Crew, the card, the thread,
-  the composer; loading, empty ("No comments yet") and not found states.
+  the card's page; route `/crew/cards/:id` (full screen): a bar with back and the count (the
+  card pinned in it as a `Quote` once scrolled away), the card, the chat, the composer; loading,
+  empty ("No comments yet") and not found states.
 - `features/comments`: `useThread` (5 s while visible), `useAddComment`, `useDeleteComment`,
-  `CommentThread` (the flat list put in tree order and drawn flat, indented by level: no
-  `article` inside another, so holding a reply never opens its parent's menu), `CommentsLine`
-  (the feed card's line, or "Comment" when there are none).
+  `Comments` (the chat: runs, day pills, quotes that lead to what they answer, "3 new" while
+  scrolled up, following the newest at the end).
 - "Delete" is offered when the menu opens: your comment, no replies, under a minute old. No
   timers; the server decides at the edge.
 - i18n: en and ro.
-- Tests: Vitest for the tree order, Reply missing at level 5, Delete offered only when allowed,
-  sending and an error keeping the text. e2e: Ana comments, Bogdan's open page shows it within
+- Tests: Vitest for a writer's name once per run, a quote leading to its message, Reply missing
+  at level 5, Copy text, Delete offered only when allowed, sending a reply and an error keeping
+  the text. e2e: Ana comments, Bogdan's open page shows it within
   5 s, he holds it and replies, reacts to it; Ana deletes hers within the minute, and cannot
   once replied.
 - Check on a real iPhone and Android phone: the composer stays above the keyboard; holding a
@@ -235,12 +247,12 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
 
 | Case | Behaviour |
 |---|---|
-| Replying to a comment deleted meanwhile | `404 comment_not_found`; the text stays in the box, the "Replying to" line goes, a toast says why |
+| Replying to a comment deleted meanwhile | `404 comment_not_found`; the text stays in the box, the reply's quote goes, a toast says why |
 | Replying at level 5 | No "Reply"; the API answers `409 reply_too_deep` |
 | Deleting at the minute's edge | The server decides; after it, `409 comment_too_old` |
 | A reply and a delete at the same moment | Row locks: either the reply lands and the delete is refused, or the delete wins and the reply gets 404 |
 | Deleting a reply, then its parent | Allowed within the parent's minute: deleted replies do not count |
-| An admin deletes a comment with replies | Its replies leave the thread with it (they hang under a hidden comment); restoring it brings them back |
+| An admin deletes a comment that was answered | Its replies stay in the chat, without their quote; restoring it brings the quotes back |
 | Writing on a card that was just undone | `404 target_not_found`; the page shows the not found state |
 | Undoing a post others commented on | Refused (`post_has_comments`); with only your own comments it goes, with them |
 | Leaving a challenge | Its cards disappear for you, with their threads; your comments stay for the others |
@@ -260,7 +272,6 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
 | The keyboard covers the composer on iPhone | `100dvh` page with the composer at its bottom; checked on a real iPhone in stage 3; `visualViewport` offset if needed |
 | A hold on a comment selects its text (iOS) | `user-select: none` and `-webkit-touch-callout: none` on the bubble, as `HoldButton` has; copying a comment's text is then not possible (a "Copy" action is easy to add); checked on a real iPhone |
 | Polling load | 5 small queries per open page every 5 s; measured in stage 3; the ETag, then SSE, is the path if it ever matters |
-| Deep threads on a narrow phone | 4 indent steps of `--space-3` at most; text wraps |
 | Members miss the hold on phones | It already works on cards; a one-time hint is easy to add later |
 | Scope | v1 lists six things: comments become the seventh (AGENTS.md and the glossary change in stage 2) |
 

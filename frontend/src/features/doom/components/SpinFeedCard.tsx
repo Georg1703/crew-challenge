@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { components } from "@/api";
@@ -27,6 +27,7 @@ export function SpinFeedCard({
   time,
   onOpenProof,
   reactions,
+  comments,
 }: {
   member: Person;
   challenge: Challenge;
@@ -37,6 +38,8 @@ export function SpinFeedCard({
   time: string;
   onOpenProof: (index: number) => void;
   reactions: ReactNode;
+  /** The link to its comments (see `FeedCard`). */
+  comments?: ComponentProps<typeof FeedCard>["comments"];
 }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
@@ -62,6 +65,7 @@ export function SpinFeedCard({
       moreLabel={t("feed.more", { count: proofs.length - SHOWN_PROOFS })}
       facts={facts}
       reactions={reactions}
+      comments={comments}
     />
   );
 }

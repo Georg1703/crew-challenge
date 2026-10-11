@@ -159,6 +159,7 @@
   --ring-current: var(--ring-gap), 0 0 0 4px var(--color-focus-ring);
 
   /* ---------- Semantic: layering ---------- */
+  --z-behind: -1; /* under a box's content, over its background (the box is isolated) */
   --z-sticky: 1; /* a day's divider over the cards scrolling under it */
   --z-popover: 5; /* the quick row of reactions, over the cards and dividers around it */
   --z-tabbar: 10;
@@ -189,6 +190,8 @@
   --story-avatar-size: 4.25rem; /* the crew's avatars with their day rings */
   --story-avatar-size-lg: 5.5rem; /* the same, at the top of a member's page */
   --reaction-chip-height: 1.625rem;
+  --comment-max-width: 80%; /* a chat message's bubble, of the row */
+  --composer-max-height: 8.75rem; /* the message box grows to about five lines, then scrolls */
   --emoji-picker-height: 22rem; /* the full emoji picker in a sheet */ /* its tap area still reaches --tap-min */
   --tabbar-height: 64px;
   --content-max-width: 34rem;

@@ -22,6 +22,7 @@ export const checkinsKey = ["checkins"] as const;
 const todayKey = [...checkinsKey, "today"] as const;
 const boardKey = (id: string, month: string) => [...checkinsKey, "board", id, month] as const;
 const journalKey = [...checkinsKey, "journal"] as const;
+const cardKey = (id: string) => [...checkinsKey, "card", id] as const;
 const dayKey = (id: string, day: string) => [...checkinsKey, "day", id, day] as const;
 const memberKey = (id: string) => [...checkinsKey, "member", id] as const;
 type WindowsQuery = { start?: string; until?: string };
@@ -99,7 +100,23 @@ export function useJournal() {
 
 type JournalPages = InfiniteData<JournalPage, string>;
 
-/** Put a card's new reactions into the cached journal (the reactions feature calls it). */
+/** One card (its own page): from the cached journal at once when it is there, then fresh. */
+export function useJournalCard(id: string) {
+  const client = useQueryClient();
+  return useQuery({
+    queryKey: cardKey(id),
+    queryFn: () =>
+      call(api.GET("/api/v1/journal/{entry_id}", { params: { path: { entry_id: id } } })),
+    initialData: () =>
+      client
+        .getQueryData<JournalPages>(journalKey)
+        ?.pages.flatMap((page) => page.results)
+        .find((entry) => entry.id === id),
+    initialDataUpdatedAt: () => client.getQueryState(journalKey)?.dataUpdatedAt,
+  });
+}
+
+/** Put a card's new reactions into the cached journal and card (the reactions feature calls it). */
 export function usePatchJournalReactions() {
   const client = useQueryClient();
   return useCallback(
@@ -118,6 +135,7 @@ export function usePatchJournalReactions() {
             }
           : data,
       );
+      client.setQueryData<JournalEntry>(cardKey(id), (entry) => entry && { ...entry, reactions });
     },
     [client],
   );

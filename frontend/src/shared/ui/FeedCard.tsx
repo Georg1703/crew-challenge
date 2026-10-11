@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 
 import { cx } from "@/shared/lib/cx";
 
 import { Avatar, AvatarStack } from "./Avatar";
 import { ChallengeChip } from "./ChallengeChip";
 import styles from "./FeedCard.module.css";
-import type { IconName } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 import { ProgressBar } from "./ProgressBar";
 import { ProofMosaic, type FeedProof } from "./ProofMosaic";
 
@@ -16,7 +17,8 @@ type Person = { id: string; name: string; seed: string };
  * today's ring, or a stack for a group), what in one line, the challenge as a chip and when. The
  * body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
  * target, or a big number for a streak milestone; a plain check-in or a group has none. The
- * footer holds short facts ("7 days in a row") and, at its end, the `reactions`.
+ * footer holds short facts ("7 days in a row") and, at its end, the `reactions`; last, `comments`:
+ * a link to the card's thread with who wrote last and "3 comments" (or "Comment").
  * `tone="success"` marks a milestone or the whole crew finishing the day.
  */
 export function FeedCard({
@@ -34,6 +36,7 @@ export function FeedCard({
   moreLabel,
   facts = [],
   reactions,
+  comments,
 }: {
   /** One member: an avatar. */
   person?: Person;
@@ -63,6 +66,8 @@ export function FeedCard({
   facts?: ReactNode[];
   /** The reactions (chips and the react button), at the end of the footer row. */
   reactions?: ReactNode;
+  /** Under the footer: a link to the card's comments, with its last writers ("3 comments"). */
+  comments?: { to: string; text: string; people: Person[]; peopleLabel: string };
 }) {
   const footer = facts.length > 0 || reactions;
   // One stage per card, the middle a reaction flies over: the photos when there are any.
@@ -122,6 +127,17 @@ export function FeedCard({
             </div>
           )}
         </footer>
+      )}
+      {comments && (
+        <Link to={comments.to} className={styles.comments}>
+          {comments.people.length > 0 ? (
+            <AvatarStack members={comments.people} label={comments.peopleLabel} />
+          ) : (
+            <Icon name="messageCircle" size={20} />
+          )}
+          <span className={styles.commentsText}>{comments.text}</span>
+          <Icon name="chevronRight" size={18} />
+        </Link>
       )}
     </article>
   );

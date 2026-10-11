@@ -78,3 +78,40 @@
 .memberProofs > :last-child {
   align-self: stretch;
 }
+
+/* A card's page: a bar stuck to the top of the screen (it undoes Screen's padding there) with
+   back and the title, and under them the card's pinned line once it has scrolled away. */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: calc((env(safe-area-inset-top) + var(--space-6)) * -1) calc(var(--space-5) * -1) 0;
+  padding: calc(env(safe-area-inset-top) + var(--space-2)) var(--space-5) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.back {
+  min-width: var(--tap-min);
+  margin-left: calc(var(--space-3) * -1);
+  padding: 0;
+}
+
+.topTitle {
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+}

@@ -108,6 +108,16 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* On a phone a footer holding only reactions with no chips shows nothing (the react button is
+   hidden there; holding the card reacts): fold it, keeping the button for screen readers. */
+@media (hover: none), (pointer: coarse) {
+  .foot:not(:has(.facts)):has([data-empty]) {
+    margin-top: calc(var(--space-3) * -1);
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
 .success .foot {
   border-top-color: var(--color-success-line);
 }
@@ -132,4 +142,28 @@
   color: var(--color-text-muted);
   font-size: var(--text-small);
   line-height: var(--leading-small);
+}
+
+/* The link to the card's comments: who wrote last, "3 comments", a chevron. */
+.comments {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  margin: calc(var(--space-2) * -1) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+  text-decoration: none;
+}
+
+.comments:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-focus-ring);
+}
+
+.commentsText {
+  flex: 1;
+  min-width: 0;
 }

@@ -15,6 +15,8 @@ import {
   ChallengeChip,
   CheckList,
   ChipGroup,
+  CommentBubble,
+  Composer,
   DayBar,
   DayBars,
   DayBarsAxis,
@@ -39,6 +41,7 @@ import {
   ProofMosaic,
   ProofTile,
   ProofViewer,
+  Quote,
   type RingSegment,
   type ViewerItem,
   QrCode,
@@ -638,6 +641,15 @@ export function DesignRoute() {
             moreLabel="2 more proofs"
             facts={["5 days in a row"]}
             reactions={<ReactionsDemo />}
+            comments={{
+              to: "/design",
+              text: "3 comments",
+              people: [
+                { id: "dan", name: "Dan", seed: "dan" },
+                { id: "bogdan", name: "Bogdan", seed: "bogdan" },
+              ],
+              peopleLabel: "Who commented",
+            }}
           />
           <FeedCard
             person={{ id: "bogdan", name: "Bogdan", seed: "bogdan" }}
@@ -669,6 +681,7 @@ export function DesignRoute() {
             text="Ana kept it up"
             challenge={{ icon: "activity", label: "Walk" }}
             highlight={{ value: "7", text: "days in a row" }}
+            comments={{ to: "/design", text: "Comment", people: [], peopleLabel: "Who commented" }}
           />
           <FeedCard
             people={{
@@ -694,6 +707,10 @@ export function DesignRoute() {
           previousLabel="Previous proof"
           nextLabel="Next proof"
         />
+      </Section>
+
+      <Section title="Comments">
+        <CommentsDemo />
       </Section>
 
       <Section title="Crew">
@@ -906,8 +923,10 @@ function ReactionsDemo() {
           onPick={react}
           moreLabel="More emojis"
           onMore={() => setPicker(true)}
-          whoLabel="Who reacted"
-          onWho={() => toast("Who reacted")}
+          actions={[
+            { label: "Reply", icon: "reply", onSelect: () => toast("Reply") },
+            { label: "Who reacted", icon: "users", onSelect: () => toast("Who reacted") },
+          ]}
           anchor={opener}
         />
       </span>
@@ -928,5 +947,120 @@ function ReactionsDemo() {
         />
       </Sheet>
     </div>
+  );
+}
+
+/** A chat like Telegram: runs, quotes, reactions in the bubbles, yours on the right; a quote on
+ * its own; the message box replying, then sending. */
+function CommentsDemo() {
+  const toast = useToast();
+  const [text, setText] = useState("");
+  const [replying, setReplying] = useState(true);
+  const [sending, setSending] = useState(false);
+  const chips = (emoji: string, names: string[], mine = false) => (
+    <ReactionChips
+      chips={[
+        {
+          emoji,
+          mine,
+          people: names.map((name) => ({ id: name, name, seed: name.toLowerCase() })),
+          label: `${emoji}, from ${names.join(" and ")}`,
+        },
+      ]}
+      onToggle={() => toast(emoji)}
+      onHold={() => toast("Who reacted")}
+    />
+  );
+  const reply = (
+    <Button
+      variant="ghost"
+      icon={<Icon name="reply" size={18} />}
+      aria-label="Reply"
+      onClick={() => toast("Reply")}
+    />
+  );
+  const quote = (name: string, said: string) => ({
+    name,
+    seed: name.toLowerCase(),
+    text: said,
+    label: "Go to the comment it answers",
+    onClick: () => toast(`Go to ${name}`),
+  });
+  return (
+    <Stack gap="md">
+      <div>
+        <CommentBubble
+          name="Dan"
+          seed="dan"
+          time="08:20"
+          text="Bravo! Five in a row"
+          reactions={chips("\u{1F44F}", ["Cristina"])}
+          actions={reply}
+        />
+        <CommentBubble
+          name="Cristina"
+          seed="cristina"
+          time="08:22"
+          text="Thanks! Same time tomorrow?"
+          quote={quote("Dan", "Bravo! Five in a row")}
+          actions={reply}
+        />
+        <CommentBubble
+          name="Dan"
+          seed="dan"
+          time="08:23"
+          text="Only if it does not rain"
+          last={false}
+          quote={quote("Cristina", "Thanks! Same time tomorrow?")}
+        />
+        <CommentBubble
+          name="Dan"
+          seed="dan"
+          time="08:23"
+          text="Rain or not, I am in actually. A longer message wraps and keeps its time clear."
+          first={false}
+          flash
+        />
+        <CommentBubble
+          name="Bogdan"
+          seed="bogdan"
+          time="08:27"
+          text="Count me in, 7:00 at the bridge."
+          mine
+          quote={quote("Ana", "Same route tomorrow? I want that view too.")}
+          reactions={chips("\u{1F44D}", ["Ana"], true)}
+          actions={reply}
+        />
+      </div>
+      <Quote name="Ana" seed="ana" text="Same route tomorrow? I want that view too." />
+      <Composer
+        value={text}
+        onChange={setText}
+        onSend={() => {
+          setSending(true);
+          setTimeout(() => {
+            setSending(false);
+            setText("");
+            setReplying(false);
+          }, 1200);
+        }}
+        label="Comment"
+        placeholder={replying ? "Write a reply" : "Write a comment"}
+        sendLabel="Send"
+        sending={sending}
+        maxLength={500}
+        replying={
+          replying
+            ? {
+                name: "Dan",
+                seed: "dan",
+                text: "Rain or not, I am in actually",
+                stopLabel: "Stop replying",
+                onStop: () => setReplying(false),
+              }
+            : undefined
+        }
+      />
+    </Stack>
   );
 }

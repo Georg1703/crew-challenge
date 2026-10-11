@@ -1,15 +1,28 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import { cx } from "@/shared/lib/cx";
 import { AnimatePresence, motion, useSpring } from "@/shared/motion";
 
-import { Icon } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 import styles from "./ReactionMenu.module.css";
 
+/** A row under the emojis: "Reply", "Delete", "Who reacted". */
+export type MenuAction = {
+  label: string;
+  icon: IconName;
+  onSelect: () => void;
+  /** Deletes something: shown in the danger color. */
+  danger?: boolean;
+};
+
+const EDGE = 8; // px kept clear of the screen's edges and of the opener
+
 /**
- * The quick row of reactions: a small popover above the button that opened it, with a few emoji
- * buttons, "+" for any emoji and, when there are reactions, "who reacted". Picking closes it; so do
- * Escape and a tap outside. Focus moves into it and back to the opener.
+ * The quick row of reactions: a small popover above the button that opened it (below it when
+ * there is no room), kept inside the screen, with a few emoji buttons, "+" for any emoji and,
+ * under them, `actions` ("Reply", "Who reacted"). Picking closes it; so do Escape, a tap outside
+ * and scrolling. Focus moves into it and back to the opener.
  */
 export function ReactionMenu({
   open,
@@ -20,8 +33,7 @@ export function ReactionMenu({
   onPick,
   moreLabel,
   onMore,
-  whoLabel,
-  onWho,
+  actions = [],
   anchor,
 }: {
   open: boolean;
@@ -36,9 +48,7 @@ export function ReactionMenu({
   /** "+": "More emojis". */
   moreLabel: string;
   onMore: () => void;
-  /** Shown only with `onWho`: "Who reacted". */
-  whoLabel?: string;
-  onWho?: () => void;
+  actions?: MenuAction[];
   /** The button that opens it: a tap there toggles it instead of closing and reopening. */
   anchor?: RefObject<HTMLElement | null>;
 }) {
@@ -61,19 +71,33 @@ export function ReactionMenu({
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("scroll", onClose, { capture: true, passive: true });
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("scroll", onClose, { capture: true });
       previous?.focus({ preventScroll: true });
     };
   }, [open, onClose, anchor]);
+
+  // Place it before it is painted: over the opener's right edge, inside the screen.
+  useLayoutEffect(() => {
+    const menu = panel.current;
+    const at = anchor?.current?.getBoundingClientRect();
+    if (!open || !menu || !at) return;
+    const width = menu.offsetWidth;
+    const height = menu.offsetHeight;
+    const above = at.top - height - EDGE;
+    menu.style.left = `${Math.max(EDGE, Math.min(at.right - width, window.innerWidth - width - EDGE))}px`;
+    menu.style.top = `${above >= EDGE ? above : at.bottom + EDGE}px`;
+  }, [open, anchor]);
 
   const choose = (action: () => void) => () => {
     onClose();
     action();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -112,14 +136,21 @@ export function ReactionMenu({
               <Icon name="plus" />
             </button>
           </div>
-          {onWho && whoLabel && (
-            <button type="button" role="menuitem" className={styles.who} onClick={choose(onWho)}>
-              <Icon name="users" size={16} />
-              {whoLabel}
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              role="menuitem"
+              className={cx(styles.action, action.danger && styles.danger)}
+              onClick={choose(action.onSelect)}
+            >
+              <Icon name={action.icon} size={16} />
+              {action.label}
             </button>
-          )}
+          ))}
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

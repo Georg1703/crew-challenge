@@ -59,6 +59,13 @@ export function formatNumber(value: number, language: string): string {
 
 const MINUTE_MS = 60_000;
 
+/** The time of day in the crew's time zone: "08:23". */
+export function formatTime(iso: string, language: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(language, { timeZone, hour: "2-digit", minute: "2-digit" }).format(
+    new Date(iso),
+  );
+}
+
 /**
  * When something happened, as a feed says it: "now", "5 min ago" within the hour, "21:40" today,
  * "yesterday 21:40", else "5 October, 21:40". Days follow the crew's time zone.
@@ -74,11 +81,7 @@ export function formatWhen(
   const relative = new Intl.RelativeTimeFormat(language, { numeric: "auto", style: "short" });
   if (minutes < 1) return relative.format(0, "second");
   if (minutes < 60) return relative.format(-minutes, "minute");
-  const time = new Intl.DateTimeFormat(language, {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(then);
+  const time = formatTime(iso, language, timeZone);
   const days = Math.round(
     (Date.parse(todayIn(timeZone, now)) - Date.parse(todayIn(timeZone, then))) /
       (24 * 60 * MINUTE_MS),

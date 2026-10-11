@@ -1,0 +1,167 @@
+/* CommentBubble: a chat message. Others' on the left with an avatar gutter, yours on the right;
+   the time sits in the bubble's bottom right corner, on the last line. */
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-hair);
+}
+
+.first {
+  padding-top: var(--space-2);
+}
+
+.mine {
+  flex-direction: row-reverse;
+}
+
+/* On a phone a long press on the message reacts or replies: no text selection, no callout. */
+@media (hover: none) {
+  .message {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+.gutter {
+  flex: none;
+  width: var(--avatar-sm);
+}
+
+.bubble {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: var(--comment-max-width);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.mine .bubble {
+  border-color: var(--color-accent-soft);
+  background: var(--color-accent-soft);
+}
+
+/* The last of a run points at its writer: a sharp corner on their side. */
+.tail {
+  border-bottom-left-radius: var(--radius-xs);
+}
+
+.mine .tail {
+  border-bottom-right-radius: var(--radius-xs);
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.name {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+}
+
+.name[data-color="1"] {
+  color: var(--color-avatar-1);
+}
+
+.name[data-color="2"] {
+  color: var(--color-avatar-2);
+}
+
+.name[data-color="3"] {
+  color: var(--color-avatar-3);
+}
+
+.name[data-color="4"] {
+  color: var(--color-avatar-4);
+}
+
+.name[data-color="5"] {
+  color: var(--color-avatar-5);
+}
+
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* An invisible copy of the time ends the last line, so the real one, over the corner, never
+   covers text or chips. */
+.room {
+  margin-left: var(--space-3);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  white-space: nowrap;
+  visibility: hidden;
+}
+
+.reactions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.reactions > .room {
+  margin-left: auto;
+  padding-left: var(--space-3);
+}
+
+.reactions:has(> [data-empty]) {
+  display: none;
+}
+
+.time {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+
+/* Reply and react: on a computer they show when the pointer is on the message. */
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actions {
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .message:hover .actions,
+  .message:focus-within .actions {
+    opacity: 1;
+  }
+}
+
+/* A quote led here: the bubble lights up twice (opacity only). */
+.bubble::before {
+  position: absolute;
+  z-index: var(--z-behind);
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-accent-soft);
+  opacity: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.mine .bubble::before {
+  background: var(--color-surface);
+}
+
+.flash .bubble::before {
+  animation: flash var(--duration-slow) var(--ease-out) 2;
+}
+
+@keyframes flash {
+  50% {
+    opacity: 1;
+  }
+}

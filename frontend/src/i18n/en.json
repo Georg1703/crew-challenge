@@ -215,7 +215,14 @@
     "uploads_running": "Wait for the photos and videos to finish uploading.",
     "proof_required": "This challenge asks for a photo or video with each check-in.",
     "proof_posted": "This photo or video is posted. Undo its post to remove it.",
-    "spin_served": "This punishment is served."
+    "spin_served": "This punishment is served.",
+    "comment_not_found": "This comment is not here any more.",
+    "not_your_comment": "Only its writer can delete a comment.",
+    "reply_too_deep": "Replies go 5 levels deep at most.",
+    "comment_has_replies": "Someone has replied: the comment stays.",
+    "comment_too_old": "A comment can be deleted only in its first minute.",
+    "post_has_comments": "Someone commented on this post: it stays.",
+    "card_not_found": "This card is not in the journal any more."
   },
   "pwa": {
     "updateReady": "A new version of the app is ready.",
@@ -743,6 +750,32 @@
         "6": "Dark"
       }
     }
+  },
+  "comments": {
+    "title": "Comments",
+    "label": "Comments on this card",
+    "count_one": "{{count}} comment",
+    "count_few": "{{count}} comments",
+    "count_other": "{{count}} comments",
+    "comment": "Comment",
+    "writers": "Who commented",
+    "empty": "No comments yet. Say something nice.",
+    "box": "Comment",
+    "write": "Write a comment",
+    "writeReply": "Write a reply",
+    "stopReplying": "Stop replying",
+    "send": "Send",
+    "reply": "Reply",
+    "delete": "Delete",
+    "you": "You",
+    "back": "Back to the crew",
+    "copy": "Copy text",
+    "copied": "Copied",
+    "fresh_one": "{{count}} new",
+    "fresh_few": "{{count}} new",
+    "fresh_other": "{{count}} new",
+    "goTo": "Go to the comment it answers",
+    "toCard": "Back up to the card"
   },
   "windows": {
     "progress": {

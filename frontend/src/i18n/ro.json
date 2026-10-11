@@ -215,7 +215,14 @@
     "uploads_running": "Așteaptă să se termine încărcarea pozelor și video-urilor.",
     "proof_required": "Provocarea asta cere o poză sau un video la fiecare bifare.",
     "proof_posted": "Poza sau video-ul e postat. Anulează postarea ca să-l ștergi.",
-    "spin_served": "Pedeapsa asta e făcută."
+    "spin_served": "Pedeapsa asta e făcută.",
+    "comment_not_found": "Comentariul nu mai este aici.",
+    "not_your_comment": "Doar cine a scris comentariul îl poate șterge.",
+    "reply_too_deep": "Răspunsurile merg cel mult 5 niveluri.",
+    "comment_has_replies": "Cineva a răspuns deja: comentariul rămâne.",
+    "comment_too_old": "Un comentariu se poate șterge doar în primul minut.",
+    "post_has_comments": "Cineva a comentat această postare: rămâne.",
+    "card_not_found": "Cardul nu mai este în jurnal."
   },
   "pwa": {
     "updateReady": "E gata o versiune nouă a aplicației.",
@@ -743,6 +750,32 @@
         "6": "Închisă"
       }
     }
+  },
+  "comments": {
+    "title": "Comentarii",
+    "label": "Comentariile acestui card",
+    "count_one": "{{count}} comentariu",
+    "count_few": "{{count}} comentarii",
+    "count_other": "{{count}} de comentarii",
+    "comment": "Comentează",
+    "writers": "Cine a comentat",
+    "empty": "Niciun comentariu încă. Spune ceva frumos.",
+    "box": "Comentariu",
+    "write": "Scrie un comentariu",
+    "writeReply": "Scrie un răspuns",
+    "stopReplying": "Renunță la răspuns",
+    "send": "Trimite",
+    "reply": "Răspunde",
+    "delete": "Șterge",
+    "you": "Tu",
+    "back": "Înapoi la echipă",
+    "copy": "Copiază textul",
+    "copied": "Copiat",
+    "fresh_one": "{{count}} nou",
+    "fresh_few": "{{count}} noi",
+    "fresh_other": "{{count}} de noi",
+    "goTo": "Mergi la comentariul la care răspunde",
+    "toCard": "Înapoi sus, la card"
   },
   "windows": {
     "progress": {

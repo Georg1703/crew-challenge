@@ -84,8 +84,7 @@ function Menu({ onPick = () => {}, onMore = () => {}, onWho = () => {} }) {
         onPick={onPick}
         moreLabel="More emojis"
         onMore={onMore}
-        whoLabel="Who reacted"
-        onWho={onWho}
+        actions={[{ label: "Who reacted", icon: "users", onSelect: onWho }]}
         anchor={opener}
       />
       <p>Outside</p>

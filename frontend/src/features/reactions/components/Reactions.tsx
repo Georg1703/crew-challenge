@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
@@ -19,6 +19,7 @@ import {
   useToast,
   type EmojiPickerTexts,
   type Flight,
+  type MenuAction,
   type ReactionChip,
 } from "@/shared/ui";
 
@@ -26,29 +27,45 @@ import { QUICK_REACTIONS, useReact, type ReactionSummary, type ReactionTarget } 
 import styles from "../reactions.module.css";
 import { ReactorsSheet } from "./ReactorsSheet";
 
-/**
- * Reactions on anything registered as a target: the chips, the react button with its quick row,
- * the full emoji picker and who reacted. The react button shows on computers; on a phone or
- * tablet holding the card it sits in opens the quick row (the button stays for screen readers).
- * The owner of the data passes the target's `summary`; the
- * change shows here at once (with the picked emoji flying over the card into its chip), and
- * `onChange` gets the server's answer for the owner's cache, without redrawing the owner on every
- * tap.
- */
-export function Reactions({
-  target,
-  id,
-  summary,
-  people,
-  onChange,
-}: {
+type ReactionsProps = {
   target: ReactionTarget;
   id: string;
   summary: ReactionSummary;
   /** The crew's members: names and avatars for the ids in the summary. */
   people: Member[];
   onChange: (summary: ReactionSummary) => void;
-}) {
+  /** More rows for the menu, under the emojis; asked for when it opens, so they are current. */
+  actions?: () => MenuAction[];
+};
+
+/**
+ * Reactions on anything registered as a target: the chips, the react button with its quick row,
+ * the full emoji picker and who reacted. The react button shows on computers; on a phone or
+ * tablet holding the `article` it sits in opens the quick row (the button stays for screen
+ * readers). `actions` adds rows to the menu ("Reply"), asked for each time it opens.
+ * The owner of the data passes the target's `summary`; the
+ * change shows here at once (with the picked emoji flying over the card into its chip), and
+ * `onChange` gets the server's answer for the owner's cache, without redrawing the owner on every
+ * tap.
+ */
+export function Reactions(props: ReactionsProps) {
+  const { chips, button } = useReactions(props);
+  return (
+    <div className={styles.row}>
+      {chips}
+      {button}
+    </div>
+  );
+}
+
+/**
+ * The same, in two parts for a layout of its own (a chat message: the chips in the bubble, the
+ * button beside it). Both must sit in the same `article`.
+ */
+export function useReactions({ target, id, summary, people, onChange, actions }: ReactionsProps): {
+  chips: ReactNode;
+  button: ReactNode;
+} {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const me = useMe().data?.member?.id ?? "";
@@ -129,24 +146,29 @@ export function Reactions({
     });
   };
 
-  return (
-    <div ref={root} className={styles.row}>
-      <ReactionChips
-        chips={chips}
-        onToggle={choose}
-        onHold={(emoji) => setWho(emoji)}
-        landing={flight ? landing : null}
-      />
-      {flight && (
-        <EmojiFlight
-          key={flight.id}
-          flight={flight}
-          onDone={() => {
-            setFlight(null);
-            setLanding(null);
-          }}
+  return {
+    // data-empty: no chips, so on a phone (no react button) nothing shows; owners fold it.
+    chips: (
+      <div ref={root} className={styles.chips} data-empty={shown.groups.length === 0 || undefined}>
+        <ReactionChips
+          chips={chips}
+          onToggle={choose}
+          onHold={(emoji) => setWho(emoji)}
+          landing={flight ? landing : null}
         />
-      )}
+        {flight && (
+          <EmojiFlight
+            key={flight.id}
+            flight={flight}
+            onDone={() => {
+              setFlight(null);
+              setLanding(null);
+            }}
+          />
+        )}
+      </div>
+    ),
+    button: (
       <span className={styles.anchor}>
         <Button
           ref={opener}
@@ -169,37 +191,51 @@ export function Reactions({
           onPick={choose}
           moreLabel={t("reactions.more")}
           onMore={() => setPicker(true)}
-          whoLabel={shown.groups.length > 0 ? t("reactions.who") : undefined}
-          onWho={shown.groups.length > 0 ? () => setWho("") : undefined}
+          actions={
+            menu
+              ? [
+                  ...(actions?.() ?? []),
+                  ...(shown.groups.length > 0
+                    ? [
+                        {
+                          label: t("reactions.who"),
+                          icon: "users",
+                          onSelect: () => setWho(""),
+                        } as const,
+                      ]
+                    : []),
+                ]
+              : []
+          }
           anchor={opener}
         />
-      </span>
-      <Sheet
-        open={picker}
-        onClose={() => setPicker(false)}
-        title={t("reactions.pick")}
-        closeLabel={t("common.close")}
-      >
-        <EmojiPicker
-          texts={texts}
-          errorText={t("reactions.pickerFailed")}
-          retryLabel={t("common.retry")}
-          onPick={(emoji) => {
-            setPicker(false);
-            choose(emoji);
-          }}
+        <Sheet
+          open={picker}
+          onClose={() => setPicker(false)}
+          title={t("reactions.pick")}
+          closeLabel={t("common.close")}
+        >
+          <EmojiPicker
+            texts={texts}
+            errorText={t("reactions.pickerFailed")}
+            retryLabel={t("common.retry")}
+            onPick={(emoji) => {
+              setPicker(false);
+              choose(emoji);
+            }}
+          />
+        </Sheet>
+        <ReactorsSheet
+          open={who !== null}
+          onClose={() => setWho(null)}
+          summary={shown}
+          first={who || null}
+          people={byId}
+          me={me}
         />
-      </Sheet>
-      <ReactorsSheet
-        open={who !== null}
-        onClose={() => setWho(null)}
-        summary={shown}
-        first={who || null}
-        people={byId}
-        me={me}
-      />
-    </div>
-  );
+      </span>
+    ),
+  };
 }
 
 function pickerTexts(t: ReturnType<typeof useTranslation>["t"]): EmojiPickerTexts {

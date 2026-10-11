@@ -1,0 +1,76 @@
+/* Quote: a white box with a light border and a bar in the writer's avatar color; the name in that
+   color (4.5:1 on white), then one line of their text. */
+.quote {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-1) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  text-align: left;
+}
+
+.link {
+  width: 100%;
+  cursor: pointer;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.name {
+  font-weight: var(--weight-bold);
+}
+
+.text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.quote[data-color="1"] {
+  border-left-color: var(--color-avatar-1);
+}
+
+.quote[data-color="1"] .name {
+  color: var(--color-avatar-1);
+}
+
+.quote[data-color="2"] {
+  border-left-color: var(--color-avatar-2);
+}
+
+.quote[data-color="2"] .name {
+  color: var(--color-avatar-2);
+}
+
+.quote[data-color="3"] {
+  border-left-color: var(--color-avatar-3);
+}
+
+.quote[data-color="3"] .name {
+  color: var(--color-avatar-3);
+}
+
+.quote[data-color="4"] {
+  border-left-color: var(--color-avatar-4);
+}
+
+.quote[data-color="4"] .name {
+  color: var(--color-avatar-4);
+}
+
+.quote[data-color="5"] {
+  border-left-color: var(--color-avatar-5);
+}
+
+.quote[data-color="5"] .name {
+  color: var(--color-avatar-5);
+}

@@ -1,4 +1,7 @@
+/* A column as tall as the screen at least, so a page can keep something at its bottom. */
 .screen {
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
   padding: calc(env(safe-area-inset-top) + var(--space-6)) var(--space-5)
     calc(env(safe-area-inset-bottom) + var(--space-6));
@@ -10,8 +13,10 @@
 
 .column {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-6);
+  width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
 }
