@@ -66,8 +66,9 @@ export function FeedCard({
   facts?: ReactNode[];
   /** The reactions (chips and the react button), at the end of the footer row. */
   reactions?: ReactNode;
-  /** Under the footer: a link to the card's comments, with its last writers ("3 comments"). */
-  comments?: { to: string; text: string; people: Person[]; peopleLabel: string };
+  /** Under the footer: a link to the card's comments, with its last writers ("3 comments") and,
+   * when some are unread, a dot (`unread` says it to screen readers: "2 new"). */
+  comments?: { to: string; text: string; people: Person[]; peopleLabel: string; unread?: string };
 }) {
   const footer = facts.length > 0 || reactions;
   // One stage per card, the middle a reaction flies over: the photos when there are any.
@@ -135,7 +136,15 @@ export function FeedCard({
           ) : (
             <Icon name="messageCircle" size={20} />
           )}
-          <span className={styles.commentsText}>{comments.text}</span>
+          <span className={styles.commentsText}>
+            {comments.text}
+            {comments.unread && (
+              <>
+                <span className={styles.unread} aria-hidden="true" />
+                <span className={styles.hidden}>{`, ${comments.unread}`}</span>
+              </>
+            )}
+          </span>
           <Icon name="chevronRight" size={18} />
         </Link>
       )}

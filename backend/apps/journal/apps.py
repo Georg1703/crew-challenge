@@ -12,4 +12,12 @@ class JournalConfig(AppConfig):
         from . import selectors
         from .models import JournalEntry
 
-        register(Target(key="entry", model=JournalEntry, visible=selectors.visible, comments=True))
+        register(
+            Target(
+                key="entry",
+                model=JournalEntry,
+                visible=selectors.visible,
+                comments=True,
+                owner="member",
+            )
+        )

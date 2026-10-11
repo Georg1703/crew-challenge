@@ -24,9 +24,11 @@ def _crewmates(member):
 
 @pytest.fixture
 def people():
-    """Ana and Bogdan in one crew. Members stand in for a target that takes comments ("person")
-    and for one that takes reactions only ("quiet")."""
-    targets.register(targets.Target(key="person", model=Member, visible=_crewmates, comments=True))
+    """Ana and Bogdan in one crew. Members stand in for a target that takes comments ("person",
+    made by the member it is) and for one that takes reactions only ("quiet")."""
+    targets.register(
+        targets.Target(key="person", model=Member, visible=_crewmates, comments=True, owner="pk")
+    )
     targets.register(targets.Target(key="quiet", model=Member, visible=_crewmates))
     ana = AdminFactory.create(display_name="Ana")
     yield ana, MemberFactory.create(crew=ana.crew, display_name="Bogdan")
@@ -130,13 +132,45 @@ def test_the_thread_and_the_summary_of_its_target(people):
 
     assert selectors.thread(member=dan, target="person", target_id=bogdan.pk) == said
     assert selectors.summaries(member=ana, target="person", ids=[bogdan.pk, ana.pk]) == {
-        bogdan.pk: selectors.Summary(count=5, member_ids=[bogdan.pk, dan.pk, cristina.pk]),
+        bogdan.pk: selectors.Summary(
+            count=5, member_ids=[bogdan.pk, dan.pk, cristina.pk], unread=4
+        ),
         ana.pk: selectors.Summary(),
     }
     assert selectors.summaries(member=ana, target="nothing", ids=[ana.pk]) == {
         ana.pk: selectors.Summary()
     }
     assert selectors.summaries(member=ana, target="person", ids=[]) == {}
+
+
+def test_unread_is_the_others_comments_since_i_last_looked(people):
+    ana, bogdan = people
+    unread = lambda who, on: selectors.summaries(  # noqa: E731
+        member=who, target="person", ids=[on.pk]
+    )[on.pk].unread
+    with at("2026-11-09 08:00Z"):
+        say(bogdan, ana)  # on Ana's own page: news to her
+        say(ana, ana)  # her own words are never unread for her
+    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (1, 1)
+    assert (unread(bogdan, ana), selectors.unread_count(member=bogdan)) == (1, 1)  # he wrote there
+
+    with at("2026-11-09 08:05Z"):
+        services.mark_read(member=ana, target="person", target_id=ana.pk)
+    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (0, 0)
+    with at("2026-11-09 08:10Z"):
+        later = say(bogdan, ana)
+        services.mark_read(member=ana, target="person", target_id=ana.pk)  # again: one row
+        services.delete(member=bogdan, comment_id=later.pk)
+    assert selectors.unread_count(member=ana) == 0
+    with at("2026-11-09 08:20Z"):
+        say(bogdan, ana)
+    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (1, 1)
+
+    with at("2026-11-09 09:00Z"):  # joins after all that: none of it is news to her
+        cristina = MemberFactory.create(crew=ana.crew)
+    assert unread(cristina, ana) == 0
+    with pytest.raises(TargetNotFound):
+        services.mark_read(member=AdminFactory.create(), target="person", target_id=ana.pk)
 
 
 def test_whether_someone_else_commented(people):

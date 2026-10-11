@@ -15,7 +15,7 @@ from apps.crews.api.permissions import IsCrewMember
 from apps.crews.models import Member
 from apps.reactions import selectors as reactions
 
-from .serializers import CommentIn, CommentOut, ThreadOut
+from .serializers import CommentIn, CommentOut, ThreadOut, UnreadOut
 
 TARGET = OpenApiParameter(
     "target",
@@ -83,3 +83,24 @@ class CommentView(APIView):
         """Delete your comment in its first minute, while nobody has replied to it."""
         services.delete(member=_member(request), comment_id=comment_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReadView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(
+        parameters=[TARGET], request=None, responses={204: None}, operation_id="comments_read"
+    )
+    def put(self, request: Request, target: str, target_id: UUID) -> Response:
+        """You have seen this target's comments, up to now (its card's dot and the badge clear)."""
+        services.mark_read(member=_member(request), target=target, target_id=target_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UnreadView(APIView):
+    permission_classes = [IsCrewMember]
+
+    @extend_schema(responses=UnreadOut, operation_id="comments_unread")
+    def get(self, request: Request) -> Response:
+        """How many of the others' comments you have not seen, for the Crew tab's badge."""
+        return Response(UnreadOut({"count": selectors.unread_count(member=_member(request))}).data)

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router";
 
-import { JournalCard, useJournalCard } from "@/features/checkins";
+import { JournalCard, useJournalCard, useMarkJournalCardRead } from "@/features/checkins";
 import { Comments, useThread } from "@/features/comments";
 import { errorMessage } from "@/i18n/errors";
 import { formatTime } from "@/shared/lib/format";
@@ -35,6 +35,7 @@ export function CardRoute() {
   const crew = useCrew();
   const card = useJournalCard(id);
   const thread = useThread("entry", id);
+  const markCardRead = useMarkJournalCardRead();
   const [viewing, setViewing] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const cardBox = useRef<HTMLDivElement>(null);
   const [cardShown, setCardShown] = useState(true);
@@ -102,6 +103,7 @@ export function CardRoute() {
             id={id}
             people={crew.data.members}
             timeZone={crew.data.timezone}
+            onRead={() => markCardRead(id)}
           />
         </>
       )}

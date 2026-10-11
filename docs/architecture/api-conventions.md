@@ -140,7 +140,7 @@ GET    /api/v1/challenges/{id}/windows?start=&until=   its weeks, months or whol
 GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, total and shown proofs
 GET    /api/v1/journal?cursor=...       the crew's cards, latest first, each as it was posted:
                                         {id, kind, at, day, member, challenge, proofs, reactions,
-                                        comments: {count, member_ids}, and its kind's facts
+                                        comments: {count, member_ids, unread}, and its kind's facts
                                         (check_in | spin | served | crew_day)}, plus each day's
                                         counts (30 per page)
 GET    /api/v1/journal/{id}             one card, as in the journal (the card's page)
@@ -150,6 +150,9 @@ GET    /api/v1/comments/{target}/{id}   a target's thread, oldest first: [{id, m
 POST   /api/v1/comments/{target}/{id}   {text, parent_id?}: a comment or a reply (levels 1-5)
                                         -> 201 the comment
 DELETE /api/v1/comments/{id}            yours, in its first minute, while nobody replied -> 204
+PUT    /api/v1/comments/{target}/{id}/read   you have seen its comments, up to now -> 204
+GET    /api/v1/comments/unread          {count}: others' unread comments on what you posted or
+                                        commented on (the Crew tab's badge)
 
 GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
                                         to_serve (the Today card) and each challenge's punishments

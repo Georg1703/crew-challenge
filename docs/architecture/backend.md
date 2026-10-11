@@ -116,8 +116,9 @@ endpoint or client change:
    content_type_field="target_type", object_id_field="target_id")` (and the same to
    `comments.Comment` when it takes comments), which deletes them with it (a generic key has no
    database foreign key; a test fails if a registered model lacks it);
-2. its app registers `Target(key, model, visible, comments=...)` in `AppConfig.ready()`;
-   `visible(member)` is the queryset of the targets that member may see and act on now;
+2. its app registers `Target(key, model, visible, comments=..., owner=...)` in
+   `AppConfig.ready()`; `visible(member)` is the queryset of the targets that member may see and
+   act on now; `owner` names the field of the member who made it (comments on it are news to them);
 3. its API embeds `ReactionSummaryOut` and `CommentSummaryOut` (one query per page each), and the
    frontend shows `<Reactions target=... />` and its comments.
 
@@ -129,7 +130,8 @@ Targets now: `entry` (a journal card: reactions and comments) and `comment` (rea
 **Comments (`apps/comments`).** Words on a target that takes comments, or a reply to a comment on
 it, down to 5 levels (`level` is stored: a comment never moves). Never edited; the writer
 deletes one (softly) in its first minute while nobody has replied. The thread is read whole,
-oldest first (`GET /api/v1/comments/{target}/{id}`), and the client builds the tree.
+oldest first (`GET /api/v1/comments/{target}/{id}`). A `CommentRead` row per member and target
+keeps when they last saw it: the others' comments after it (and after they joined) are unread.
 
 **Proofs (`apps/proofs`).** A photo or video backing a subject (a check-in now, a spin with the
 Wheel of Doom). A `Proof` points at its subject by a generic key (`subject_type` + `subject_id`)

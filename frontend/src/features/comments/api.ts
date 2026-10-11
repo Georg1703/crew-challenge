@@ -18,7 +18,12 @@ export const DELETE_MS = 60_000;
 /** How often an open thread asks for new comments (only while the page is visible). */
 const REFRESH_MS = 5_000;
 
-const threadKey = (target: CommentTarget, id: string) => ["comments", target, id] as const;
+/** How often the Crew tab's badge asks for unread comments (and when the app comes back). */
+const UNREAD_MS = 60_000;
+
+const commentsKey = ["comments"] as const;
+const unreadKey = [...commentsKey, "unread"] as const;
+const threadKey = (target: CommentTarget, id: string) => [...commentsKey, target, id] as const;
 
 /** A target's comments, oldest first, refreshed every 5 s while the page is visible. */
 export function useThread(target: CommentTarget, id: string) {
@@ -82,4 +87,28 @@ export function usePatchCommentReactions(target: CommentTarget, id: string) {
     },
     [client, target, id],
   );
+}
+
+/** Mark a target's comments read, up to now; the badge asks again. */
+export function useMarkRead(target: CommentTarget, id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      call(
+        api.PUT("/api/v1/comments/{target}/{target_id}/read", {
+          params: { path: { target, target_id: id } },
+        }),
+      ),
+    onSuccess: () => client.invalidateQueries({ queryKey: unreadKey }),
+  });
+}
+
+/** Others' comments I have not seen, on what I posted or commented on: the Crew tab's badge. */
+export function useUnreadCount(enabled: boolean) {
+  return useQuery({
+    queryKey: unreadKey,
+    queryFn: () => call(api.GET("/api/v1/comments/unread")).then((unread) => unread.count),
+    refetchInterval: UNREAD_MS,
+    enabled,
+  });
 }

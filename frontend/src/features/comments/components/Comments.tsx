@@ -25,6 +25,7 @@ import {
   MAX_LEVEL,
   useAddComment,
   useDeleteComment,
+  useMarkRead,
   usePatchCommentReactions,
   useThread,
   type Comment,
@@ -49,12 +50,15 @@ export function Comments({
   id,
   people,
   timeZone,
+  onRead,
 }: {
   target: CommentTarget;
   id: string;
   /** The crew's members: names and avatars for the ids in the chat. */
   people: Member[];
   timeZone: string;
+  /** The chat was marked read (the owner clears its unread mark). */
+  onRead?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
@@ -74,6 +78,7 @@ export function Comments({
 
   const list = thread.data ?? [];
   const { end, fresh, toEnd } = useNewest(list, me, behavior);
+  useReadMark(target, id, thread.data, onRead);
   const byComment = new Map(list.map((c) => [c.id, c]));
   const answered = new Set(list.map((c) => c.parent_id));
   const writer = (memberId: string) => ({
@@ -337,4 +342,21 @@ function useNewest(list: Comment[], me: string | undefined, behavior: ScrollBeha
       ? 0
       : list.filter((c) => c.created_at > seenUntil && c.member_id !== me).length;
   return { end, fresh, toEnd };
+}
+
+/** Seen: the chat is marked read when it opens and whenever a refresh brings something new. */
+function useReadMark(
+  target: CommentTarget,
+  id: string,
+  list: Comment[] | undefined,
+  onRead: (() => void) | undefined,
+) {
+  const { mutate: markRead } = useMarkRead(target, id);
+  const marked = useRef<string | null>(null);
+  const latest = list ? (list.at(-1)?.created_at ?? "") : null;
+  useEffect(() => {
+    if (latest === null || latest === marked.current) return;
+    marked.current = latest;
+    markRead(undefined, { onSuccess: () => onRead?.() });
+  }, [latest, markRead, onRead]);
 }

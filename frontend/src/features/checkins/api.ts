@@ -141,6 +141,27 @@ export function usePatchJournalReactions() {
   );
 }
 
+/** A card's comments were read: its unread mark goes, in the cached journal and card. */
+export function useMarkJournalCardRead() {
+  const client = useQueryClient();
+  return useCallback(
+    (id: string) => {
+      const read = (entry: JournalEntry) =>
+        entry.id === id ? { ...entry, comments: { ...entry.comments, unread: 0 } } : entry;
+      client.setQueryData<JournalPages>(journalKey, (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((page) => ({ ...page, results: page.results.map(read) })),
+            }
+          : data,
+      );
+      client.setQueryData<JournalEntry>(cardKey(id), (entry) => entry && read(entry));
+    },
+    [client],
+  );
+}
+
 /** Everyone's state, total and proofs on one day of a challenge (the day sheet). */
 export function useDaySheet(id: string, day: string | null) {
   return useQuery({

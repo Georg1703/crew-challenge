@@ -7,22 +7,24 @@ from typing import Any
 from uuid import UUID
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, QuerySet
+from django.db.models import F, OuterRef, Q, QuerySet, Subquery
 
 from apps.crews import targets
 from apps.crews.models import Member
 
-from .models import Comment
+from .models import Comment, CommentRead
 
 WRITERS = 3  # the last writers a target's summary names
 
 
 @dataclass(frozen=True)
 class Summary:
-    """A target's comments, for its card: how many, and who wrote last (latest first)."""
+    """A target's comments, for its card: how many, who wrote last (latest first), and how many
+    of the others' the viewer has not seen."""
 
     count: int = 0
     member_ids: list[UUID] = field(default_factory=list)
+    unread: int = 0
 
 
 def visible(member: Member) -> QuerySet[Comment]:
@@ -52,27 +54,68 @@ def thread(*, member: Member, target: str, target_id: UUID) -> list[Comment]:
 
 
 def summaries(*, member: Member, target: str, ids: Iterable[UUID]) -> dict[UUID, Summary]:
-    """Comment counts and last writers of many targets of one kind in one query (a journal
-    page). Unknown ids: empty."""
+    """Comment counts, last writers and unread of many targets of one kind in two queries (a
+    journal page). Unknown ids: empty."""
     wanted = list(ids)
     found = targets.get(target)
     if found is None or not wanted:
         return {pk: Summary() for pk in wanted}
+    kind = ContentType.objects.get_for_model(found.model)
     # ponytail: reads every comment row of the page's targets; count in SQL if threads get long.
     rows = (
         Comment.objects.for_crew(member.crew)
-        .filter(target_type=ContentType.objects.get_for_model(found.model), target_id__in=wanted)
+        .filter(target_type=kind, target_id__in=wanted)
         .order_by("-created_at", "-pk")
-        .values_list("target_id", "member_id")
+        .values_list("target_id", "member_id", "created_at")
+    )
+    seen = dict(
+        CommentRead.objects.filter(
+            member=member, target_type=kind, target_id__in=wanted
+        ).values_list("target_id", "read_at")
     )
     counts: Counter[UUID] = Counter()
+    unread: Counter[UUID] = Counter()
     writers: dict[UUID, list[UUID]] = {pk: [] for pk in wanted}
-    for target_id, member_id in rows:
+    for target_id, member_id, created_at in rows:
         counts[target_id] += 1
+        since = max(seen.get(target_id, member.created_at), member.created_at)
+        if member_id != member.pk and created_at > since:
+            unread[target_id] += 1
         last = writers[target_id]
         if member_id not in last and len(last) < WRITERS:
             last.append(member_id)
-    return {pk: Summary(count=counts[pk], member_ids=writers[pk]) for pk in wanted}
+    return {
+        pk: Summary(count=counts[pk], member_ids=writers[pk], unread=unread[pk]) for pk in wanted
+    }
+
+
+def unread_count(*, member: Member) -> int:
+    """Others' comments the member has not seen, on targets they can see that they made or
+    commented on: the Crew tab's badge. One query."""
+    involved = Q(pk__in=[])
+    for target in targets.all_targets():
+        if not target.comments:
+            continue
+        kind = ContentType.objects.get_for_model(target.model)
+        theirs = Q(
+            pk__in=Comment.objects.filter(member=member, target_type=kind).values("target_id")
+        )
+        if target.owner:
+            theirs |= Q(**{target.owner: member.pk})
+        involved |= Q(
+            target_type=kind, target_id__in=target.visible(member).filter(theirs).values("pk")
+        )
+    read_at = CommentRead.objects.filter(
+        member=member, target_type=OuterRef("target_type"), target_id=OuterRef("target_id")
+    ).values("read_at")[:1]
+    return (
+        Comment.objects.for_crew(member.crew)
+        .filter(involved, created_at__gt=member.created_at)
+        .exclude(member=member)
+        .annotate(read_at=Subquery(read_at))
+        .filter(Q(read_at__isnull=True) | Q(created_at__gt=F("read_at")))
+        .count()
+    )
 
 
 def others_commented(*, member: Member, on: QuerySet[Any]) -> bool:

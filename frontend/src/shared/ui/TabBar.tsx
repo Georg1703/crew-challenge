@@ -11,6 +11,8 @@ export interface Tab {
   label: string;
   icon: IconName;
   end?: boolean;
+  /** A number on the icon when above zero ("9+" past nine), and what it means for screen readers. */
+  badge?: { count: number; label: string };
 }
 
 /** The raised button in the middle of the bar (check in), with an optional count. */
@@ -85,6 +87,7 @@ export function TabBar({
       to={tab.to}
       end={tab.end}
       className={({ isActive }) => cx(styles.tab, isActive && styles.active)}
+      aria-label={tab.badge?.count ? `${tab.label}, ${tab.badge.label}` : undefined}
     >
       {({ isActive }) => (
         <>
@@ -95,7 +98,14 @@ export function TabBar({
               transition={spring}
             />
           )}
-          <Icon name={tab.icon} />
+          <span className={styles.icon}>
+            <Icon name={tab.icon} />
+            {tab.badge?.count ? (
+              <span className={styles.badge} aria-hidden="true">
+                {tab.badge.count > 9 ? "9+" : tab.badge.count}
+              </span>
+            ) : null}
+          </span>
           <span className={styles.label}>{tab.label}</span>
         </>
       )}

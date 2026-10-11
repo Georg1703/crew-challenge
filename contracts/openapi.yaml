@@ -585,6 +585,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommentOut'
           description: ''
+  /api/v1/comments/{target}/{target_id}/read:
+    put:
+      operationId: comments_read
+      description: You have seen this target's comments, up to now (its card's dot
+        and the badge clear).
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - entry
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - comments
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/comments/unread:
+    get:
+      operationId: comments_unread
+      description: How many of the others' comments you have not seen, for the Crew
+        tab's badge.
+      tags:
+      - comments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadOut'
+          description: ''
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -1665,9 +1708,13 @@ components:
             type: string
             format: uuid
           description: The last writers, latest first, up to 3.
+        unread:
+          type: integer
+          description: Others' comments you have not seen.
       required:
       - count
       - member_ids
+      - unread
     CrewChallengeOut:
       type: object
       properties:
@@ -2911,6 +2958,14 @@ components:
       - crew
       - day
       - deadline
+    UnreadOut:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Others' unread comments on what you posted or commented on.
+      required:
+      - count
     UploadModeEnum:
       enum:
       - single

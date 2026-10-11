@@ -775,7 +775,13 @@
     "fresh_few": "{{count}} new",
     "fresh_other": "{{count}} new",
     "goTo": "Go to the comment it answers",
-    "toCard": "Back up to the card"
+    "toCard": "Back up to the card",
+    "unread_one": "{{count}} new",
+    "unread_few": "{{count}} new",
+    "unread_other": "{{count}} new",
+    "badge_one": "{{count}} new comment",
+    "badge_few": "{{count}} new comments",
+    "badge_other": "{{count}} new comments"
   },
   "windows": {
     "progress": {

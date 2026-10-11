@@ -2,7 +2,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-from apps.crews.models import CrewScopedSoftDeleteModel, Member
+from apps.crews.models import CrewScopedModel, CrewScopedSoftDeleteModel, Member
 
 MAX_LENGTH = 500  # characters
 MAX_LEVEL = 5  # a comment is level 1, a reply to it level 2, ...
@@ -48,3 +48,23 @@ class Comment(CrewScopedSoftDeleteModel):
 
     def __str__(self) -> str:
         return f"{self.member}: {self.text[:40]}"
+
+
+class CommentRead(CrewScopedModel):
+    """When a member last saw a target's comments: others' comments after it are unread (and
+    never ones from before the member joined the crew)."""
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="+")
+    target_type = models.ForeignKey(ContentType, on_delete=models.PROTECT, related_name="+")
+    target_id = models.UUIDField()
+    read_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["member", "target_type", "target_id"], name="comment_read_once"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.member} read {self.target_id} at {self.read_at}"

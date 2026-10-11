@@ -1,9 +1,10 @@
 import { devices, expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 // Comments on a card's page against the real backend and the demo crew (`make seed`): Dan, on a
-// phone, comments on a card of an earlier day; Cristina, on a computer, replies (her message
-// quotes his); Dan's open page shows the reply within seconds; he reacts to his comment by
-// holding it. Then each deletes theirs
+// phone, comments on a card of an earlier day and goes back to the feed; Cristina, on a computer,
+// replies (her message quotes his); Dan's feed marks the card as having something new until he
+// opens it; he reacts to his comment by holding it; her deleted reply leaves his open page within
+// seconds. Then each deletes theirs
 // in its first minute (hers first: his has a reply until then). An earlier day's card, so no test
 // that undoes today's posts finds comments on it; the texts are new each run.
 
@@ -68,6 +69,7 @@ test("the crew comments on a card, replies, reacts and deletes", async ({ browse
   // The first: a reply to it quotes it further down.
   const his = dan.getByRole("article").filter({ hasText: bravo }).first();
   await expect(his).toBeVisible();
+  await dan.goto("/crew"); // away from the card: what comes now is news to him
 
   const cristina = await logIn(browser, "cristina", devices["Desktop Chrome"]);
   await cristina.goto(`/crew/cards/${card}`);
@@ -77,10 +79,16 @@ test("the crew comments on a card, replies, reacts and deletes", async ({ browse
   const hers = cristina.getByRole("article").filter({ hasText: thanks });
   await expect(hers).toBeVisible();
 
-  // Dan's page asks for new comments every 5 s.
-  await expect(dan.getByRole("article").filter({ hasText: thanks })).toBeVisible({
-    timeout: 10_000,
-  });
+  await dan.reload();
+  const link = dan.locator(`a[href="/crew/cards/${card}"]`);
+  await expect(link).toContainText(/\bno[ui]\b/); // "1 nou", or more if others wrote too
+  await link.click();
+  await expect(dan.getByRole("article").filter({ hasText: thanks })).toBeVisible();
+  await dan.goBack(); // seen: the mark goes
+  await expect(link).toBeVisible();
+  await expect(link).not.toContainText(/\bno[ui]\b/);
+  await link.click();
+
   await hold(dan, his.getByText(bravo));
   await expect(dan.getByRole("menuitem", { name: "Răspunde" })).toBeVisible();
   await expect(dan.getByRole("menuitem", { name: "Șterge" })).toHaveCount(0); // it has a reply
@@ -91,7 +99,10 @@ test("the crew comments on a card, replies, reacts and deletes", async ({ browse
   await cristina.getByRole("menuitem", { name: "Șterge" }).click();
   await expect(hers).toHaveCount(0);
 
-  await dan.reload(); // the reply is gone: his comment can go too
+  // Dan's page asks for the comments every 5 s: the reply goes, and his comment can go too.
+  await expect(dan.getByRole("article").filter({ hasText: thanks })).toHaveCount(0, {
+    timeout: 10_000,
+  });
   await hold(dan, his.getByText(bravo));
   await dan.getByRole("menuitem", { name: "Șterge" }).click();
   await expect(his).toHaveCount(0);

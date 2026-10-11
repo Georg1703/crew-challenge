@@ -775,7 +775,13 @@
     "fresh_few": "{{count}} noi",
     "fresh_other": "{{count}} de noi",
     "goTo": "Mergi la comentariul la care răspunde",
-    "toCard": "Înapoi sus, la card"
+    "toCard": "Înapoi sus, la card",
+    "unread_one": "{{count}} nou",
+    "unread_few": "{{count}} noi",
+    "unread_other": "{{count}} de noi",
+    "badge_one": "{{count}} comentariu nou",
+    "badge_few": "{{count}} comentarii noi",
+    "badge_other": "{{count}} de comentarii noi"
   },
   "windows": {
     "progress": {

@@ -44,9 +44,15 @@ function serve(thread: Comment[]) {
         : ok({})) as never);
 }
 
-function show() {
+function show(onRead?: () => void) {
   return renderScreen(
-    <Comments target="entry" id="e1" people={[ana, bogdan]} timeZone="Europe/Chisinau" />,
+    <Comments
+      target="entry"
+      id="e1"
+      people={[ana, bogdan]}
+      timeZone="Europe/Chisinau"
+      onRead={onRead}
+    />,
   );
 }
 
@@ -132,6 +138,18 @@ describe("Comments", () => {
     });
     expect(screen.queryByRole("button", { name: "Stop replying" })).not.toBeInTheDocument();
     expect(await message("Mersi")).toBeInTheDocument();
+  });
+
+  it("marks the chat read when it opens", async () => {
+    serve([say("a", "Bravo!")]);
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(undefined, 204)) as never);
+    const onRead = vi.fn();
+    show(onRead);
+
+    await waitFor(() => expect(onRead).toHaveBeenCalledOnce());
+    expect(put).toHaveBeenCalledWith("/api/v1/comments/{target}/{target_id}/read", {
+      params: { path: { target: "entry", target_id: "e1" } },
+    });
   });
 
   it("keeps the text when sending fails", async () => {

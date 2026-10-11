@@ -53,7 +53,7 @@ const card = (over: Partial<JournalEntry>): JournalEntry => ({
   challenge: WALK,
   proofs: [],
   reactions: { groups: [], mine: null },
-  comments: { count: 0, member_ids: [] },
+  comments: { count: 0, member_ids: [], unread: 0 },
   check_in: null,
   spin: null,
   served: null,
@@ -241,6 +241,17 @@ describe("the crew journal", () => {
 
     expect(await screen.findByRole("button", { name: "\u{1F525}, from Ana" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "React" })).toHaveLength(3);
+  });
+
+  it("links every card to its comments, marking the ones with new ones", async () => {
+    showFeed([
+      { ...walked, comments: { count: 3, member_ids: [ana.id], unread: 2 } },
+      plainWalk("w1", bogdan, "2026-11-10T07:00:00Z"),
+    ]);
+
+    const commented = await screen.findByRole("link", { name: /3 comments, 2 new/ });
+    expect(commented).toHaveAttribute("href", `/crew/cards/${walked.id}`);
+    expect(screen.getByRole("link", { name: "Comment" })).toBeInTheDocument();
   });
 
   it("says what will appear while the crew has done nothing yet", async () => {

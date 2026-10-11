@@ -67,6 +67,10 @@ export function JournalCard({
           .filter((m): m is Member => m !== undefined)
           .map(person),
         peopleLabel: t("comments.writers"),
+        unread:
+          entry.comments.unread > 0
+            ? t("comments.unread", { count: entry.comments.unread })
+            : undefined,
       }
     : undefined;
 

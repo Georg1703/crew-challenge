@@ -10,7 +10,7 @@ from apps.crews import targets
 from apps.crews.models import Member
 
 from . import selectors
-from .models import MAX_LENGTH, MAX_LEVEL, Comment
+from .models import MAX_LENGTH, MAX_LEVEL, Comment, CommentRead
 
 DELETE_WINDOW = timedelta(minutes=1)
 
@@ -81,3 +81,14 @@ def delete(*, member: Member, comment_id: UUID) -> None:
         if Comment.objects.filter(parent=comment).exists():
             raise CommentHasReplies()
         comment.delete()
+
+
+def mark_read(*, member: Member, target: str, target_id: UUID) -> None:
+    """The member has seen the target's comments, up to now."""
+    found = targets.find(target, member, target_id, comments=True)
+    CommentRead.objects.update_or_create(
+        member=member,
+        target_type=ContentType.objects.get_for_model(found),
+        target_id=found.pk,
+        defaults={"read_at": clock.now(), "crew_id": found.crew_id},
+    )

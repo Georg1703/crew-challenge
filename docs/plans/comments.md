@@ -1,6 +1,6 @@
 # Plan: comments on the crew's journal
 
-Status: agreed (2026-10-10); stages 1 to 3 built, stage 4 next. Four stages after the plan, on one branch
+Status: agreed (2026-10-10); stages 1 to 4 built. Four stages after the plan, on one branch
 (`feat/comments`), one commit per stage, each committed after the owner's review.
 Each stage works on its own and with the release before it still serving.
 

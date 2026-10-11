@@ -644,6 +644,7 @@ export function DesignRoute() {
             comments={{
               to: "/design",
               text: "3 comments",
+              unread: "2 new",
               people: [
                 { id: "dan", name: "Dan", seed: "dan" },
                 { id: "bogdan", name: "Bogdan", seed: "bogdan" },
@@ -770,7 +771,12 @@ export function DesignRoute() {
             label="Preview"
             tabs={[
               { to: "/design", label: "Today", icon: "sun", end: true },
-              { to: "/crew", label: "Crew", icon: "users" },
+              {
+                to: "/crew",
+                label: "Crew",
+                icon: "users",
+                badge: { count: 3, label: "3 new comments" },
+              },
               { to: "/me", label: "Me", icon: "user" },
             ]}
             action={{

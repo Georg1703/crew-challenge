@@ -34,6 +34,8 @@ class Target:
     # The targets this member may see and act on now; one by its id, or a page's worth.
     visible: Callable[[Member], models.QuerySet[Any]]
     comments: bool = False  # it takes comments too, not only reactions
+    # The field naming the member who made it ("member"): comments on it are news to them.
+    owner: str | None = None
 
 
 _registry: dict[str, Target] = {}

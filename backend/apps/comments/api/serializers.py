@@ -32,3 +32,10 @@ class CommentSummaryOut(serializers.Serializer):
     member_ids = serializers.ListField(
         child=serializers.UUIDField(), help_text="The last writers, latest first, up to 3."
     )
+    unread = serializers.IntegerField(help_text="Others' comments you have not seen.")
+
+
+class UnreadOut(serializers.Serializer):
+    count = serializers.IntegerField(
+        help_text="Others' unread comments on what you posted or commented on."
+    )

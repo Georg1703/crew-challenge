@@ -12,6 +12,7 @@ import { List, ListRow } from "./ListRow";
 import { QrCode } from "./QrCode";
 import { Sheet } from "./Sheet";
 import { StatusPill } from "./StatusPill";
+import { TabBar } from "./TabBar";
 import { TextField } from "./TextField";
 
 describe("Button", () => {
@@ -147,5 +148,36 @@ describe("Dial", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
     rerender(<Dial size="sm" count={5} drawn={3} label="The mark" />);
     expect(screen.queryByText("5")).toBeNull();
+  });
+});
+
+describe("TabBar", () => {
+  it("shows a tab's badge, nine at most, and says it", async () => {
+    const tabs = (count: number) => [
+      { to: "/", label: "Today", icon: "sun" as const, end: true },
+      {
+        to: "/crew",
+        label: "Crew",
+        icon: "users" as const,
+        badge: { count, label: `${count} new` },
+      },
+    ];
+    const { unmount } = renderScreen(<TabBar label="Main" tabs={tabs(3)} />);
+    expect(await screen.findByRole("link", { name: "Crew, 3 new" })).toHaveTextContent("3");
+    expect(screen.getByRole("link", { name: "Today" })).toBeInTheDocument();
+    unmount();
+
+    renderScreen(<TabBar label="Main" tabs={tabs(12)} />);
+    expect(await screen.findByRole("link", { name: "Crew, 12 new" })).toHaveTextContent("9+");
+  });
+
+  it("shows no badge at zero", async () => {
+    renderScreen(
+      <TabBar
+        label="Main"
+        tabs={[{ to: "/crew", label: "Crew", icon: "users", badge: { count: 0, label: "none" } }]}
+      />,
+    );
+    expect(await screen.findByRole("link", { name: "Crew" })).toHaveTextContent(/^Crew$/);
   });
 });

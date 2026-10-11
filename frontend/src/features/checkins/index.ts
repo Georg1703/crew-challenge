@@ -3,6 +3,7 @@ export {
   useBoard,
   useJournal,
   useJournalCard,
+  useMarkJournalCardRead,
   useMemberProgress,
   useToday,
   useWindows,

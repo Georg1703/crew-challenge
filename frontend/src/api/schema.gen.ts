@@ -328,6 +328,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/comments/{target}/{target_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description You have seen this target's comments, up to now (its card's dot and the badge clear). */
+        put: operations["comments_read"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description How many of the others' comments you have not seen, for the Crew tab's badge. */
+        get: operations["comments_unread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -986,6 +1020,8 @@ export interface components {
             count: number;
             /** @description The last writers, latest first, up to 3. */
             member_ids: string[];
+            /** @description Others' comments you have not seen. */
+            unread: number;
         };
         CrewChallengeOut: {
             /** Format: uuid */
@@ -1580,6 +1616,10 @@ export interface components {
             challenges: components["schemas"]["TodayChallengeOut"][];
             /** @description Everyone with something today, in join order. */
             crew: components["schemas"]["CrewDayOut"][];
+        };
+        UnreadOut: {
+            /** @description Others' unread comments on what you posted or commented on. */
+            count: number;
         };
         /**
          * @description * `single` - One presigned PUT
@@ -2183,6 +2223,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+        };
+    };
+    comments_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "entry";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    comments_unread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadOut"];
                 };
             };
         };
