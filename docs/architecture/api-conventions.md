@@ -145,10 +145,13 @@ GET    /api/v1/journal?cursor=...       the crew's cards, latest first, each as 
                                         counts (30 per page)
 GET    /api/v1/journal/{id}             one card, as in the journal (the card's page)
 
-GET    /api/v1/comments/{target}/{id}   a target's thread, oldest first: [{id, member_id,
-                                        parent_id, level, text, created_at, reactions}]
-POST   /api/v1/comments/{target}/{id}   {text, parent_id?}: a comment or a reply (levels 1-5)
-                                        -> 201 the comment
+GET    /api/v1/comments/{target}/{id}   a target's thread, oldest first: {results: [{id,
+                                        member_id, parent_id, text, created_at, reactions,
+                                        proofs}], drafts: my photos picked for my next comment}
+POST   /api/v1/comments/{target}/{id}   {text, parent_id?}: a comment or a reply, with my uploaded
+                                        draft photos (text may be empty with one) -> 201
+POST   /api/v1/comments/{target}/{id}/images   a photo or GIF for my next comment (up to 5):
+                                        a draft file -> 201 the proof + how to upload it
 DELETE /api/v1/comments/{id}            yours, in its first minute, while nobody replied -> 204
 PUT    /api/v1/comments/{target}/{id}/read   you have seen its comments, up to now -> 204
 GET    /api/v1/comments/unread          {count}: others' unread comments on what you posted or

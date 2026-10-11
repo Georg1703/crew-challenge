@@ -6,5 +6,8 @@ urlpatterns = [
     path("comments/unread", views.UnreadView.as_view(), name="unread"),
     path("comments/<str:target>/<uuid:target_id>", views.ThreadView.as_view(), name="thread"),
     path("comments/<str:target>/<uuid:target_id>/read", views.ReadView.as_view(), name="read"),
+    path(
+        "comments/<str:target>/<uuid:target_id>/images", views.ImagesView.as_view(), name="images"
+    ),
     path("comments/<uuid:comment_id>", views.CommentView.as_view(), name="comment"),
 ]

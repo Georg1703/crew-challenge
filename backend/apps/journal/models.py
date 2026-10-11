@@ -53,6 +53,10 @@ class JournalEntry(CrewScopedModel):
     comments = GenericRelation(
         "comments.Comment", content_type_field="target_type", object_id_field="target_id"
     )
+    # Its comments' photos (drafts too): the card is their subject, so they go with it.
+    proofs = GenericRelation(
+        "proofs.Proof", content_type_field="subject_type", object_id_field="subject_id"
+    )
 
     class Meta:
         ordering = ("-created_at", "-id")  # when it was posted: its place, latest first

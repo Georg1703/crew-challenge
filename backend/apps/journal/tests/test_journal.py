@@ -19,6 +19,7 @@ from apps.doom.models import Spin
 from apps.doom.tests.test_services import Pick, at, check_in, scheduled
 from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
+from apps.proofs.models import Proof
 from apps.reactions import services as reactions
 from apps.reactions.models import Reaction
 from tests.factories import AdminFactory, MemberFactory
@@ -203,11 +204,21 @@ def test_cards_carry_their_comments_and_open_on_their_own(browser, week):
     assert browser.get(url).status_code == 404
 
 
-def test_a_post_others_commented_on_cannot_be_undone(week):
+def test_a_post_others_commented_on_cannot_be_undone(week, object_storage):
     ana, bogdan, _ = week
     swim = JournalEntry.objects.get(kind=JournalEntry.Kind.CHECK_IN, member=ana)
     undo = {"by": ana, "challenge_id": swim.challenge_id, "day": date(2026, 11, 9)}
     with at("2026-11-09 10:00Z"):
+        plan = comments.start_image(
+            member=ana,
+            target="entry",
+            target_id=swim.pk,
+            kind="photo",
+            content_type="image/gif",
+            size=4,
+        )
+        object_storage.put_object(key=plan.proof.original.key, data=b"gif8", content_type="")
+        proofs.complete_proof(by=ana, proof_id=plan.proof.pk)
         mine = comments.add(member=ana, target="entry", target_id=swim.pk, text="Rece!")
         reactions.react(member=bogdan, target="comment", target_id=mine.pk, emoji=FIRE)
         theirs = comments.add(member=bogdan, target="entry", target_id=swim.pk, text="Bravo!")
@@ -219,3 +230,5 @@ def test_a_post_others_commented_on_cannot_be_undone(week):
     assert not JournalEntry.objects.filter(pk=swim.pk).exists()
     assert not Comment.all_objects.filter(target_id=swim.pk).exists()
     assert not Reaction.objects.filter(target_id=mine.pk).exists()
+    assert not Proof.objects.filter(post_id=mine.pk).exists()
+    assert object_storage.objects == {}  # the GIF's file went too

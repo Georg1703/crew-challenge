@@ -9,7 +9,7 @@ Read this file before changing anything. Then read the nested `AGENTS.md` of the
 ## First version (v1) scope
 v1 ships seven things: inviting members, flexible challenge creation, the daily check-in (you and
 your crew), proof upload (photo or video), simple reactions on the crew's journal (one emoji
-per person), comments on its cards (with replies, `docs/plans/comments.md`), and the
+per person), comments on its cards (with replies, photos and GIFs, `docs/plans/comments.md`), and the
 Wheel of Doom (punishments for failed windows, `docs/plans/wheel.md`).
 Everything below marked **after v1** stays in the docs as the long-term direction but must not be
 built yet: growing trees and the garden, streak flames as artwork, confetti and Rive animations,

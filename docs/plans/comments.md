@@ -1,6 +1,6 @@
 # Plan: comments on the crew's journal
 
-Status: agreed (2026-10-10); stages 1 to 4 built. Four stages after the plan, on one branch
+Status: agreed (2026-10-10); stages 1 to 4 built; photos and GIFs (stages 5 and 6) agreed 2026-10-11, stage 5 built. Four stages after the plan, on one branch
 (`feat/comments`), one commit per stage, each committed after the owner's review.
 Each stage works on its own and with the release before it still serving.
 
@@ -237,6 +237,38 @@ Stage 2 is invisible to members and can ship alone; 3 needs 2; 4 needs 3. Stage 
 - Tests: unread for others' comments only; deleted ones never count; joined later; the badge
   counts your cards and cards you commented on and ignores hidden ones; the read mark clears
   both.
+
+### Stage 5 - Photos and GIFs in comments: the API
+
+Agreed (2026-10-11): a comment carries photos and GIFs (no videos), up to 5, and its text may be
+empty when it has one. Phones offer GIFs through the gallery and some keyboards, but a plain text
+box takes none: they come in as files, with no outside GIF service.
+
+- The files are proofs (`apps/proofs`, generic): their subject is the commented target (the
+  card), each member's drafts there are theirs alone (`drafts`, `uploaded_drafts` and `publish`
+  take a `member`; the 5 of a post to come count per member), and sending the comment publishes
+  them with `post_id` = the comment.
+- `POST /api/v1/comments/{target}/{id}/images` (the same body as a check-in's proof, a photo
+  only) -> 201 the draft file and how to send it; then the generic `/proofs/{id}/complete` and
+  `DELETE /proofs/{id}`. A draft never sent goes after a day (`expire_proofs`).
+- The thread gives each comment its `proofs`, and `drafts`: mine on this target.
+- `add`: refused while one of my drafts uploads (`uploads_running`); empty text needs an
+  uploaded photo; the photos join the comment.
+- GIFs: `image/gif` is a photo type (check-ins take them too).
+- A card that goes (an undo, the crew's day undone) takes its comments' photos, files included.
+- import-linter: comments may use proofs (a generic block), still never challenges, check-ins or
+  the journal.
+
+### Stage 6 - Photos and GIFs in comments: the app
+
+- The box gets an image button (photos and GIFs only) and takes pasted images (a computer, or a
+  keyboard that copies a GIF); the picked files show as tiles above the box while they upload
+  (`ProofTiles`), and Send waits for them, as a check-in does.
+- GIFs are sent as they are (shrinking a GIF to a JPEG would stop it), with a first-frame
+  thumbnail.
+- The bubble shows the photos at its top (one at full width, several as a mosaic), the text
+  under them; a tap opens the viewer. A quote of a comment with no text says "Photo".
+- Tests: picking, pasting, Send waiting for an upload, a GIF kept as it is, the bubble's photos.
 
 ## Edge cases
 

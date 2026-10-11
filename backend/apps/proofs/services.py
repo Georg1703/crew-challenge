@@ -41,6 +41,7 @@ EXTENSIONS: dict[str, dict[str, str]] = {  # allowed content types, the extensio
         "image/png": "png",
         "image/webp": "webp",
         "image/heic": "heic",
+        "image/gif": "gif",  # sent as it is, so it keeps moving
     },
     Proof.Kind.VIDEO: {"video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm"},
 }
@@ -116,15 +117,17 @@ def of_subject(subject: models.Model) -> models.QuerySet[Proof]:
     )
 
 
-def drafts(*, subject: models.Model) -> models.QuerySet[Proof]:
-    """`subject`'s draft files: not posted yet, every status."""
-    return of_subject(subject).filter(post_id__isnull=True)
+def drafts(*, subject: models.Model, member: Member | None = None) -> models.QuerySet[Proof]:
+    """`subject`'s draft files: not posted yet, every status; only `member`'s when given (a
+    subject several people post on, a card's comments)."""
+    found = of_subject(subject).filter(post_id__isnull=True)
+    return found.filter(member=member) if member is not None else found
 
 
-def uploaded_drafts(*, subject: models.Model) -> int:
+def uploaded_drafts(*, subject: models.Model, member: Member | None = None) -> int:
     """How many of `subject`'s draft files are uploaded, ready to post; `UploadsRunning` while one
     still uploads (the caller has locked the subject)."""
-    statuses = list(drafts(subject=subject).values_list("status", flat=True))
+    statuses = list(drafts(subject=subject, member=member).values_list("status", flat=True))
     if Proof.Status.UPLOADING in statuses:
         raise UploadsRunning()
     return sum(status in SHOWN for status in statuses)
@@ -161,7 +164,11 @@ def start_proof(
     if duration is not None and not 0 < duration <= VIDEO_MAX_SECONDS:
         raise ValidationFailed(fields={"duration": ["A video can be at most 3 hours long."]})
     with transaction.atomic():
-        same_post = of_subject(subject).filter(post_id=post_id).exclude(status=Proof.Status.FAILED)
+        same_post = (
+            of_subject(subject)
+            .filter(post_id=post_id, member=member)  # drafts: each member's own post to come
+            .exclude(status=Proof.Status.FAILED)
+        )
         if same_post.count() >= MAX_PROOFS:
             raise TooManyProofs()
         proof_id = uuid.uuid4()
@@ -274,10 +281,11 @@ def delete_proof(*, by: Member, proof_id: UUID) -> None:
     proof.delete()
 
 
-def publish(*, subject: models.Model, post_id: UUID) -> int:
-    """Post `subject`'s draft files with `post_id`: the uploaded ones join it, the failed ones go.
-    The caller has locked the subject and checked that none still uploads. Returns how many."""
-    subject_drafts = drafts(subject=subject)
+def publish(*, subject: models.Model, post_id: UUID, member: Member | None = None) -> int:
+    """Post `subject`'s draft files (`member`'s, when given) with `post_id`: the uploaded ones join
+    it, the failed ones go. The caller has locked the subject and checked that none still
+    uploads. Returns how many."""
+    subject_drafts = drafts(subject=subject, member=member)
     subject_drafts.filter(status=Proof.Status.FAILED).delete()  # their files went when they failed
     return subject_drafts.filter(status__in=SHOWN).update(post_id=post_id, updated_at=clock.now())
 

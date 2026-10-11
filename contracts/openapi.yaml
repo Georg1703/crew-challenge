@@ -522,7 +522,9 @@ paths:
   /api/v1/comments/{target}/{target_id}:
     get:
       operationId: comments_list
-      description: A target's comments and replies, oldest first, each with its reactions.
+      description: |-
+        A target's comments and replies, oldest first, each with its reactions and photos; and
+        my photos picked for my next comment.
       parameters:
       - in: path
         name: target
@@ -551,7 +553,9 @@ paths:
           description: ''
     post:
       operationId: comments_add
-      description: Comment, or reply to a comment on the same target (`parent_id`).
+      description: |-
+        Comment, or reply to a comment on the same target (`parent_id`), with my uploaded
+        draft photos (refused while one uploads); the text may be empty when one goes.
       parameters:
       - in: path
         name: target
@@ -583,6 +587,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommentOut'
+          description: ''
+  /api/v1/comments/{target}/{target_id}/images:
+    post:
+      operationId: comments_image
+      description: |-
+        A photo or GIF for my next comment here (up to 5): a draft file only I see, until the
+        comment is sent. Then send the file straight to storage.
+      parameters:
+      - in: path
+        name: target
+        schema:
+          type: string
+          enum:
+          - entry
+        description: What kind of thing the id is.
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofStartInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofUploadOut'
           description: ''
   /api/v1/comments/{target}/{target_id}/read:
     put:
@@ -1650,7 +1692,7 @@ components:
       properties:
         text:
           type: string
-          minLength: 1
+          description: May be empty when your uploaded draft photos go with it.
           maxLength: 500
         parent_id:
           type: string
@@ -1683,11 +1725,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/ReactionSummaryOut'
           description: Target `comment`, this comment's id.
+        proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Its photos and GIFs.
       required:
       - created_at
       - id
       - member_id
       - parent_id
+      - proofs
       - reactions
       - text
     CommentSummaryOut:
@@ -2826,7 +2874,13 @@ components:
           items:
             $ref: '#/components/schemas/CommentOut'
           description: 'Oldest first: a reply''s parent comes before it.'
+        drafts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofOut'
+          description: Your photos picked for your next comment here.
       required:
+      - drafts
       - results
     TodayChallengeOut:
       type: object

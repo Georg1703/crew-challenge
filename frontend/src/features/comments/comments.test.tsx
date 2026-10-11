@@ -21,6 +21,7 @@ const say = (id: string, text: string, over: Partial<Comment> = {}): Comment => 
   text,
   created_at: new Date(NOW - 10 * 60_000).toISOString(),
   reactions: NONE,
+  proofs: [],
   ...over,
 });
 
@@ -39,7 +40,7 @@ function serve(thread: Comment[]) {
     path === "/api/v1/me"
       ? ok(meAs(ana))
       : path === "/api/v1/comments/{target}/{target_id}"
-        ? ok({ results: thread })
+        ? ok({ results: thread, drafts: [] })
         : ok({})) as never);
 }
 

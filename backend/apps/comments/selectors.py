@@ -11,6 +11,7 @@ from django.db.models import F, OuterRef, Q, QuerySet, Subquery
 
 from apps.crews import targets
 from apps.crews.models import Member
+from apps.proofs import services as proofs
 
 from .models import Comment, CommentRead
 
@@ -129,3 +130,9 @@ def others_commented(*, member: Member, on: QuerySet[Any]) -> bool:
         .exclude(member=member)
         .exists()
     )
+
+
+def my_drafts(*, member: Member, target: str, target_id: UUID) -> list[Any]:
+    """The photos I picked for my next comment on a target, still drafts (only I see them)."""
+    found = targets.find(target, member, target_id, comments=True)
+    return list(proofs.drafts(subject=found, member=member).select_related("original", "thumb"))

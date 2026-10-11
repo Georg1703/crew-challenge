@@ -220,10 +220,16 @@ source_modules = ["apps.media"]
 forbidden_modules = ["apps.proofs"]
 
 [[tool.importlinter.contracts]]
-name = "Reactions and comments know their targets only through the registry (targets register themselves)"
+name = "Reactions know their targets only through the registry (targets register themselves)"
 type = "forbidden"
-source_modules = ["apps.reactions", "apps.comments"]
+source_modules = ["apps.reactions"]
 forbidden_modules = ["apps.challenges", "apps.checkins", "apps.media", "apps.proofs", "apps.journal"]
+
+[[tool.importlinter.contracts]]
+name = "Comments know their targets only through the registry; their photos are proofs"
+type = "forbidden"
+source_modules = ["apps.comments"]
+forbidden_modules = ["apps.challenges", "apps.checkins", "apps.journal"]
 
 [[tool.importlinter.contracts]]
 name = "Reactions sit under comments: a comment takes reactions, never the other way"

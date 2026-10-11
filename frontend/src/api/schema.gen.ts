@@ -317,11 +317,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description A target's comments and replies, oldest first, each with its reactions. */
+        /**
+         * @description A target's comments and replies, oldest first, each with its reactions and photos; and
+         *     my photos picked for my next comment.
+         */
         get: operations["comments_list"];
         put?: never;
-        /** @description Comment, or reply to a comment on the same target (`parent_id`). */
+        /**
+         * @description Comment, or reply to a comment on the same target (`parent_id`), with my uploaded
+         *     draft photos (refused while one uploads); the text may be empty when one goes.
+         */
         post: operations["comments_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/{target}/{target_id}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description A photo or GIF for my next comment here (up to 5): a draft file only I see, until the
+         *     comment is sent. Then send the file straight to storage.
+         */
+        post: operations["comments_image"];
         delete?: never;
         options?: never;
         head?: never;
@@ -987,6 +1013,7 @@ export interface components {
             amount?: string | null;
         };
         CommentInRequest: {
+            /** @description May be empty when your uploaded draft photos go with it. */
             text: string;
             /**
              * Format: uuid
@@ -1012,6 +1039,8 @@ export interface components {
             created_at: string;
             /** @description Target `comment`, this comment's id. */
             reactions: components["schemas"]["ReactionSummaryOut"];
+            /** @description Its photos and GIFs. */
+            proofs: components["schemas"]["ProofOut"][];
         };
         /** @description A target's comments, embedded where the target is shown (a journal card). */
         CommentSummaryOut: {
@@ -1554,6 +1583,8 @@ export interface components {
         ThreadOut: {
             /** @description Oldest first: a reply's parent comes before it. */
             results: components["schemas"]["CommentOut"][];
+            /** @description Your photos picked for your next comment here. */
+            drafts: components["schemas"]["ProofOut"][];
         };
         /** @description One of my challenges today: what to show on its card and in the ring. */
         TodayChallengeOut: {
@@ -2221,6 +2252,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+        };
+    };
+    comments_image: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What kind of thing the id is. */
+                target: "entry";
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProofStartInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofUploadOut"];
                 };
             };
         };

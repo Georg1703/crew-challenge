@@ -128,7 +128,9 @@ Targets now: `entry` (a journal card: reactions and comments) and `comment` (rea
 `PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
 
 **Comments (`apps/comments`).** Words on a target that takes comments, or a reply to a comment on
-it (any comment; the reply shows a quote of it). Never edited; the writer
+it (any comment; the reply shows a quote of it), with up to 5 photos or GIFs: proofs whose
+subject is the target, each member's drafts there theirs alone, published with the comment's id
+as their post. Never edited; the writer
 deletes one (softly) in its first minute while nobody has replied. The thread is read whole,
 oldest first (`GET /api/v1/comments/{target}/{id}`). A `CommentRead` row per member and target
 keeps when they last saw it: the others' comments after it (and after they joined) are unread.

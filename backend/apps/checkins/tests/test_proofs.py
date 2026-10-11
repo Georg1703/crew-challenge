@@ -189,7 +189,7 @@ def test_any_challenge_takes_a_photo_or_a_video(walk):
     assert photo(bogdan, no_proof).proof.status == Proof.Status.UPLOADING
 
     for refused, field in [
-        (lambda: photo(bogdan, challenge, content_type="image/gif"), "content_type"),
+        (lambda: photo(bogdan, challenge, content_type="image/bmp"), "content_type"),
         (lambda: photo(bogdan, challenge, size=50 * MiB + 1), "size"),
         (lambda: photo(bogdan, challenge, thumb_size=2 * MiB + 1), "thumb_size"),
         (lambda: video(bogdan, challenge, size=20 * 1024 * MiB + 1), "size"),

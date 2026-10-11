@@ -1,11 +1,16 @@
 from rest_framework import serializers
 
 from apps.comments.models import MAX_LENGTH
+from apps.proofs.api.serializers import ProofOut
 from apps.reactions.api.serializers import ReactionSummaryOut
 
 
 class CommentIn(serializers.Serializer):
-    text = serializers.CharField(max_length=MAX_LENGTH)
+    text = serializers.CharField(
+        max_length=MAX_LENGTH,
+        allow_blank=True,
+        help_text="May be empty when your uploaded draft photos go with it.",
+    )
     parent_id = serializers.UUIDField(
         required=False, allow_null=True, help_text="The comment it answers, on the same target."
     )
@@ -18,10 +23,12 @@ class CommentOut(serializers.Serializer):
     text = serializers.CharField()
     created_at = serializers.DateTimeField()
     reactions = ReactionSummaryOut(help_text="Target `comment`, this comment's id.")
+    proofs = ProofOut(many=True, help_text="Its photos and GIFs.")
 
 
 class ThreadOut(serializers.Serializer):
     results = CommentOut(many=True, help_text="Oldest first: a reply's parent comes before it.")
+    drafts = ProofOut(many=True, help_text="Your photos picked for your next comment here.")
 
 
 class CommentSummaryOut(serializers.Serializer):

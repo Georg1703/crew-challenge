@@ -11,6 +11,8 @@ from apps.core.errors import ValidationFailed
 from apps.crews import targets
 from apps.crews.models import Member
 from apps.crews.targets import TargetNotFound
+from apps.proofs import services as proofs
+from apps.proofs.models import Proof
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -191,6 +193,61 @@ def test_every_target_that_takes_comments_deletes_them():
             ), f"{target.model.__name__} needs a GenericRelation to Comment"
 
 
+def picked(member, on, storage, *, gif=True, finish=True):
+    """A photo (a GIF by default) picked for my next comment on `on`, uploaded unless `finish`
+    is false."""
+    plan = services.start_image(
+        member=member,
+        target="person",
+        target_id=on.pk,
+        kind="photo",
+        content_type="image/gif" if gif else "image/jpeg",
+        size=4,
+    )
+    if finish:
+        storage.put_object(key=plan.proof.original.key, data=b"gif8", content_type="")
+        proofs.complete_proof(by=member, proof_id=plan.proof.pk)
+    return plan.proof
+
+
+def test_a_comment_carries_my_photos_and_gifs(people, object_storage):
+    ana, bogdan = people
+    gif = picked(ana, bogdan, object_storage)
+    picked(bogdan, bogdan, object_storage)  # his own draft: not part of her comment
+    late = picked(ana, bogdan, object_storage, gif=False, finish=False)
+    with pytest.raises(proofs.UploadsRunning):
+        say(ana, bogdan, text="")
+    proofs.delete_proof(by=ana, proof_id=late.pk)
+
+    comment = say(ana, bogdan, text="  ")  # a GIF alone is a whole comment
+    assert comment.text == ""
+    assert list(Proof.objects.filter(post_id=comment.pk)) == [gif]
+    assert selectors.my_drafts(member=ana, target="person", target_id=bogdan.pk) == []
+    assert len(selectors.my_drafts(member=bogdan, target="person", target_id=bogdan.pk)) == 1
+    with pytest.raises(ValidationFailed):  # nothing to send
+        say(ana, bogdan, text=" ")
+
+
+def test_a_comment_takes_five_photos_and_no_videos(people, object_storage):
+    ana, bogdan = people
+    for _ in range(5):
+        picked(ana, bogdan, object_storage, finish=False)
+    with pytest.raises(proofs.TooManyProofs):
+        picked(ana, bogdan, object_storage, finish=False)
+    picked(bogdan, bogdan, object_storage, finish=False)  # each member's own five
+    with pytest.raises(ValidationFailed):
+        services.start_image(
+            member=ana,
+            target="person",
+            target_id=bogdan.pk,
+            kind="video",
+            content_type="video/mp4",
+            size=4,
+        )
+    with pytest.raises(TargetNotFound):
+        picked(AdminFactory.create(), bogdan, object_storage, finish=False)
+
+
 def test_the_api(browser, people):
     ana, bogdan = people
     url = f"/api/v1/comments/person/{bogdan.pk}"
@@ -198,10 +255,11 @@ def test_the_api(browser, people):
     made = browser.post(url, {"text": "Bravo!"}, format="json")
     assert made.status_code == 201
     first = made.json()
-    assert (first["member_id"], first["parent_id"], first["reactions"]) == (
+    assert (first["member_id"], first["parent_id"], first["reactions"], first["proofs"]) == (
         str(ana.pk),
         None,
         {"groups": [], "mine": None},
+        [],
     )
     browser.force_login(bogdan.user)
     reply = browser.post(url, {"text": "Mersi", "parent_id": first["id"]}, format="json").json()
@@ -225,3 +283,29 @@ def test_the_api(browser, people):
     assert browser.get(url).json()["error"]["code"] == "target_not_found"
     hidden = browser.put(f"/api/v1/reactions/comment/{first['id']}", {"emoji": FIRE}, format="json")
     assert hidden.json()["error"]["code"] == "target_not_found"
+
+
+def test_photos_over_the_api(browser, people, object_storage):
+    ana, bogdan = people
+    url = f"/api/v1/comments/person/{bogdan.pk}"
+    browser.force_login(ana.user)
+    started = browser.post(
+        f"{url}/images", {"kind": "photo", "content_type": "image/gif", "size": 4}, format="json"
+    )
+    assert started.status_code == 201
+    proof = started.json()["proof"]
+    object_storage.put_object(
+        key=Proof.objects.get(pk=proof["id"]).original.key, data=b"gif8", content_type=""
+    )
+    assert browser.post(f"/api/v1/proofs/{proof['id']}/complete").status_code == 200
+    assert [p["id"] for p in browser.get(url).json()["drafts"]] == [proof["id"]]
+
+    made = browser.post(url, {"text": ""}, format="json").json()
+    assert [p["id"] for p in made["proofs"]] == [proof["id"]]
+    thread = browser.get(url).json()
+    assert ([p["id"] for p in thread["results"][0]["proofs"]], thread["drafts"]) == (
+        [proof["id"]],
+        [],
+    )
+    browser.force_login(bogdan.user)  # her drafts are hers alone; her posted photo shows
+    assert browser.get(url).json()["drafts"] == []

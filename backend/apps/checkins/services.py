@@ -170,6 +170,8 @@ def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
     if comments.others_commented(member=by, on=last.journal_entries.all()):
         raise PostHasComments()  # deleting the card would delete their words
     proofs.remove_post(subject=row, post_id=last.pk)
+    for card in last.journal_entries.all():
+        proofs.discard_files(subject=card)  # its comments' photos
     last.delete()  # its card goes with it
     if row.entries.exists() or proofs.drafts(subject=row).exists():
         row = _refresh(row)
@@ -199,6 +201,10 @@ def write_crew_day(*, crew: Crew, day: date, at: datetime | None = None) -> None
     so (an undo the same day)."""
     members = selectors.crew_day(crew=crew, day=day)
     if members is None:
+        for card in JournalEntry.objects.filter(
+            kind=JournalEntry.Kind.CREW_DAY, crew=crew, day=day
+        ):
+            proofs.discard_files(subject=card)  # its comments' photos
         journal.drop(JournalEntry.Kind.CREW_DAY, crew, day=day)
         return
     journal.post(
