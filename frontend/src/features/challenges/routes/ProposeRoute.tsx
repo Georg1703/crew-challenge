@@ -35,7 +35,7 @@ import {
   type ChallengeInput,
 } from "../api";
 import styles from "../challenges.module.css";
-import { ParticipantPicker } from "../components/ParticipantPicker";
+import { ParticipantPicker, pickedFrom } from "../components/ParticipantPicker";
 import {
   CHALLENGE_ICONS,
   WEEKDAYS,
@@ -269,8 +269,7 @@ function EditProposal({ id }: { id: string }) {
         total: c.need_kind === "amount" ? String(c.need_value) : "",
         day_min: c.day_min == null ? "" : String(c.day_min),
         proof_required: c.proof_required,
-        participant_ids: c.participants.filter((p) => p.role === "player").map((p) => p.member.id),
-        viewer_ids: c.participants.filter((p) => p.role === "viewer").map((p) => p.member.id),
+        ...pickedFrom(c.participants),
         punishments: c.punishments.map((p) => newPunishment(p.text, p.proof_required)),
       }}
     />
@@ -420,13 +419,7 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
                   participant_ids: draft.participant_ids ?? people.map((person) => person.id),
                   viewer_ids: draft.viewer_ids,
                 }}
-                onChange={(picked) =>
-                  setDraft((d) => ({
-                    ...d,
-                    participant_ids: picked.participant_ids,
-                    viewer_ids: picked.viewer_ids,
-                  }))
-                }
+                onChange={(picked) => setDraft((d) => ({ ...d, ...picked }))}
                 error={fieldError("participant_ids")}
               />
             ) : (

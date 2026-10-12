@@ -107,6 +107,9 @@ def test_the_crew_day_comes_with_the_last_one_due_and_goes_with_an_undo(crew):
     (day,) = cards(Kind.CREW_DAY)
     assert (day.day, day.member, day.challenge) == (NOV_1, None, None)
     assert sorted(day.facts["members"]) == sorted([str(ana.pk), str(bogdan.pk)])
+    latest, _ = selectors.page(member=ana, cursor=None, size=2)
+    assert [c.kind for c in latest] == [Kind.CREW_DAY, Kind.CHECK_IN]  # after the post that did it
+    assert latest[0].created_at > latest[1].created_at  # not left to the tie-break
 
     with at("2026-11-01 09:00Z"):
         checkins.undo_last(by=bogdan, challenge_id=run.pk, day=NOV_1)

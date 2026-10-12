@@ -38,6 +38,7 @@ def challenge_data(
         people = selectors.participants(challenges=[challenge]).get(challenge.pk, [])
     if punishments is None:
         punishments = selectors.punishments(challenges=[challenge]).get(challenge.pk, [])
+    mine = next((p for p in people if p.member_id == member.pk), None)
     return {
         "id": challenge.pk,
         "title": challenge.title,
@@ -74,13 +75,10 @@ def challenge_data(
         "participants": [
             {"member": _person(p.member), "role": p.role, "left_on": p.left_on} for p in people
         ],
-        "taking_part": any(
-            p.member_id == member.pk and p.role == Participant.Role.PLAYER and p.left_on is None
-            for p in people
-        ),
-        "watching": any(
-            p.member_id == member.pk and p.role == Participant.Role.VIEWER for p in people
-        ),
+        "taking_part": mine is not None
+        and mine.role == Participant.Role.PLAYER
+        and mine.left_on is None,
+        "watching": mine is not None and mine.role == Participant.Role.VIEWER,
     }
 
 

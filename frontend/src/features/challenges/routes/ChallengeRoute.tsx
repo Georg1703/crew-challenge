@@ -153,25 +153,26 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   const lastWindow = ending.data?.find((w) => w.last === todayDay);
   const leaveNote = lastWindow && shortWindow(t, lastWindow, challenge, i18n.language, "leave");
   const watching = challenge.watching;
-  const viewers = challenge.participants.filter((p) => p.role === "viewer");
-  const leaveWord = watching
-    ? t("challenges.stopWatching")
-    : started
-      ? t("challenges.leave")
-      : t("challenges.optOut");
+  // Stop watching, leave a running challenge, or opt out: the same sheet with its own words.
+  const way = watching ? "stopWatching" : started ? "leave" : "optOut";
+  const leaveWord = t(`challenges.${way}`);
+  const leaveTitle = t(`challenges.${way}Title`);
+  const leaveBody = t(`challenges.${way}Body`);
+  const leaveDone = t(
+    `challenges.${{ stopWatching: "stoppedWatching", leave: "left", optOut: "optedOut" }[way]}`,
+  );
+  const watchers = challenge.participants.some((p) => p.role === "viewer") && (
+    <>
+      <h2 className={styles.sectionTitle}>{t("challenges.watchingTitle")}</h2>
+      <ParticipantList challenge={challenge} meId={member?.id} role="viewer" />
+    </>
+  );
   const leaveNow = () =>
     leave.mutate(
       { keepWatching },
       {
         onSuccess: () => {
-          toast(
-            watching
-              ? t("challenges.stoppedWatching")
-              : started
-                ? t("challenges.left")
-                : t("challenges.optedOut"),
-            "success",
-          );
+          toast(leaveDone, "success");
           if (keepWatching) setLeaving(false);
           else navigate("/challenges", { replace: true });
         },
@@ -282,12 +283,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
             meId={member?.id}
             label={t("challenges.who.title")}
           />
-          {viewers.length > 0 && (
-            <>
-              <h2 className={styles.sectionTitle}>{t("challenges.watchingTitle")}</h2>
-              <ParticipantList challenge={challenge} meId={member?.id} role="viewer" />
-            </>
-          )}
+          {watchers}
           {!challenge.taking_part && (
             <p className={styles.meta}>
               {watching ? t("challenges.watching") : t("challenges.who.adminOnly")}
@@ -372,12 +368,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
               <ParticipantList challenge={challenge} meId={member?.id} />
             </>
           )}
-          {viewers.length > 0 && (
-            <>
-              <h2 className={styles.sectionTitle}>{t("challenges.watchingTitle")}</h2>
-              <ParticipantList challenge={challenge} meId={member?.id} role="viewer" />
-            </>
-          )}
+          {watchers}
           {watching && <p className={styles.meta}>{t("challenges.watching")}</p>}
           {((challenge.phase !== "finished" && challenge.taking_part) || watching) && (
             <Button variant="danger" size="lg" fullWidth onClick={() => setLeaving(true)}>
@@ -396,22 +387,10 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
       <Sheet
         open={leaving}
         onClose={() => setLeaving(false)}
-        title={
-          watching
-            ? t("challenges.stopWatchingTitle")
-            : started
-              ? t("challenges.leaveTitle")
-              : t("challenges.optOutTitle")
-        }
+        title={leaveTitle}
         closeLabel={t("common.close")}
       >
-        <p className={styles.muted}>
-          {watching
-            ? t("challenges.stopWatchingBody")
-            : started
-              ? t("challenges.leaveBody")
-              : t("challenges.optOutBody")}
-        </p>
+        <p className={styles.muted}>{leaveBody}</p>
         {leaveNote && <p className={styles.muted}>{leaveNote}</p>}
         {!watching && (
           <Toggle

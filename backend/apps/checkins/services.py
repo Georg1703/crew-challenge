@@ -10,7 +10,7 @@ posted by then, they expire with it.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -198,7 +198,8 @@ def write_card(entry: CheckInEntry) -> None:
 
 def write_crew_day(*, crew: Crew, day: date, at: datetime | None = None) -> None:
     """The crew's day card: written once everyone due has finished, gone if that stops being
-    so (an undo the same day)."""
+    so (an undo the same day). `at` is the post that finished the day: the card goes right
+    after it in the journal (the same instant would leave their order to chance)."""
     members = selectors.crew_day(crew=crew, day=day)
     if members is None:
         for card in JournalEntry.objects.filter(
@@ -214,7 +215,7 @@ def write_crew_day(*, crew: Crew, day: date, at: datetime | None = None) -> None
         facts={"members": members},
         member=None,
         challenge=None,
-        at=at,
+        at=at + timedelta(microseconds=1) if at else None,
     )
 
 

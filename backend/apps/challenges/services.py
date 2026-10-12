@@ -298,13 +298,6 @@ def _set_punishments(challenge: Challenge, punishments: tuple[PunishmentShape, .
 # --- the pool ----------------------------------------------------------------------------------
 
 
-def _takes_part(challenge: Challenge, member: Member) -> bool:
-    """`member` is one of the challenge's players and has not left it."""
-    return Participant.objects.filter(
-        challenge=challenge, member=member, role=Participant.Role.PLAYER, left_on__isnull=True
-    ).exists()
-
-
 def _row_of(challenge: Challenge, member: Member) -> Participant | None:
     """`member`'s row on the challenge, while it still sees it (a player who has not left, or a
     viewer)."""
@@ -469,7 +462,8 @@ def cast_vote(*, by: Member, challenge_id: UUID) -> Vote:
     """
     challenge = _lock(by, challenge_id)
     _require_proposed(challenge)
-    if not _takes_part(challenge, by):
+    row = _row_of(challenge, by)
+    if row is None or row.role != Participant.Role.PLAYER:
         raise NotAParticipant()
     vote, _ = Vote.objects.get_or_create(challenge=challenge, member=by, defaults={"crew": by.crew})
     return vote
@@ -585,11 +579,10 @@ def stop_taking_part(*, by: Member, challenge_id: UUID, keep_watching: bool = Fa
     if today < found.start_date:
         Vote.objects.filter(challenge=found, member=by).delete()
     else:
-        row.left_on = today
+        row.left_on = today  # the board keeps the days so far
     if keep_watching:
         row.role = Participant.Role.VIEWER
-        row.save(update_fields=["role", "left_on", "updated_at"])
-    elif row.left_on is not None:
-        row.save(update_fields=["left_on", "updated_at"])
-    else:
+    if row.left_on is None and not keep_watching:
         row.delete()
+    else:
+        row.save(update_fields=["role", "left_on", "updated_at"])

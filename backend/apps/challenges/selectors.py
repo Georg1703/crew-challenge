@@ -78,8 +78,8 @@ def visible(*, member: Member) -> QuerySet[Challenge]:
     rows = Challenge.objects.for_crew(member.crew)
     if member.is_admin:
         return rows
-    sees = Q(participants__left_on__isnull=True) | Q(participants__role=Participant.Role.VIEWER)
-    return rows.filter(Q(participants__member=member) & sees)
+    mine = Participant.objects.filter(SEES, member=member).values("challenge_id")
+    return rows.filter(pk__in=mine)
 
 
 def pool(*, member: Member) -> Pool:

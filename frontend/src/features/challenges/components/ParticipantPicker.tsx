@@ -8,6 +8,12 @@ type Person = { id: string; display_name: string; avatar_seed: string };
 
 export type Picked = { participant_ids: string[]; viewer_ids: string[] };
 
+/** A challenge's lists, as the picker edits them. */
+export function pickedFrom(participants: { member: { id: string }; role: string }[]): Picked {
+  const ids = (role: string) => participants.filter((p) => p.role === role).map((p) => p.member.id);
+  return { participant_ids: ids("player"), viewer_ids: ids("viewer") };
+}
+
 /** Who takes part (the creator always) and, among the others, who only watches. */
 export function ParticipantPicker({
   people,
