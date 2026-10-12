@@ -225,13 +225,19 @@ class Vote(CrewScopedModel):
 
 
 class Participant(CrewScopedModel):
-    """A member the creator selected for a challenge: they see it, vote on it and, once it is
-    scheduled, take part in it. Opting out before the start deletes the row; leaving during the
-    challenge sets `left_on` (they stop seeing it; the board keeps their days).
+    """A member the creator selected for a challenge. A player sees it, votes on it and, once it
+    is scheduled, takes part in it; a viewer only sees it (no vote, no check-ins, no spins).
+    Opting out before the start deletes the row; leaving during the challenge sets `left_on`
+    (the board keeps their days). A leaver who keeps watching becomes a viewer with `left_on`.
     """
+
+    class Role(models.TextChoices):
+        PLAYER = "player", "Takes part"
+        VIEWER = "viewer", "Watches"
 
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="participants")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="participations")
+    role = models.CharField(max_length=16, choices=Role.choices, default=Role.PLAYER)
     left_on = models.DateField(
         null=True, blank=True, help_text="Last day that counts, when the member left during it."
     )

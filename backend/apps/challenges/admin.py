@@ -15,7 +15,7 @@ class ParticipantInline(admin.TabularInline):
     """Who takes part, on the challenge's own page (one row per member: no half-made rows)."""
 
     model = Participant
-    fields = ("member", "left_on")
+    fields = ("member", "role", "left_on")
     extra = 0
 
 

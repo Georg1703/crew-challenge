@@ -689,6 +689,80 @@ def test_moving_and_putting_back_keep_the_participants(crew):
     assert names(proposal) == ["Bogdan", "Cristina"]
 
 
+def roles(challenge):
+    people = selectors.participants(challenges=[challenge]).get(challenge.pk, [])
+    return {p.member.display_name: p.role for p in people}
+
+
+def test_viewers_see_the_challenge_and_its_cards_but_have_no_vote_or_part(crew):
+    admin, bogdan, cristina = crew
+    proposal = services.propose_challenge(
+        by=bogdan, shape=PUSHUPS, participant_ids=[], viewer_ids=[cristina.pk]
+    )
+    assert roles(proposal) == {"Bogdan": "player", "Cristina": "viewer"}
+    assert selectors.get_challenge(member=cristina, challenge_id=proposal.pk) == proposal
+    assert selectors.pool(member=cristina).proposals == [proposal]
+    with pytest.raises(services.NotAParticipant):
+        services.cast_vote(by=cristina, challenge_id=proposal.pk)
+    services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    assert selectors.list_chosen(member=cristina) == [proposal]
+    assert selectors.participants(challenges=[proposal], plays=True)[proposal.pk] == [
+        Participant.objects.get(challenge=proposal, member=bogdan)
+    ]
+    with time_machine.travel("2026-11-12 12:00Z", tick=False):
+        assert selectors.participants_on(viewer=cristina, day=date(2026, 11, 12)) == [
+            Participant.objects.get(challenge=proposal, member=bogdan)
+        ]
+        services.stop_taking_part(by=cristina, challenge_id=proposal.pk)  # stops watching
+    assert selectors.get_challenge(member=cristina, challenge_id=proposal.pk) is None
+    assert roles(proposal) == {"Bogdan": "player"}
+
+
+def test_the_creator_always_plays_and_nobody_both_plays_and_watches(crew):
+    admin, bogdan, cristina = crew
+    proposal = services.propose_challenge(
+        by=bogdan, shape=PUSHUPS, participant_ids=[admin.pk], viewer_ids=[bogdan.pk]
+    )
+    assert roles(proposal) == {"Ana": "player", "Bogdan": "player"}
+    for ids in ([admin.pk], [MemberFactory.create().pk]):
+        with pytest.raises(ValidationFailed) as error:
+            services.set_participants(
+                by=bogdan, challenge_id=proposal.pk, participant_ids=[admin.pk], viewer_ids=ids
+            )
+        assert "viewer_ids" in error.value.fields
+    services.set_participants(by=bogdan, challenge_id=proposal.pk, participant_ids=[cristina.pk])
+    services.cast_vote(by=cristina, challenge_id=proposal.pk)
+    services.set_participants(
+        by=bogdan, challenge_id=proposal.pk, participant_ids=[], viewer_ids=[cristina.pk]
+    )
+    assert roles(proposal) == {"Bogdan": "player", "Cristina": "viewer"}
+    assert not Vote.objects.filter(challenge=proposal).exists()  # a viewer has no vote
+    edited = services.edit_proposal(
+        by=bogdan, challenge_id=proposal.pk, shape=PUSHUPS, participant_ids=[cristina.pk]
+    )
+    assert roles(edited) == {"Bogdan": "player", "Cristina": "player"}
+    kept = services.edit_proposal(by=bogdan, challenge_id=proposal.pk, shape=PUSHUPS)
+    assert roles(kept) == {"Bogdan": "player", "Cristina": "player"}
+
+
+def test_leaving_and_keeping_watching_makes_a_viewer_whose_days_stay(crew, chosen):
+    _, bogdan, cristina = crew
+    services.stop_taking_part(by=cristina, challenge_id=chosen.pk, keep_watching=True)
+    row = Participant.objects.get(challenge=chosen, member=cristina)
+    assert (row.role, row.left_on) == ("viewer", None)
+    assert selectors.get_challenge(member=cristina, challenge_id=chosen.pk) == chosen
+    with time_machine.travel("2026-11-12 12:00Z", tick=False):
+        services.stop_taking_part(by=bogdan, challenge_id=chosen.pk, keep_watching=True)
+        assert selectors.get_challenge(member=bogdan, challenge_id=chosen.pk) == chosen
+        plays = selectors.participants(challenges=[chosen], plays=True)[chosen.pk]
+        assert {(p.member.display_name, p.left_on) for p in plays} == {
+            ("Ana", None),
+            ("Bogdan", date(2026, 11, 12)),
+        }
+        services.stop_taking_part(by=bogdan, challenge_id=chosen.pk)  # stops watching
+    assert selectors.get_challenge(member=bogdan, challenge_id=chosen.pk) is None
+
+
 WEEKLY = {
     "title": "Run",
     "window": "week",

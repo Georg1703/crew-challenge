@@ -70,8 +70,8 @@ def owed(challenge: Challenge, verdict: days.Verdict) -> int:
 def open_spins() -> int:
     """Open every spin owed for windows that closed; returns how many are new. Safe to run twice.
 
-    Looks at every scheduled challenge with punishments and every participant, those who left too
-    (their cut window counts).
+    Looks at every scheduled challenge with punishments and every player, those who left too
+    (their cut window counts); viewers owe nothing.
     """
     # ponytail: judges every closed window each run; a "judged until" mark per participant if
     # crews ever grow past a few hundred windows.
@@ -80,7 +80,7 @@ def open_spins() -> int:
         .distinct()
         .select_related("crew")
     )
-    people = challenges.participants(challenges=found)
+    people = challenges.participants(challenges=found, plays=True)
     before = Spin.objects.count()
     rows: list[Spin] = []
     for challenge in found:

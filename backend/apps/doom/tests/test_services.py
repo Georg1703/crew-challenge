@@ -131,6 +131,20 @@ def test_a_member_who_left_still_owes_the_cut_week(swim):
     assert owed.spins[0].window_last == date(2026, 11, 4)
 
 
+def test_viewers_owe_nothing(crew):
+    ana, bogdan = crew
+    with at("2026-10-10 12:00Z"):
+        challenge = challenges.propose_challenge(
+            by=bogdan, shape=SWIM, participant_ids=[], viewer_ids=[ana.pk]
+        )
+        challenges.schedule_challenge(
+            by=ana, challenge_id=challenge.pk, period_start=date(2026, 11, 2)
+        )
+    with at("2026-11-08 22:01Z"):
+        services.open_spins()
+    assert (numbers(ana), numbers(bogdan)) == ([], [1, 2, 3])
+
+
 def test_drawing_is_mine_once_and_sets_the_day_to_serve_by(swim):
     ana, bogdan, _ = swim
     with at("2026-11-08 22:01Z"):

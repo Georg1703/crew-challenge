@@ -71,8 +71,16 @@ def challenge_data(
         "voters": [_person(voter) for voter in tally.voters],
         "my_vote": any(voter.pk == member.pk for voter in tally.voters),
         "mine": challenge.created_by_id == member.pk,
-        "participants": [{"member": _person(p.member), "left_on": p.left_on} for p in people],
-        "taking_part": any(p.member_id == member.pk and p.left_on is None for p in people),
+        "participants": [
+            {"member": _person(p.member), "role": p.role, "left_on": p.left_on} for p in people
+        ],
+        "taking_part": any(
+            p.member_id == member.pk and p.role == Participant.Role.PLAYER and p.left_on is None
+            for p in people
+        ),
+        "watching": any(
+            p.member_id == member.pk and p.role == Participant.Role.VIEWER for p in people
+        ),
     }
 
 
@@ -148,8 +156,9 @@ class ChallengesView(APIView):
         data.is_valid(raise_exception=True)
         shape = dict(data.validated_data)
         participant_ids = shape.pop("participant_ids")
+        viewer_ids = shape.pop("viewer_ids")
         challenge = services.propose_challenge(
-            by=member, shape=shape, participant_ids=participant_ids
+            by=member, shape=shape, participant_ids=participant_ids, viewer_ids=viewer_ids
         )
         return Response(
             ChallengeOut(challenge_data(challenge, member)).data, status=status.HTTP_201_CREATED
@@ -178,8 +187,13 @@ class ChallengeView(APIView):
         data.is_valid(raise_exception=True)
         shape = dict(data.validated_data)
         participant_ids = shape.pop("participant_ids")
+        viewer_ids = shape.pop("viewer_ids")
         challenge = services.edit_proposal(
-            by=member, challenge_id=challenge_id, shape=shape, participant_ids=participant_ids
+            by=member,
+            challenge_id=challenge_id,
+            shape=shape,
+            participant_ids=participant_ids,
+            viewer_ids=viewer_ids,
         )
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -197,7 +211,7 @@ class ParticipantsView(APIView):
         request=ParticipantsIn, responses=ChallengeOut, operation_id="challenges_participants"
     )
     def put(self, request: Request, challenge_id: UUID) -> Response:
-        """The creator changes who takes part while the challenge is a proposal."""
+        """The creator changes who takes part and who watches while the challenge is a proposal."""
         member = _member(request)
         data = ParticipantsIn(data=request.data)
         data.is_valid(raise_exception=True)
@@ -205,6 +219,7 @@ class ParticipantsView(APIView):
             by=member,
             challenge_id=challenge_id,
             participant_ids=data.validated_data["participant_ids"],
+            viewer_ids=data.validated_data["viewer_ids"],
         )
         return Response(ChallengeOut(challenge_data(challenge, member)).data)
 
@@ -260,11 +275,24 @@ class ScheduleView(APIView):
 class ParticipationView(APIView):
     permission_classes = [IsCrewMember]
 
-    @extend_schema(request=None, responses={204: None}, operation_id="challenges_leave")
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "keep_watching", bool, description="Stay on as a viewer instead of going."
+            )
+        ],
+        request=None,
+        responses={204: None},
+        operation_id="challenges_leave",
+    )
     def delete(self, request: Request, challenge_id: UUID) -> Response:
-        """Opt out before the start, or leave a running challenge (today still counts).
-
-        Either way the challenge is gone for the member afterwards (an admin still sees it).
+        """Opt out before the start, or leave a running challenge (today still counts); a viewer
+        stops watching. The challenge is gone for the member afterwards (an admin still sees it)
+        unless `keep_watching` keeps them on as a viewer.
         """
-        services.stop_taking_part(by=_member(request), challenge_id=challenge_id)
+        services.stop_taking_part(
+            by=_member(request),
+            challenge_id=challenge_id,
+            keep_watching=request.query_params.get("keep_watching") == "true",
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)

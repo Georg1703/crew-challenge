@@ -55,6 +55,7 @@ class Spec:
     began: int  # days before today
     who: list[int]
     streaks: list[int]  # due days in a row up to yesterday, one per member in `who`
+    watching: list[int] = field(default_factory=list)  # members who only watch
     today: dict[int, int] = field(default_factory=dict)  # member -> proofs, for those done today
     unit: str = ""
     on_days: int = 0
@@ -98,6 +99,7 @@ SPECS = [
         began=20,
         who=[0, 2, 4],
         streaks=[4, 2, 6],
+        watching=[5],
         on_days=MON | WED | FRI,
         punishments=(
             ("20 de genuflexiuni", True),
@@ -252,6 +254,14 @@ class Seeder:
         taking_part = [(i, self.members[i]) for i in spec.who if i < len(self.members)]
         for _, member in taking_part:
             Participant.objects.create(crew=self.crew, challenge=challenge, member=member)
+        for i in spec.watching:
+            if i < len(self.members):
+                Participant.objects.create(
+                    crew=self.crew,
+                    challenge=challenge,
+                    member=self.members[i],
+                    role=Participant.Role.VIEWER,
+                )
         for n, (i, member) in enumerate(taking_part):
             for day in self.history(challenge, spec, n, start):
                 self.check_in(challenge, member, day, proofs=self.some_proofs(day))

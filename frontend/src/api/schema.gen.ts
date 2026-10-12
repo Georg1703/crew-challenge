@@ -210,7 +210,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description The creator changes who takes part while the challenge is a proposal. */
+        /** @description The creator changes who takes part and who watches while the challenge is a proposal. */
         put: operations["challenges_participants"];
         post?: never;
         delete?: never;
@@ -230,9 +230,9 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * @description Opt out before the start, or leave a running challenge (today still counts).
-         *
-         *     Either way the challenge is gone for the member afterwards (an admin still sees it).
+         * @description Opt out before the start, or leave a running challenge (today still counts); a viewer
+         *     stops watching. The challenge is gone for the member afterwards (an admin still sees it)
+         *     unless `keep_watching` keeps them on as a viewer.
          */
         delete: operations["challenges_leave"];
         options?: never;
@@ -912,8 +912,10 @@ export interface components {
             proof_required: boolean;
             /** @description None, or 2 to 8, in their order on the dial. Editing replaces them all. */
             punishments?: components["schemas"]["PunishmentInRequest"][];
-            /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep the list. */
+            /** @description Who takes part (the creator is always in). Create: default the whole crew. Edit: leave out to keep both lists. */
             participant_ids?: string[] | null;
+            /** @description Who only watches (sees the challenge and everyone's progress, takes no part). */
+            viewer_ids?: string[];
         };
         ChallengeOut: {
             /** Format: uuid */
@@ -957,8 +959,10 @@ export interface components {
             my_vote: boolean;
             /** @description Who takes part (and who left), in the order they joined the crew. */
             participants: components["schemas"]["ParticipantOut"][];
-            /** @description The current member is a participant and has not left. */
+            /** @description The current member is a player and has not left. */
             taking_part: boolean;
+            /** @description The current member only watches. */
+            watching: boolean;
             /** @description Proposed by the current member. */
             mine: boolean;
         };
@@ -1339,6 +1343,13 @@ export interface components {
         ParticipantOut: {
             member: components["schemas"]["PersonOut"];
             /**
+             * @description player: takes part (or did, if left_on is set); viewer: only watches.
+             *
+             *     * `player` - Takes part
+             *     * `viewer` - Watches
+             */
+            role: components["schemas"]["RoleEnum"];
+            /**
              * Format: date
              * @description Last day that counted, when they left during the challenge.
              */
@@ -1347,6 +1358,8 @@ export interface components {
         ParticipantsInRequest: {
             /** @description Who takes part; the creator is always in. */
             participant_ids: string[];
+            /** @description Who only watches. */
+            viewer_ids?: string[];
         };
         PartsInRequest: {
             numbers: number[];
@@ -1499,6 +1512,12 @@ export interface components {
             /** @description Your reaction, if any. */
             mine: string | null;
         };
+        /**
+         * @description * `player` - Takes part
+         *     * `viewer` - Watches
+         * @enum {string}
+         */
+        RoleEnum: "player" | "viewer";
         ScheduleInRequest: {
             /**
              * Format: date
@@ -2056,7 +2075,10 @@ export interface operations {
     };
     challenges_leave: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Stay on as a viewer instead of going. */
+                keep_watching?: boolean;
+            };
             header?: never;
             path: {
                 challenge_id: string;

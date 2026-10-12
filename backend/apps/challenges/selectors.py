@@ -66,12 +66,20 @@ def tallies(*, challenges: list[Challenge]) -> dict[UUID, Tally]:
     return dict(result)
 
 
+# A participant row that sees the challenge: a player who has not left, or a viewer.
+SEES = Q(left_on__isnull=True) | Q(role=Participant.Role.VIEWER)
+# A participant row that takes (or took) part: a player, or a leaver who stayed to watch.
+PLAYS = Q(role=Participant.Role.PLAYER) | Q(left_on__isnull=False)
+
+
 def visible(*, member: Member) -> QuerySet[Challenge]:
-    """The crew's challenges this member can see: taking part (not left), or all for an admin."""
+    """The crew's challenges this member can see: taking part (not left) or watching, or all for
+    an admin."""
     rows = Challenge.objects.for_crew(member.crew)
     if member.is_admin:
         return rows
-    return rows.filter(participants__member=member, participants__left_on__isnull=True)
+    sees = Q(participants__left_on__isnull=True) | Q(participants__role=Participant.Role.VIEWER)
+    return rows.filter(Q(participants__member=member) & sees)
 
 
 def pool(*, member: Member) -> Pool:
@@ -91,11 +99,15 @@ def pool(*, member: Member) -> Pool:
     )
 
 
-def participants(*, challenges: list[Challenge]) -> dict[UUID, list[Participant]]:
-    """Who takes part in each challenge (people who left too), in the order they joined the crew."""
+def participants(
+    *, challenges: list[Challenge], plays: bool = False
+) -> dict[UUID, list[Participant]]:
+    """Everyone on each challenge (people who left and viewers too), in the order they joined the
+    crew; `plays`: only those who take or took part (the board, the wheel)."""
     result: dict[UUID, list[Participant]] = defaultdict(list)
     rows = (
         Participant.objects.filter(challenge__in=challenges)
+        .filter(PLAYS if plays else Q())
         .select_related("member")
         .order_by("member__created_at", "member_id")
     )
@@ -145,6 +157,7 @@ def participants_on(*, viewer: Member, day: date) -> list[Participant]:
             challenge__start_date__lte=day,
             challenge__end_date__gte=day,
         )
+        .filter(PLAYS)
         .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
         .select_related("challenge", "member")
         .order_by("member__created_at", "member_id", "challenge__title", "challenge_id")

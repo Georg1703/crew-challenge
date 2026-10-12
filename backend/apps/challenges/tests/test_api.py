@@ -4,6 +4,7 @@ import pytest
 import time_machine
 
 from apps.challenges import services
+from apps.challenges.models import Challenge
 from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
@@ -234,6 +235,41 @@ def test_propose_for_some_people_and_change_the_list(browser, people):
 
 def names(body):
     return sorted(p["member"]["display_name"] for p in body["participants"])
+
+
+def test_viewers_watch_and_a_leaver_can_keep_watching(browser, people):
+    admin, member = people
+    client = as_member(browser, member)
+    created = client.post(
+        "/api/v1/challenges",
+        {**SHAPE, "participant_ids": [], "viewer_ids": [str(admin.pk)]},
+        format="json",
+    ).json()
+    assert {p["member"]["display_name"]: p["role"] for p in created["participants"]} == {
+        "Ana": "viewer",
+        "Bogdan": "player",
+    }
+    url = f"/api/v1/challenges/{created['id']}"
+    viewer = as_member(browser, admin)
+    body = viewer.get(url).json()
+    assert (body["taking_part"], body["watching"]) == (False, True)
+    assert viewer.put(f"{url}/vote").json()["error"]["code"] == "not_a_participant"
+    client = as_member(browser, member)  # one browser: log in again
+    refused = client.put(
+        f"{url}/participants",
+        {"participant_ids": [str(admin.pk)], "viewer_ids": [str(admin.pk)]},
+        format="json",
+    )
+    assert refused.status_code == 400
+    assert "viewer_ids" in refused.json()["error"]["fields"]
+
+    schedule(admin, Challenge.objects.get(pk=created["id"]))
+    assert client.delete(f"{url}/participation?keep_watching=true").status_code == 204
+    body = client.get(url).json()
+    assert (body["taking_part"], body["watching"]) == (False, True)
+    viewer = as_member(browser, admin)
+    assert viewer.delete(f"{url}/participation").status_code == 204  # stops watching
+    assert viewer.get(url).json()["watching"] is False  # an admin still sees it
 
 
 def test_the_whole_crew_takes_part_when_the_list_is_left_out(browser, people):

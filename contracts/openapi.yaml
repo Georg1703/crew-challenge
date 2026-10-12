@@ -334,7 +334,8 @@ paths:
   /api/v1/challenges/{challenge_id}/participants:
     put:
       operationId: challenges_participants
-      description: The creator changes who takes part while the challenge is a proposal.
+      description: The creator changes who takes part and who watches while the challenge
+        is a proposal.
       parameters:
       - in: path
         name: challenge_id
@@ -363,9 +364,9 @@ paths:
     delete:
       operationId: challenges_leave
       description: |-
-        Opt out before the start, or leave a running challenge (today still counts).
-
-        Either way the challenge is gone for the member afterwards (an admin still sees it).
+        Opt out before the start, or leave a running challenge (today still counts); a viewer
+        stops watching. The challenge is gone for the member afterwards (an admin still sees it)
+        unless `keep_watching` keeps them on as a viewer.
       parameters:
       - in: path
         name: challenge_id
@@ -373,6 +374,11 @@ paths:
           type: string
           format: uuid
         required: true
+      - in: query
+        name: keep_watching
+        schema:
+          type: boolean
+        description: Stay on as a viewer instead of going.
       tags:
       - challenges
       security:
@@ -1470,7 +1476,14 @@ components:
             format: uuid
           nullable: true
           description: 'Who takes part (the creator is always in). Create: default
-            the whole crew. Edit: leave out to keep the list.'
+            the whole crew. Edit: leave out to keep both lists.'
+        viewer_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who only watches (sees the challenge and everyone's progress,
+            takes no part).
       required:
       - measure
       - need_kind
@@ -1581,7 +1594,10 @@ components:
             crew.
         taking_part:
           type: boolean
-          description: The current member is a participant and has not left.
+          description: The current member is a player and has not left.
+        watching:
+          type: boolean
+          description: The current member only watches.
         mine:
           type: boolean
           description: Proposed by the current member.
@@ -1616,6 +1632,7 @@ components:
       - unit
       - vote_count
       - voters
+      - watching
       - window
     ChallengeStateEnum:
       enum:
@@ -2372,6 +2389,14 @@ components:
       properties:
         member:
           $ref: '#/components/schemas/PersonOut'
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          description: |-
+            player: takes part (or did, if left_on is set); viewer: only watches.
+
+            * `player` - Takes part
+            * `viewer` - Watches
         left_on:
           type: string
           format: date
@@ -2380,6 +2405,7 @@ components:
       required:
       - left_on
       - member
+      - role
     ParticipantsInRequest:
       type: object
       properties:
@@ -2389,6 +2415,12 @@ components:
             type: string
             format: uuid
           description: Who takes part; the creator is always in.
+        viewer_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Who only watches.
       required:
       - participant_ids
     PartsInRequest:
@@ -2722,6 +2754,14 @@ components:
       required:
       - groups
       - mine
+    RoleEnum:
+      enum:
+      - player
+      - viewer
+      type: string
+      description: |-
+        * `player` - Takes part
+        * `viewer` - Watches
     ScheduleInRequest:
       type: object
       properties:

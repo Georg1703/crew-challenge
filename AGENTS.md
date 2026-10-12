@@ -127,14 +127,16 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   runs (months, weeks or days); a crew admin picks when it starts. Several challenges can run at
   the same time. Votes guide the admin; they do not decide.
 - A challenge shows who proposed it and when. Its creator chooses who takes part (the
-  participants: one `Participant` row each, the whole crew by default, the creator always) and can
-  change the list until it is scheduled. Only participants and crew admins see a challenge; only
-  participants vote and take part. People who join the crew later are not added. A proposal can be
+  participants: one `Participant` row each, the whole crew by default, the creator always) and
+  who only watches (viewers: `Participant.role = viewer`, `docs/plans/viewers.md`), and can
+  change both lists until it is scheduled. Only participants, viewers and crew admins see a
+  challenge; only participants vote and take part. People who join the crew later are not added. A proposal can be
   edited by its creator while it is in the pool (editing the challenge resets its votes; removing
   someone deletes only their vote); once scheduled, nothing can be edited. Before the start an
   admin can move it or put it back in the pool (the participants stay as they are). Opting out
   before the start deletes the row; leaving during it sets `left_on` (today still counts). Either
-  way the member stops seeing it and cannot come back; the board keeps a leaver's days.
+  way the member stops seeing it and cannot come back, unless they chose to keep watching (the
+  row becomes a viewer's); the board keeps a leaver's days.
 - Plan and details: `docs/plans/monthly-challenges.md`.
 - A participant checks in for today only (crew time zone; midnight closes the day). Numbers add up
   during the day. A challenge is judged in windows (a day, a Monday-Sunday week, a calendar month

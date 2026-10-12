@@ -187,6 +187,32 @@ def test_the_month_board(crew):
     assert selectors.board(member=bogdan, challenge_id=proposal.pk, month=TUE) is None
 
 
+def test_viewers_have_no_card_no_row_and_no_say_in_the_crews_day(crew):
+    admin, bogdan, cristina = crew
+    walk = challenges.propose_challenge(
+        by=bogdan, shape=WALK, participant_ids=[], viewer_ids=[cristina.pk]
+    )
+    challenges.schedule_challenge(by=admin, challenge_id=walk.pk, period_start=date(2026, 11, 1))
+    with at("2026-11-10 08:00Z"):
+        with pytest.raises(services.NotTakingPart):
+            services.check_in(by=cristina, challenge_id=walk.pk, day=TUE)
+        assert selectors.crew_day(crew=admin.crew, day=TUE) is None
+        services.check_in(by=bogdan, challenge_id=walk.pk, day=TUE)
+        assert selectors.crew_day(crew=admin.crew, day=TUE) == [bogdan.pk]
+        today = selectors.today(member=cristina)
+        assert today.cards == []
+        assert [r.member.display_name for r in today.crew] == ["Bogdan"]
+        board = selectors.board(member=cristina, challenge_id=walk.pk, month=TUE)
+        assert board is not None
+        assert [r.member.display_name for r in board.rows] == ["Bogdan"]
+        windows = selectors.challenge_windows(member=cristina, challenge_id=walk.pk)
+        assert windows  # needs only, like an admin
+        assert [j.verdict for j in windows] == [None] * len(windows)
+        progress = selectors.member_progress(viewer=bogdan, member_id=cristina.pk, month=TUE)
+        assert progress is not None
+        assert progress.challenges == []
+
+
 def test_card_is_none_when_not_taking_part_today(crew):
     admin, bogdan, _ = crew
     walk = november(admin, bogdan, WALK)

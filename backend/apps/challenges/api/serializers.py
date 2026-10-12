@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.challenges.models import ICONS, Challenge, PeriodKind
+from apps.challenges.models import ICONS, Challenge, Participant, PeriodKind
 from apps.challenges.selectors import PHASES
 
 
@@ -85,7 +85,13 @@ class ChallengeIn(serializers.Serializer):
         allow_null=True,
         default=None,
         help_text="Who takes part (the creator is always in). Create: default the whole crew. "
-        "Edit: leave out to keep the list.",
+        "Edit: leave out to keep both lists.",
+    )
+    viewer_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        default=list,
+        help_text="Who only watches (sees the challenge and everyone's progress, takes no part).",
     )
 
 
@@ -93,10 +99,17 @@ class ParticipantsIn(serializers.Serializer):
     participant_ids = serializers.ListField(
         child=serializers.UUIDField(), help_text="Who takes part; the creator is always in."
     )
+    viewer_ids = serializers.ListField(
+        child=serializers.UUIDField(), required=False, default=list, help_text="Who only watches."
+    )
 
 
 class ParticipantOut(serializers.Serializer):
     member = PersonOut()
+    role = serializers.ChoiceField(
+        choices=Participant.Role.choices,
+        help_text="player: takes part (or did, if left_on is set); viewer: only watches.",
+    )
     left_on = serializers.DateField(
         allow_null=True, help_text="Last day that counted, when they left during the challenge."
     )
@@ -139,8 +152,9 @@ class ChallengeOut(serializers.Serializer):
         many=True, help_text="Who takes part (and who left), in the order they joined the crew."
     )
     taking_part = serializers.BooleanField(
-        help_text="The current member is a participant and has not left."
+        help_text="The current member is a player and has not left."
     )
+    watching = serializers.BooleanField(help_text="The current member only watches.")
     mine = serializers.BooleanField(help_text="Proposed by the current member.")
 
 

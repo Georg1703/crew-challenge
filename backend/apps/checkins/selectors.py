@@ -189,12 +189,12 @@ def challenge_windows(
     if challenge.state != Challenge.State.CHOSEN:
         return []
     participant = Participant.objects.filter(
-        challenge=challenge, member=member, left_on__isnull=True
+        challenge=challenge, member=member, role=Participant.Role.PLAYER, left_on__isnull=True
     ).first()
     part = days.span(challenge, None)
     if until is not None:
         part = days.Span(part.first, min(part.last, until))
-    if participant is None:  # an admin who doesn't take part: needs only
+    if participant is None:  # an admin or a viewer who doesn't take part: needs only
         return [days.Judged(w, None) for w in windows(challenge, part.first, part.last)]
     record = records(challenge_ids=[challenge.pk], member_ids=[member.pk]).get(
         (challenge.pk, member.pk), days.Record()
@@ -240,7 +240,7 @@ def _crewboard(member: Member, challenge_id: UUID) -> tuple[Challenge, date, Eve
     challenge = challenges.get_challenge(member=member, challenge_id=challenge_id)
     if challenge is None or challenge.state != Challenge.State.CHOSEN:
         return None
-    people = challenges.participants(challenges=[challenge]).get(challenge.pk, [])
+    people = challenges.participants(challenges=[challenge], plays=True).get(challenge.pk, [])
     loaded = records(challenge_ids=[challenge.pk], member_ids=[p.member_id for p in people])
     everyone = [
         (p, days.span(challenge, p.left_on), loaded.get((challenge.pk, p.member_id), days.Record()))
@@ -348,6 +348,7 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
             challenge__start_date__lte=last,
             challenge__end_date__gte=first,
         )
+        .filter(challenges.PLAYS)
         .filter(Q(left_on__isnull=True) | Q(left_on__gte=first))
         .select_related("challenge")
         .order_by("challenge__start_date", "challenge__title", "challenge_id")
@@ -456,6 +457,7 @@ def crew_day(*, crew: Crew, day: date) -> list[UUID] | None:
             challenge__start_date__lte=day,
             challenge__end_date__gte=day,
         )
+        .filter(challenges.PLAYS)
         .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
         .select_related("challenge")
     )

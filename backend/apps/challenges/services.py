@@ -26,7 +26,7 @@ from apps.crews import selectors as crews
 from apps.crews.models import Crew, Member
 from apps.crews.services import require_admin
 
-from . import periods
+from . import periods, selectors
 from .models import ICONS, Challenge, Participant, PeriodKind, Punishment, Vote
 
 TITLE_MAX = 60
@@ -299,17 +299,23 @@ def _set_punishments(challenge: Challenge, punishments: tuple[PunishmentShape, .
 
 
 def _takes_part(challenge: Challenge, member: Member) -> bool:
-    """`member` is one of the challenge's participants and has not left it."""
+    """`member` is one of the challenge's players and has not left it."""
     return Participant.objects.filter(
-        challenge=challenge, member=member, left_on__isnull=True
+        challenge=challenge, member=member, role=Participant.Role.PLAYER, left_on__isnull=True
     ).exists()
 
 
+def _row_of(challenge: Challenge, member: Member) -> Participant | None:
+    """`member`'s row on the challenge, while it still sees it (a player who has not left, or a
+    viewer)."""
+    return Participant.objects.filter(selectors.SEES, challenge=challenge, member=member).first()
+
+
 def _lock(by: Member, challenge_id: UUID) -> Challenge:
-    """The challenge, locked, if `by` can see it (a participant or an admin)."""
+    """The challenge, locked, if `by` can see it (a player, a viewer or an admin)."""
     rows = Challenge.objects.for_crew(by.crew).select_for_update()
     challenge = rows.filter(pk=challenge_id).first()
-    if challenge is None or not (by.is_admin or _takes_part(challenge, by)):
+    if challenge is None or not (by.is_admin or _row_of(challenge, by)):
         raise ChallengeNotFound()
     return challenge
 
@@ -319,43 +325,66 @@ def _require_proposed(challenge: Challenge) -> None:
         raise NotAProposal()
 
 
-def _crew_member_ids(crew: Crew, member_ids: list[UUID] | None) -> set[UUID]:
-    """The given ids, checked to be members of the crew; None means the whole crew."""
+Roles = dict[UUID, str]  # member id -> Participant.Role
+
+
+def _roles(crew: Crew, participant_ids: list[UUID] | None, viewer_ids: list[UUID] | None) -> Roles:
+    """Who plays and who watches, checked to be members of the crew and not both.
+    `participant_ids=None` means the whole crew; `viewer_ids=None` means nobody."""
     everyone = {m.pk for m in crews.list_members(crew=crew)}
-    if member_ids is None:
-        return everyone
-    chosen = set(member_ids)
-    if not chosen <= everyone:
+    players = everyone if participant_ids is None else set(participant_ids)
+    viewers = set(viewer_ids or [])
+    if not players <= everyone:
         raise ValidationFailed(fields={"participant_ids": ["Choose people from your crew."]})
-    return chosen
+    if not viewers <= everyone:
+        raise ValidationFailed(fields={"viewer_ids": ["Choose people from your crew."]})
+    if players & viewers:
+        raise ValidationFailed(fields={"viewer_ids": ["Nobody both takes part and watches."]})
+    return {
+        **dict.fromkeys(viewers, Participant.Role.VIEWER),
+        **dict.fromkeys(players, Participant.Role.PLAYER),
+    }
 
 
-def _set_participants(challenge: Challenge, by: Member, member_ids: set[UUID]) -> None:
-    """Make `member_ids` (plus the creator) the participants; removed people lose their vote."""
+def _set_participants(challenge: Challenge, by: Member, roles: Roles) -> None:
+    """Make `roles` (plus the creator, always a player) the participants; people removed or
+    turned into viewers lose their vote."""
     if challenge.created_by_id:
-        member_ids = member_ids | {challenge.created_by_id}
-    rows = Participant.objects.filter(challenge=challenge)
-    current = set(rows.values_list("member_id", flat=True))
-    removed = current - member_ids
-    rows.filter(member_id__in=removed).delete()
-    Vote.objects.filter(challenge=challenge, member_id__in=removed).delete()
+        roles = {**roles, challenge.created_by_id: Participant.Role.PLAYER}
+    current = {row.member_id: row for row in Participant.objects.filter(challenge=challenge)}
+    gone = {member_id for member_id in current if member_id not in roles}
+    changed = {
+        member_id: role
+        for member_id, role in roles.items()
+        if member_id in current and current[member_id].role != role
+    }
+    Participant.objects.filter(challenge=challenge, member_id__in=gone).delete()
+    Vote.objects.filter(challenge=challenge, member_id__in=gone | set(changed)).delete()
+    for member_id, role in changed.items():
+        Participant.objects.filter(pk=current[member_id].pk).update(role=role)
     Participant.objects.bulk_create(
-        Participant(crew=by.crew, challenge=challenge, member_id=member_id)
-        for member_id in member_ids - current
+        Participant(crew=by.crew, challenge=challenge, member_id=member_id, role=role)
+        for member_id, role in roles.items()
+        if member_id not in current
     )
 
 
 @transaction.atomic
 def propose_challenge(
-    *, by: Member, shape: dict[str, Any], participant_ids: list[UUID] | None = None
+    *,
+    by: Member,
+    shape: dict[str, Any],
+    participant_ids: list[UUID] | None = None,
+    viewer_ids: list[UUID] | None = None,
 ) -> Challenge:
     """Any member adds a proposal to the crew's pool, while the pool has room.
 
-    `participant_ids` are who takes part (None: the whole crew); the creator is always one of them.
+    `participant_ids` are who takes part (None: the whole crew); the creator is always one of
+    them. `viewer_ids` only watch.
     """
     cleaned = clean_shape(shape)
     crew = Crew.objects.select_for_update().get(pk=by.crew_id)
-    chosen = _crew_member_ids(crew, participant_ids)
+    chosen = _roles(crew, participant_ids, viewer_ids)
     in_pool = Challenge.objects.for_crew(crew).filter(state=Challenge.State.PROPOSED).count()
     if in_pool >= crew.max_proposals:
         raise PoolFull()
@@ -374,11 +403,12 @@ def edit_proposal(
     challenge_id: UUID,
     shape: dict[str, Any],
     participant_ids: list[UUID] | None = None,
+    viewer_ids: list[UUID] | None = None,
 ) -> Challenge:
     """The creator changes their proposal while it is in the pool.
 
     Changing the challenge itself resets every vote; changing only who takes part keeps the votes
-    of the people who stay. `participant_ids=None` keeps the participants as they are.
+    of the people who stay. `participant_ids=None` keeps the participants and viewers as they are.
     """
     cleaned = clean_shape(shape)
     challenge = _lock(by, challenge_id)
@@ -396,18 +426,24 @@ def edit_proposal(
         _set_punishments(challenge, cleaned.punishments)
         Vote.objects.filter(challenge=challenge).delete()
     if participant_ids is not None:
-        _set_participants(challenge, by, _crew_member_ids(by.crew, participant_ids))
+        _set_participants(challenge, by, _roles(by.crew, participant_ids, viewer_ids))
     return challenge
 
 
 @transaction.atomic
-def set_participants(*, by: Member, challenge_id: UUID, participant_ids: list[UUID]) -> Challenge:
-    """The creator changes who takes part while the challenge is a proposal."""
+def set_participants(
+    *,
+    by: Member,
+    challenge_id: UUID,
+    participant_ids: list[UUID],
+    viewer_ids: list[UUID] | None = None,
+) -> Challenge:
+    """The creator changes who takes part and who watches while the challenge is a proposal."""
     challenge = _lock(by, challenge_id)
     if challenge.created_by_id != by.pk:
         raise NotYourProposal()
     _require_proposed(challenge)
-    _set_participants(challenge, by, _crew_member_ids(by.crew, participant_ids))
+    _set_participants(challenge, by, _roles(by.crew, participant_ids, viewer_ids))
     return challenge
 
 
@@ -526,14 +562,19 @@ def unschedule_challenge(*, by: Member, challenge_id: UUID) -> Challenge:
 
 
 @transaction.atomic
-def stop_taking_part(*, by: Member, challenge_id: UUID) -> None:
+def stop_taking_part(*, by: Member, challenge_id: UUID, keep_watching: bool = False) -> None:
     """Opt out before the start (the row goes) or leave a running challenge (today is the last
-    day counted). Either way the member stops seeing it; the board keeps a leaver's days.
+    day counted); with `keep_watching` the member stays on as a viewer instead. A viewer stops
+    watching whenever they like (the row goes). The board keeps a leaver's days.
     """
     rows = Challenge.objects.for_crew(by.crew).select_for_update()
     found = rows.filter(pk=challenge_id).first()
-    if found is None or not _takes_part(found, by):
+    row = _row_of(found, by) if found is not None else None
+    if found is None or row is None:
         raise ChallengeNotFound()
+    if row.role == Participant.Role.VIEWER:
+        row.delete()
+        return
     if found.state != Challenge.State.CHOSEN:
         raise NotChosenYet()
     assert found.start_date is not None
@@ -541,10 +582,14 @@ def stop_taking_part(*, by: Member, challenge_id: UUID) -> None:
     today = clock.crew_today(by.crew)
     if today > found.end_date:
         raise ChallengeFinished()
-    row = Participant.objects.get(challenge=found, member=by)
     if today < found.start_date:
-        row.delete()
         Vote.objects.filter(challenge=found, member=by).delete()
     else:
         row.left_on = today
+    if keep_watching:
+        row.role = Participant.Role.VIEWER
+        row.save(update_fields=["role", "left_on", "updated_at"])
+    elif row.left_on is not None:
         row.save(update_fields=["left_on", "updated_at"])
+    else:
+        row.delete()
