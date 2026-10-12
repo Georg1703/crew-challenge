@@ -281,6 +281,7 @@
       "target": "Ținta",
       "proof": "Dovada",
       "who": "Cine participă",
+      "watchers": "Urmăresc",
       "punishments": "Pedepse"
     },
     "participantsTitle": "Participă",
@@ -555,7 +556,9 @@
       "saved": "Participanții au fost salvați",
       "note": "Cine e scos nu mai vede provocarea și își pierde votul.",
       "adminOnly": "O vezi pentru că ești admin; nu participi.",
-      "short": "{{n}} din {{total}}"
+      "short": "{{n}} din {{total}}",
+      "watchLabel": "Doar urmăresc",
+      "watchNote": "Văd provocarea și progresul tuturor, fără să participe."
     },
     "factsLabel": "Ce cere provocarea",
     "periodLine": "Pentru {{period}}",
@@ -566,6 +569,14 @@
     "leaveTitle": "Ieși din provocare?",
     "leaveBody": "Provocarea dispare din lista ta și nu mai poți reveni. Zilele bifate până azi rămân pe tabla echipei.",
     "left": "Ai ieșit din provocare",
+    "watching": "O urmărești; nu participi.",
+    "watchingTitle": "Urmăresc",
+    "stopWatching": "Nu mai urmăresc",
+    "stopWatchingTitle": "Nu mai urmărești?",
+    "stopWatchingBody": "Provocarea dispare din lista ta și nu mai poți reveni la ea.",
+    "stoppedWatching": "Nu mai urmărești provocarea",
+    "keepWatching": "Rămân să urmăresc",
+    "keepWatchingNote": "Rămâi în provocare ca spectator: vezi progresul tuturor fără să participi.",
     "length": {
       "month_one": "o lună",
       "month_few": "{{count}} luni",

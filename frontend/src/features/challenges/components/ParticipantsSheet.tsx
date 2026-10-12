@@ -8,9 +8,9 @@ import { Banner, Button, Sheet, Skeleton, useToast } from "@/shared/ui";
 
 import { useSetParticipants, type Challenge } from "../api";
 import styles from "../challenges.module.css";
-import { ParticipantPicker } from "./ParticipantPicker";
+import { ParticipantPicker, type Picked } from "./ParticipantPicker";
 
-/** The creator changes who takes part while the challenge is a proposal. */
+/** The creator changes who takes part and who watches while the challenge is a proposal. */
 export function ParticipantsSheet({
   challenge,
   onClose,
@@ -23,7 +23,12 @@ export function ParticipantsSheet({
   const me = useMe();
   const crew = useCrew();
   const save = useSetParticipants(challenge.id);
-  const [values, setValues] = useState(challenge.participants.map((p) => p.member.id));
+  const [values, setValues] = useState<Picked>({
+    participant_ids: challenge.participants
+      .filter((p) => p.role === "player")
+      .map((p) => p.member.id),
+    viewer_ids: challenge.participants.filter((p) => p.role === "viewer").map((p) => p.member.id),
+  });
 
   const confirm = () =>
     save.mutate(values, {

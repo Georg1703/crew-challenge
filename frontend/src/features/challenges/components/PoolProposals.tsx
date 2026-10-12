@@ -43,7 +43,9 @@ export function PoolProposals({
               <span className={styles.cardTitle}>{proposal.title}</span>
               <span className={styles.meta}>{summaryLine(t, proposal, i18n.language)}</span>
               <span className={styles.meta}>
-                {t("challenges.who.cardCount", { n: proposal.participants.length })}
+                {t("challenges.who.cardCount", {
+                  n: proposal.participants.filter((p) => p.role === "player").length,
+                })}
               </span>
               <span className={styles.meta}>
                 {t("challenges.proposedBy", {

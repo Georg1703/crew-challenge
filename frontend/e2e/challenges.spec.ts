@@ -154,9 +154,24 @@ test("only the people the creator chose see a challenge, and the creator can cha
   await dan.goto(url);
   await expect(dan.getByText("Provocarea nu există sau a fost retrasă.")).toBeVisible();
 
+  // Dan only watches: he sees the proposal, without a vote.
   await bogdan.getByRole("button", { name: "Modifică participanții" }).click();
-  const sheet = bogdan.getByRole("dialog");
-  await sheet.getByText("Dan", { exact: true }).click();
+  let sheet = bogdan.getByRole("dialog");
+  await sheet
+    .getByRole("group", { name: "Doar urmăresc" })
+    .getByText("Dan", { exact: true })
+    .click();
+  await sheet.getByRole("button", { name: "Salvează" }).click();
+  await expect(bogdan.getByText("Participanții au fost salvați")).toBeVisible();
+  await expect(bogdan.getByRole("list", { name: "Urmăresc" }).getByText("Dan")).toBeVisible();
+  await dan.goto(url);
+  await expect(dan.getByRole("heading", { name: title })).toBeVisible();
+  await expect(dan.getByText("O urmărești; nu participi.")).toBeVisible();
+  await expect(dan.getByRole("button", { name: "Votează" })).toHaveCount(0);
+
+  await bogdan.getByRole("button", { name: "Modifică participanții" }).click();
+  sheet = bogdan.getByRole("dialog");
+  await sheet.getByRole("group", { name: "Echipa" }).getByText("Dan", { exact: true }).click();
   await expect(sheet.getByRole("checkbox", { name: /^Dan/ })).toBeChecked();
   await sheet.getByRole("button", { name: "Salvează" }).click();
   await expect(bogdan.getByText("Participanții au fost salvați")).toBeVisible();

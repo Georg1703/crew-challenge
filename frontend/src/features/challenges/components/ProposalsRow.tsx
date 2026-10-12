@@ -35,7 +35,7 @@ export function ProposalsRow({
     dayOfMonth(today) >= CHOOSE_REMINDER_DAY &&
     upcoming.data !== undefined &&
     !upcoming.data.some((c) => c.period_kind === "month" && c.period_start === nextMonth);
-  const waiting = pool.data.proposals.filter((p) => !p.my_vote).length;
+  const waiting = pool.data.proposals.filter((p) => p.taking_part && !p.my_vote).length;
   const size = pool.data.size;
   if (size === 0 && !remindAdmin) return null;
 

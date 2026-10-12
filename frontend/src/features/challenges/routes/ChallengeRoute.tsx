@@ -24,6 +24,7 @@ import {
   Sheet,
   Skeleton,
   StatusPill,
+  Toggle,
   useToast,
 } from "@/shared/ui";
 
@@ -84,6 +85,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   const vote = useVote();
   const [withdrawing, setWithdrawing] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [keepWatching, setKeepWatching] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -150,13 +152,31 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   );
   const lastWindow = ending.data?.find((w) => w.last === todayDay);
   const leaveNote = lastWindow && shortWindow(t, lastWindow, challenge, i18n.language, "leave");
+  const watching = challenge.watching;
+  const viewers = challenge.participants.filter((p) => p.role === "viewer");
+  const leaveWord = watching
+    ? t("challenges.stopWatching")
+    : started
+      ? t("challenges.leave")
+      : t("challenges.optOut");
   const leaveNow = () =>
-    leave.mutate(undefined, {
-      onSuccess: () => {
-        toast(started ? t("challenges.left") : t("challenges.optedOut"), "success");
-        navigate("/challenges", { replace: true });
+    leave.mutate(
+      { keepWatching },
+      {
+        onSuccess: () => {
+          toast(
+            watching
+              ? t("challenges.stoppedWatching")
+              : started
+                ? t("challenges.left")
+                : t("challenges.optedOut"),
+            "success",
+          );
+          if (keepWatching) setLeaving(false);
+          else navigate("/challenges", { replace: true });
+        },
       },
-    });
+    );
 
   return (
     <Screen title={challenge.title}>
@@ -257,21 +277,22 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
       {proposal && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t("challenges.who.title")}</h2>
-          <List label={t("challenges.who.title")}>
-            {challenge.participants.map(({ member: person }) => (
-              <ListRow
-                key={person.id}
-                leading={<Avatar name={person.display_name} seed={person.avatar_seed} />}
-                title={person.display_name}
-                trailing={
-                  person.id === member?.id ? (
-                    <StatusPill tone="accent">{t("crew.you")}</StatusPill>
-                  ) : undefined
-                }
-              />
-            ))}
-          </List>
-          {!challenge.taking_part && <p className={styles.meta}>{t("challenges.who.adminOnly")}</p>}
+          <ParticipantList
+            challenge={challenge}
+            meId={member?.id}
+            label={t("challenges.who.title")}
+          />
+          {viewers.length > 0 && (
+            <>
+              <h2 className={styles.sectionTitle}>{t("challenges.watchingTitle")}</h2>
+              <ParticipantList challenge={challenge} meId={member?.id} role="viewer" />
+            </>
+          )}
+          {!challenge.taking_part && (
+            <p className={styles.meta}>
+              {watching ? t("challenges.watching") : t("challenges.who.adminOnly")}
+            </p>
+          )}
           {mine && (
             <Button
               variant="secondary"
@@ -351,9 +372,16 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
               <ParticipantList challenge={challenge} meId={member?.id} />
             </>
           )}
-          {challenge.phase !== "finished" && challenge.taking_part && (
+          {viewers.length > 0 && (
+            <>
+              <h2 className={styles.sectionTitle}>{t("challenges.watchingTitle")}</h2>
+              <ParticipantList challenge={challenge} meId={member?.id} role="viewer" />
+            </>
+          )}
+          {watching && <p className={styles.meta}>{t("challenges.watching")}</p>}
+          {((challenge.phase !== "finished" && challenge.taking_part) || watching) && (
             <Button variant="danger" size="lg" fullWidth onClick={() => setLeaving(true)}>
-              {started ? t("challenges.leave") : t("challenges.optOut")}
+              {leaveWord}
             </Button>
           )}
         </section>
@@ -368,17 +396,35 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
       <Sheet
         open={leaving}
         onClose={() => setLeaving(false)}
-        title={started ? t("challenges.leaveTitle") : t("challenges.optOutTitle")}
+        title={
+          watching
+            ? t("challenges.stopWatchingTitle")
+            : started
+              ? t("challenges.leaveTitle")
+              : t("challenges.optOutTitle")
+        }
         closeLabel={t("common.close")}
       >
         <p className={styles.muted}>
-          {started ? t("challenges.leaveBody") : t("challenges.optOutBody")}
+          {watching
+            ? t("challenges.stopWatchingBody")
+            : started
+              ? t("challenges.leaveBody")
+              : t("challenges.optOutBody")}
         </p>
         {leaveNote && <p className={styles.muted}>{leaveNote}</p>}
+        {!watching && (
+          <Toggle
+            label={t("challenges.keepWatching")}
+            description={t("challenges.keepWatchingNote")}
+            checked={keepWatching}
+            onChange={setKeepWatching}
+          />
+        )}
         {leave.error && <Banner tone="danger" title={errorMessage(t, leave.error)} />}
         <div className={styles.actions}>
           <Button variant="danger" size="lg" fullWidth loading={leave.isPending} onClick={leaveNow}>
-            {started ? t("challenges.leave") : t("challenges.optOut")}
+            {leaveWord}
           </Button>
           <Button variant="secondary" size="lg" fullWidth onClick={() => setLeaving(false)}>
             {t("common.cancel")}
@@ -429,28 +475,46 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
   );
 }
 
-/** Who takes part in a scheduled challenge that has not started (the board shows them after). */
-function ParticipantList({ challenge, meId }: { challenge: Challenge; meId?: string }) {
+/** The people of one role on a challenge: who takes part (before the start: the board shows them
+ * after), or who only watches. */
+function ParticipantList({
+  challenge,
+  meId,
+  role = "player",
+  label,
+}: {
+  challenge: Challenge;
+  meId?: string;
+  role?: "player" | "viewer";
+  label?: string;
+}) {
   const { t, i18n } = useTranslation();
   return (
-    <List label={t("challenges.participantsTitle")}>
-      {challenge.participants.map((p) => (
-        <ListRow
-          key={p.member.id}
-          leading={<Avatar name={p.member.display_name} seed={p.member.avatar_seed} />}
-          title={p.member.display_name}
-          subtitle={
-            p.left_on
-              ? t("challenges.leftOn", { date: formatDay(p.left_on, i18n.language) })
-              : undefined
-          }
-          trailing={
-            p.member.id === meId ? (
-              <StatusPill tone="accent">{t("crew.you")}</StatusPill>
-            ) : undefined
-          }
-        />
-      ))}
+    <List
+      label={
+        label ??
+        (role === "viewer" ? t("challenges.watchingTitle") : t("challenges.participantsTitle"))
+      }
+    >
+      {challenge.participants
+        .filter((p) => p.role === role)
+        .map((p) => (
+          <ListRow
+            key={p.member.id}
+            leading={<Avatar name={p.member.display_name} seed={p.member.avatar_seed} />}
+            title={p.member.display_name}
+            subtitle={
+              p.left_on
+                ? t("challenges.leftOn", { date: formatDay(p.left_on, i18n.language) })
+                : undefined
+            }
+            trailing={
+              p.member.id === meId ? (
+                <StatusPill tone="accent">{t("crew.you")}</StatusPill>
+              ) : undefined
+            }
+          />
+        ))}
     </List>
   );
 }

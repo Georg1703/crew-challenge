@@ -51,10 +51,11 @@ const pushUps: Challenge = {
   my_vote: false,
   mine: false,
   participants: [
-    { member: person(ana), left_on: null },
-    { member: person(bogdan), left_on: null },
+    { member: person(ana), role: "player", left_on: null },
+    { member: person(bogdan), role: "player", left_on: null },
   ],
   taking_part: true,
+  watching: false,
 };
 
 const reading: Challenge = { ...pushUps, id: "c2", title: "Read", vote_count: 3, voters: [] };
@@ -488,6 +489,7 @@ describe("proposing", () => {
           { text: "No phone after 21:00", proof_required: true },
         ],
         participant_ids: [bogdan.id],
+        viewer_ids: [],
       },
     });
   });
@@ -512,7 +514,10 @@ describe("one challenge", () => {
     let one = detail({ mine: true });
     mockGets(bogdan, { one: () => one });
     const put = vi.spyOn(api, "PUT").mockImplementation((() => {
-      one = detail({ mine: true, participants: [{ member: person(bogdan), left_on: null }] });
+      one = detail({
+        mine: true,
+        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+      });
       return ok(one);
     }) as never);
     renderRoutes(routes, { at: "/challenges/c1" });
@@ -527,7 +532,7 @@ describe("one challenge", () => {
     expect(await screen.findByText("Participants saved")).toBeInTheDocument();
     expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participants", {
       params: { path: { challenge_id: "c1" } },
-      body: { participant_ids: [bogdan.id] },
+      body: { participant_ids: [bogdan.id], viewer_ids: [] },
     });
     await waitFor(() =>
       expect(
@@ -539,7 +544,7 @@ describe("one challenge", () => {
   it("shows an admin who does not take part the proposal without a vote", async () => {
     mockGets(ana, {
       one: detail({
-        participants: [{ member: person(bogdan), left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null }],
         taking_part: false,
       }),
     });
@@ -550,6 +555,81 @@ describe("one challenge", () => {
     ).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Choose when" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
+  });
+
+  it("shows a viewer the proposal without a vote, and lets the creator pick who watches", async () => {
+    mockGets(ana, {
+      one: detail({
+        participants: [
+          { member: person(bogdan), role: "player", left_on: null },
+          { member: person(ana), role: "viewer", left_on: null },
+        ],
+        taking_part: false,
+        watching: true,
+      }),
+    });
+    renderRoutes(routes, { at: "/challenges/c1" });
+
+    expect(await screen.findByText("You watch this one; you don't take part.")).toBeInTheDocument();
+    const watching = screen.getByRole("list", { name: "Watching" });
+    expect(within(watching).getByText("Ana")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("list", { name: "Who takes part" })).queryByText("Ana"),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
+
+    mockGets(bogdan, { one: detail({ mine: true }) });
+    const put = vi
+      .spyOn(api, "PUT")
+      .mockImplementation((() => ok(detail({ mine: true }))) as never);
+    renderRoutes(routes, { at: "/challenges/c1" });
+    await userEvent.click(await screen.findByRole("button", { name: "Change who takes part" }));
+    const sheet = await screen.findByRole("dialog");
+    await userEvent.click(await within(sheet).findByRole("checkbox", { name: /Ana/ })); // out
+    const watchers = within(sheet).getByRole("group", { name: "Only watching" });
+    await userEvent.click(within(watchers).getByRole("checkbox", { name: /Ana/ }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participants", {
+        params: { path: { challenge_id: "c1" } },
+        body: { participant_ids: [bogdan.id], viewer_ids: [ana.id] },
+      }),
+    );
+  });
+
+  it("lets a member leave and keep watching, and a viewer stop watching", async () => {
+    mockGets(bogdan, {
+      one: detail({
+        ...scheduled(),
+        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+      }),
+    });
+    const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);
+    renderRoutes(routes, { at: "/challenges/c1" });
+    await userEvent.click(await screen.findByRole("button", { name: "I'm not taking part" }));
+    const sheet = await screen.findByRole("dialog", { name: "Not taking part?" });
+    await userEvent.click(within(sheet).getByRole("switch", { name: /Keep watching/ }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "I'm not taking part" }));
+    await waitFor(() =>
+      expect(del).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participation", {
+        params: { path: { challenge_id: "c1" }, query: { keep_watching: true } },
+      }),
+    );
+
+    mockGets(bogdan, {
+      one: detail({
+        ...scheduled(),
+        participants: [{ member: person(bogdan), role: "viewer", left_on: null }],
+        taking_part: false,
+        watching: true,
+      }),
+    });
+    renderRoutes(routes, { at: "/challenges/c1" });
+    await userEvent.click(await screen.findByRole("button", { name: "Stop watching" }));
+    const stop = await screen.findByRole("dialog", { name: "Stop watching?" });
+    expect(within(stop).queryByRole("switch")).toBeNull();
+    await userEvent.click(within(stop).getByRole("button", { name: "Stop watching" }));
+    expect(await screen.findByText("You no longer watch the challenge")).toBeInTheDocument();
   });
 
   it("lists the punishments, numbered, with how each is served", async () => {
@@ -608,7 +688,7 @@ describe("one challenge", () => {
       phase: "active",
       measure: "check",
       taking_part: true,
-      participants: [{ member: person(bogdan), left_on: null }],
+      participants: [{ member: person(bogdan), role: "player", left_on: null }],
     });
     const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
     const todayCard = {
@@ -688,7 +768,7 @@ describe("one challenge", () => {
       window: "week",
       need_value: 3,
       taking_part: true,
-      participants: [{ member: person(bogdan), left_on: null }],
+      participants: [{ member: person(bogdan), role: "player", left_on: null }],
     });
     const first: Window = {
       first: "2026-11-05",
@@ -739,7 +819,7 @@ describe("one challenge", () => {
       one: detail({
         ...scheduled(),
         taking_part: true,
-        participants: [{ member: person(bogdan), left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null }],
       }),
     });
     const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);
@@ -753,7 +833,7 @@ describe("one challenge", () => {
     expect(await screen.findByText("You're no longer taking part")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Challenges" })).toBeInTheDocument();
     expect(del).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participation", {
-      params: { path: { challenge_id: "c1" } },
+      params: { path: { challenge_id: "c1" }, query: { keep_watching: false } },
     });
     expect(screen.queryByRole("button", { name: "I'm taking part" })).not.toBeInTheDocument();
   });

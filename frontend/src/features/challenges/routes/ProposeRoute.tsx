@@ -93,6 +93,8 @@ type Draft = Required<
   day_min: string;
   /** null: nobody changed the list yet, so the whole crew takes part. */
   participant_ids: string[] | null;
+  /** Who only watches (never one of `participant_ids`). */
+  viewer_ids: string[];
   /** `key` only keeps each row's identity while rows are added and removed. */
   punishments: { key: number; text: string; proof_required: boolean }[];
 };
@@ -120,6 +122,7 @@ const EMPTY: Draft = {
   day_min: "",
   proof_required: false,
   participant_ids: null,
+  viewer_ids: [],
   punishments: [],
 };
 
@@ -219,7 +222,9 @@ function toInput(draft: Draft): ChallengeInput {
       text: p.text.trim(),
       proof_required: p.proof_required,
     })),
-    ...(draft.participant_ids ? { participant_ids: draft.participant_ids } : {}),
+    ...(draft.participant_ids
+      ? { participant_ids: draft.participant_ids, viewer_ids: draft.viewer_ids }
+      : {}),
   };
 }
 
@@ -264,7 +269,8 @@ function EditProposal({ id }: { id: string }) {
         total: c.need_kind === "amount" ? String(c.need_value) : "",
         day_min: c.day_min == null ? "" : String(c.day_min),
         proof_required: c.proof_required,
-        participant_ids: c.participants.map((p) => p.member.id),
+        participant_ids: c.participants.filter((p) => p.role === "player").map((p) => p.member.id),
+        viewer_ids: c.participants.filter((p) => p.role === "viewer").map((p) => p.member.id),
         punishments: c.punishments.map((p) => newPunishment(p.text, p.proof_required)),
       }}
     />
@@ -410,8 +416,17 @@ function ProposeWizard({ initial, editingId }: { initial: Draft; editingId?: str
               <ParticipantPicker
                 people={people}
                 creatorId={creatorId}
-                values={draft.participant_ids ?? people.map((person) => person.id)}
-                onChange={(ids) => set("participant_ids", ids)}
+                values={{
+                  participant_ids: draft.participant_ids ?? people.map((person) => person.id),
+                  viewer_ids: draft.viewer_ids,
+                }}
+                onChange={(picked) =>
+                  setDraft((d) => ({
+                    ...d,
+                    participant_ids: picked.participant_ids,
+                    viewer_ids: picked.viewer_ids,
+                  }))
+                }
                 error={fieldError("participant_ids")}
               />
             ) : (
@@ -643,9 +658,21 @@ function Review({
       i18n.language,
     );
   };
+  const watchers = people.filter((person) => draft.viewer_ids.includes(person.id));
   const facts: [string, string][] = [
     [t("challenges.facts.name"), draft.title.trim()],
     [t("challenges.facts.who"), whoSummary(draft.participant_ids, people)],
+    ...(watchers.length
+      ? [
+          [
+            t("challenges.facts.watchers"),
+            formatList(
+              watchers.map((person) => person.display_name),
+              i18n.language,
+            ),
+          ] as [string, string],
+        ]
+      : []),
     [t("challenges.facts.length"), describeLength(t, draft)],
     [t("challenges.facts.record"), describeMeasure(t, shape)],
     [t("challenges.facts.often"), describeRule(t, shape, i18n.language)],

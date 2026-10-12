@@ -75,17 +75,12 @@ export function useWithdrawChallenge() {
   });
 }
 
-/** The creator changes who takes part while the challenge is a proposal. */
+/** The creator changes who takes part and who watches while the challenge is a proposal. */
 export function useSetParticipants(id: string) {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (participantIds: string[]) =>
-      call(
-        api.PUT("/api/v1/challenges/{challenge_id}/participants", {
-          ...path(id),
-          body: { participant_ids: participantIds },
-        }),
-      ),
+    mutationFn: (body: { participant_ids: string[]; viewer_ids: string[] }) =>
+      call(api.PUT("/api/v1/challenges/{challenge_id}/participants", { ...path(id), body })),
     onSuccess: invalidate,
   });
 }
@@ -153,13 +148,19 @@ export function useUnschedule(id: string) {
 }
 
 /**
- * Opt out before the start or leave a running challenge. Either way it is gone for the member
- * afterwards, so every list (and today's check-ins) is fetched again.
+ * Opt out before the start, leave a running challenge (staying on as a viewer with
+ * `keepWatching`), or stop watching. The member's part changes either way, so every list (and
+ * today's check-ins) is fetched again.
  */
 export function useLeave(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => call(api.DELETE("/api/v1/challenges/{challenge_id}/participation", path(id))),
+    mutationFn: ({ keepWatching }: { keepWatching: boolean }) =>
+      call(
+        api.DELETE("/api/v1/challenges/{challenge_id}/participation", {
+          params: { path: { challenge_id: id }, query: { keep_watching: keepWatching } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: challengeKey(id) });
       void queryClient.invalidateQueries();
