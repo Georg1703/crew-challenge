@@ -38,9 +38,18 @@
 
 .text,
 .meta,
+.note,
 .highlight,
 .amountLine {
   margin: 0;
+}
+
+/* The member's words: as typed, long words wrap. */
+.note {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .text {

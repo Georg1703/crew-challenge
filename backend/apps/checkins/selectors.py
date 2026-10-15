@@ -411,7 +411,8 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
 def card_facts(entry: CheckInEntry) -> dict[str, Any]:
     """What a check-in post's card says, as of that post: what it is (the check-in, a "+N", or
     files added later), the day's total after it, the target, the streak, the milestone it reached,
-    how many photos and videos it carries. Frozen on the card (`apps.journal`)."""
+    how many photos and videos it carries, and the day's note on its first post. Frozen on the
+    card (`apps.journal`)."""
     check_in = entry.check_in
     challenge, day = check_in.challenge, check_in.day
     quantity = challenge.measure == Challenge.Measure.QUANTITY
@@ -445,6 +446,7 @@ def card_facts(entry: CheckInEntry) -> dict[str, Any]:
         "streak": streak,
         "milestone": streak if reached and streak in MILESTONES else None,
         "proofs": Proof.objects.filter(post_id=entry.pk).count(),
+        "note": check_in.note if entry.number == 1 and check_in.note else None,
     }
 
 

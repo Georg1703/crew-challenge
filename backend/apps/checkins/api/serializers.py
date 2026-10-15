@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.challenges.api.serializers import PersonOut
 from apps.challenges.models import ICONS, Challenge
 from apps.checkins.days import DayState, Verdict
+from apps.checkins.models import NOTE_MAX_LENGTH
 from apps.proofs.api.serializers import ProofOut
 
 DAY_STATES = (
@@ -28,6 +29,12 @@ class CheckInIn(serializers.Serializer):
         allow_null=True,
         default=None,
         help_text="For challenges that record a number: how much to add.",
+    )
+    note = serializers.CharField(
+        max_length=NOTE_MAX_LENGTH,
+        required=False,
+        allow_blank=True,
+        help_text="The day's note, with its first post only (the check-in); never edited.",
     )
 
 

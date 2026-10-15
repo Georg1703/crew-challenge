@@ -629,6 +629,7 @@ export function DesignRoute() {
             text="Ana checked in"
             challenge={{ icon: "activity", label: "Walk" }}
             time="5 min ago"
+            note={"Rainy, but done \u2614\nTomorrow the long way round"}
             proofs={[...PICTURES, ...PICTURES].slice(0, 5).map((src, i) => ({
               key: String(i),
               kind: i === 1 ? "video" : "photo",

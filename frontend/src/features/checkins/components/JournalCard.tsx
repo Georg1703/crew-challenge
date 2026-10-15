@@ -147,6 +147,7 @@ export function JournalCard({
       text={text}
       challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
       time={time}
+      note={facts.note ?? undefined}
       tone={alone ? "success" : "default"}
       highlight={
         alone

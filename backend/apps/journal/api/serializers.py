@@ -24,6 +24,9 @@ class CheckInFactsOut(serializers.Serializer):
         allow_null=True, help_text="3, 7, 14 or 30: the streak this post reached."
     )
     proofs = serializers.IntegerField(help_text="Photos and videos posted with it.")
+    note = serializers.CharField(
+        allow_null=True, help_text="The day's note, on its check-in's card; null on later posts."
+    )
 
 
 class FailedFactsOut(serializers.Serializer):

@@ -1,5 +1,5 @@
 """Check-in rules: post (a check-in, a "+N", photos or videos added later), undo the latest
-post, upload draft files.
+post, upload draft files. The day's note goes with its first post, the check-in, and only there.
 
 Only today counts, in the crew's time zone: a request for any other day is refused
 (`day_closed`), so a tap at 23:59:59 that arrives after midnight never lands on the new day.
@@ -30,7 +30,7 @@ from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
 
 from . import days, selectors
-from .models import CheckIn, CheckInEntry
+from .models import NOTE_MAX_LENGTH, CheckIn, CheckInEntry
 
 AMOUNT_MAX = Decimal(1_000_000)
 
@@ -91,6 +91,15 @@ def _clean_amount(challenge: Challenge, amount: Decimal | None) -> Decimal | Non
     return amount
 
 
+def _clean_note(note: str, *, first: bool) -> str:
+    note = note.strip()
+    if len(note) > NOTE_MAX_LENGTH:
+        raise ValidationFailed(fields={"note": [f"At most {NOTE_MAX_LENGTH} characters."]})
+    if note and not first:
+        raise ValidationFailed(fields={"note": ["The note goes with the check-in."]})
+    return note
+
+
 def _refresh(check_in: CheckIn) -> CheckIn:
     """Recompute the total and the status from the posts (`pending`: only draft files so far)."""
     total = check_in.entries.aggregate(total=Sum("amount"))["total"]
@@ -121,12 +130,18 @@ def _day_row(by: Member, challenge: Challenge, day: date) -> CheckIn:
 
 @transaction.atomic
 def check_in(
-    *, by: Member, challenge_id: UUID, day: date, amount: Decimal | None = None
+    *,
+    by: Member,
+    challenge_id: UUID,
+    day: date,
+    amount: Decimal | None = None,
+    note: str = "",
 ) -> CheckIn:
     """Post: today's check-in, a "+N", or photos and videos added later, with the day's uploaded
     draft files. Numbers add up during the day. Whether a post counts follows from what it is: a
     "+N" has a number; on other challenges the day's first post is the check-in and later ones
-    only add files (a second tap with nothing to add changes nothing)."""
+    only add files (a second tap with nothing to add changes nothing). A `note` goes with the
+    day's first post only: written once, never edited."""
     participant = _participant(by, challenge_id, day)
     challenge = participant.challenge
     if not counts_on(challenge, day):
@@ -136,6 +151,7 @@ def check_in(
     row = _day_row(by, challenge, day)
     files = proofs.uploaded_drafts(subject=row)
     last = row.entries.order_by("-number").first()
+    note = _clean_note(note, first=last is None)
     if quantity and last is None and value is None:
         raise ValidationFailed(fields={"amount": ["Give a number above zero."]})
     counting = value is not None if quantity else last is None
@@ -146,6 +162,9 @@ def check_in(
     entry = CheckInEntry.objects.create(
         crew=by.crew, check_in=row, number=last.number + 1 if last else 1, amount=value
     )
+    if note:
+        row.note = note
+        row.save(update_fields=["note", "updated_at"])
     proofs.publish(subject=row, post_id=entry.pk)
     row = _refresh(row)
     write_card(entry)
@@ -157,7 +176,7 @@ def check_in(
 def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
     """Delete today's latest post with its files and its card (refused once someone else has
     commented on the card). The check-in goes with its last post (then None), unless draft files
-    still wait on it (then it is `pending` again)."""
+    still wait on it (then it is `pending` again, its note gone with the post it came with)."""
     participant = _participant(by, challenge_id, day)
     row = (
         CheckIn.objects.select_for_update()
@@ -174,6 +193,9 @@ def undo_last(*, by: Member, challenge_id: UUID, day: date) -> CheckIn | None:
         proofs.discard_files(subject=card)  # its comments' photos
     last.delete()  # its card goes with it
     if row.entries.exists() or proofs.drafts(subject=row).exists():
+        if last.number == 1:
+            row.note = ""
+            row.save(update_fields=["note", "updated_at"])
         row = _refresh(row)
     else:
         row.delete()

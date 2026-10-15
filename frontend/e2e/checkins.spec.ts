@@ -123,3 +123,26 @@ test("a photo, hold to check in, undo, and see the crew's month", async ({ brows
   await expect(dan.getByRole("heading", { name: "Cum merge fiecare" })).toBeVisible();
   await expect(dan.getByRole("img", { name: /^Dan: \d+ bifate, \d+ ratate/ })).toBeVisible();
 });
+
+test("a note goes with the check-in and shows on its journal card", async ({ browser }) => {
+  const dan = await logIn(browser, "dan");
+  const walk = card(dan, WALK);
+  await expect(walk).toBeVisible();
+  if (await uncheck(dan, WALK)) await dan.reload();
+  const note = "Ploaie, dar am mers ☔";
+
+  await walk.getByLabel("Notă (opțional)").fill(note);
+  await walk
+    .locator('input[accept="image/*"]')
+    .setInputFiles({ name: "walk.png", mimeType: "image/png", buffer: PIXEL });
+  const button = walk.getByRole("button", { name: "Ține apăsat ca să bifezi" });
+  await expect(button).toBeEnabled();
+  await hold(dan, button);
+  await expect(walk.getByRole("button", { name: "Bifat azi" })).toBeVisible();
+  await expect(walk.getByLabel("Notă (opțional)")).toHaveCount(0); // written: no box
+
+  await dan.goto("/crew");
+  await expect(dan.getByText(note)).toBeVisible();
+
+  await uncheck(dan, WALK); // leave Dan's day as it was: the note goes with the check-in
+});

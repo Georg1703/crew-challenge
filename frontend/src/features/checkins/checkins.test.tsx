@@ -189,6 +189,48 @@ describe("today", () => {
     });
   });
 
+  it("sends the note with the check-in and has no note box after it", async () => {
+    let data = today([walk]);
+    mockToday(() => data);
+    const post = vi.spyOn(api, "POST").mockImplementation((() => {
+      const done = { ...walk, state: "done" as const, settled: true, week: week("done") };
+      data = today([done]);
+      return ok(done);
+    }) as never);
+    show();
+
+    await userEvent.type(
+      await screen.findByLabelText("Note (optional)"),
+      " Rainy, but done \u2614 ",
+    );
+    const hold = screen.getByRole("button", { name: "Hold to check in" });
+    hold.focus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(await screen.findByRole("button", { name: "Done today" })).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/check-ins", {
+      params: { path: { challenge_id: "walk" } },
+      body: { day: "2026-11-10", amount: null, note: "Rainy, but done \u2614" },
+    });
+    expect(screen.queryByLabelText("Note (optional)")).not.toBeInTheDocument();
+  });
+
+  it("keeps the note when the first number fails, and has none once checked in", async () => {
+    const walked = { ...walk, state: "done" as const, settled: true, week: week("done") };
+    mockToday(today([{ ...read, state: "todo", total: null }, walked]));
+    vi.spyOn(api, "POST").mockImplementation((() => fail(409, { code: "day_closed" })) as never);
+    show();
+
+    const box = await screen.findByLabelText("Note (optional)"); // one: not on the walk, done
+    await userEvent.type(box, "First pages");
+    await userEvent.click(screen.getByRole("button", { name: "+5" }));
+
+    expect(
+      await screen.findByText("That day has ended. You can only check in for today."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Note (optional)")).toHaveValue("First pages");
+  });
+
   it("adds a number and rolls back when the day has closed", async () => {
     mockToday(today([read]));
     let answer: (value: unknown) => void = () => undefined;

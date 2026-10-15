@@ -17,6 +17,7 @@ import {
   Icon,
   ProgressBar,
   StatusPill,
+  TextArea,
   WeekStrip,
   useToast,
 } from "@/shared/ui";
@@ -33,11 +34,13 @@ import { shortWindow, windowKind } from "../windows";
 import { AmountSheet } from "./AmountSheet";
 
 const QUICK_AMOUNTS = [1, 5, 10] as const;
+const NOTE_MAX_LENGTH = 500; // as the server's
 
 /**
- * One of my challenges today: photos or videos (uploaded first, as drafts), then check in (hold,
- * or add a number), the week, the streak. The posting buttons wait while files upload and, where
- * proof is asked, until one has finished.
+ * One of my challenges today: a note (before the day's check-in: it goes with it, never edited),
+ * photos or videos (uploaded first, as drafts), then check in (hold, or add a number), the week,
+ * the streak. The posting buttons wait while files upload and, where proof is asked, until one
+ * has finished.
  */
 export function CheckInCard({
   card,
@@ -55,6 +58,7 @@ export function CheckInCard({
   const checkIn = useCheckIn();
   const undo = useUndoCheckIn();
   const [typing, setTyping] = useState(false);
+  const [note, setNote] = useState("");
   const quantity = card.measure === "quantity";
   const notDue = card.state === "not_due";
   const subject = checkInProofs(card.id, day);
@@ -66,10 +70,11 @@ export function CheckInCard({
 
   const record = (amount: number | null) =>
     checkIn.mutate(
-      { card, day, amount },
+      { card, day, amount, note: opened ? "" : note.trim() },
       {
         onSuccess: () => {
           tap();
+          setNote(""); // written with the check-in; kept when it fails
           toast(
             amount !== null
               ? t("checkins.added", {
@@ -120,6 +125,17 @@ export function CheckInCard({
         </Link>
       ) : (
         <div className={styles.cardHead}>{head}</div>
+      )}
+
+      {!notDue && !opened && (
+        <TextArea
+          label={t("checkins.note")}
+          placeholder={t("checkins.notePlaceholder")}
+          rows={2}
+          maxLength={NOTE_MAX_LENGTH}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+        />
       )}
 
       {quantity ? (

@@ -609,6 +609,8 @@
     "restBody": "Your challenges ask for nothing today.",
     "timeLeft": "{{h}} h {{m}} min left",
     "hold": "Hold to check in",
+    "note": "Note (optional)",
+    "notePlaceholder": "A few words for the crew",
     "holdAbstain": "Hold: I held back today",
     "notDue": "Not asked today",
     "doneToday": "Done today",

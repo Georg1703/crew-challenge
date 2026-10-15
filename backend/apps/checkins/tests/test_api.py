@@ -33,6 +33,23 @@ def setup():
         yield admin, member, read
 
 
+def test_a_note_goes_with_the_check_in_only(browser, setup):
+    _, member, read = setup
+    browser.force_login(member.user)
+    url = f"/api/v1/challenges/{read.pk}/check-ins"
+    today = {"day": "2026-11-10", "amount": 5}
+
+    long = browser.post(url, {**today, "note": "x" * 501}, format="json")
+    assert (long.status_code, list(long.json()["error"]["fields"])) == (400, ["note"])
+    assert browser.post(url, {**today, "note": "Gata \U0001f4aa"}, format="json").status_code == 200
+    later = browser.post(url, {**today, "note": "Again"}, format="json")
+    assert (later.status_code, later.json()["error"]["fields"]) == (
+        400,
+        {"note": ["The note goes with the check-in."]},
+    )
+    assert browser.post(url, today, format="json").status_code == 200  # no note: fine
+
+
 def test_check_in_and_read_today(browser, setup):
     _, member, read = setup
     browser.force_login(member.user)

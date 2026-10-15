@@ -216,15 +216,18 @@ export function useCheckIn() {
       card,
       day,
       amount,
+      note = "",
     }: {
       card: TodayChallenge;
       day: string;
       amount: number | null;
+      /** The day's note: with its first post only. */
+      note?: string;
     }) =>
       call(
         api.POST("/api/v1/challenges/{challenge_id}/check-ins", {
           params: { path: { challenge_id: card.id } },
-          body: { day, amount: amount === null ? null : String(amount) },
+          body: { day, amount: amount === null ? null : String(amount), note: note || undefined },
         }),
       ),
     onMutate: async ({ card, amount }) => {

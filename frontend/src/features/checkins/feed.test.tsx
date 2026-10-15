@@ -69,6 +69,7 @@ const facts = (over: Partial<Facts> = {}): Facts => ({
   streak: 4,
   milestone: null,
   proofs: 0,
+  note: null,
   ...over,
 });
 
@@ -175,6 +176,15 @@ describe("the crew journal", () => {
     expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(2);
     expect(screen.getAllByText(/^Serve by/)).toHaveLength(1); // the drawn card, as it was
     expect(screen.getByRole("button", { name: "Photo by Bogdan" })).toBeInTheDocument();
+  });
+
+  it("shows the note written with a check-in under who did it", async () => {
+    showFeed([
+      card({ id: "n1", check_in: facts({ note: "Rainy, but done \u2614\nTomorrow more" }) }),
+    ]);
+
+    expect(await screen.findByText("Bogdan checked in")).toBeInTheDocument();
+    expect(screen.getByText(/^Rainy, but done \u2614\s+Tomorrow more$/)).toBeInTheDocument();
   });
 
   it("shows each day under its divider, with cards that say who did what", async () => {

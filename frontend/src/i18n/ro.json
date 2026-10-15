@@ -609,6 +609,8 @@
     "restBody": "Provocările tale nu cer nimic azi.",
     "timeLeft": "Mai ai {{h}} h {{m}} min",
     "hold": "Ține apăsat ca să bifezi",
+    "note": "Notă (opțional)",
+    "notePlaceholder": "Câteva cuvinte pentru echipă",
     "holdAbstain": "Ține apăsat: am rezistat azi",
     "notDue": "Azi nu se cere",
     "doneToday": "Bifat azi",

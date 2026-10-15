@@ -148,6 +148,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   cannot be posted without one. Files upload first as draft files (seen by their owner only); the
   post publishes them, and the posting button waits while any uploads. Midnight ends the day for
   its draft files too: not uploaded and posted by then, they expire. Plan: `docs/plans/journal.md`.
+- A check-in may carry a note (text and emojis, up to 500 characters), written with the day's
+  first post and never edited; it shows on that post's journal card. Plan:
+  `docs/plans/missed-notes.md`.
 - Missed day -> streak reset. On a challenge with punishments (none, or 2 to 8, set by its
   creator), a failed window owes one spin per missing check-in, or one for a missed total; when
   its spins open, the journal gets a card saying so. After v1: tree wilted.

@@ -6,8 +6,9 @@ from decimal import Decimal
 import pytest
 
 from apps.checkins import selectors, services
-from apps.checkins.models import CheckIn
+from apps.checkins.models import CheckIn, CheckInEntry
 from apps.checkins.tests.test_proofs import DAY, at, photo, scheduled, send, uploaded
+from apps.core.errors import ValidationFailed
 from apps.journal import selectors as journal
 from apps.media import services as media
 from apps.proofs import services as proofs
@@ -35,8 +36,16 @@ def people():
         yield ana, bogdan, walk, run, gym
 
 
-def post(member, challenge, day=DAY, amount=None):
-    return services.check_in(by=member, challenge_id=challenge.pk, day=day, amount=amount)
+def post(member, challenge, day=DAY, amount=None, note=""):
+    return services.check_in(
+        by=member, challenge_id=challenge.pk, day=day, amount=amount, note=note
+    )
+
+
+def card_notes(challenge) -> list[str | None]:
+    """The note on the card of each post on `challenge`, in the order they were posted."""
+    posts = CheckInEntry.objects.filter(check_in__challenge=challenge).order_by("number")
+    return [post.journal_entries.get().facts["note"] for post in posts]
 
 
 def test_no_post_without_a_finished_file_where_proof_is_asked(object_storage, people):
@@ -154,3 +163,62 @@ def test_midnight_ends_the_day_for_its_draft_files_too(object_storage, people):
         assert proofs.expire_proofs() == 2  # both drafts go: the day is over
 
     assert not Proof.objects.filter(pk__in=[ready.pk, late.proof.pk]).exists()
+
+
+STRONG = "Greu azi, dar gata \U0001f4aa\U0001f3fd"  # a skin tone
+FAMILY = "\U0001f468\u200d\U0001f469\u200d\U0001f467 la plimbare"  # joined emojis
+
+
+def test_the_note_goes_with_the_check_in_and_shows_on_its_card(object_storage, people):
+    _, bogdan, _, _, gym = people
+    row = post(bogdan, gym, note=f"  {STRONG}\n ")
+    assert row.note == STRONG  # trimmed, emojis as typed
+    uploaded(object_storage, bogdan, gym)
+    with pytest.raises(ValidationFailed) as refused:
+        post(bogdan, gym, note="One more thing")  # never edited, never a second one
+    assert refused.value.fields == {"note": ["The note goes with the check-in."]}
+    post(bogdan, gym)  # the photo, added later
+
+    row.refresh_from_db()
+    assert row.note == STRONG
+    assert card_notes(gym) == [STRONG, None]  # on the check-in's card only
+
+
+def test_a_number_challenge_takes_the_note_with_its_first_number(object_storage, people):
+    _, bogdan, _, run, _ = people
+    uploaded(object_storage, bogdan, run)
+    post(bogdan, run, amount=Decimal(4), note=FAMILY)
+    uploaded(object_storage, bogdan, run)
+    with pytest.raises(ValidationFailed):
+        post(bogdan, run, amount=Decimal(3), note="+3")
+    post(bogdan, run, amount=Decimal(3))
+
+    assert card_notes(run) == [FAMILY, None]
+
+
+def test_a_note_is_at_most_500_characters_and_spaces_are_no_note(object_storage, people):
+    _, bogdan, walk, _, gym = people
+    with pytest.raises(ValidationFailed):
+        post(bogdan, gym, note="x" * 501)
+    with pytest.raises(services.ProofRequired):  # a note is no proof
+        post(bogdan, walk, note="Am mers")
+    assert post(bogdan, gym, note="   ").note == ""
+    uploaded(object_storage, bogdan, walk)
+    assert post(bogdan, walk, note="\U0001f4aa" * 500).note == "\U0001f4aa" * 500  # 500 emojis
+
+    assert card_notes(gym) == [None]
+
+
+def test_undoing_the_check_in_takes_its_note(object_storage, people):
+    _, bogdan, _, _, gym = people
+    post(bogdan, gym, note="First")
+    assert services.undo_last(by=bogdan, challenge_id=gym.pk, day=DAY) is None
+
+    post(bogdan, gym, note="Second")
+    uploaded(object_storage, bogdan, gym)  # a draft waits: the day stays, pending
+    row = services.undo_last(by=bogdan, challenge_id=gym.pk, day=DAY)
+    assert row is not None
+    assert (row.status, row.note) == (CheckIn.Status.PENDING, "")
+
+    assert post(bogdan, gym, note="Third").note == "Third"
+    assert card_notes(gym) == ["Third"]

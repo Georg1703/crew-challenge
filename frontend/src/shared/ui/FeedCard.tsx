@@ -14,8 +14,8 @@ type Person = { id: string; name: string; seed: string };
 
 /**
  * One moment in the crew's journal, as a card of its own. The header says who (one avatar with
- * today's ring, or a stack for a group), what in one line, the challenge as a chip and when. The
- * body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
+ * today's ring, or a stack for a group), what in one line, the challenge as a chip and when. Under
+ * it the member's own words, when they wrote some (`note`). The body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
  * target, or a big number for a streak milestone; a plain check-in or a group has none. The
  * footer holds short facts ("7 days in a row") and, at its end, the `reactions`; last, `comments`:
  * a link to the card's thread with who wrote last and "3 comments" (or "Comment").
@@ -28,6 +28,7 @@ export function FeedCard({
   text,
   challenge,
   time,
+  note,
   tone = "default",
   highlight,
   amount,
@@ -49,6 +50,8 @@ export function FeedCard({
   challenge?: { icon: IconName; label: string };
   /** "5 min ago", "21:40", formatted by the caller. */
   time?: string;
+  /** The member's words, as they wrote them (line breaks kept). */
+  note?: string;
   tone?: "default" | "success";
   /** A milestone's big number and its line ("7", "days in a row"), or the line alone. */
   highlight?: { value?: string; text: string };
@@ -91,6 +94,7 @@ export function FeedCard({
           )}
         </div>
       </header>
+      {note && <p className={styles.note}>{note}</p>}
       {highlight && (
         <p className={styles.highlight} data-stage={stage}>
           {highlight.value && <span className={styles.big}>{highlight.value}</span>}

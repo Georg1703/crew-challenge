@@ -128,9 +128,10 @@ DELETE /api/v1/challenges/{id}/participation   opt out (before the start) or lea
                                         either way the challenge is gone for the member
 
 GET    /api/v1/today                    my challenges today (state, total, streak, week), the crew
-POST   /api/v1/challenges/{id}/check-ins   {day, amount?}: post today's check-in, a "+N" or
-                                        files added later, with the day's uploaded draft files
-                                        (refused while one uploads) -> today's card
+POST   /api/v1/challenges/{id}/check-ins   {day, amount?, note?}: post today's check-in, a "+N"
+                                        or files added later, with the day's uploaded draft files
+                                        (refused while one uploads); `note` with the day's first
+                                        post only (up to 500 characters) -> today's card
 DELETE /api/v1/challenges/{id}/check-ins/{day}/last   undo today's latest post, with its files
                                         and its card (refused once others commented) -> today's card
 GET    /api/v1/challenges/{id}/board?month=YYYY-MM   every participant x every day of the month

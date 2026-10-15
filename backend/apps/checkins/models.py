@@ -13,10 +13,13 @@ from django.db import models
 from apps.challenges.models import Challenge
 from apps.crews.models import CrewScopedModel, Member
 
+NOTE_MAX_LENGTH = 500  # characters
+
 
 class CheckIn(CrewScopedModel):
     """One participant, one challenge, one day. Created by the day's first post, or by its first
-    draft file (then `pending` until something is posted)."""
+    draft file (then `pending` until something is posted). Its note is written with the day's
+    first post and never edited."""
 
     class Status(models.TextChoices):
         DONE = "done", "Done"
@@ -33,6 +36,13 @@ class CheckIn(CrewScopedModel):
         null=True,
         blank=True,
         help_text="The day's total for challenges that record a number; empty otherwise.",
+    )
+    note = models.CharField(
+        max_length=NOTE_MAX_LENGTH,
+        blank=True,
+        default="",
+        db_default="",
+        help_text="The participant's words, written with the check-in; never edited.",
     )
     # Proofs point here by a generic key; this deletes them with the check-in.
     proofs = GenericRelation(

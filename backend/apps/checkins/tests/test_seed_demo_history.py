@@ -9,6 +9,7 @@ from apps.challenges.models import Challenge, Participant
 from apps.challenges.windows import windows
 from apps.checkins import days
 from apps.checkins.models import CheckIn
+from apps.journal.models import JournalEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -23,6 +24,8 @@ def test_builds_the_demo_history_once_and_meets_every_past_week(settings):
     assert "already there" in out.getvalue()
     assert Challenge.objects.filter(title__endswith="(demo)").count() == 4
     assert CheckIn.objects.exists()
+    assert CheckIn.objects.exclude(note="").exists()  # a few notes, on their cards too
+    assert JournalEntry.objects.filter(kind="check_in").exclude(facts__note=None).exists()
 
     gym = Challenge.objects.get(window=Challenge.Window.WEEK)
     assert gym.start_date is not None

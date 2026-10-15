@@ -1681,10 +1681,15 @@ components:
         proofs:
           type: integer
           description: Photos and videos posted with it.
+        note:
+          type: string
+          nullable: true
+          description: The day's note, on its check-in's card; null on later posts.
       required:
       - action
       - amount
       - milestone
+      - note
       - proofs
       - streak
       - target
@@ -1702,6 +1707,11 @@ components:
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
           nullable: true
           description: 'For challenges that record a number: how much to add.'
+        note:
+          type: string
+          description: The day's note, with its first post only (the check-in); never
+            edited.
+          maxLength: 500
       required:
       - day
     CommentInRequest:

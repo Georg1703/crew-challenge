@@ -1003,6 +1003,8 @@ export interface components {
             milestone: number | null;
             /** @description Photos and videos posted with it. */
             proofs: number;
+            /** @description The day's note, on its check-in's card; null on later posts. */
+            note: string | null;
         };
         CheckInInRequest: {
             /**
@@ -1015,6 +1017,8 @@ export interface components {
              * @description For challenges that record a number: how much to add.
              */
             amount?: string | null;
+            /** @description The day's note, with its first post only (the check-in); never edited. */
+            note?: string;
         };
         CommentInRequest: {
             /** @description May be empty when your uploaded draft photos go with it. */

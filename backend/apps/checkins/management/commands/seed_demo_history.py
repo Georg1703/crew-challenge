@@ -41,6 +41,12 @@ from integrations.storage import ObjectStorage, get_object_storage
 
 C = Challenge
 MON, WED, FRI = 1, 4, 16  # Challenge.on_days bits
+NOTES = [  # a check-in's note now and then, picked by day: the random history stays the same
+    "Greu azi, dar gata \U0001f4aa",
+    "Ploaie, dar am ie\u0219it \u2614",
+    "Cel mai bun de p\u00e2n\u0103 acum \U0001f525",
+    "M\u00e2ine mai mult \U0001f642",
+]
 
 
 @dataclass
@@ -331,6 +337,7 @@ class Seeder:
                 else [Decimal(n) for n in self.random.choice([[target + 5], [12, target - 7]])]
             )
         total = sum((a for a in amounts if a is not None), Decimal(0)) if amounts[0] else None
+        turn = day.toordinal() + self.members.index(member)
         row = CheckIn.objects.create(
             crew=self.crew,
             challenge=challenge,
@@ -338,6 +345,7 @@ class Seeder:
             day=day,
             status=CheckIn.Status.IN_PROGRESS if partial else CheckIn.Status.DONE,
             amount=total,
+            note=NOTES[turn % len(NOTES)] if turn % 5 == 0 else "",
         )
         entries = [
             CheckInEntry.objects.create(crew=self.crew, check_in=row, number=number, amount=amount)
