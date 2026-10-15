@@ -1,10 +1,10 @@
 # Plan: missed windows in the journal, notes on check-ins, short punishment texts
 
-Status: section A agreed and stage 1 committed (2026-10-15). Section B redesigned with the owner
-the same day (one note per check-in, written with it, never edited), defaults B4-B7 accepted, and
-stage 2 committed. Section C defaults accepted (the owner asked for the stage) and stage 3 built,
-not committed. Five stages on one branch (`feat/missed-notes`),
-one commit per stage, each committed after the owner's review.
+Status: stages 0 to 3 committed (2026-10-15); stage 4 (cleaning) built, not committed. Section A
+agreed as proposed; section B redesigned with the owner the same day (one note per check-in,
+written with it, never edited), defaults B4-B7 accepted; section C defaults accepted. Five stages
+on one branch (`feat/missed-notes`), one commit per stage, each committed after the owner's
+review.
 
 ## Goal
 
@@ -125,7 +125,7 @@ both. Running twice writes nothing new (spins: their unique key; cards: `journal
 ### Screen
 
 `FailedFeedCard` in `features/doom`, next to `SpinFeedCard`, drawn by `JournalCard` for
-`entry.failed`: the member's avatar, "Ana missed it" (`doom.feed.failed`), the challenge chip, the
+`entry.failed`: the member's avatar, "Ana fell short" (`doom.feed.failed`), the challenge chip, the
 time, and two facts: what failed (`describeFailed`: "Week 5 - 11 Oct: 1 of 3") and "Owes 2 spins"
 (`doom.feed.owes`, plurals ro + en).
 
@@ -245,8 +245,8 @@ TruncatedText({ text, className? })
 
 | Stage | What works at the end | Size |
 |---|---|---|
-| 0. Plan | This plan (committed); updates to it ride with the stage they change | S |
-| 1. Missed window card (committed) | Section 1: kind, writer in `open_spins` (one transaction), API, `FailedFeedCard`, tests, `make schema`; glossary **Card**, AGENTS.md game rules, `docs/plans/journal.md` card table and `docs/architecture/api-conventions.md` kinds list gain `failed`; the demo crew shows one after `make seed` | S |
+| 0. Plan | This plan; updates to it ride with the stage they change | S |
+| 1. Missed window card | Section 1: kind, writer in `open_spins` (one transaction), API, `FailedFeedCard`, tests, `make schema`; glossary **Card**, AGENTS.md game rules, `docs/plans/journal.md` card table and `docs/architecture/api-conventions.md` kinds list gain `failed`; the demo crew shows one after `make seed` | S |
 | 2. Notes | Section 2: column, rules, API, the note box, the note on cards, tests, e2e, seed; glossary **Note**, AGENTS.md game rules (a check-in may carry a note) | S |
 | 3. Short punishment texts | Section 3: `TruncatedText`, `usePopover` out of `ReactionMenu`, the four places, design docs and `/design`, tests | S |
 | 4. Cleaning | See below | S |

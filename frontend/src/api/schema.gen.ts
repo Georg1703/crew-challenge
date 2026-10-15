@@ -1003,7 +1003,7 @@ export interface components {
             milestone: number | null;
             /** @description Photos and videos posted with it. */
             proofs: number;
-            /** @description The day's note, on its check-in's card; null on later posts. */
+            /** @description The day's note, on the check-in's card; null when none. */
             note: string | null;
         };
         CheckInInRequest: {

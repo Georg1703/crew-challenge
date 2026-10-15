@@ -1,6 +1,7 @@
 """Write the stored journal's cards of everything posted so far, with the same writers the app
 uses: every check-in post, every finished crew day, every drawn and served spin. Safe to run
-twice (a card is written once); the repair tool if a writer ever leaves a gap.
+twice (a card is written once); the repair tool if a writer ever leaves a gap. Failed-window
+cards are not backfilled: they are written only as a window's spins open (`doom.open_spins`).
 """
 
 from typing import Any

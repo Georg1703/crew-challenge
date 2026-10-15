@@ -25,29 +25,29 @@ class CheckInFactsOut(serializers.Serializer):
     )
     proofs = serializers.IntegerField(help_text="Photos and videos posted with it.")
     note = serializers.CharField(
-        allow_null=True, help_text="The day's note, on its check-in's card; null on later posts."
+        allow_null=True, help_text="The day's note, on the check-in's card; null when none."
     )
 
 
-class FailedFactsOut(serializers.Serializer):
-    """A failed window's card, as its spins opened: what failed and how many spins it owes."""
+class WindowFactsOut(serializers.Serializer):
+    """What failed: the window, what it asked and what was done in it."""
 
     window_first = serializers.DateField()
     window_last = serializers.DateField()
     need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
     need = serializers.FloatField()
     done = serializers.FloatField()
+
+
+class FailedFactsOut(WindowFactsOut):
+    """A failed window's card, as its spins opened: what failed and how many spins it owes."""
+
     spins = serializers.IntegerField(help_text="Spins the window owes.")
 
 
-class SpinFactsOut(serializers.Serializer):
+class SpinFactsOut(WindowFactsOut):
     """A spin's card when drawn: what failed and what was drawn."""
 
-    window_first = serializers.DateField()
-    window_last = serializers.DateField()
-    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
-    need = serializers.FloatField()
-    done = serializers.FloatField()
     punishment = PunishmentOut()
     serve_by = serializers.DateField(allow_null=True)
 

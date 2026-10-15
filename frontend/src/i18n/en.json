@@ -851,7 +851,6 @@
     "lateCount_few": "{{count}} punishments are late",
     "lateCount_other": "{{count}} punishments are late",
     "missedDay": "Missed {{date}}",
-    "amount": "{{value}} {{unit}}",
     "windowShort": "{{when}}: {{done}} of {{need}}",
     "dial": "A dial with {{count}} punishments",
     "dialDrawn": "A dial with {{count}} punishments: {{position}} was drawn, {{text}}",

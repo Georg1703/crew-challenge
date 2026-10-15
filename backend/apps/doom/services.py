@@ -15,6 +15,7 @@ import random
 import secrets
 from collections import Counter
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 from django.db import transaction
@@ -122,7 +123,7 @@ def open_spins() -> int:
     )
     owes = Counter((spin.challenge_id, spin.member_id, spin.window_first) for spin in new)
     for first in (spin for spin in new if spin.number == 1):
-        write_failed_card(
+        _write_failed_card(
             first, spins=owes[first.challenge_id, first.member_id, first.window_first]
         )
     return len(new)
@@ -176,21 +177,25 @@ def serve(*, by: Member, spin_id: UUID) -> Spin:
     return spin
 
 
-def write_failed_card(first: Spin, *, spins: int) -> None:
+def _window_facts(spin: Spin) -> dict[str, Any]:
+    """What failed, as the failed and drawn cards freeze it."""
+    return {
+        "window_first": spin.window_first,
+        "window_last": spin.window_last,
+        "need_kind": spin.challenge.need_kind,
+        "need": spin.need,
+        "done": spin.done,
+    }
+
+
+def _write_failed_card(first: Spin, *, spins: int) -> None:
     """A failed window's journal card, written as its spins open: what failed and how many spins
     it owes. `first` is the window's spin number 1, the card's subject."""
     journal.post(
         JournalEntry.Kind.FAILED,
         first,
         day=clock.crew_today(first.challenge.crew),
-        facts={
-            "window_first": first.window_first,
-            "window_last": first.window_last,
-            "need_kind": first.challenge.need_kind,
-            "need": first.need,
-            "done": first.done,
-            "spins": spins,
-        },
+        facts={**_window_facts(first), "spins": spins},
         member=first.member,
         challenge=first.challenge,
     )
@@ -208,13 +213,7 @@ def write_cards(spin: Spin) -> None:
     }
     cards = [
         (JournalEntry.Kind.SPIN, spin.drawn_at, {
-            "window_first": spin.window_first,
-            "window_last": spin.window_last,
-            "need_kind": spin.challenge.need_kind,
-            "need": spin.need,
-            "done": spin.done,
-            "punishment": drawn,
-            "serve_by": spin.serve_by,
+            **_window_facts(spin), "punishment": drawn, "serve_by": spin.serve_by,
         }),
         (JournalEntry.Kind.SERVED, spin.done_at, {
             "punishment": drawn,

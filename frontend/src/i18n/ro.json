@@ -851,7 +851,6 @@
     "lateCount_few": "{{count}} pedepse sunt întârziate",
     "lateCount_other": "{{count}} de pedepse sunt întârziate",
     "missedDay": "Ratat: {{date}}",
-    "amount": "{{value}} {{unit}}",
     "windowShort": "{{when}}: {{done}} din {{need}}",
     "dial": "O roată cu {{count}} pedepse",
     "dialDrawn": "O roată cu {{count}} pedepse: a ieșit {{position}}, {{text}}",

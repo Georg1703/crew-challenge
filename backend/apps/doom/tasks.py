@@ -7,5 +7,6 @@ from . import services
 
 @shared_task
 def open_spins() -> int:
-    """Every 15 minutes (config/celery.py): open the spins owed for windows that closed."""
+    """Every 15 minutes (config/celery.py): open the spins owed for windows that closed, with a
+    journal card for each window opened."""
     return services.open_spins()

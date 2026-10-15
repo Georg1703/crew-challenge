@@ -4,11 +4,13 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
 import { useUploads } from "@/features/proofs";
+import { i18n } from "@/i18n";
 import { bogdan, meAs } from "@/test/fixtures";
 import { ok, renderRoutes } from "@/test/render";
 
 import { SpinsCard, SpinsRoute } from ".";
 import type { Spin } from "./api";
+import { describeFailed } from "./describe";
 
 const punishments = [
   { position: 1, text: "20 burpees", proof_required: true },
@@ -180,5 +182,31 @@ describe("the spins page", () => {
     mockSpins([]);
     renderRoutes([{ path: "/", element: <SpinsRoute /> }]);
     expect(await screen.findByRole("heading", { name: "Nothing to spin" })).toBeVisible();
+  });
+});
+
+describe("what failed", () => {
+  const said = (first: string, last: string, need_kind: Spin["need_kind"] = "count") =>
+    describeFailed(
+      i18n.t,
+      {
+        window_first: first,
+        window_last: last,
+        need_kind,
+        need: 3,
+        done: 1,
+        challenge: { unit: "km" },
+      },
+      "en",
+    );
+
+  it("names a whole month, and any other window by its days, also one that starts on the 1st", () => {
+    expect(said("2026-11-01", "2026-11-30")).toBe("November 2026: 1 of 3");
+    expect(said("2026-06-01", "2026-06-07")).toBe("June 1 – June 7: 1 of 3"); // a Monday-Sunday week
+    expect(said("2026-12-01", "2026-12-06")).toBe("December 1 – December 6: 1 of 3"); // cut by the period
+    expect(said("2026-11-02", "2026-11-08", "amount")).toBe(
+      "November 2 – November 8: 1 km of 3 km",
+    );
+    expect(said("2026-11-10", "2026-11-10")).toBe("Missed Tuesday, November 10");
   });
 });

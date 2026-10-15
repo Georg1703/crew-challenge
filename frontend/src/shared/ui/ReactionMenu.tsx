@@ -49,7 +49,7 @@ export function ReactionMenu({
   onMore: () => void;
   actions?: MenuAction[];
   /** The button that opens it: a tap there toggles it instead of closing and reopening. */
-  anchor?: RefObject<HTMLElement | null>;
+  anchor: RefObject<HTMLElement | null>;
 }) {
   const spring = useSpring("snappy");
 

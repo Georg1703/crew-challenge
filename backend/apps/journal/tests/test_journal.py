@@ -27,6 +27,7 @@ from tests.factories import AdminFactory, MemberFactory
 pytestmark = pytest.mark.django_db
 
 FIRE, CLAP = "\U0001f525", "\U0001f44f"
+SWAM = "Rece, dar gata \U0001f3ca"
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ def week():
     with at("2026-11-08 22:01Z"):
         doom.open_spins()
     with at("2026-11-09 07:00Z"):
-        checkins.check_in(by=ana, challenge_id=challenge.pk, day=date(2026, 11, 9))
+        checkins.check_in(by=ana, challenge_id=challenge.pk, day=date(2026, 11, 9), note=SWAM)
     spin = Spin.objects.filter(member=bogdan).order_by("number").first()
     assert spin is not None
     with at("2026-11-09 08:00Z"):
@@ -93,12 +94,26 @@ def test_the_journal_shows_each_card_as_it_was_posted(browser, week):
         drawn["proofs"],
     ) == (None, None, None, None, [])
     assert (swam["check_in"]["action"], swam["check_in"]["proofs"]) == ("check", 0)
+    assert swam["check_in"]["note"] == SWAM
+    assert body["results"][-1]["check_in"]["note"] is None  # Bogdan wrote none
     assert body["days"] == [
         {"day": "2026-11-09", "check_ins": 1, "proofs": 0},
         {"day": "2026-11-02", "check_ins": 1, "proofs": 0},
     ]
     assert body["next"] is None
     assert browser.get("/api/v1/journal?cursor=nope").status_code == 400
+
+
+def test_a_card_written_before_notes_existed_has_none(browser, week):
+    ana, bogdan, _ = week
+    older = JournalEntry.objects.get(kind="check_in", member=bogdan)
+    del older.facts["note"]
+    older.save(update_fields=["facts"])
+    with at("2026-11-09 09:00Z"):
+        body = journal(browser, ana)
+
+    swam = next(r for r in body["results"] if r["id"] == str(older.pk))
+    assert swam["check_in"]["note"] is None
 
 
 def test_a_served_spin_is_a_card_of_its_own_with_its_photo(browser, week, object_storage):

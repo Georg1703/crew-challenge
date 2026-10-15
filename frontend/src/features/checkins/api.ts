@@ -216,13 +216,13 @@ export function useCheckIn() {
       card,
       day,
       amount,
-      note = "",
+      note,
     }: {
       card: TodayChallenge;
       day: string;
       amount: number | null;
-      /** The day's note: with its first post only. */
-      note?: string;
+      /** The day's note: with its first post only; "" for none. */
+      note: string;
     }) =>
       call(
         api.POST("/api/v1/challenges/{challenge_id}/check-ins", {

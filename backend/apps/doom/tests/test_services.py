@@ -171,6 +171,21 @@ def test_viewers_owe_nothing(crew):
     assert failed(ana) == [("Bogdan", date(2026, 11, 9), 3)]  # Ana watches it
 
 
+def test_each_missed_day_gets_its_own_card(crew):
+    ana, bogdan = crew
+    walk = scheduled(
+        ana, bogdan, date(2026, 11, 2), {**SWIM, "title": "Walk", "window": "day", "need_value": 1}
+    )
+    check_in(bogdan, walk, date(2026, 11, 2))
+    with at("2026-11-03 22:01Z"):  # 00:01 on Wednesday the 4th
+        services.open_spins()
+
+    wednesday = date(2026, 11, 4)  # Ana missed Monday and Tuesday, Bogdan Tuesday
+    assert failed(ana) == [("Ana", wednesday, 1), ("Ana", wednesday, 1), ("Bogdan", wednesday, 1)]
+    card = Spin.objects.get(member=bogdan).journal_entries.get()
+    assert (card.facts["window_first"], card.facts["window_last"]) == ("2026-11-03", "2026-11-03")
+
+
 def test_a_failed_card_only_for_windows_this_run_opened_and_only_for_the_challenges_people(swim):
     ana, _, _ = swim
     with at("2026-11-08 22:01Z"):

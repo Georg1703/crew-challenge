@@ -15,10 +15,6 @@ from .models import Spin
 PENDING, SPUN, SERVED = "pending", "spun", "served"
 
 
-def _with_state(rows: QuerySet[Spin]) -> QuerySet[Spin]:
-    return rows.select_related("challenge", "member", "punishment")
-
-
 def state(spin: Spin) -> str:
     """`pending` (not drawn), `spun` (drawn, not served) or `served`."""
     if spin.punishment_id is None:
@@ -45,8 +41,9 @@ def _mine(member: Member) -> QuerySet[Spin]:
     """My spins (on challenges I left too), with my proofs on them: posted and draft, every
     status."""
     return (
-        _with_state(Spin.objects.for_crew(member.crew).filter(member=member))
-        .select_related("challenge__crew")
+        Spin.objects.for_crew(member.crew)
+        .filter(member=member)
+        .select_related("challenge__crew", "member", "punishment")
         .prefetch_related("proofs__original__transcode", "proofs__thumb")
     )
 

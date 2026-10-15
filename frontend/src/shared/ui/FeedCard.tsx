@@ -15,8 +15,9 @@ type Person = { id: string; name: string; seed: string };
 /**
  * One moment in the crew's journal, as a card of its own. The header says who (one avatar with
  * today's ring, or a stack for a group), what in one line, the challenge as a chip and when. Under
- * it the member's own words, when they wrote some (`note`). The body depends on the kind: proofs as a `ProofMosaic`, an amount ("+12 pages") with a bar to the
- * target, or a big number for a streak milestone; a plain check-in or a group has none. The
+ * it the member's own words, when they wrote some (`note`). The body depends on the kind: proofs
+ * as a `ProofMosaic`, an amount ("+12 pages") with a bar to the target, a big number for a streak
+ * milestone, or a line alone (a punishment); a plain check-in or a group has none. The
  * footer holds short facts ("7 days in a row") and, at its end, the `reactions`; last, `comments`:
  * a link to the card's thread with who wrote last and "3 comments" (or "Comment").
  * `tone="success"` marks a milestone or the whole crew finishing the day.

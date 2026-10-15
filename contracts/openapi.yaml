@@ -1684,7 +1684,7 @@ components:
         note:
           type: string
           nullable: true
-          description: The day's note, on its check-in's card; null on later posts.
+          description: The day's note, on the check-in's card; null when none.
       required:
       - action
       - amount

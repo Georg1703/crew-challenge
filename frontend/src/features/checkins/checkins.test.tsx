@@ -215,6 +215,22 @@ describe("today", () => {
     expect(screen.queryByLabelText("Note (optional)")).not.toBeInTheDocument();
   });
 
+  it("sends the note with the first number", async () => {
+    mockToday(today([{ ...read, state: "todo", total: null }]));
+    const post = vi
+      .spyOn(api, "POST")
+      .mockImplementation((() => ok({ ...read, total: 5, state: "partial" })) as never);
+    show();
+
+    await userEvent.type(await screen.findByLabelText("Note (optional)"), "First pages");
+    await userEvent.click(screen.getByRole("button", { name: "+5" }));
+
+    expect(post).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/check-ins", {
+      params: { path: { challenge_id: "read" } },
+      body: { day: "2026-11-10", amount: "5", note: "First pages" },
+    });
+  });
+
   it("keeps the note when the first number fails, and has none once checked in", async () => {
     const walked = { ...walk, state: "done" as const, settled: true, week: week("done") };
     mockToday(today([{ ...read, state: "todo", total: null }, walked]));

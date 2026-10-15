@@ -17,7 +17,7 @@ export function usePopover<T extends HTMLElement>({
   open: boolean;
   onClose: () => void;
   /** What opened it: a tap there toggles it instead of closing and reopening. */
-  anchor?: RefObject<HTMLElement | null>;
+  anchor: RefObject<HTMLElement | null>;
   /** The panel's edge that lines up with the opener's: its right ("end") or its left ("start"). */
   align?: "start" | "end";
 }): RefObject<T | null> {
@@ -32,7 +32,7 @@ export function usePopover<T extends HTMLElement>({
     };
     const onDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (panel.current?.contains(target) || anchor?.current?.contains(target)) return;
+      if (panel.current?.contains(target) || anchor.current?.contains(target)) return;
       onClose();
     };
     document.addEventListener("keydown", onKey);
@@ -47,7 +47,7 @@ export function usePopover<T extends HTMLElement>({
 
   useLayoutEffect(() => {
     const element = panel.current;
-    const at = anchor?.current?.getBoundingClientRect();
+    const at = anchor.current?.getBoundingClientRect();
     if (!open || !element || !at) return;
     const width = element.offsetWidth;
     const height = element.offsetHeight;

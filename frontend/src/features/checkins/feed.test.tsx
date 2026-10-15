@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -157,14 +157,24 @@ describe("the crew journal", () => {
     expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
   });
 
-  it("shows the whole of a cut punishment on tap", async () => {
+  it("shows a cut punishment whole on a tap, and reacts instead when the card is held", async () => {
     showFeed([drawn]);
     const line = await screen.findByText("Cold shower, 2 minutes");
     Object.defineProperty(line, "scrollWidth", { configurable: true, value: 300 });
     Object.defineProperty(line, "clientWidth", { configurable: true, value: 100 });
 
-    await userEvent.click(line);
+    vi.useFakeTimers();
+    const press = new Event("pointerdown", { bubbles: true });
+    Object.assign(press, { pointerType: "touch", clientX: 0, clientY: 0 });
+    line.dispatchEvent(press);
+    act(() => vi.advanceTimersByTime(500));
+    vi.useRealTimers();
+    act(() => void line.dispatchEvent(new MouseEvent("click", { bubbles: true }))); // ends the hold
 
+    expect(screen.getByRole("button", { name: "React" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(1); // no bubble
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(line);
     expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(2); // the line, the bubble
   });
 
