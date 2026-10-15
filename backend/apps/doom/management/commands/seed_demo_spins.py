@@ -6,7 +6,7 @@ run starts over (last week's dates again, its spins opened afresh, drawn ones to
 can spin again. Writes rows directly, like seed_demo_challenge, and only with DEBUG.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from django.conf import settings
@@ -19,6 +19,7 @@ from apps.crews import selectors as crews
 from apps.crews.models import Crew
 from apps.doom import services
 from apps.doom.models import Spin
+from apps.journal.models import JournalEntry
 
 TITLE = "Roata (demo)"
 PUNISHMENTS = ["F\u0103r\u0103 telefon dup\u0103 21:00", "Speli vasele disear\u0103"]
@@ -65,4 +66,12 @@ class Command(BaseCommand):
         for member in members:
             Participant.objects.get_or_create(crew=crew, challenge=challenge, member=member)
         opened = services.open_spins()
+        # The job opens a window's spins the night it closes; here the whole history opens at
+        # once. Its cards go back to those nights, as if the job had run all along.
+        for card in JournalEntry.objects.filter(crew=crew, kind=JournalEntry.Kind.FAILED):
+            night = date.fromisoformat(card.facts["window_last"]) + timedelta(days=1)
+            start, _ = clock.day_bounds_utc(night, crew.timezone)
+            JournalEntry.objects.filter(pk=card.pk).update(
+                day=night, created_at=start + timedelta(minutes=5)
+            )
         self.stdout.write(f"{TITLE}: {opened} spins opened from the week of {monday}.")

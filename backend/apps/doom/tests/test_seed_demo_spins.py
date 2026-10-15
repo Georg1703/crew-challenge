@@ -1,3 +1,4 @@
+from datetime import date
 from io import StringIO
 
 import pytest
@@ -30,4 +31,5 @@ def test_the_demo_crew_owes_three_spins_each_and_a_new_run_starts_over(settings)
     assert not Spin.objects.filter(punishment__isnull=False).exists()  # drawn ones start over
     cards = JournalEntry.objects.filter(kind="failed")  # the old ones went with their spins
     assert [c.facts["spins"] for c in cards] == [3] * len(per_member)
+    assert {c.day for c in cards} == {date(2026, 11, 9)}  # the night the week closed, not today
     assert "spins opened" in out.getvalue()
