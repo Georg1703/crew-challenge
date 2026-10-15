@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import confetti from "canvas-confetti";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
@@ -262,6 +263,32 @@ describe("today", () => {
       await screen.findByText("That day has ended. You can only check in for today."),
     ).toBeInTheDocument();
     expect(screen.getByText("12 / 20 pages")).toBeInTheDocument();
+  });
+
+  it("throws confetti on every post, a big one when the day lands done", async () => {
+    let data = today([read]);
+    mockToday(() => data);
+    vi.mocked(confetti).mockClear();
+    let total = 12;
+    vi.spyOn(api, "POST").mockImplementation((() => {
+      total += 5;
+      const card = { ...read, total, state: total >= 20 ? "done" : "in_progress", settled: true };
+      data = today([card as TodayChallenge]);
+      return ok(card);
+    }) as never);
+    show();
+
+    await userEvent.click(await screen.findByRole("button", { name: "+5" }));
+    expect(await screen.findByText("17 / 20 pages")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "+5" }));
+    expect(await screen.findByText("22 / 20 pages")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "+5" }));
+    expect(await screen.findByText("27 / 20 pages")).toBeInTheDocument();
+
+    await waitFor(() => expect(confetti).toHaveBeenCalledTimes(3));
+    const counts = vi.mocked(confetti).mock.calls.map(([options]) => options?.particleCount);
+    expect(counts[1]).toBeGreaterThan(counts[0] ?? 0); // the day landed done
+    expect(counts[2]).toBe(counts[0]); // done already: the small one
   });
 
   it("types another number in a sheet", async () => {

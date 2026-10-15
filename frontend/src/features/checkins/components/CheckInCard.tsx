@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
@@ -10,6 +10,7 @@ import { cx } from "@/shared/lib/cx";
 import { weekday } from "@/shared/lib/dates";
 import { formatNumber } from "@/shared/lib/format";
 import { tap } from "@/shared/lib/haptics";
+import { burst } from "@/shared/motion";
 import {
   Button,
   Card,
@@ -59,6 +60,7 @@ export function CheckInCard({
   const undo = useUndoCheckIn();
   const [typing, setTyping] = useState(false);
   const [note, setNote] = useState("");
+  const actions = useRef<HTMLDivElement>(null); // where the confetti starts
   const quantity = card.measure === "quantity";
   const notDue = card.state === "not_due";
   const subject = checkInProofs(card.id, day);
@@ -72,8 +74,9 @@ export function CheckInCard({
     checkIn.mutate(
       { card, day, amount, note: opened ? "" : note.trim() },
       {
-        onSuccess: () => {
+        onSuccess: (updated) => {
           tap();
+          void burst(actions.current, { big: card.state !== "done" && updated.state === "done" });
           setNote(""); // written with the check-in; kept when it fails
           toast(
             amount !== null
@@ -139,7 +142,7 @@ export function CheckInCard({
       )}
 
       {quantity ? (
-        <div className={styles.amounts}>
+        <div className={styles.amounts} ref={actions}>
           <div className={styles.total}>
             <span className={styles.totalNumber}>
               {target
@@ -189,21 +192,23 @@ export function CheckInCard({
           </div>
         </div>
       ) : (
-        <HoldButton
-          label={
-            notDue
-              ? t("checkins.notDue")
-              : card.measure === "abstain"
-                ? t("checkins.holdAbstain")
-                : t("checkins.hold")
-          }
-          doneLabel={
-            card.measure === "abstain" ? t("checkins.doneAbstain") : t("checkins.doneToday")
-          }
-          done={card.state === "done"}
-          disabled={notDue || waiting !== null}
-          onConfirm={() => record(null)}
-        />
+        <div ref={actions}>
+          <HoldButton
+            label={
+              notDue
+                ? t("checkins.notDue")
+                : card.measure === "abstain"
+                  ? t("checkins.holdAbstain")
+                  : t("checkins.hold")
+            }
+            doneLabel={
+              card.measure === "abstain" ? t("checkins.doneAbstain") : t("checkins.doneToday")
+            }
+            done={card.state === "done"}
+            disabled={notDue || waiting !== null}
+            onConfirm={() => record(null)}
+          />
+        </div>
       )}
 
       {!notDue && waiting !== null && !(opened && !quantity) && (

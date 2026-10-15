@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 
 import { i18n } from "@/i18n";
 
@@ -20,6 +20,8 @@ class NothingInView {
 globalThis.IntersectionObserver ??= NothingInView as unknown as typeof IntersectionObserver;
 Element.prototype.scrollIntoView ??= () => {};
 window.scrollTo = () => {};
+// jsdom has no canvas: confetti is a no-op in tests.
+vi.mock("canvas-confetti", () => ({ default: vi.fn(() => Promise.resolve()) }));
 
 afterEach(() => {
   cleanup();

@@ -12,7 +12,7 @@ React 19, TypeScript (strict), Vite, pnpm. The app is a PWA installed on phones.
 | Zustand | Client-only state that outlives a screen (the upload manager's uploads in flight) |
 | Motion | UI animation (springs, layout, gestures) |
 | Rive (`@rive-app/react-canvas`) | After v1: character animation (trees, flame, wheel) |
-| canvas-confetti | After v1: celebrations |
+| canvas-confetti | Confetti on a check-in post, big when the day lands done (`shared/motion/burst`); loaded on first burst |
 | i18next | Romanian (default) and English |
 | vite-plugin-pwa (Workbox) | Manifest, service worker, update prompt |
 | hls.js | HLS playback outside Safari; loaded on demand by `ProofViewer` only |

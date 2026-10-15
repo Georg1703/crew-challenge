@@ -11,10 +11,11 @@ v1 ships seven things: inviting members, flexible challenge creation, the daily 
 your crew), proof upload (photo or video), simple reactions on the crew's journal (one emoji
 per person), comments on its cards (with replies, photos and GIFs, `docs/plans/comments.md`), and the
 Wheel of Doom (punishments for failed windows, `docs/plans/wheel.md`).
-Everything below marked **after v1** stays in the docs as the long-term direction but must not be
-built yet: growing trees and the garden, streak flames as artwork, confetti and Rive animations,
-custom reaction sets and reaction notifications, and Web Push.
-If a task seems to need one of these, stop and ask.
+v1 has shipped. The work now is ongoing improvements that make the app more pleasant and
+motivating to use. Items below marked **after v1** were kept out of v1 and are open now: growing
+trees and the garden, streak flames as artwork, Rive animations, custom reaction sets and
+reaction notifications, and Web Push. Confetti on check-ins is in (`shared/motion/confetti.ts`).
+Each one still gets a plan in `docs/plans/` before it is built.
 
 - How the system is built, and why: `docs/architecture/`
 - Words we use: `docs/glossary.md`
@@ -101,7 +102,7 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   factory-boy, time-machine, import-linter.
 - **Frontend:** React 19, TypeScript strict, Vite (pnpm), React Router, vite-plugin-pwa (Workbox),
   TanStack Query, openapi-fetch, Zustand, Motion, i18next, hls.js, Uppy core + @uppy/aws-s3 (v5)
-  (after v1: @rive-app/react-canvas, canvas-confetti). CSS Modules + tokens in `src/styles/tokens.css`.
+  canvas-confetti (after v1: @rive-app/react-canvas). CSS Modules + tokens in `src/styles/tokens.css`.
 - **Media:** private S3 bucket, CloudFront with signed cookies, MediaConvert -> HLS.
 - **Emoji:** Emoji Mart (`emoji-mart` + `@emoji-mart/data`, core only, loaded on demand).
 - **Auth:** Django session cookie + CSRF. No JWT.
@@ -192,8 +193,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 
 ## UI and motion
 - Calm and clear first: every important action gets short feedback (a check mark, a toast,
-  a progress change) through the `shared/motion` presets. Big celebrations (tree growth, confetti,
-  flame spark, reveal flip) come after v1. The wheel's dial turning is part of v1.
+  a progress change) through the `shared/motion` presets. Confetti (`burst`) on every check-in
+  post, a big one the moment the day lands done. Other big celebrations (tree growth, flame
+  spark, reveal flip) come after v1. The wheel's dial turning is in.
 - Every tap responds within 100 ms (optimistic updates with TanStack Query, rollback on error).
 - Animate only `transform` and `opacity`; target 60 fps on a mid-range Android phone.
 - Lazy-load hls.js (and the Rive runtime after v1); code-split routes; first load < 2 s on 4G.

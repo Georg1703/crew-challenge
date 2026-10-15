@@ -11,7 +11,9 @@ The look of Crew Challenges is defined here and in code. Read this page before a
 ## Principles
 
 1. **The proof is the picture.** Photos and videos from the crew are the only imagery. No
-   illustrations, mascots, trees, confetti or decorative graphics in v1.
+   illustrations, mascots, trees or decorative graphics. One exception: confetti from the button
+   on every check-in post, a big burst the moment the day lands done
+   (`shared/motion/confetti.ts`), skipped under reduced motion.
 2. **One job per screen.** One title, one primary button. Everything else is quieter.
 3. **State over decoration.** Done, to do, missed and uploading must be readable at a glance, by
    color and by shape (a check, a ring, a pill), never by color alone.
@@ -199,8 +201,8 @@ for safe areas and `100dvh`.
 
 ## Not in this version
 
-Growing trees and other illustrations, confetti, custom reaction sets, push notifications. (The
-Wheel of Doom is in v1 from `docs/plans/wheel.md`; see `Dial`.)
+Growing trees and other illustrations, custom reaction sets, push notifications. (The Wheel of
+Doom is in from `docs/plans/wheel.md`; see `Dial`. Confetti on check-ins is in; see principle 1.)
 
 ## Guardrails (run by `make check`)
 

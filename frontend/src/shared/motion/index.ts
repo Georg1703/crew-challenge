@@ -7,6 +7,7 @@ import { useReducedMotion, type Transition } from "motion/react";
 import { reducedTransition, springs, type SpringName } from "./presets";
 
 export { AnimatePresence, MotionConfig, motion, useAnimate, useReducedMotion } from "motion/react";
+export { burst } from "./confetti";
 export {
   dialTurn,
   emojiFlight,

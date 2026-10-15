@@ -44,8 +44,8 @@ frontend/src/
   `shared/ui` with all its states, document it in `docs/design-system.md` and show it on
   `/design` first.
 - Icons come from `Icon` (Lucide shapes). Add new ones there.
-- Animation only through `@/shared/motion` presets (`snappy`, `bouncy`, `gentle`). No trees,
-  confetti or illustrations in v1.
+- Animation only through `@/shared/motion` presets (`snappy`, `bouncy`, `gentle`) and its
+  `burst` (confetti on a check-in post). No trees or illustrations yet.
 - No inline `style`, no hex/rgb colors, no raw px for spacing or font sizes outside tokens.
 - Every screen has loading, empty and error states; touch targets >= `--tap-min` (44px);
   layouts use `Screen` (safe areas, `100dvh`, tab bar space).
