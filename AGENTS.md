@@ -149,8 +149,8 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
   post publishes them, and the posting button waits while any uploads. Midnight ends the day for
   its draft files too: not uploaded and posted by then, they expire. Plan: `docs/plans/journal.md`.
 - Missed day -> streak reset. On a challenge with punishments (none, or 2 to 8, set by its
-  creator), a failed window owes one spin per missing check-in, or one for a missed total. After
-  v1: tree wilted.
+  creator), a failed window owes one spin per missing check-in, or one for a missed total; when
+  its spins open, the journal gets a card saying so. After v1: tree wilted.
 - The Wheel of Doom result is drawn on the server before the client animation starts. A spun
   punishment is served within 7 days: by posting its photos or videos (uploaded first as draft
   files; "Serve" waits for them), or by "Done" when it needs none. Plan: `docs/plans/wheel.md`.

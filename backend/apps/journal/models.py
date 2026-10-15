@@ -16,11 +16,13 @@ from apps.crews.models import CrewScopedModel, Member
 
 
 class JournalEntry(CrewScopedModel):
-    """One card in the crew's journal: a post (a check-in, a "+N", photos added later), a spin
-    drawn or served, or the whole crew's finished day. Added or deleted, never edited."""
+    """One card in the crew's journal: a post (a check-in, a "+N", photos added later), a failed
+    window as its spins open, a spin drawn or served, or the whole crew's finished day. Added or
+    deleted, never edited."""
 
     class Kind(models.TextChoices):
         CHECK_IN = "check_in", "A check-in post"
+        FAILED = "failed", "A window failed: spins owed"
         SPIN = "spin", "A spin drawn"
         SERVED = "served", "A punishment served"
         CREW_DAY = "crew_day", "The whole crew finished the day"

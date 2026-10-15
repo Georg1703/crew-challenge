@@ -26,6 +26,17 @@ class CheckInFactsOut(serializers.Serializer):
     proofs = serializers.IntegerField(help_text="Photos and videos posted with it.")
 
 
+class FailedFactsOut(serializers.Serializer):
+    """A failed window's card, as its spins opened: what failed and how many spins it owes."""
+
+    window_first = serializers.DateField()
+    window_last = serializers.DateField()
+    need_kind = serializers.ChoiceField(choices=Challenge.NeedKind.choices)
+    need = serializers.FloatField()
+    done = serializers.FloatField()
+    spins = serializers.IntegerField(help_text="Spins the window owes.")
+
+
 class SpinFactsOut(serializers.Serializer):
     """A spin's card when drawn: what failed and what was drawn."""
 
@@ -63,6 +74,7 @@ class JournalEntryOut(serializers.Serializer):
     reactions = ReactionSummaryOut(help_text="Target `entry`, this card's id.")
     comments = CommentSummaryOut(help_text="Target `entry`, this card's id.")
     check_in = CheckInFactsOut(allow_null=True)
+    failed = FailedFactsOut(allow_null=True)
     spin = SpinFactsOut(allow_null=True)
     served = ServedFactsOut(allow_null=True)
     crew_day = CrewDayFactsOut(allow_null=True)

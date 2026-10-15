@@ -1129,6 +1129,20 @@ export interface components {
          * @enum {string}
          */
         DayStateEnum: "done" | "partial" | "todo" | "open" | "missed" | "not_due" | "future" | "outside";
+        /** @description A failed window's card, as its spins opened: what failed and how many spins it owes. */
+        FailedFactsOut: {
+            /** Format: date */
+            window_first: string;
+            /** Format: date */
+            window_last: string;
+            need_kind: components["schemas"]["NeedKindEnum"];
+            /** Format: double */
+            need: number;
+            /** Format: double */
+            done: number;
+            /** @description Spins the window owes. */
+            spins: number;
+        };
         /**
          * @description * `dumbbell` - dumbbell
          *     * `running` - running
@@ -1209,18 +1223,20 @@ export interface components {
             /** @description Target `entry`, this card's id. */
             comments: components["schemas"]["CommentSummaryOut"];
             check_in: components["schemas"]["CheckInFactsOut"] | null;
+            failed: components["schemas"]["FailedFactsOut"] | null;
             spin: components["schemas"]["SpinFactsOut"] | null;
             served: components["schemas"]["ServedFactsOut"] | null;
             crew_day: components["schemas"]["CrewDayFactsOut"] | null;
         };
         /**
          * @description * `check_in` - A check-in post
+         *     * `failed` - A window failed: spins owed
          *     * `spin` - A spin drawn
          *     * `served` - A punishment served
          *     * `crew_day` - The whole crew finished the day
          * @enum {string}
          */
-        JournalKindEnum: "check_in" | "spin" | "served" | "crew_day";
+        JournalKindEnum: "check_in" | "failed" | "spin" | "served" | "crew_day";
         JournalPageOut: {
             results: components["schemas"]["JournalEntryOut"][];
             /** @description The counts of each day on this page, for dividers. */

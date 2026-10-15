@@ -865,6 +865,10 @@
     "emptyTitle": "Nimic de învârtit",
     "emptyBody": "Când o zi sau o săptămână dintr-o provocare rămâne nefăcută, rotirile apar aici.",
     "feed": {
+      "failed": "{{name}} n-a reușit",
+      "owes_one": "Datorează {{count}} rotire",
+      "owes_few": "Datorează {{count}} rotiri",
+      "owes_other": "Datorează {{count}} de rotiri",
       "drew": "{{name}} a învârtit roata",
       "served": "{{name}} și-a făcut pedeapsa"
     },

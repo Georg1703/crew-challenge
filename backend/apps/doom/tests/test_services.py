@@ -1,7 +1,7 @@
 """Spins on "Swim 3 times a week" (Chisinau: UTC+2 from October 25, 2026, UTC+3 before)."""
 
 import random
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -13,9 +13,10 @@ from apps.checkins import services as checkins
 from apps.doom import selectors, services
 from apps.doom.models import Spin
 from apps.journal import selectors as journal
+from apps.journal.models import JournalEntry
 from apps.proofs import services as proofs
 from apps.proofs.models import Proof
-from tests.factories import AdminFactory
+from tests.factories import AdminFactory, MemberFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -74,6 +75,16 @@ def numbers(member) -> list[int]:
     return list(Spin.objects.filter(member=member).values_list("number", flat=True))
 
 
+def failed(viewer) -> list[tuple[str, date, int]]:
+    """The failed-window cards `viewer` sees: whose, under which day, how many spins they owe."""
+    found, _ = journal.page(member=viewer, cursor=None, size=50)
+    return sorted(
+        (c.member.display_name, c.day, c.facts["spins"])
+        for c in found
+        if c.kind == "failed" and c.member
+    )
+
+
 @pytest.mark.parametrize(
     ("start", "before", "after"),
     [
@@ -94,6 +105,18 @@ def test_a_week_that_ended_short_opens_one_spin_per_missing_check_in(crew, start
     spin = Spin.objects.filter(member=bogdan).first()
     assert spin is not None
     assert (spin.window_first, spin.need, spin.done) == (start, Decimal(3), Decimal(1))
+    monday = start + timedelta(days=7)  # the spins opened at 00:01 local
+    assert failed(ana) == [("Ana", monday, 3), ("Bogdan", monday, 2)]  # one card a window
+    card = spin.journal_entries.get()
+    assert (card.kind, card.member, card.challenge) == ("failed", bogdan, challenge)
+    assert card.facts == {
+        "window_first": start.isoformat(),
+        "window_last": (start + timedelta(days=6)).isoformat(),
+        "need_kind": "count",
+        "need": "3.00",
+        "done": "1.00",
+        "spins": 2,
+    }
 
 
 def test_met_weeks_totals_and_challenges_without_punishments(crew):
@@ -117,6 +140,7 @@ def test_met_weeks_totals_and_challenges_without_punishments(crew):
         ("Bogdan", "Run")
     ]
     assert not Spin.objects.filter(challenge=plain).exists()
+    assert failed(ana) == [("Bogdan", date(2026, 11, 9), 1)]  # a missed total owes one
 
 
 def test_a_member_who_left_still_owes_the_cut_week(swim):
@@ -129,6 +153,7 @@ def test_a_member_who_left_still_owes_the_cut_week(swim):
         owed = selectors.owed(member=ana)
     assert (owed.to_spin, owed.to_serve) == (1, 0)
     assert owed.spins[0].window_last == date(2026, 11, 4)
+    assert failed(ana) == [("Ana", date(2026, 11, 9), 1), ("Bogdan", date(2026, 11, 9), 2)]
 
 
 def test_viewers_owe_nothing(crew):
@@ -143,6 +168,21 @@ def test_viewers_owe_nothing(crew):
     with at("2026-11-08 22:01Z"):
         services.open_spins()
     assert (numbers(ana), numbers(bogdan)) == ([], [1, 2, 3])
+    assert failed(ana) == [("Bogdan", date(2026, 11, 9), 3)]  # Ana watches it
+
+
+def test_a_failed_card_only_for_windows_this_run_opened_and_only_for_the_challenges_people(swim):
+    ana, _, _ = swim
+    with at("2026-11-08 22:01Z"):
+        services.open_spins()
+    JournalEntry.objects.filter(kind="failed", member=ana).delete()  # as before cards existed
+    with at("2026-11-09 22:01Z"):  # the next night: her spins are open, nothing is new
+        services.open_spins()
+    dan = MemberFactory.create(crew=ana.crew, display_name="Dan")  # joined after: not on it
+
+    assert failed(ana) == [("Bogdan", date(2026, 11, 9), 2)]
+    assert failed(dan) == []
+    assert failed(AdminFactory.create()) == []  # another crew
 
 
 def test_drawing_is_mine_once_and_sets_the_day_to_serve_by(swim):
@@ -230,7 +270,7 @@ def test_the_crew_sees_a_card_when_drawn_and_one_when_served(swim):
 
     def cards(member):
         found, _ = journal.page(member=member, cursor=None, size=10)
-        return [(c.kind, c.created_at) for c in found if c.kind != "check_in"]
+        return [(c.kind, c.created_at) for c in found if c.kind in ("spin", "served")]
 
     assert cards(ana) == []  # nothing drawn yet
     with at("2026-11-09 08:00Z"):

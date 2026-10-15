@@ -141,7 +141,7 @@ GET    /api/v1/challenges/{id}/days/{day}   the day sheet: everyone's state, tot
 GET    /api/v1/journal?cursor=...       the crew's cards, latest first, each as it was posted:
                                         {id, kind, at, day, member, challenge, proofs, reactions,
                                         comments: {count, member_ids, unread}, and its kind's facts
-                                        (check_in | spin | served | crew_day)}, plus each day's
+                                        (check_in | failed | spin | served | crew_day)}, plus each day's
                                         counts (30 per page)
 GET    /api/v1/journal/{id}             one card, as in the journal (the card's page)
 

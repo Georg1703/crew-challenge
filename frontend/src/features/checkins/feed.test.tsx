@@ -55,6 +55,7 @@ const card = (over: Partial<JournalEntry>): JournalEntry => ({
   reactions: { groups: [], mine: null },
   comments: { count: 0, member_ids: [], unread: 0 },
   check_in: null,
+  failed: null,
   spin: null,
   served: null,
   crew_day: null,
@@ -121,6 +122,30 @@ function showFeed(results: JournalEntry[]) {
 }
 
 describe("the crew journal", () => {
+  it("shows a failed window with what failed and the spins it owes", async () => {
+    showFeed([
+      card({
+        id: "f1",
+        kind: "failed",
+        day: "2026-11-09",
+        at: "2026-11-08T22:01:00Z",
+        challenge: SWIM,
+        failed: {
+          window_first: "2026-11-02",
+          window_last: "2026-11-08",
+          need_kind: "count",
+          need: 3,
+          done: 1,
+          spins: 2,
+        },
+      }),
+    ]);
+
+    expect(await screen.findByText("Bogdan fell short")).toBeInTheDocument();
+    expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
+    expect(screen.getByText("Owes 2 spins")).toBeInTheDocument();
+  });
+
   it("shows a drawn spin with its punishment and when it is due", async () => {
     showFeed([drawn]);
 

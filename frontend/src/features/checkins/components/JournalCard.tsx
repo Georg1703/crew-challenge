@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { Member } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
-import { SpinFeedCard } from "@/features/doom";
+import { FailedFeedCard, SpinFeedCard } from "@/features/doom";
 import { SHOWN_PROOFS, shownTile, viewerItem } from "@/features/proofs";
 import { Reactions } from "@/features/reactions";
 import { formatNumber, formatWhen, todayIn } from "@/shared/lib/format";
@@ -20,8 +20,9 @@ const person = (member: Person) => ({
 
 /**
  * One card of the crew's journal, drawn from what it said when it was posted: a check-in, a "+N",
- * photos added later, a spin drawn or served, or the crew's day; with its reactions and, with
- * `withComments`, the link to its comments. The feed and the card's own page draw it the same.
+ * photos added later, a failed window, a spin drawn or served, or the crew's day; with its
+ * reactions and, with `withComments`, the link to its comments. The feed and the card's own page
+ * draw it the same.
  */
 export function JournalCard({
   entry,
@@ -92,6 +93,18 @@ export function JournalCard({
   }
   const { member, challenge } = entry;
   if (!member || !challenge) return null;
+  if (entry.failed) {
+    return (
+      <FailedFeedCard
+        member={member}
+        challenge={challenge}
+        failed={entry.failed}
+        time={time}
+        reactions={reactions}
+        comments={comments}
+      />
+    );
+  }
   const who = member.display_name;
   const punishment = (entry.spin ?? entry.served)?.punishment.text;
   if (punishment !== undefined) {

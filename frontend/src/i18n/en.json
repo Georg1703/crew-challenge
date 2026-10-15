@@ -865,6 +865,10 @@
     "emptyTitle": "Nothing to spin",
     "emptyBody": "When a challenge's day or week falls short, its spins show up here.",
     "feed": {
+      "failed": "{{name}} fell short",
+      "owes_one": "Owes {{count}} spin",
+      "owes_few": "Owes {{count}} spins",
+      "owes_other": "Owes {{count}} spins",
       "drew": "{{name}} spun the wheel",
       "served": "{{name}} served a punishment"
     },

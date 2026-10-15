@@ -137,7 +137,7 @@ def test_a_spin_writes_a_card_when_drawn_and_when_served_in_the_crews_time(crew)
     with at("2026-11-09 22:30Z"):  # 00:30 on the 10th
         doom.serve(by=bogdan, spin_id=spin.pk)
 
-    drawn, served = cards()
+    drawn, served = cards(Kind.SPIN) + cards(Kind.SERVED)
     assert (drawn.kind, drawn.day, drawn.challenge) == (Kind.SPIN, date(2026, 11, 9), swim)
     assert drawn.facts["punishment"]["text"] == "No phone after 21:00"
     assert (served.kind, served.day, served.facts["proofs"]) == (Kind.SERVED, date(2026, 11, 10), 0)

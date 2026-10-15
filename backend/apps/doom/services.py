@@ -2,10 +2,10 @@
 
 A window that ended below its need owes one spin per missing check-in, or one for a missed total,
 on a challenge with punishments (the others never spin). Spins are opened by a job, never on
-read, and once only (a unique key per window and number). Drawing happens before the dial turns;
-a drawn punishment is served, by `serve_by` (after that it is late, nothing more in v1), with its
-photos or videos (uploaded first as draft files, posted together) or, when it needs none, by
-"Done".
+read, and once only (a unique key per window and number); each window opened gets a journal card.
+Drawing happens before the dial turns; a drawn punishment is served, by `serve_by` (after that it
+is late, nothing more in v1), with its photos or videos (uploaded first as draft files, posted
+together) or, when it needs none, by "Done".
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from __future__ import annotations
 import math
 import random
 import secrets
+from collections import Counter
 from datetime import timedelta
 from uuid import UUID
 
@@ -67,8 +68,10 @@ def owed(challenge: Challenge, verdict: days.Verdict) -> int:
     return max(1, math.ceil(verdict.short))
 
 
+@transaction.atomic
 def open_spins() -> int:
-    """Open every spin owed for windows that closed; returns how many are new. Safe to run twice.
+    """Open every spin owed for windows that closed, with a card in the journal for each window
+    opened; returns how many spins are new. Safe to run twice.
 
     Looks at every scheduled challenge with punishments and every player, those who left too
     (their cut window counts); viewers owe nothing.
@@ -81,7 +84,6 @@ def open_spins() -> int:
         .select_related("crew")
     )
     people = challenges.participants(challenges=found, plays=True)
-    before = Spin.objects.count()
     rows: list[Spin] = []
     for challenge in found:
         today = clock.crew_today(challenge.crew)
@@ -112,7 +114,18 @@ def open_spins() -> int:
                     for number in range(1, owed(challenge, verdict) + 1)
                 ]
     Spin.objects.bulk_create(rows, ignore_conflicts=True)
-    return Spin.objects.count() - before
+    # A row whose key existed was skipped: only the ones inserted now are found by their new ids.
+    new = list(
+        Spin.objects.filter(pk__in=[row.pk for row in rows]).select_related(
+            "challenge__crew", "member"
+        )
+    )
+    owes = Counter((spin.challenge_id, spin.member_id, spin.window_first) for spin in new)
+    for first in (spin for spin in new if spin.number == 1):
+        write_failed_card(
+            first, spins=owes[first.challenge_id, first.member_id, first.window_first]
+        )
+    return len(new)
 
 
 def _own(by: Member, spin_id: UUID) -> Spin:
@@ -161,6 +174,26 @@ def serve(*, by: Member, spin_id: UUID) -> Spin:
     spin.save(update_fields=["done_at", "updated_at"])
     write_cards(spin)
     return spin
+
+
+def write_failed_card(first: Spin, *, spins: int) -> None:
+    """A failed window's journal card, written as its spins open: what failed and how many spins
+    it owes. `first` is the window's spin number 1, the card's subject."""
+    journal.post(
+        JournalEntry.Kind.FAILED,
+        first,
+        day=clock.crew_today(first.challenge.crew),
+        facts={
+            "window_first": first.window_first,
+            "window_last": first.window_last,
+            "need_kind": first.challenge.need_kind,
+            "need": first.need,
+            "done": first.done,
+            "spins": spins,
+        },
+        member=first.member,
+        challenge=first.challenge,
+    )
 
 
 def write_cards(spin: Spin) -> None:

@@ -1927,6 +1927,35 @@ components:
         * `not_due` - not_due
         * `future` - future
         * `outside` - outside
+    FailedFactsOut:
+      type: object
+      description: 'A failed window''s card, as its spins opened: what failed and
+        how many spins it owes.'
+      properties:
+        window_first:
+          type: string
+          format: date
+        window_last:
+          type: string
+          format: date
+        need_kind:
+          $ref: '#/components/schemas/NeedKindEnum'
+        need:
+          type: number
+          format: double
+        done:
+          type: number
+          format: double
+        spins:
+          type: integer
+          description: Spins the window owes.
+      required:
+      - done
+      - need
+      - need_kind
+      - spins
+      - window_first
+      - window_last
     IconEnum:
       enum:
       - dumbbell
@@ -2078,6 +2107,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/CheckInFactsOut'
           nullable: true
+        failed:
+          allOf:
+          - $ref: '#/components/schemas/FailedFactsOut'
+          nullable: true
         spin:
           allOf:
           - $ref: '#/components/schemas/SpinFactsOut'
@@ -2097,6 +2130,7 @@ components:
       - comments
       - crew_day
       - day
+      - failed
       - id
       - kind
       - member
@@ -2107,12 +2141,14 @@ components:
     JournalKindEnum:
       enum:
       - check_in
+      - failed
       - spin
       - served
       - crew_day
       type: string
       description: |-
         * `check_in` - A check-in post
+        * `failed` - A window failed: spins owed
         * `spin` - A spin drawn
         * `served` - A punishment served
         * `crew_day` - The whole crew finished the day

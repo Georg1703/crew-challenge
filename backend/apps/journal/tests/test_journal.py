@@ -31,15 +31,16 @@ FIRE, CLAP = "\U0001f525", "\U0001f44f"
 
 @pytest.fixture
 def week():
-    """Bogdan swam on Monday the 2nd; on Monday the 9th Ana swims at 07:00Z and Bogdan, owing
-    two spins, draws one at 08:00Z."""
+    """Bogdan swam on Monday the 2nd; the week's spins open at 00:01 on Monday the 9th (Ana owes
+    three, Bogdan two); that day Ana swims at 07:00Z and Bogdan draws one at 08:00Z."""
     with at("2026-10-10 12:00Z"):
         ana = AdminFactory.create(display_name="Ana")
         bogdan = MemberFactory.create(crew=ana.crew, display_name="Bogdan")
     challenge = scheduled(ana, bogdan, date(2026, 11, 2))
     check_in(bogdan, challenge, date(2026, 11, 2))
-    with at("2026-11-09 07:00Z"):
+    with at("2026-11-08 22:01Z"):
         doom.open_spins()
+    with at("2026-11-09 07:00Z"):
         checkins.check_in(by=ana, challenge_id=challenge.pk, day=date(2026, 11, 9))
     spin = Spin.objects.filter(member=bogdan).order_by("number").first()
     assert spin is not None
@@ -58,24 +59,39 @@ def test_the_journal_shows_each_card_as_it_was_posted(browser, week):
     with at("2026-11-09 09:00Z"):
         body = journal(browser, ana)
 
-    assert [(r["kind"], r["day"], r["member"]["display_name"]) for r in body["results"]] == [
-        ("spin", "2026-11-09", "Bogdan"),
-        ("check_in", "2026-11-09", "Ana"),
-        ("check_in", "2026-11-02", "Bogdan"),
+    rows = [(r["kind"], r["day"], r["member"]["display_name"]) for r in body["results"]]
+    assert rows[:2] == [("spin", "2026-11-09", "Bogdan"), ("check_in", "2026-11-09", "Ana")]
+    assert sorted(rows[2:4]) == [
+        ("failed", "2026-11-09", "Ana"),
+        ("failed", "2026-11-09", "Bogdan"),
     ]
+    assert rows[4:] == [("check_in", "2026-11-02", "Bogdan")]
     drawn, swam = body["results"][0], body["results"][1]
+    missed = next(
+        r for r in body["results"] if r["failed"] and r["member"]["display_name"] == "Bogdan"
+    )
+    assert missed["failed"] == {
+        "window_first": "2026-11-02",
+        "window_last": "2026-11-08",
+        "need_kind": "count",
+        "need": 3.0,
+        "done": 1.0,
+        "spins": 2,
+    }
+    assert (missed["check_in"], missed["spin"], missed["proofs"]) == (None, None, [])
     assert drawn["spin"]["punishment"]["text"] == "20 burpees"
     assert (drawn["spin"]["need"], drawn["spin"]["done"], drawn["spin"]["serve_by"]) == (
         3.0,
         1.0,  # he swam once that week
         "2026-11-16",
     )
-    assert (drawn["check_in"], drawn["served"], drawn["crew_day"], drawn["proofs"]) == (
-        None,
-        None,
-        None,
-        [],
-    )
+    assert (
+        drawn["check_in"],
+        drawn["failed"],
+        drawn["served"],
+        drawn["crew_day"],
+        drawn["proofs"],
+    ) == (None, None, None, None, [])
     assert (swam["check_in"]["action"], swam["check_in"]["proofs"]) == ("check", 0)
     assert body["days"] == [
         {"day": "2026-11-09", "check_ins": 1, "proofs": 0},

@@ -6,6 +6,7 @@ from django.core.management import call_command
 
 from apps.doom import services
 from apps.doom.models import Spin
+from apps.journal.models import JournalEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -27,4 +28,6 @@ def test_the_demo_crew_owes_three_spins_each_and_a_new_run_starts_over(settings)
         services.draw(by=first.member, spin_id=first.pk)
         call_command("seed_demo_spins", stdout=out)
     assert not Spin.objects.filter(punishment__isnull=False).exists()  # drawn ones start over
+    cards = JournalEntry.objects.filter(kind="failed")  # the old ones went with their spins
+    assert [c.facts["spins"] for c in cards] == [3] * len(per_member)
     assert "spins opened" in out.getvalue()

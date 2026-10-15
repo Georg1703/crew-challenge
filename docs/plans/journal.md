@@ -135,7 +135,7 @@ deadline): an upload must finish, and its post be made, before the day's deadlin
 
 ```
 JournalEntry(CrewScopedModel)          one card, written once
-  kind          CharField(16)          check_in | spin | served | crew_day
+  kind          CharField(16)          check_in | failed | spin | served | crew_day
   subject_type  FK ContentType         the post (a CheckInEntry), the spin, the crew
   subject_id    UUID
   member        FK Member, null        who did it (none for the crew's day)
@@ -152,6 +152,7 @@ JournalEntry(CrewScopedModel)          one card, written once
 | Kind | Card | Written when | `facts` |
 |---|---|---|---|
 | `check_in` | "Ana checked in", "+5 km, 8 of 10 today", "Ana added 2 photos" | a check-in post goes live | action (checked in, "+N", added files), amount, total after, target, streak, milestone, proof count |
+| `failed` | "Bogdan fell short: week 2 - 8 Nov, 1 of 3 - owes 2 spins" | `doom.open_spins` opens the window's spins (its first spin is the subject; `docs/plans/missed-notes.md`) | window, need, done, spins owed |
 | `spin` | "Bogdan spun the wheel: 20 burpees" | `doom.draw` | window, need, done, punishment text and number |
 | `served` | "Bogdan served it" (with its proofs) | "Done", or the serving goes live | punishment text, proof count |
 | `crew_day` | "The whole crew finished the day" | the post that finished it goes live | who was due |
