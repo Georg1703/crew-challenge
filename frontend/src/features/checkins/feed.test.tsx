@@ -157,6 +157,17 @@ describe("the crew journal", () => {
     expect(screen.getByText("November 2 – November 8: 1 of 3")).toBeInTheDocument();
   });
 
+  it("shows the whole of a cut punishment on tap", async () => {
+    showFeed([drawn]);
+    const line = await screen.findByText("Cold shower, 2 minutes");
+    Object.defineProperty(line, "scrollWidth", { configurable: true, value: 300 });
+    Object.defineProperty(line, "clientWidth", { configurable: true, value: 100 });
+
+    await userEvent.click(line);
+
+    expect(screen.getAllByText("Cold shower, 2 minutes")).toHaveLength(2); // the line, the bubble
+  });
+
   it("shows a served spin as a card of its own, with its photo and no date to serve by", async () => {
     showFeed([
       card({

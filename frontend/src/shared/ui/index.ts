@@ -42,6 +42,7 @@ export { StoryAvatar, type StorySegment } from "./StoryAvatar";
 export { TabBar, type Tab, type TabAction } from "./TabBar";
 export { TextArea } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
+export { TruncatedText } from "./TruncatedText";
 export { WeekStrip } from "./WeekStrip";
 export { Toggle } from "./Toggle";
 export { ToastProvider, useToast } from "./Toast";

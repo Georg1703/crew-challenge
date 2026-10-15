@@ -82,6 +82,11 @@
   line-height: var(--leading-body);
 }
 
+/* Gives way to the big number: a cut line ends at the card's edge. */
+.highlightText {
+  min-width: 0;
+}
+
 .big {
   font-size: var(--text-number);
   font-variant-numeric: tabular-nums;

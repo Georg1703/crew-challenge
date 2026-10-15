@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -14,6 +14,7 @@ import { Sheet } from "./Sheet";
 import { StatusPill } from "./StatusPill";
 import { TabBar } from "./TabBar";
 import { TextField } from "./TextField";
+import { TruncatedText } from "./TruncatedText";
 
 describe("Button", () => {
   it("is disabled and busy while loading", async () => {
@@ -179,5 +180,49 @@ describe("TabBar", () => {
       />,
     );
     expect(await screen.findByRole("link", { name: "Crew" })).toHaveTextContent(/^Crew$/);
+  });
+});
+
+describe("TruncatedText", () => {
+  const LONG = "Wash every dish in the house by hand tonight, then dry them too";
+
+  /** jsdom lays nothing out: how wide the text is, and how wide its line. */
+  function measure(line: HTMLElement, textWidth: number) {
+    Object.defineProperty(line, "scrollWidth", { configurable: true, value: textWidth });
+    Object.defineProperty(line, "clientWidth", { configurable: true, value: 100 });
+  }
+  const shown = (text: string) => screen.getAllByText(text).length;
+
+  it("shows the whole of a cut text on tap; a second tap, a tap outside or Escape close it", async () => {
+    render(
+      <>
+        <TruncatedText text={LONG} />
+        <p>Outside</p>
+      </>,
+    );
+    const line = screen.getByText(LONG);
+    measure(line, 300);
+
+    await userEvent.click(line);
+    expect(shown(LONG)).toBe(2); // the line and the bubble
+    await userEvent.click(line);
+    await waitFor(() => expect(shown(LONG)).toBe(1));
+    await userEvent.click(line);
+    await userEvent.click(screen.getByText("Outside"));
+    await waitFor(() => expect(shown(LONG)).toBe(1));
+    await userEvent.click(line);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(shown(LONG)).toBe(1));
+  });
+
+  it("does nothing when the text fits, and keeps it whole for a mouse", async () => {
+    render(<TruncatedText text="20 burpees" />);
+    const line = screen.getByText("20 burpees");
+    measure(line, 80);
+
+    await userEvent.click(line);
+
+    expect(shown("20 burpees")).toBe(1);
+    expect(line).toHaveAttribute("title", "20 burpees");
   });
 });

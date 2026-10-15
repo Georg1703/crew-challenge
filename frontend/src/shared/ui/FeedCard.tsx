@@ -53,8 +53,9 @@ export function FeedCard({
   /** The member's words, as they wrote them (line breaks kept). */
   note?: string;
   tone?: "default" | "success";
-  /** A milestone's big number and its line ("7", "days in a row"), or the line alone. */
-  highlight?: { value?: string; text: string };
+  /** A milestone's big number and its line ("7", "days in a row"), or the line alone (a
+   * punishment, as a `TruncatedText`). */
+  highlight?: { value?: string; text: ReactNode };
   /** A quantity: "+12 pages", "20 today", and a bar when there is a target. */
   amount?: {
     value: string;
@@ -98,7 +99,7 @@ export function FeedCard({
       {highlight && (
         <p className={styles.highlight} data-stage={stage}>
           {highlight.value && <span className={styles.big}>{highlight.value}</span>}
-          <span>{highlight.text}</span>
+          <span className={styles.highlightText}>{highlight.text}</span>
         </p>
       )}
       {amount && (

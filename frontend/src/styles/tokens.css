@@ -191,6 +191,7 @@
   --story-avatar-size-lg: 5.5rem; /* the same, at the top of a member's page */
   --reaction-chip-height: 1.625rem;
   --comment-max-width: 80%; /* a chat message's bubble, of the row */
+  --tip-max-width: 20rem; /* the bubble with a TruncatedText's whole text */
   --composer-max-height: 8.75rem; /* the message box grows to about five lines, then scrolls */
   --emoji-picker-height: 22rem; /* the full emoji picker in a sheet */ /* its tap area still reaches --tap-min */
   --tabbar-height: 64px;

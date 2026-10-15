@@ -2,7 +2,8 @@
 
 Status: section A agreed and stage 1 committed (2026-10-15). Section B redesigned with the owner
 the same day (one note per check-in, written with it, never edited), defaults B4-B7 accepted, and
-stage 2 built, not committed. Section C awaits the owner. Five stages on one branch (`feat/missed-notes`),
+stage 2 committed. Section C defaults accepted (the owner asked for the stage) and stage 3 built,
+not committed. Five stages on one branch (`feat/missed-notes`),
 one commit per stage, each committed after the owner's review.
 
 ## Goal

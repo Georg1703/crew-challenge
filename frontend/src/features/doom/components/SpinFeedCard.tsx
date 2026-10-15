@@ -5,7 +5,7 @@ import type { components } from "@/api";
 import { CHALLENGE_ICONS } from "@/features/challenges";
 import { SHOWN_PROOFS, shownTile, type Proof } from "@/features/proofs";
 import { formatDayLong } from "@/shared/lib/format";
-import { FeedCard } from "@/shared/ui";
+import { FeedCard, TruncatedText } from "@/shared/ui";
 
 import { describeFailed } from "../describe";
 
@@ -59,7 +59,7 @@ export function SpinFeedCard({
       challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
       time={time}
       tone={drawn ? "default" : "success"}
-      highlight={{ text: punishment }}
+      highlight={{ text: <TruncatedText text={punishment} /> }}
       proofs={proofs.map((p) => shownTile(p, t, who))}
       onOpenProof={onOpenProof}
       moreLabel={t("feed.more", { count: proofs.length - SHOWN_PROOFS })}

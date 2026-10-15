@@ -6,7 +6,15 @@ import { CHALLENGE_ICONS } from "@/features/challenges";
 import { ProofTiles, useDrafts } from "@/features/proofs";
 import { errorMessage } from "@/i18n/errors";
 import { formatDayLong } from "@/shared/lib/format";
-import { Button, Card, ChallengeChip, Dial, StatusPill, useToast } from "@/shared/ui";
+import {
+  Button,
+  Card,
+  ChallengeChip,
+  Dial,
+  StatusPill,
+  TruncatedText,
+  useToast,
+} from "@/shared/ui";
 
 import { spinProofs, spinsKey, useDone, useDraw, type Spin } from "../api";
 import { describeFailed } from "../describe";
@@ -72,7 +80,7 @@ export function SpinCard({ spin }: { spin: Spin }) {
               {spin.punishments.map((p) => (
                 <li key={p.position} className={styles.row}>
                   <span className={styles.badge}>{p.position}</span>
-                  <span className={styles.text}>{p.text}</span>
+                  <TruncatedText text={p.text} className={styles.text} />
                   <span className={styles.meta}>
                     {p.proof_required ? t("doom.withProof") : t("doom.noProof")}
                   </span>
@@ -93,7 +101,9 @@ export function SpinCard({ spin }: { spin: Spin }) {
         ) : (
           <>
             <div className={styles.result} role="status">
-              <h2 className={styles.title}>{drawn.text}</h2>
+              <h2 className={styles.title}>
+                <TruncatedText text={drawn.text} />
+              </h2>
               {spin.late && spin.serve_by ? (
                 <span>
                   <StatusPill tone="danger">{t("doom.late")}</StatusPill>{" "}

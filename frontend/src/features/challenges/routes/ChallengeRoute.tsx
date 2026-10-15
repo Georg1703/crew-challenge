@@ -25,6 +25,7 @@ import {
   Skeleton,
   StatusPill,
   Toggle,
+  TruncatedText,
   useToast,
 } from "@/shared/ui";
 
@@ -331,7 +332,7 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
               <ListRow
                 key={p.position}
                 leading={<span className={styles.punishmentNumber}>{p.position}</span>}
-                title={p.text}
+                title={<TruncatedText text={p.text} />}
                 subtitle={t(
                   p.proof_required
                     ? "challenges.punishments.withProof"

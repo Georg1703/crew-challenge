@@ -95,6 +95,11 @@
   flex-grow: 1;
 }
 
+/* "Photo or video" keeps its line; the punishment before it gives way. */
+.row .meta {
+  flex: none;
+}
+
 .result {
   display: flex;
   flex-direction: column;

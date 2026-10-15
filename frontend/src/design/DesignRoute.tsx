@@ -62,6 +62,7 @@ import {
   TabBar,
   TextArea,
   TextField,
+  TruncatedText,
   Toggle,
   WeekStrip,
   useToast,
@@ -486,6 +487,8 @@ export function DesignRoute() {
         <Card tone="accent">
           <Dial size="sm" count={6} label="The dial as a mark" />
         </Card>
+        <TruncatedText text="20 burpees" />
+        <TruncatedText text="Wash every dish in the house by hand tonight, then dry them too" />
       </Section>
 
       <Section title="Check-in">
