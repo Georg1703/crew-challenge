@@ -3,9 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
+import { useCrew } from "@/features/crew";
 import { i18n } from "@/i18n";
 import { ok, renderRoutes } from "@/test/render";
-import { ana, bogdan, meAs } from "@/test/fixtures";
+import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
 
 import { MeRoute } from ".";
 
@@ -64,15 +65,39 @@ describe("me screen", () => {
         { crew_id: "c-eva", crew_name: "Echipa Eva", display_name: "Bogdan E", role: "member" },
       ],
     };
-    vi.spyOn(api, "GET").mockImplementation((() => ok(inTwo)) as never);
-    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(inTwo)) as never);
-    renderRoutes([{ path: "/", element: <MeRoute /> }]);
+    let crewName = crewDetail.name;
+    vi.spyOn(api, "GET").mockImplementation(((path: string) =>
+      ok(path === "/api/v1/crew" ? { ...crewDetail, name: crewName } : inTwo)) as never);
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => {
+      crewName = "Echipa Eva";
+      return ok(inTwo);
+    }) as never);
+    const post = vi
+      .spyOn(api, "POST")
+      .mockImplementation((() => ok({ expires_at: null })) as never);
+    function CrewName() {
+      return <p>{`crew: ${useCrew().data?.name}`}</p>;
+    }
+    renderRoutes([
+      {
+        path: "/",
+        element: (
+          <>
+            <MeRoute />
+            <CrewName />
+          </>
+        ),
+      },
+    ]);
 
     const crews = await screen.findByRole("list", { name: "My crews" });
     expect(within(crews).getByText("Current")).toBeInTheDocument();
+    expect(await screen.findByText(`crew: ${crewDetail.name}`)).toBeInTheDocument();
     await userEvent.click(within(crews).getByRole("button", { name: /Echipa Eva/ }));
     expect(put).toHaveBeenCalledWith("/api/v1/me/crew", { body: { crew_id: "c-eva" } });
     expect(await screen.findByText("Switched to Echipa Eva")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/api/v1/media/session"); // the new crew's photos load
+    expect(await screen.findByText("crew: Echipa Eva")).toBeInTheDocument(); // no reload needed
   });
 
   it("hides the crew list for people in one crew", async () => {

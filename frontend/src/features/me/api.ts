@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api, call } from "@/api";
-import { meKey } from "@/features/auth";
+import { enterCrew, meKey } from "@/features/auth";
 import { crewKey } from "@/features/crew";
 
 export function useUpdateMe() {
@@ -16,14 +16,11 @@ export function useUpdateMe() {
   });
 }
 
-/** Act in another of the user's crews. Everything cached belonged to the previous crew. */
+/** Act in another of the user's crews. */
 export function useSwitchCrew() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (crewId: string) => call(api.PUT("/api/v1/me/crew", { body: { crew_id: crewId } })),
-    onSuccess: (me) => {
-      queryClient.clear();
-      queryClient.setQueryData(meKey, me);
-    },
+    onSuccess: (me) => enterCrew(queryClient, me),
   });
 }

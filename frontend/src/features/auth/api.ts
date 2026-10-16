@@ -1,8 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import { api, call, isApiError, type Me } from "@/api";
 
 export const meKey = ["me"] as const;
+
+/**
+ * The user now acts in another crew: open its media first (CloudFront cookies, so its photos
+ * load), then refetch everything cached for it. Reset, not clear: clear() leaves mounted
+ * screens holding the old crew's data until a reload.
+ */
+export async function enterCrew(queryClient: QueryClient, me: Me) {
+  await call(api.POST("/api/v1/media/session")).catch(() => undefined); // useMediaSession retries
+  queryClient.setQueryData(meKey, me);
+  void queryClient.resetQueries({ predicate: (query) => query.queryKey[0] !== meKey[0] });
+}
 
 /** The logged-in user, or null when there is no session. */
 export function useMe() {
@@ -69,10 +80,7 @@ export function useOpenCrew() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (crewId: string) => call(api.PUT("/api/v1/me/crew", { body: { crew_id: crewId } })),
-    onSuccess: (me) => {
-      queryClient.clear();
-      queryClient.setQueryData(meKey, me);
-    },
+    onSuccess: (me) => enterCrew(queryClient, me),
   });
 }
 
@@ -82,10 +90,6 @@ export function useJoinWithAccount(code: string) {
   return useMutation({
     mutationFn: (body: { display_name: string }) =>
       call(api.POST("/api/v1/invites/{code}/join", { params: { path: { code } }, body })),
-    onSuccess: (me) => {
-      // Everything cached belonged to the previous crew.
-      queryClient.clear();
-      queryClient.setQueryData(meKey, me);
-    },
+    onSuccess: (me) => enterCrew(queryClient, me),
   });
 }
