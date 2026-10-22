@@ -12,7 +12,7 @@ from datetime import date
 from decimal import Decimal
 
 from apps.challenges import periods, windows
-from apps.challenges.models import Challenge
+from apps.challenges.models import Challenge, Participant
 from apps.challenges.windows import Window
 
 
@@ -41,12 +41,16 @@ class Span:
         return periods.dates(max(start, self.first), min(end, self.last))
 
 
-def span(challenge: Challenge, left_on: date | None) -> Span:
-    """The days that count for one participant: the whole challenge, up to the day they left."""
+def span(challenge: Challenge, participant: Participant | None) -> Span:
+    """The days that count for one participant: from the start or the day they joined, up to the
+    end or the day they left. None: the whole challenge."""
     assert challenge.start_date is not None
     assert challenge.end_date is not None
+    joined_on = participant.joined_on if participant else None
+    left_on = participant.left_on if participant else None
+    first = max(challenge.start_date, joined_on) if joined_on else challenge.start_date
     last = min(challenge.end_date, left_on) if left_on else challenge.end_date
-    return Span(first=challenge.start_date, last=last)
+    return Span(first=first, last=last)
 
 
 @dataclass

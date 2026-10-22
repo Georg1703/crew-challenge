@@ -95,7 +95,7 @@ def open_spins() -> int:
             proof_days=False,
         )
         for participant in taking_part:
-            part = days.span(challenge, participant.left_on)
+            part = days.span(challenge, participant)
             record = loaded.get((challenge.pk, participant.member_id), days.Record())
             for judged in days.judged(challenge, part, record, today):
                 verdict = judged.verdict

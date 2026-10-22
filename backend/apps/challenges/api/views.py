@@ -73,7 +73,13 @@ def challenge_data(
         "my_vote": any(voter.pk == member.pk for voter in tally.voters),
         "mine": challenge.created_by_id == member.pk,
         "participants": [
-            {"member": _person(p.member), "role": p.role, "left_on": p.left_on} for p in people
+            {
+                "member": _person(p.member),
+                "role": p.role,
+                "left_on": p.left_on,
+                "joined_on": p.joined_on,
+            }
+            for p in people
         ],
         "taking_part": mine is not None
         and mine.role == Participant.Role.PLAYER
@@ -209,7 +215,9 @@ class ParticipantsView(APIView):
         request=ParticipantsIn, responses=ChallengeOut, operation_id="challenges_participants"
     )
     def put(self, request: Request, challenge_id: UUID) -> Response:
-        """The creator changes who takes part and who watches while the challenge is a proposal."""
+        """The creator changes who takes part and who watches while the challenge is a proposal.
+        Once scheduled, until its last day, the creator or an admin can only add people (someone
+        added while it runs takes part from today); people who left are left out of the lists."""
         member = _member(request)
         data = ParticipantsIn(data=request.data)
         data.is_valid(raise_exception=True)

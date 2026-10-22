@@ -576,6 +576,92 @@ def test_new_members_are_not_added_to_running_challenges(crew, chosen):
     assert selectors.get_challenge(member=newcomer, challenge_id=chosen.pk) is None
 
 
+# --- adding people once scheduled ------------------------------------------------------------
+
+THREE_WEEKS = {"title": "Walk", "period_kind": "week", "period_length": 3}  # from 19 Oct
+
+
+def joined(challenge):
+    people = selectors.participants(challenges=[challenge]).get(challenge.pk, [])
+    return {p.member.display_name: (p.role, p.joined_on) for p in people}
+
+
+def test_people_added_before_the_start_take_part_from_the_start(crew):
+    admin, bogdan, cristina = crew
+    proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS, participant_ids=[])
+    services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
+    services.set_participants(
+        by=bogdan,
+        challenge_id=proposal.pk,
+        participant_ids=[bogdan.pk, cristina.pk],
+        viewer_ids=[admin.pk],
+    )
+    assert joined(proposal) == {
+        "Ana": ("viewer", None),
+        "Bogdan": ("player", None),
+        "Cristina": ("player", None),
+    }
+
+
+@pytest.mark.parametrize(
+    ("moment", "first"),
+    [
+        ("2026-11-03 21:59Z", date(2026, 11, 3)),  # 23:59 in Chisinau
+        ("2026-11-03 22:01Z", date(2026, 11, 4)),  # 00:01: already the next day
+        ("2026-10-24 20:59Z", date(2026, 10, 24)),  # 23:59 before the 25-hour Sunday
+        ("2026-10-24 21:01Z", date(2026, 10, 25)),
+        ("2026-10-19 08:00Z", None),  # the first day: from the start, like everyone
+    ],
+)
+def test_someone_added_while_it_runs_takes_part_from_that_day(crew, moment, first):
+    admin, bogdan, cristina = crew
+    walk = services.propose_challenge(
+        by=bogdan, shape=THREE_WEEKS, participant_ids=[], viewer_ids=[cristina.pk]
+    )
+    services.schedule_challenge(by=admin, challenge_id=walk.pk, period_start=date(2026, 10, 19))
+    with time_machine.travel(moment, tick=False):  # an admin adds herself, Cristina stops watching
+        services.set_participants(
+            by=admin, challenge_id=walk.pk, participant_ids=[admin.pk, bogdan.pk, cristina.pk]
+        )
+    assert joined(walk) == {
+        "Ana": ("player", first),
+        "Bogdan": ("player", None),
+        "Cristina": ("player", first),
+    }
+
+
+def test_once_scheduled_nobody_is_removed_turned_into_a_viewer_or_brought_back(crew, chosen):
+    admin, bogdan, cristina = crew
+    everyone = [admin.pk, bogdan.pk, cristina.pk]
+    with time_machine.travel("2026-11-12 12:00Z", tick=False):
+        with pytest.raises(services.ParticipantsLocked):  # removing Cristina
+            services.set_participants(
+                by=admin, challenge_id=chosen.pk, participant_ids=[admin.pk, bogdan.pk]
+            )
+        with pytest.raises(services.ParticipantsLocked):  # Cristina only watching
+            services.set_participants(
+                by=admin,
+                challenge_id=chosen.pk,
+                participant_ids=[admin.pk, bogdan.pk],
+                viewer_ids=[cristina.pk],
+            )
+        with pytest.raises(services.NotYourProposal):  # neither the creator nor an admin
+            services.set_participants(by=cristina, challenge_id=chosen.pk, participant_ids=everyone)
+        services.stop_taking_part(by=cristina, challenge_id=chosen.pk, keep_watching=True)
+        with pytest.raises(services.ParticipantsLocked):  # who left does not come back
+            services.set_participants(by=bogdan, challenge_id=chosen.pk, participant_ids=everyone)
+        services.set_participants(  # people who left are left out of the lists
+            by=bogdan, challenge_id=chosen.pk, participant_ids=[admin.pk, bogdan.pk]
+        )
+    with (
+        time_machine.travel("2026-12-01 12:00Z", tick=False),
+        pytest.raises(services.ChallengeFinished),
+    ):
+        services.set_participants(
+            by=bogdan, challenge_id=chosen.pk, participant_ids=[admin.pk, bogdan.pk]
+        )
+
+
 # --- who takes part ----------------------------------------------------------------------------
 
 
@@ -610,7 +696,7 @@ def test_only_crew_members_can_take_part(crew):
     assert "participant_ids" in error.value.fields
 
 
-def test_only_the_creator_changes_who_takes_part_and_only_before_scheduling(crew):
+def test_only_the_creator_changes_who_takes_part_and_once_scheduled_only_adds(crew):
     admin, bogdan, cristina = crew
     proposal = services.propose_challenge(by=bogdan, shape=PUSHUPS)
     with pytest.raises(services.NotYourProposal):
@@ -618,7 +704,7 @@ def test_only_the_creator_changes_who_takes_part_and_only_before_scheduling(crew
     with pytest.raises(services.NotYourProposal):
         services.set_participants(by=admin, challenge_id=proposal.pk, participant_ids=[])
     services.schedule_challenge(challenge_id=proposal.pk, **november(admin))
-    with pytest.raises(services.NotAProposal):
+    with pytest.raises(services.ParticipantsLocked):
         services.set_participants(by=bogdan, challenge_id=proposal.pk, participant_ids=[])
 
 

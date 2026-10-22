@@ -334,8 +334,10 @@ paths:
   /api/v1/challenges/{challenge_id}/participants:
     put:
       operationId: challenges_participants
-      description: The creator changes who takes part and who watches while the challenge
-        is a proposal.
+      description: |-
+        The creator changes who takes part and who watches while the challenge is a proposal.
+        Once scheduled, until its last day, the creator or an admin can only add people (someone
+        added while it runs takes part from today); people who left are left out of the lists.
       parameters:
       - in: path
         name: challenge_id
@@ -2448,7 +2450,13 @@ components:
           format: date
           nullable: true
           description: Last day that counted, when they left during the challenge.
+        joined_on:
+          type: string
+          format: date
+          nullable: true
+          description: First day that counts, when they were added during the challenge.
       required:
+      - joined_on
       - left_on
       - member
       - role

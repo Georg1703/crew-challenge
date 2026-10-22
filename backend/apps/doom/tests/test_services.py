@@ -156,6 +156,20 @@ def test_a_member_who_left_still_owes_the_cut_week(swim):
     assert failed(ana) == [("Ana", date(2026, 11, 9), 1), ("Bogdan", date(2026, 11, 9), 2)]
 
 
+def test_someone_added_on_wednesday_owes_only_for_their_days(swim):
+    ana, bogdan, challenge = swim
+    with at("2026-11-04 08:00Z"):  # Wednesday: from today counts, 3 x 5/7 = 2 check-ins
+        dan = MemberFactory.create(crew=ana.crew, display_name="Dan")
+        challenges.set_participants(
+            by=ana, challenge_id=challenge.pk, participant_ids=[ana.pk, bogdan.pk, dan.pk]
+        )
+    check_in(dan, challenge, date(2026, 11, 4))
+    with at("2026-11-08 22:01Z"):
+        services.open_spins()
+    spin = Spin.objects.get(member=dan)  # one: Monday and Tuesday were not his
+    assert (spin.window_first, spin.need, spin.done) == (date(2026, 11, 4), Decimal(2), Decimal(1))
+
+
 def test_viewers_owe_nothing(crew):
     ana, bogdan = crew
     with at("2026-10-10 12:00Z"):

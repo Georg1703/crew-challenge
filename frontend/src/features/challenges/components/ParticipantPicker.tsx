@@ -8,28 +8,41 @@ type Person = { id: string; display_name: string; avatar_seed: string };
 
 export type Picked = { participant_ids: string[]; viewer_ids: string[] };
 
-/** A challenge's lists, as the picker edits them. */
-export function pickedFrom(participants: { member: { id: string }; role: string }[]): Picked {
-  const ids = (role: string) => participants.filter((p) => p.role === role).map((p) => p.member.id);
+/** A challenge's lists, as the picker edits them (people who left are no longer in them). */
+export function pickedFrom(
+  participants: { member: { id: string }; role: string; left_on?: string | null }[],
+): Picked {
+  const ids = (role: string) =>
+    participants.filter((p) => p.role === role && !p.left_on).map((p) => p.member.id);
   return { participant_ids: ids("player"), viewer_ids: ids("viewer") };
 }
 
-/** Who takes part (the creator always) and, among the others, who only watches. */
+/** Who takes part (the creator always) and, among the others, who only watches. `locked`: lists
+ * that can only grow (a scheduled challenge): its players stay, its viewers may start playing.
+ * `crewSize`: the whole crew, when `people` leaves some out (people who left). */
 export function ParticipantPicker({
   people,
   creatorId,
+  locked = { participant_ids: [], viewer_ids: [] },
+  crewSize = people.length,
   values,
   onChange,
   error,
 }: {
   people: Person[];
   creatorId: string | undefined;
+  locked?: Picked;
+  crewSize?: number;
   values: Picked;
   onChange: (values: Picked) => void;
   error?: string;
 }) {
   const { t } = useTranslation();
-  const playing = new Set([...values.participant_ids, ...(creatorId ? [creatorId] : [])]);
+  const playing = new Set([
+    ...values.participant_ids,
+    ...locked.participant_ids,
+    ...(creatorId ? [creatorId] : []),
+  ]);
   const players = people.filter((person) => playing.has(person.id));
   const others = people.filter((person) => !playing.has(person.id));
   const viewers = values.viewer_ids.filter((id) => !playing.has(id));
@@ -44,19 +57,25 @@ export function ParticipantPicker({
         label={t("challenges.who.label")}
         values={[...playing]}
         onChange={(ids) =>
-          onChange({ participant_ids: ids, viewer_ids: viewers.filter((id) => !ids.includes(id)) })
+          onChange({
+            participant_ids: ids,
+            // a locked viewer who stops playing again goes back to watching
+            viewer_ids: [...new Set([...viewers, ...locked.viewer_ids])].filter(
+              (id) => !ids.includes(id),
+            ),
+          })
         }
         error={error}
         options={people.map((person) => ({
           ...option(person),
           description: person.id === creatorId ? t("challenges.who.creator") : undefined,
-          disabled: person.id === creatorId,
+          disabled: person.id === creatorId || locked.participant_ids.includes(person.id),
         }))}
       />
       <p className={styles.meta}>
-        {players.length === people.length
+        {players.length === crewSize
           ? t("challenges.who.everyone")
-          : t("challenges.who.count", { n: players.length, total: people.length })}
+          : t("challenges.who.count", { n: players.length, total: crewSize })}
       </p>
       {others.length > 0 && (
         <>
@@ -66,7 +85,10 @@ export function ParticipantPicker({
             onChange={(ids) =>
               onChange({ participant_ids: values.participant_ids, viewer_ids: ids })
             }
-            options={others.map(option)}
+            options={others.map((person) => ({
+              ...option(person),
+              disabled: locked.viewer_ids.includes(person.id),
+            }))}
           />
           <p className={styles.meta}>{t("challenges.who.watchNote")}</p>
         </>

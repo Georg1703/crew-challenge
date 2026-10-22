@@ -28,6 +28,7 @@ def test_builds_the_demo_history_once_and_meets_every_past_week(settings):
     assert JournalEntry.objects.filter(kind="check_in").exclude(facts__note=None).exists()
 
     gym = Challenge.objects.get(window=Challenge.Window.WEEK)
+    assert Participant.objects.filter(challenge=gym, joined_on=date(2026, 10, 31)).exists()
     assert gym.start_date is not None
     today = date(2026, 11, 10)
     for p in Participant.objects.filter(challenge=gym):
@@ -37,6 +38,7 @@ def test_builds_the_demo_history_once_and_meets_every_past_week(settings):
             )
         )
         record = days.Record(done=done)
-        closed = [w for w in windows(gym, gym.start_date, today) if w.last < today]
+        part = days.span(gym, p)  # one of them joined later: from that day
+        closed = [w for w in windows(gym, part.first, today) if w.last < today]
         assert closed
         assert all(days.judge(gym, w, record, today).state == "met" for w in closed)

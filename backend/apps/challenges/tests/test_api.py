@@ -237,6 +237,23 @@ def names(body):
     return sorted(p["member"]["display_name"] for p in body["participants"])
 
 
+def test_an_admin_adds_someone_to_a_running_challenge(browser, people):
+    admin, member = people
+    other = MemberFactory.create(crew=admin.crew, display_name="Cristina")
+    created = services.propose_challenge(by=member, shape=SHAPE, participant_ids=[])
+    schedule(admin, created)
+    url = f"/api/v1/challenges/{created.pk}/participants"
+    client = as_member(browser, admin)
+    with time_machine.travel("2026-11-15 12:00Z", tick=False):
+        added = client.put(url, {"participant_ids": [str(member.pk), str(other.pk)]}, format="json")
+        removed = client.put(url, {"participant_ids": [str(member.pk)]}, format="json")
+    assert added.status_code == 200
+    joined = {p["member"]["display_name"]: p["joined_on"] for p in added.json()["participants"]}
+    assert joined == {"Bogdan": None, "Cristina": "2026-11-15"}
+    assert removed.status_code == 409
+    assert removed.json()["error"]["code"] == "participants_locked"
+
+
 def test_viewers_watch_and_a_leaver_can_keep_watching(browser, people):
     admin, member = people
     client = as_member(browser, member)

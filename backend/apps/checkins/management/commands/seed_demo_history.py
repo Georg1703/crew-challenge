@@ -63,6 +63,7 @@ class Spec:
     streaks: list[int]  # due days in a row up to yesterday, one per member in `who`
     watching: list[int] = field(default_factory=list)  # members who only watch
     today: dict[int, int] = field(default_factory=dict)  # member -> proofs, for those done today
+    joined: dict[int, int] = field(default_factory=dict)  # member -> days ago they were added
     unit: str = ""
     on_days: int = 0
     need: int = 1  # check-ins each window asks for
@@ -123,6 +124,7 @@ SPECS = [
         who=[0, 3, 5],
         streaks=[],
         today={3: 2},
+        joined={3: 10},
         need=3,
         punishments=(
             ("Speli vasele disear\u0103", False),
@@ -258,8 +260,11 @@ class Seeder:
             for n, (text, proof) in enumerate(spec.punishments, start=1)
         )
         taking_part = [(i, self.members[i]) for i in spec.who if i < len(self.members)]
-        for _, member in taking_part:
-            Participant.objects.create(crew=self.crew, challenge=challenge, member=member)
+        firsts = {i: self.today - timedelta(days=spec.joined[i]) for i in spec.joined}
+        for i, member in taking_part:
+            Participant.objects.create(
+                crew=self.crew, challenge=challenge, member=member, joined_on=firsts.get(i)
+            )
         for i in spec.watching:
             if i < len(self.members):
                 Participant.objects.create(
@@ -269,7 +274,7 @@ class Seeder:
                     role=Participant.Role.VIEWER,
                 )
         for n, (i, member) in enumerate(taking_part):
-            for day in self.history(challenge, spec, n, start):
+            for day in self.history(challenge, spec, n, firsts.get(i, start)):
                 self.check_in(challenge, member, day, proofs=self.some_proofs(day))
             if i in spec.today:
                 self.check_in(challenge, member, self.today, proofs=spec.today[i])
@@ -301,7 +306,7 @@ class Seeder:
             if not days.is_due(challenge, day):
                 continue
             for p in Participant.objects.filter(challenge=challenge).select_related("member"):
-                if day in days.span(challenge, p.left_on):
+                if day in days.span(challenge, p):
                     self.check_in(challenge, p.member, day, proofs=0)
 
     # --- rows ----------------------------------------------------------------------------------

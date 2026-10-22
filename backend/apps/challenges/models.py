@@ -229,6 +229,7 @@ class Participant(CrewScopedModel):
     is scheduled, takes part in it; a viewer only sees it (no vote, no check-ins, no spins).
     Opting out before the start deletes the row; leaving during the challenge sets `left_on`
     (the board keeps their days). A leaver who keeps watching becomes a viewer with `left_on`.
+    Someone added while it runs gets `joined_on`: earlier days are not theirs.
     """
 
     class Role(models.TextChoices):
@@ -240,6 +241,11 @@ class Participant(CrewScopedModel):
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.PLAYER)
     left_on = models.DateField(
         null=True, blank=True, help_text="Last day that counts, when the member left during it."
+    )
+    joined_on = models.DateField(
+        null=True,
+        blank=True,
+        help_text="First day that counts, when the member was added during it.",
     )
 
     class Meta:

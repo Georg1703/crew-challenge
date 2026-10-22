@@ -317,6 +317,11 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
           leftOn={Object.fromEntries(
             challenge.participants.flatMap((p) => (p.left_on ? [[p.member.id, p.left_on]] : [])),
           )}
+          joinedOn={Object.fromEntries(
+            challenge.participants.flatMap((p) =>
+              p.joined_on ? [[p.member.id, p.joined_on]] : [],
+            ),
+          )}
         />
       )}
 
@@ -371,6 +376,17 @@ function ChallengeScreen({ challenge }: { challenge: Challenge }) {
           )}
           {watchers}
           {watching && <p className={styles.meta}>{t("challenges.watching")}</p>}
+          {(mine || isAdmin) && challenge.phase !== "finished" && (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              icon={<Icon name="users" size={20} />}
+              onClick={() => setInviting(true)}
+            >
+              {t("challenges.who.add")}
+            </Button>
+          )}
           {((challenge.phase !== "finished" && challenge.taking_part) || watching) && (
             <Button variant="danger" size="lg" fullWidth onClick={() => setLeaving(true)}>
               {leaveWord}

@@ -51,8 +51,8 @@ const pushUps: Challenge = {
   my_vote: false,
   mine: false,
   participants: [
-    { member: person(ana), role: "player", left_on: null },
-    { member: person(bogdan), role: "player", left_on: null },
+    { member: person(ana), role: "player", left_on: null, joined_on: null },
+    { member: person(bogdan), role: "player", left_on: null, joined_on: null },
   ],
   taking_part: true,
   watching: false,
@@ -516,7 +516,7 @@ describe("one challenge", () => {
     const put = vi.spyOn(api, "PUT").mockImplementation((() => {
       one = detail({
         mine: true,
-        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
       });
       return ok(one);
     }) as never);
@@ -544,7 +544,7 @@ describe("one challenge", () => {
   it("shows an admin who does not take part the proposal without a vote", async () => {
     mockGets(ana, {
       one: detail({
-        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
         taking_part: false,
       }),
     });
@@ -561,8 +561,8 @@ describe("one challenge", () => {
     mockGets(ana, {
       one: detail({
         participants: [
-          { member: person(bogdan), role: "player", left_on: null },
-          { member: person(ana), role: "viewer", left_on: null },
+          { member: person(bogdan), role: "player", left_on: null, joined_on: null },
+          { member: person(ana), role: "viewer", left_on: null, joined_on: null },
         ],
         taking_part: false,
         watching: true,
@@ -597,11 +597,60 @@ describe("one challenge", () => {
     );
   });
 
+  it("lets an admin add people to a running challenge without taking anyone out", async () => {
+    mockGets(ana, {
+      one: detail({
+        ...scheduled({ phase: "active" }),
+        participants: [
+          { member: person(bogdan), role: "player", left_on: null, joined_on: null },
+          { member: person(ana), role: "viewer", left_on: null, joined_on: null },
+        ],
+        taking_part: false,
+        watching: true,
+      }),
+    });
+    const put = vi.spyOn(api, "PUT").mockImplementation((() => ok(detail())) as never);
+    renderRoutes(routes, { at: "/challenges/c1" });
+    await userEvent.click(await screen.findByRole("button", { name: "Add people" }));
+    const sheet = await screen.findByRole("dialog", { name: "Add people" });
+    expect(within(sheet).getByText(/takes part from today/)).toBeInTheDocument();
+    expect(await within(sheet).findByRole("checkbox", { name: /Bogdan/ })).toBeDisabled();
+    const watchers = within(sheet).getByRole("group", { name: "Only watching" });
+    expect(within(watchers).getByRole("checkbox", { name: /Ana/ })).toBeDisabled();
+    const players = within(sheet).getByRole("group", { name: "The crew" });
+    await userEvent.click(within(players).getByRole("checkbox", { name: /Ana/ })); // starts playing
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(put).toHaveBeenCalledWith("/api/v1/challenges/{challenge_id}/participants", {
+        params: { path: { challenge_id: "c1" } },
+        body: { participant_ids: [bogdan.id, ana.id], viewer_ids: [] },
+      }),
+    );
+  });
+
+  it("leaves people who left out of the add sheet but counts the whole crew", async () => {
+    mockGets(ana, {
+      one: detail({
+        ...scheduled({ phase: "active" }),
+        participants: [
+          { member: person(bogdan), role: "player", left_on: null, joined_on: null },
+          { member: person(ana), role: "player", left_on: "2026-11-05", joined_on: null },
+        ],
+        taking_part: false,
+      }),
+    });
+    renderRoutes(routes, { at: "/challenges/c1" });
+    await userEvent.click(await screen.findByRole("button", { name: "Add people" }));
+    const sheet = await screen.findByRole("dialog", { name: "Add people" });
+    expect(await within(sheet).findByText(/1 of 2 take part/)).toBeInTheDocument();
+    expect(within(sheet).queryByRole("checkbox", { name: /Ana/ })).toBeNull();
+  });
+
   it("lets a member leave and keep watching, and a viewer stop watching", async () => {
     mockGets(bogdan, {
       one: detail({
         ...scheduled(),
-        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
       }),
     });
     const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);
@@ -619,7 +668,7 @@ describe("one challenge", () => {
     mockGets(bogdan, {
       one: detail({
         ...scheduled(),
-        participants: [{ member: person(bogdan), role: "viewer", left_on: null }],
+        participants: [{ member: person(bogdan), role: "viewer", left_on: null, joined_on: null }],
         taking_part: false,
         watching: true,
       }),
@@ -688,7 +737,7 @@ describe("one challenge", () => {
       phase: "active",
       measure: "check",
       taking_part: true,
-      participants: [{ member: person(bogdan), role: "player", left_on: null }],
+      participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
     });
     const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
     const todayCard = {
@@ -768,7 +817,7 @@ describe("one challenge", () => {
       window: "week",
       need_value: 3,
       taking_part: true,
-      participants: [{ member: person(bogdan), role: "player", left_on: null }],
+      participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
     });
     const first: Window = {
       first: "2026-11-05",
@@ -819,7 +868,7 @@ describe("one challenge", () => {
       one: detail({
         ...scheduled(),
         taking_part: true,
-        participants: [{ member: person(bogdan), role: "player", left_on: null }],
+        participants: [{ member: person(bogdan), role: "player", left_on: null, joined_on: null }],
       }),
     });
     const del = vi.spyOn(api, "DELETE").mockImplementation((() => ok(undefined, 204)) as never);

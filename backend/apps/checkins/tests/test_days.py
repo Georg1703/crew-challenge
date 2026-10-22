@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from apps.challenges.models import Challenge
+from apps.challenges.models import Challenge, Participant
 from apps.checkins import days
 from apps.checkins.days import DayState
 
@@ -33,10 +33,12 @@ def record(done=(), partial=(), amounts=None) -> days.Record:
     )
 
 
-def test_span_runs_until_someone_leaves():
+def test_span_runs_from_joining_until_leaving():
     c = challenge()
     assert days.span(c, None) == NOV
-    assert days.span(c, d(20)) == days.Span(d(1), d(20))
+    assert days.span(c, Participant(left_on=d(20))) == days.Span(d(1), d(20))
+    assert days.span(c, Participant(joined_on=d(15))) == days.Span(d(15), d(30))
+    assert days.span(c, Participant(joined_on=d(15), left_on=d(20))) == days.Span(d(15), d(20))
     assert NOV.days(date(2026, 10, 30), d(2)) == [d(1), d(2)]
     assert NOV.days(d(5), d(4)) == []
 
@@ -262,7 +264,7 @@ def test_daily_and_chosen_day_rules_are_unchanged(
     fields, done, partial, left, today, states, streak, longest, settled
 ):
     c = challenge(**fields)
-    part = days.span(c, d(left) if left else None)
+    part = days.span(c, Participant(left_on=d(left)) if left else None)
     due = [n for n in done if days.is_due(c, d(n))]  # check-ins are refused on other days
     r = record(done=due, partial=[n for n in partial if days.is_due(c, d(n))])
     assert "".join(LETTERS[days.state(c, part, r, d(n), today)] for n in range(1, 31)) == states

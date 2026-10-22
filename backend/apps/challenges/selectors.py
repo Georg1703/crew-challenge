@@ -72,6 +72,13 @@ SEES = Q(left_on__isnull=True) | Q(role=Participant.Role.VIEWER)
 PLAYS = Q(role=Participant.Role.PLAYER) | Q(left_on__isnull=False)
 
 
+def on_days(first: date, last: date) -> Q:
+    """Participant rows whose days touch `first`..`last`: joined by `last`, not left before
+    `first`."""
+    joined = Q(joined_on__isnull=True) | Q(joined_on__lte=last)
+    return joined & (Q(left_on__isnull=True) | Q(left_on__gte=first))
+
+
 def visible(*, member: Member) -> QuerySet[Challenge]:
     """The crew's challenges this member can see: taking part (not left) or watching, or all for
     an admin."""
@@ -158,7 +165,7 @@ def participants_on(*, viewer: Member, day: date) -> list[Participant]:
             challenge__end_date__gte=day,
         )
         .filter(PLAYS)
-        .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
+        .filter(on_days(day, day))
         .select_related("challenge", "member")
         .order_by("member__created_at", "member_id", "challenge__title", "challenge_id")
     )

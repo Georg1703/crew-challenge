@@ -11,8 +11,6 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db.models import Q
-
 from apps.challenges import selectors as challenges
 from apps.challenges.models import Challenge, Participant
 from apps.challenges.periods import dates, month_of, scheduled_dates, week_of
@@ -118,7 +116,7 @@ class Today:
 
 def _card(participant: Participant, record: days.Record, today: date, proofs: list[Proof]) -> Card:
     challenge = participant.challenge
-    part = days.span(challenge, participant.left_on)
+    part = days.span(challenge, participant)
     monday, _ = week_of(today)
     week = [monday + timedelta(days=n) for n in range(7)]
     return Card(
@@ -191,7 +189,7 @@ def challenge_windows(
     participant = Participant.objects.filter(
         challenge=challenge, member=member, role=Participant.Role.PLAYER, left_on__isnull=True
     ).first()
-    part = days.span(challenge, None)
+    part = days.span(challenge, participant)
     if until is not None:
         part = days.Span(part.first, min(part.last, until))
     if participant is None:  # an admin or a viewer who doesn't take part: needs only
@@ -243,7 +241,7 @@ def _crewboard(member: Member, challenge_id: UUID) -> tuple[Challenge, date, Eve
     people = challenges.participants(challenges=[challenge], plays=True).get(challenge.pk, [])
     loaded = records(challenge_ids=[challenge.pk], member_ids=[p.member_id for p in people])
     everyone = [
-        (p, days.span(challenge, p.left_on), loaded.get((challenge.pk, p.member_id), days.Record()))
+        (p, days.span(challenge, p), loaded.get((challenge.pk, p.member_id), days.Record()))
         for p in people
     ]
     return challenge, clock.crew_today(member.crew), everyone
@@ -349,7 +347,7 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
             challenge__end_date__gte=first,
         )
         .filter(challenges.PLAYS)
-        .filter(Q(left_on__isnull=True) | Q(left_on__gte=first))
+        .filter(challenges.on_days(first, last))
         .select_related("challenge")
         .order_by("challenge__start_date", "challenge__title", "challenge_id")
     )
@@ -366,7 +364,7 @@ def member_progress(*, viewer: Member, member_id: UUID, month: date) -> MemberPr
     )
     for participant in parts:
         challenge = participant.challenge
-        part = days.span(challenge, participant.left_on)
+        part = days.span(challenge, participant)
         record = loaded.get((challenge.pk, person.pk), days.Record())
         streak = days.streak(challenge, part, record, today)
         result.streak = max(result.streak, streak or 0)
@@ -425,18 +423,16 @@ def card_facts(entry: CheckInEntry) -> dict[str, Any]:
         and entry.number > 1
         and days.counts(challenge, total - (entry.amount or Decimal(0)))
     )
-    left_on = (
-        Participant.objects.filter(challenge=challenge, member_id=check_in.member_id)
-        .values_list("left_on", flat=True)
-        .first()
-    )
+    participant = Participant.objects.filter(
+        challenge=challenge, member_id=check_in.member_id
+    ).first()
     mine = records(
         challenge_ids=[challenge.pk], member_ids=[check_in.member_id], proof_days=False
     ).get((challenge.pk, check_in.member_id), days.Record())
     mine.done.discard(day)
     mine.partial.discard(day)
     (mine.done if done else mine.partial).add(day)  # the day as this post left it
-    streak = days.streak(challenge, days.span(challenge, left_on), mine, day)
+    streak = days.streak(challenge, days.span(challenge, participant), mine, day)
     reached = counting and done and not before and days.is_fixed(challenge)
     return {
         "action": ("amount" if quantity else "check") if counting else "files",
@@ -460,14 +456,10 @@ def crew_day(*, crew: Crew, day: date) -> list[UUID] | None:
             challenge__end_date__gte=day,
         )
         .filter(challenges.PLAYS)
-        .filter(Q(left_on__isnull=True) | Q(left_on__gte=day))
+        .filter(challenges.on_days(day, day))
         .select_related("challenge")
     )
-    due = [
-        p
-        for p in people
-        if days.is_due(p.challenge, day) and day in days.span(p.challenge, p.left_on)
-    ]
+    due = [p for p in people if days.is_due(p.challenge, day) and day in days.span(p.challenge, p)]
     if not due:
         return None
     loaded = records(

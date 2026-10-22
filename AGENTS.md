@@ -130,10 +130,14 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 - A challenge shows who proposed it and when. Its creator chooses who takes part (the
   participants: one `Participant` row each, the whole crew by default, the creator always) and
   who only watches (viewers: `Participant.role = viewer`, `docs/plans/viewers.md`), and can
-  change both lists until it is scheduled. Only participants, viewers and crew admins see a
-  challenge; only participants vote and take part. People who join the crew later are not added. A proposal can be
+  change both lists until it is scheduled. After that the lists only grow: until its last day
+  the creator or a crew admin can add people or make a viewer a participant; someone added
+  during it gets `joined_on` = that day (today counts, earlier days are not theirs: never
+  missed, no spins), `docs/plans/joined-on.md`. Only participants, viewers and crew admins see a
+  challenge; only participants vote and take part. People who join the crew later are not added
+  on their own. A proposal can be
   edited by its creator while it is in the pool (editing the challenge resets its votes; removing
-  someone deletes only their vote); once scheduled, nothing can be edited. Before the start an
+  someone deletes only their vote); once scheduled, nothing else can be edited. Before the start an
   admin can move it or put it back in the pool (the participants stay as they are). Opting out
   before the start deletes the row; leaving during it sets `left_on` (today still counts). Either
   way the member stops seeing it and cannot come back, unless they chose to keep watching (the

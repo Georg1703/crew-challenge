@@ -15,7 +15,7 @@ class ParticipantInline(admin.TabularInline):
     """Who takes part, on the challenge's own page (one row per member: no half-made rows)."""
 
     model = Participant
-    fields = ("member", "role", "left_on")
+    fields = ("member", "role", "joined_on", "left_on")
     extra = 0
 
 
@@ -121,7 +121,7 @@ class PunishmentAdmin(admin.ModelAdmin):
 
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ("challenge", "member", "left_on", "created_at")
+    list_display = ("challenge", "member", "joined_on", "left_on", "created_at")
     list_filter = ("crew",)
 
 

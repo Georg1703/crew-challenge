@@ -187,6 +187,45 @@ test("only the people the creator chose see a challenge, and the creator can cha
   await expect(bogdan).toHaveURL(/\/challenges$/);
 });
 
+test("once scheduled, an admin can still add people but take nobody out", async ({ browser }) => {
+  const title = unique("Fără Dan");
+  const bogdan = await logIn(browser, "bogdan");
+  await bogdan.goto("/challenges/new");
+  await bogdan.getByLabel("Numele provocării").fill(title);
+  await bogdan.getByRole("button", { name: "Continuă" }).click();
+  await bogdan.getByRole("checkbox", { name: /^Dan/ }).uncheck({ force: true });
+  for (let step = 0; step < 5; step += 1) {
+    await bogdan.getByRole("button", { name: "Continuă" }).click();
+  }
+  await bogdan.getByRole("button", { name: "Publică propunerea" }).click();
+  await expect(bogdan).toHaveURL(/\/challenges\/[0-9a-f-]{36}$/);
+  const url = bogdan.url();
+
+  const ana = await logIn(browser, "ana");
+  await schedule(ana, title);
+  await ana.goto(url);
+  await ana.getByRole("button", { name: "Adaugă oameni" }).click();
+  const sheet = ana.getByRole("dialog");
+  await expect(sheet.getByText(/participă de la început/)).toBeVisible();
+  await expect(sheet.getByRole("checkbox", { name: /^Bogdan/ })).toBeDisabled();
+  await sheet.getByRole("group", { name: "Echipa" }).getByText("Dan", { exact: true }).click();
+  await sheet.getByRole("button", { name: "Salvează" }).click();
+  await expect(ana.getByText("Participanții au fost salvați")).toBeVisible();
+
+  const dan = await logIn(browser, "dan");
+  await dan.goto(url);
+  await expect(dan.getByRole("heading", { name: title })).toBeVisible();
+  await expect(dan.getByRole("button", { name: "Nu particip" })).toBeVisible();
+
+  // Leave the demo pool as it was.
+  await ana.getByRole("button", { name: "Înapoi la propuneri" }).click();
+  await expect(ana.getByText("E din nou printre propuneri")).toBeVisible();
+  await bogdan.goto(url);
+  await bogdan.getByRole("button", { name: "Retrage propunerea" }).click();
+  await bogdan.getByRole("dialog").getByRole("button", { name: "Retrage propunerea" }).click();
+  await expect(bogdan).toHaveURL(/\/challenges$/);
+});
+
 test("a proposal can run for weeks, and an admin starts it on a Monday", async ({ browser }) => {
   const run = unique("Alergare");
   const ana = await logIn(browser, "ana");

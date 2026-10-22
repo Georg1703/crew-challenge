@@ -113,6 +113,10 @@ class ParticipantOut(serializers.Serializer):
     left_on = serializers.DateField(
         allow_null=True, help_text="Last day that counted, when they left during the challenge."
     )
+    joined_on = serializers.DateField(
+        allow_null=True,
+        help_text="First day that counts, when they were added during the challenge.",
+    )
 
 
 class ChallengeOut(serializers.Serializer):

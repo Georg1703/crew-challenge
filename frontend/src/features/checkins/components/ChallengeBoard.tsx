@@ -47,6 +47,7 @@ export function ChallengeBoard({
   meId,
   fixedDays,
   leftOn = {},
+  joinedOn = {},
 }: {
   challengeId: string;
   title?: string;
@@ -59,6 +60,8 @@ export function ChallengeBoard({
   fixedDays: boolean;
   /** When someone left early, by member id. */
   leftOn?: Record<string, string>;
+  /** When someone was added after the start, by member id. */
+  joinedOn?: Record<string, string>;
 }) {
   const { t, i18n } = useTranslation();
   const today = todayIn(timeZone);
@@ -135,6 +138,7 @@ export function ChallengeBoard({
             meId={meId}
             fixedDays={fixedDays}
             leftOn={leftOn}
+            joinedOn={joinedOn}
             onPick={(index) => openDay(board.data.days[index])}
           />
         )}
@@ -196,6 +200,7 @@ function Rows({
   meId,
   fixedDays,
   leftOn,
+  joinedOn,
   onPick,
 }: {
   board: Board;
@@ -203,6 +208,7 @@ function Rows({
   meId?: string;
   fixedDays: boolean;
   leftOn: Record<string, string>;
+  joinedOn: Record<string, string>;
   onPick: (index: number) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -231,9 +237,11 @@ function Rows({
         const mine = row.member.id === meId;
         const todayState = index >= 0 ? row.states[index] : undefined;
         const ended = leftOn[row.member.id];
+        const joined = joinedOn[row.member.id];
         const notes = [
           row.streak ? t("checkins.board.streak", { n: row.streak }) : null,
           todayState && LEFT_TODAY.includes(todayState) ? t("checkins.board.notYet") : null,
+          joined ? t("checkins.board.joined", { date: formatDay(joined, i18n.language) }) : null,
           ended ? t("checkins.board.left", { date: formatDay(ended, i18n.language) }) : null,
         ].filter(Boolean);
         return (

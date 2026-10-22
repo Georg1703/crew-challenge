@@ -97,6 +97,13 @@ class NotChosenYet(Conflict):
     message = "Only a chosen challenge has participants."
 
 
+class ParticipantsLocked(Conflict):
+    code = "participants_locked"
+    message = (
+        "Once a challenge is scheduled, people can only be added, and nobody who left comes back."
+    )
+
+
 # --- the shape of a challenge ------------------------------------------------------------------
 
 
@@ -431,13 +438,53 @@ def set_participants(
     participant_ids: list[UUID],
     viewer_ids: list[UUID] | None = None,
 ) -> Challenge:
-    """The creator changes who takes part and who watches while the challenge is a proposal."""
+    """The creator changes who takes part and who watches while the challenge is a proposal.
+    Once scheduled, until its last day, the creator or an admin can only add people."""
     challenge = _lock(by, challenge_id)
-    if challenge.created_by_id != by.pk:
+    proposed = challenge.state == Challenge.State.PROPOSED
+    if challenge.created_by_id != by.pk and (proposed or not by.is_admin):
         raise NotYourProposal()
-    _require_proposed(challenge)
-    _set_participants(challenge, by, _roles(by.crew, participant_ids, viewer_ids))
+    roles = _roles(by.crew, participant_ids, viewer_ids)
+    (_set_participants if proposed else _add_participants)(challenge, by, roles)
     return challenge
+
+
+def _add_participants(challenge: Challenge, by: Member, roles: Roles) -> None:
+    """The lists of a scheduled challenge only grow: new people, or a viewer who now takes part.
+    A player added after its first day takes part from today (`joined_on`); up to the first day,
+    from the start. Everyone already in stays as they are; people who left are not in the lists."""
+    assert challenge.start_date is not None
+    assert challenge.end_date is not None
+    today = clock.crew_today(by.crew)
+    if today > challenge.end_date:
+        raise ChallengeFinished()
+    current = {row.member_id: row for row in Participant.objects.filter(challenge=challenge)}
+    staying = {member_id: row for member_id, row in current.items() if row.left_on is None}
+    if roles.keys() & (current.keys() - staying.keys()) or any(
+        roles.get(member_id) not in (row.role, Participant.Role.PLAYER)
+        for member_id, row in staying.items()
+    ):
+        raise ParticipantsLocked()
+    joined_on = today if today > challenge.start_date else None
+    starting = [
+        row.pk
+        for member_id, row in staying.items()
+        if row.role == Participant.Role.VIEWER and roles[member_id] == Participant.Role.PLAYER
+    ]
+    Participant.objects.filter(pk__in=starting).update(
+        role=Participant.Role.PLAYER, joined_on=joined_on
+    )
+    Participant.objects.bulk_create(
+        Participant(
+            crew=by.crew,
+            challenge=challenge,
+            member_id=member_id,
+            role=role,
+            joined_on=joined_on if role == Participant.Role.PLAYER else None,
+        )
+        for member_id, role in roles.items()
+        if member_id not in current
+    )
 
 
 @transaction.atomic

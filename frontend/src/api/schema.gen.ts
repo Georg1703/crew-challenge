@@ -210,7 +210,11 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description The creator changes who takes part and who watches while the challenge is a proposal. */
+        /**
+         * @description The creator changes who takes part and who watches while the challenge is a proposal.
+         *     Once scheduled, until its last day, the creator or an admin can only add people (someone
+         *     added while it runs takes part from today); people who left are left out of the lists.
+         */
         put: operations["challenges_participants"];
         post?: never;
         delete?: never;
@@ -1374,6 +1378,11 @@ export interface components {
              * @description Last day that counted, when they left during the challenge.
              */
             left_on: string | null;
+            /**
+             * Format: date
+             * @description First day that counts, when they were added during the challenge.
+             */
+            joined_on: string | null;
         };
         ParticipantsInRequest: {
             /** @description Who takes part; the creator is always in. */
