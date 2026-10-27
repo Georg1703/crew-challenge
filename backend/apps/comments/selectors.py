@@ -7,7 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Q, QuerySet
 
 from apps.crews import targets
 from apps.crews.models import Member
@@ -88,35 +88,6 @@ def summaries(*, member: Member, target: str, ids: Iterable[UUID]) -> dict[UUID,
     return {
         pk: Summary(count=counts[pk], member_ids=writers[pk], unread=unread[pk]) for pk in wanted
     }
-
-
-def unread_count(*, member: Member) -> int:
-    """Others' comments the member has not seen, on targets they can see that they made or
-    commented on: the Crew tab's badge. One query."""
-    involved = Q(pk__in=[])
-    for target in targets.all_targets():
-        if not target.comments:
-            continue
-        kind = ContentType.objects.get_for_model(target.model)
-        theirs = Q(
-            pk__in=Comment.objects.filter(member=member, target_type=kind).values("target_id")
-        )
-        if target.owner:
-            theirs |= Q(**{target.owner: member.pk})
-        involved |= Q(
-            target_type=kind, target_id__in=target.visible(member).filter(theirs).values("pk")
-        )
-    read_at = CommentRead.objects.filter(
-        member=member, target_type=OuterRef("target_type"), target_id=OuterRef("target_id")
-    ).values("read_at")[:1]
-    return (
-        Comment.objects.for_crew(member.crew)
-        .filter(involved, created_at__gt=member.created_at)
-        .exclude(member=member)
-        .annotate(read_at=Subquery(read_at))
-        .filter(Q(read_at__isnull=True) | Q(created_at__gt=F("read_at")))
-        .count()
-    )
 
 
 def others_commented(*, member: Member, on: QuerySet[Any]) -> bool:

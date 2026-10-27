@@ -28,6 +28,8 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 
 OBJECT_STORAGE_BACKEND = "memory"
 TRANSCODER_BACKEND = "memory"
+PUSH_BACKEND = "memory"
+VAPID_PUBLIC_KEY = "test-public-key"
 MEDIA_BUCKET = "cc-test-media"
 MEDIA_CDN_DOMAIN = ""
 AWS_PROFILE = None

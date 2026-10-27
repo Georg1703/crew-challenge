@@ -10,6 +10,7 @@ import { cx } from "@/shared/lib/cx";
 import { weekday } from "@/shared/lib/dates";
 import { formatNumber } from "@/shared/lib/format";
 import { tap } from "@/shared/lib/haptics";
+import { noteCheckIn } from "@/features/notifications";
 import { burst } from "@/shared/motion";
 import {
   Button,
@@ -77,6 +78,7 @@ export function CheckInCard({
         onSuccess: (updated) => {
           tap();
           void burst(actions.current, { big: card.state !== "done" && updated.state === "done" });
+          noteCheckIn(); // from now on Today may ask for push permission
           setNote(""); // written with the check-in; kept when it fails
           toast(
             amount !== null

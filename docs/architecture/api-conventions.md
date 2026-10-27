@@ -154,9 +154,17 @@ POST   /api/v1/comments/{target}/{id}   {text, parent_id?}: a comment or a reply
 POST   /api/v1/comments/{target}/{id}/images   a photo or GIF for my next comment (up to 5):
                                         a draft file -> 201 the proof + how to upload it
 DELETE /api/v1/comments/{id}            yours, in its first minute, while nobody replied -> 204
-PUT    /api/v1/comments/{target}/{id}/read   you have seen its comments, up to now -> 204
-GET    /api/v1/comments/unread          {count}: others' unread comments on what you posted or
-                                        commented on (the Crew tab's badge)
+PUT    /api/v1/comments/{target}/{id}/read   you have seen its comments (and the news shown on
+                                        this card), up to now -> 204
+
+GET    /api/v1/notifications?before=    my news, latest first (30 a page, older than `before`):
+                                        {results: [{id, kind, actor, target: {type, id}, facts:
+                                        {on, emoji?, text?}, created_at, read_at}], unread}
+PUT    /api/v1/notifications/read       I have seen all my news -> 204
+GET    /api/v1/push/key                 {public_key}: the VAPID key to subscribe with ("" = off)
+PUT    /api/v1/push/subscriptions       {endpoint, keys: {p256dh, auth}}: this browser gets my
+                                        news by push (upsert) -> 204
+DELETE /api/v1/push/subscriptions?endpoint=   this browser stops -> 204
 
 GET    /api/v1/spins                    my spins not served yet, oldest first, with to_spin and
                                         to_serve (the Today card) and each challenge's punishments

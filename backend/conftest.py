@@ -13,6 +13,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from integrations.cdn import CloudFront, get_cdn
+from integrations.push import InMemoryPushSender, get_push_sender
 from integrations.storage import InMemoryObjectStorage, get_object_storage
 from integrations.transcoding import InMemoryTranscoder, get_transcoder
 from tests.factories import UserFactory
@@ -100,6 +101,16 @@ def transcoder() -> Iterator[InMemoryTranscoder]:
     assert isinstance(fake, InMemoryTranscoder)
     yield fake
     get_transcoder.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def push_sender() -> Iterator[InMemoryPushSender]:
+    """Fresh in-memory push sender for every test: it records what would reach a phone."""
+    get_push_sender.cache_clear()
+    fake = get_push_sender()
+    assert isinstance(fake, InMemoryPushSender)
+    yield fake
+    get_push_sender.cache_clear()
 
 
 @pytest.fixture(scope="session")

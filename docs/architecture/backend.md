@@ -28,11 +28,13 @@ backend/
 |   |-- doom/               # Spin: the Wheel of Doom (open, draw, serve); builds on check-ins and proofs
 |   |-- journal/            # The crew's journal: stored cards (written by the apps that post), and its API
 |   |-- reactions/          # Reaction on any registered target (generic key); knows no challenges or check-ins
-|   `-- comments/           # Comment (and replies) on any registered target that takes comments
+|   |-- comments/           # Comment (and replies) on any registered target that takes comments
+|   `-- notifications/      # Notification (news for a member) about any registered target; push subscriptions
 |-- integrations/
 |   |-- storage/            # ObjectStorage ABC (presigned PUT/GET, multipart, head, delete), S3, in-memory, factory
 |   |-- transcoding/        # Transcoder ABC, MediaConvert (job settings in code), in-memory, factory
-|   `-- cdn/                # CloudFront URLs and signed cookies (production); None locally
+|   |-- cdn/                # CloudFront URLs and signed cookies (production); None locally
+|   `-- push/               # PushSender ABC, pywebpush (VAPID), in-memory, factory, VAPID key maker
 |-- tests/
 |   `-- factories/          # factory-boy factories, one module per app
 `-- conftest.py             # fixtures for every test: api_client, user, auth_client, object_storage
@@ -94,7 +96,8 @@ flowchart TB
 - media knows files, not challenges or check-ins; proofs know files and members, not what they
   back (check-ins build on them); reactions and comments know their targets only through the
   registry (no challenges, check-ins, media or journal), and comments take reactions, never
-  the other way;
+  the other way; notifications know even less (only crews and the registry): reactions and
+  comments post news to them;
 - the Wheel of Doom (`doom`) builds on check-ins and proofs; nothing below imports it;
 - the journal's store (`JournalEntry`, `journal.services.post` / `drop`, `selectors.page`) sits
   on crews and challenges and knows no kind: check-ins and the wheel write their cards to it in
@@ -116,13 +119,16 @@ endpoint or client change:
    content_type_field="target_type", object_id_field="target_id")` (and the same to
    `comments.Comment` when it takes comments), which deletes them with it (a generic key has no
    database foreign key; a test fails if a registered model lacks it);
-2. its app registers `Target(key, model, visible, comments=..., owner=...)` in
+2. its app registers `Target(key, model, visible, comments=..., owner=..., page=...)` in
    `AppConfig.ready()`; `visible(member)` is the queryset of the targets that member may see and
-   act on now; `owner` names the field of the member who made it (comments on it are news to them);
+   act on now; `owner` names the field of the member who made it (reactions and comments on it
+   are news to them); `page` says which registered target's page shows it (a comment: its
+   card), for the news and the push URL;
 3. its API embeds `ReactionSummaryOut` and `CommentSummaryOut` (one query per page each), and the
    frontend shows `<Reactions target=... />` and its comments.
 
-Targets now: `entry` (a journal card: reactions and comments) and `comment` (reactions only).
+Targets now: `entry` (a journal card: reactions and comments) and `comment` (reactions only,
+shown on its target's page).
 
 **Reactions (`apps/reactions`).** One emoji per member on any target.
 `PUT` / `DELETE /api/v1/reactions/{target}/{id}`; `{target}` is an enum built from the registry.
@@ -134,6 +140,21 @@ as their post. Never edited; the writer
 deletes one (softly) in its first minute while nobody has replied. The thread is read whole,
 oldest first (`GET /api/v1/comments/{target}/{id}`). A `CommentRead` row per member and target
 keeps when they last saw it: the others' comments after it (and after they joined) are unread.
+
+**Notifications (`apps/notifications`).** News for a member: someone reacted to, commented on
+or answered something of theirs. Any app calls `notify(kind, actor, source, target,
+recipients, facts)`: `source` is the row that caused it (the reaction, the comment; both
+declare a `GenericRelation` so a reaction taken back takes its news with it; a soft-deleted
+comment calls `retract`), `target` the registered target it sits on (the news points at its
+`page`), `facts` what is frozen (the emoji, the comment's first 80 characters). One row per
+person per source; never the actor. `GET /api/v1/notifications` (latest first, with the unread
+count: the Crew tab's badge), `PUT /api/v1/notifications/read` (all of it); opening a card
+(`comments.mark_read`) reads the news shown there. A nightly job drops rows older than 90 days.
+Each new row goes out by Web Push on commit (`tasks.push` -> `services.send_push`): one line
+in the recipient's language (`texts.py`) to each of their `PushSubscription` devices, through
+`integrations/push`; a device the push service lost is dropped. `PUSH_BACKEND` is `webpush`
+wherever the VAPID keys are set (`make vapid-keys` makes a pair), `off` otherwise.
+Plan: `docs/plans/notifications.md`.
 
 **Proofs (`apps/proofs`).** A photo or video backing a subject (a check-in now, a spin with the
 Wheel of Doom). A `Proof` points at its subject by a generic key (`subject_type` + `subject_id`)

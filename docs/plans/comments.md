@@ -81,8 +81,8 @@ With a proposed default (confirm or change):
 |---|---|---|---|
 | On the card's page | `GET` the thread every 5 s while visible (TanStack `refetchInterval`; stops in the background) | up to 5 s | 1 request / 5 s per open page, 5 small indexed queries |
 | In the feed | The journal refresh (every 60 s, on focus, after a post) brings each card's count, last writers and unread | up to 60 s | 2 queries per journal page, whatever its size |
-| Anywhere in the app | The Crew tab badge: `GET /comments/unread` every 60 s and on focus; opening a card clears it | up to 60 s | 1 query a minute per open app |
-| App closed | Nothing now. Web Push is after v1; when it comes, each comment row is the outbox: an `on_commit` task notifies the card's owner and the replied-to writer | - | - |
+| Anywhere in the app | The Crew tab badge: `GET /notifications` every 60 s and on focus (since `docs/plans/notifications.md` replaced `GET /comments/unread`); opening a card clears its lines | up to 60 s | 1 query a minute per open app |
+| App closed | Web Push, since `docs/plans/notifications.md`: each comment posts news to the card's owner, the replied-to writer and the other writers, and each line goes out on commit | seconds | one push per device |
 
 Why not a live stream now: gunicorn runs 3 sync workers, each serving one request at a time;
 an open SSE connection would hold a worker, so three open cards would stall the site. A stream

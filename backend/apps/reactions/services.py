@@ -7,6 +7,7 @@ from django.db import transaction
 from apps.core.errors import ValidationFailed
 from apps.crews import targets
 from apps.crews.models import Member
+from apps.notifications import services as notifications
 
 from .models import Reaction
 
@@ -44,9 +45,20 @@ def react(*, member: Member, target: str, target_id: UUID, emoji: str) -> None:
         "member": member,
     }
     with transaction.atomic():
-        # A new emoji is a new row, so its group counts as first used now.
+        # A new emoji is a new row, so its group counts as first used now (and is fresh news).
         Reaction.objects.filter(**key).exclude(emoji=emoji).delete()
-        Reaction.objects.get_or_create(**key, defaults={"emoji": emoji, "crew_id": obj.crew_id})
+        reaction, created = Reaction.objects.get_or_create(
+            **key, defaults={"emoji": emoji, "crew_id": obj.crew_id}
+        )
+        if created:
+            notifications.notify(
+                kind=notifications.Notification.Kind.REACTION,
+                actor=member,
+                source=reaction,
+                target=obj,
+                recipients=[targets.owner_id_of(obj)],
+                facts={"emoji": emoji},
+            )
 
 
 def unreact(*, member: Member, target: str, target_id: UUID) -> None:

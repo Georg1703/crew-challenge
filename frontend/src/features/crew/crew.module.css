@@ -31,6 +31,11 @@
   gap: var(--space-3);
 }
 
+.headerActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
 /* The avatar row scrolls sideways; you stay first. */
 .stories {
   display: flex;

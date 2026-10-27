@@ -796,9 +796,6 @@
     "unread_one": "{{count}} nou",
     "unread_few": "{{count}} noi",
     "unread_other": "{{count}} de noi",
-    "badge_one": "{{count}} comentariu nou",
-    "badge_few": "{{count}} comentarii noi",
-    "badge_other": "{{count}} de comentarii noi",
     "emoji": "Emoji",
     "addPhoto": "Adaugă o poză sau un GIF",
     "photo": "Poză",
@@ -882,5 +879,30 @@
     "readyToServe": "S-a încărcat: atinge Trimite",
     "waitingUploads": "Se așteaptă să se termine încărcarea",
     "addProof": "Adaugă o poză sau un video ca dovadă"
+  },
+  "news": {
+    "title": "Noutăți",
+    "open": "Noutăți",
+    "new": "Nou",
+    "badge_one": "{{count}} noutate",
+    "badge_few": "{{count}} noutăți",
+    "badge_other": "{{count}} de noutăți",
+    "empty": "Nimic nou încă. Reacțiile și comentariile la postările tale ajung aici.",
+    "reactionEntry": "a reacționat cu {{emoji}} la postarea ta",
+    "reactionComment": "a reacționat cu {{emoji}} la comentariul tău",
+    "comment": "a comentat",
+    "reply": "ți-a răspuns"
+  },
+  "push": {
+    "title": "Notificări",
+    "toggle": "Notificări pe acest dispozitiv",
+    "toggleHint": "Când cineva reacționează sau comentează la postările tale",
+    "denied": "Blocate din setările browserului pentru acest site",
+    "failed": "Nu am putut porni notificările. Încearcă din nou.",
+    "install": "Instalează aplicația pe ecranul principal ca să primești notificări.",
+    "promptTitle": "Vrei să afli când reacționează echipa?",
+    "promptBody": "Primești o notificare când cineva reacționează sau comentează la postările tale.",
+    "turnOn": "Pornește",
+    "notNow": "Nu acum"
   }
 }

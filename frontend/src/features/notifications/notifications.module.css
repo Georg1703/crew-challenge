@@ -1,0 +1,31 @@
+/* Layout only. Looks come from shared/ui components and tokens. */
+.muted {
+  color: var(--color-text-muted);
+}
+
+.cardTitle {
+  font-size: var(--text-title-m);
+  line-height: var(--leading-title-m);
+}
+
+.prompt {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.promptIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-full);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.promptActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}

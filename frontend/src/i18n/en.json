@@ -796,9 +796,6 @@
     "unread_one": "{{count}} new",
     "unread_few": "{{count}} new",
     "unread_other": "{{count}} new",
-    "badge_one": "{{count}} new comment",
-    "badge_few": "{{count}} new comments",
-    "badge_other": "{{count}} new comments",
     "emoji": "Emoji",
     "addPhoto": "Add a photo or GIF",
     "photo": "Photo",
@@ -882,5 +879,30 @@
     "readyToServe": "Uploaded: tap Serve",
     "waitingUploads": "Waiting for the uploads to finish",
     "addProof": "Add a photo or video to serve it"
+  },
+  "news": {
+    "title": "News",
+    "open": "News",
+    "new": "New",
+    "badge_one": "{{count}} new",
+    "badge_few": "{{count}} new",
+    "badge_other": "{{count}} new",
+    "empty": "Nothing new yet. Reactions and comments on your posts land here.",
+    "reactionEntry": "reacted with {{emoji}} to your post",
+    "reactionComment": "reacted with {{emoji}} to your comment",
+    "comment": "commented",
+    "reply": "answered you"
+  },
+  "push": {
+    "title": "Notifications",
+    "toggle": "Notifications on this device",
+    "toggleHint": "When someone reacts to or comments on your posts",
+    "denied": "Blocked in the browser's settings for this site",
+    "failed": "Could not turn notifications on. Try again.",
+    "install": "Install the app on your Home Screen to get notifications.",
+    "promptTitle": "Want to know when the crew reacts?",
+    "promptBody": "Get a notification when someone reacts to or comments on your posts.",
+    "turnOn": "Turn on",
+    "notNow": "Not now"
   }
 }

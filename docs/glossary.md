@@ -51,7 +51,9 @@ and docs. If you need a new domain word, add it here in the same pull request.
 | Reaction target | `target` | A kind of thing that takes reactions (and maybe comments), registered by its app in `apps/crews/targets.py` (`entry`: a journal card; `comment`). |
 | Comment | `Comment` | A member's words on a card (any target that takes comments), up to 500 characters. Never edited; its writer can delete it in its first minute while nobody has replied. |
 | Reply | `Comment.parent` | A comment that answers another one on the same card (any one); it shows a quote of it. |
-| Unread | `CommentRead` | Someone else's comment newer than when you last opened its card (and than when you joined). A dot on the card; the Crew tab counts the ones on cards you posted or commented on. |
+| Unread | `CommentRead` | Someone else's comment newer than when you last opened its card (and than when you joined). A dot on the card. |
+| News | `Notification`, `features/notifications` | A line for a member: someone reacted to (`reaction`), commented on (`comment`) or answered (`reply`) something of theirs. Latest first behind the bell on the Crew screen; the Crew tab counts the unread ones; opening the list or the card reads them. UI: "News". |
+| Push subscription | `PushSubscription` | One browser (a device) of a user that asked for push notifications; the server sends each new line of news to all of them. Switched on the Me screen. |
 | Punishment | `Punishment` | One of a challenge's punishments: a short text and whether it needs proof. None, or 2 to 8, written by the creator; fixed once scheduled. |
 | Spin | `Spin` | One turn of the wheel owed for one missing check-in (or one missed total) in a failed window. Status (derived): `pending` (not spun), `spun` (drawn, not served), `served`. |
 | Draw | `doom.services.draw` | Choosing a spin's punishment on the server, before the dial turns. Every punishment as likely. |

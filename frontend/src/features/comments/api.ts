@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 import { api, call, type components, type paths } from "@/api";
+import { newsKey } from "@/features/notifications";
 import type { ProofSubject } from "@/features/proofs";
 import type { ReactionSummary } from "@/features/reactions";
 
@@ -19,11 +20,7 @@ export const DELETE_MS = 60_000;
 /** How often an open thread asks for new comments (only while the page is visible). */
 const REFRESH_MS = 5_000;
 
-/** How often the Crew tab's badge asks for unread comments (and when the app comes back). */
-const UNREAD_MS = 60_000;
-
 const commentsKey = ["comments"] as const;
-const unreadKey = [...commentsKey, "unread"] as const;
 const threadKey = (target: CommentTarget, id: string) => [...commentsKey, target, id] as const;
 
 /** A target's comments, oldest first, and my drafts; refreshed every 5 s while visible. */
@@ -115,7 +112,7 @@ export function usePatchCommentReactions(target: CommentTarget, id: string) {
   );
 }
 
-/** Mark a target's comments read, up to now; the badge asks again. */
+/** Mark a target's comments read, up to now; its news is read with them: the badge asks again. */
 export function useMarkRead(target: CommentTarget, id: string) {
   const client = useQueryClient();
   return useMutation({
@@ -125,16 +122,6 @@ export function useMarkRead(target: CommentTarget, id: string) {
           params: { path: { target, target_id: id } },
         }),
       ),
-    onSuccess: () => client.invalidateQueries({ queryKey: unreadKey }),
-  });
-}
-
-/** Others' comments I have not seen, on what I posted or commented on: the Crew tab's badge. */
-export function useUnreadCount(enabled: boolean) {
-  return useQuery({
-    queryKey: unreadKey,
-    queryFn: () => call(api.GET("/api/v1/comments/unread")).then((unread) => unread.count),
-    refetchInterval: UNREAD_MS,
-    enabled,
+    onSuccess: () => client.invalidateQueries({ queryKey: newsKey }),
   });
 }

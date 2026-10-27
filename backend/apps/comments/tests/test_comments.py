@@ -152,20 +152,20 @@ def test_unread_is_the_others_comments_since_i_last_looked(people):
     with at("2026-11-09 08:00Z"):
         say(bogdan, ana)  # on Ana's own page: news to her
         say(ana, ana)  # her own words are never unread for her
-    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (1, 1)
-    assert (unread(bogdan, ana), selectors.unread_count(member=bogdan)) == (1, 1)  # he wrote there
+    assert unread(ana, ana) == 1
+    assert unread(bogdan, ana) == 1  # he wrote there
 
     with at("2026-11-09 08:05Z"):
         services.mark_read(member=ana, target="person", target_id=ana.pk)
-    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (0, 0)
+    assert unread(ana, ana) == 0
     with at("2026-11-09 08:10Z"):
         later = say(bogdan, ana)
         services.mark_read(member=ana, target="person", target_id=ana.pk)  # again: one row
         services.delete(member=bogdan, comment_id=later.pk)
-    assert selectors.unread_count(member=ana) == 0
+    assert unread(ana, ana) == 0
     with at("2026-11-09 08:20Z"):
         say(bogdan, ana)
-    assert (unread(ana, ana), selectors.unread_count(member=ana)) == (1, 1)
+    assert unread(ana, ana) == 1
 
     with at("2026-11-09 09:00Z"):  # joins after all that: none of it is news to her
         cristina = MemberFactory.create(crew=ana.crew)

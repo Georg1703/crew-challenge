@@ -15,6 +15,7 @@ dependencies = [
     "gunicorn>=23,<24",
     "boto3>=1.35,<2",
     "cryptography>=44,<48",
+    "pywebpush>=2.0,<3",
 ]
 
 [dependency-groups]
@@ -96,7 +97,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "celery.*", "django_celery_beat.*", "kombu.*"]
+module = ["environ.*", "celery.*", "django_celery_beat.*", "kombu.*", "pywebpush", "pywebpush.*", "py_vapid", "py_vapid.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]
@@ -133,6 +134,8 @@ omit = [
     "*/apps.py",
     # Thin boto3 wrapper, checked against the real dev bucket by the upload smoke test.
     "integrations/storage/s3.py",
+    # Thin pywebpush wrapper, checked by hand on a phone.
+    "integrations/push/webpush.py",
 ]
 
 [tool.coverage.report]
@@ -180,6 +183,7 @@ forbidden_modules = [
     "apps.comments",
     "apps.doom",
     "apps.journal",
+    "apps.notifications",
 ]
 ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
 
@@ -187,13 +191,13 @@ ignore_imports = ["apps.core.tests.** -> apps.accounts.**"]
 name = "Accounts does not depend on crews (crews builds on accounts)"
 type = "forbidden"
 source_modules = ["apps.accounts"]
-forbidden_modules = ["apps.crews", "apps.reactions", "apps.comments"]
+forbidden_modules = ["apps.crews", "apps.reactions", "apps.comments", "apps.notifications"]
 
 [[tool.importlinter.contracts]]
 name = "Crews and accounts do not depend on challenges (challenges builds on crews)"
 type = "forbidden"
 source_modules = ["apps.crews", "apps.accounts"]
-forbidden_modules = ["apps.challenges", "apps.reactions", "apps.comments"]
+forbidden_modules = ["apps.challenges", "apps.reactions", "apps.comments", "apps.notifications"]
 
 [[tool.importlinter.contracts]]
 name = "Check-ins build on challenges: nothing below depends on them"
@@ -230,6 +234,26 @@ name = "Comments know their targets only through the registry; their photos are 
 type = "forbidden"
 source_modules = ["apps.comments"]
 forbidden_modules = ["apps.challenges", "apps.checkins", "apps.journal"]
+
+[[tool.importlinter.contracts]]
+name = "Notifications know their sources and targets only through the registry"
+type = "forbidden"
+source_modules = ["apps.notifications"]
+forbidden_modules = [
+    "apps.challenges",
+    "apps.checkins",
+    "apps.media",
+    "apps.proofs",
+    "apps.reactions",
+    "apps.comments",
+    "apps.doom",
+    "apps.journal",
+]
+# The tests make news the way members do: through reactions and comments.
+ignore_imports = [
+    "apps.notifications.tests.** -> apps.reactions.**",
+    "apps.notifications.tests.** -> apps.comments.**",
+]
 
 [[tool.importlinter.contracts]]
 name = "Reactions sit under comments: a comment takes reactions, never the other way"

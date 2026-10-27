@@ -9,6 +9,7 @@ from apps.core import clock
 from apps.core.errors import Conflict, NotFound, PermissionDenied, ValidationFailed
 from apps.crews import targets
 from apps.crews.models import Member
+from apps.notifications import services as notifications
 from apps.proofs import services as proofs
 from apps.proofs.models import Proof
 
@@ -91,7 +92,34 @@ def add(
             **on,
         )
         proofs.publish(subject=found, post_id=comment.pk, member=member)
+        _tell(comment, found, parent)
         return comment
+
+
+def _tell(comment: Comment, found: Any, parent: Comment | None) -> None:
+    """News: the target's owner and everyone else who commented on it hear of a comment; the
+    writer of the comment answered hears of a reply instead (one line each)."""
+    facts = {"text": comment.text}
+    answered = parent.member_id if parent is not None else None
+    notifications.notify(
+        kind=notifications.Notification.Kind.REPLY,
+        actor=comment.member,
+        source=comment,
+        target=found,
+        recipients=[answered],
+        facts=facts,
+    )
+    writers = Comment.objects.filter(
+        target_type=comment.target_type, target_id=comment.target_id
+    ).values_list("member_id", flat=True)
+    notifications.notify(
+        kind=notifications.Notification.Kind.COMMENT,
+        actor=comment.member,
+        source=comment,
+        target=found,
+        recipients=[m for m in {targets.owner_id_of(found), *writers} if m != answered],
+        facts=facts,
+    )
 
 
 def delete(*, member: Member, comment_id: UUID) -> None:
@@ -107,6 +135,7 @@ def delete(*, member: Member, comment_id: UUID) -> None:
         if Comment.objects.filter(parent=comment).exists():
             raise CommentHasReplies()
         comment.delete()
+        notifications.retract(source=comment)
 
 
 def mark_read(*, member: Member, target: str, target_id: UUID) -> None:
@@ -118,3 +147,4 @@ def mark_read(*, member: Member, target: str, target_id: UUID) -> None:
         target_id=found.pk,
         defaults={"read_at": clock.now(), "crew_id": found.crew_id},
     )
+    notifications.mark_read(member=member, target=found)

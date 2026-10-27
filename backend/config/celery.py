@@ -16,4 +16,8 @@ app.conf.beat_schedule = {
     "expire-proofs": {"task": "apps.proofs.tasks.expire_proofs", "schedule": 15 * 60},
     "finish-videos": {"task": "apps.proofs.tasks.finish_videos", "schedule": 20},
     "open-spins": {"task": "apps.doom.tasks.open_spins", "schedule": 15 * 60},
+    "prune-notifications": {
+        "task": "apps.notifications.tasks.prune_notifications",
+        "schedule": 24 * 60 * 60,
+    },
 }

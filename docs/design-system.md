@@ -201,7 +201,7 @@ for safe areas and `100dvh`.
 
 ## Not in this version
 
-Growing trees and other illustrations, custom reaction sets, push notifications. (The Wheel of
+Growing trees and other illustrations, custom reaction sets. (The Wheel of
 Doom is in from `docs/plans/wheel.md`; see `Dial`. Confetti on check-ins is in; see principle 1.)
 
 ## Guardrails (run by `make check`)

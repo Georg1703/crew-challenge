@@ -26,7 +26,11 @@ export default defineConfig({
       // A new version waits until the user taps "Update" (never reloads under their feet).
       registerType: "prompt",
       injectRegister: false, // registered from src/pwa/usePwaUpdate.ts
-      includeManifestIcons: false, // the workbox glob below already precaches public/icons
+      includeManifestIcons: false, // the glob below already precaches public/icons
+      // Our own service worker (src/pwa/sw.ts): the precache plus push notifications.
+      strategies: "injectManifest",
+      srcDir: "src/pwa",
+      filename: "sw.ts",
       manifest: {
         id: "/",
         name: "Crew Challenges",
@@ -50,17 +54,12 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        // Precache the app shell; every navigation falls back to it (offline start works).
+      injectManifest: {
+        // Precache the app shell; sw.ts makes every navigation fall back to it.
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
         // Nunito Sans ships one file per script; precache only Latin (covers Romanian).
         // The emoji picker loads on first use only (src/shared/ui/emojiMart.ts): not precached.
         globIgnores: ["**/*-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2", "**/emojiMart-*.js"],
-        navigateFallback: "/index.html",
-        // Never answer API, admin, Django static or media requests from the service worker.
-        navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/static\//],
-        runtimeCaching: [],
-        cleanupOutdatedCaches: true,
       },
       devOptions: { enabled: false },
     }),

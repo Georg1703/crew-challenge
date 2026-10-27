@@ -15,6 +15,7 @@ Both run the same backend Docker image; only configuration differs.
 | Redis | container | container |
 | Media storage | real S3 bucket `cc-dev-media`; tests use an in-memory fake | S3 bucket `cc-prod-media` + CloudFront |
 | Transcoding | off by default: videos play as uploaded; `TRANSCODER_BACKEND=mediaconvert` to try it on the dev bucket | MediaConvert, polled by Celery every 20 s |
+| Web Push | off unless `VAPID_*` are set in `.env` (`make vapid-keys` prints a pair); the service worker needs `make preview` | pywebpush with the server's VAPID keys in `/opt/cc/.env` |
 | Media viewing | presigned URLs from the dev bucket (no HLS) | CloudFront on `media.<app host>`, signed cookies per crew, HLS |
 | AWS credentials | your AWS CLI profile `cc-dev` (dev bucket only) | least-privilege IAM user key in `/opt/cc/.env` |
 | Secrets | `.env` from `.env.example` | `/opt/cc/.env`, written by hand, owned by `deploy`, `chmod 600` |

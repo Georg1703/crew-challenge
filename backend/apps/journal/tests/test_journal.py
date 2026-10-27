@@ -221,9 +221,13 @@ def test_cards_carry_their_comments_and_open_on_their_own(browser, week):
     assert shown["comments"] == {"count": 1, "member_ids": [str(bogdan.pk)], "unread": 1}
     assert one == shown
     assert [c["text"] for c in browser.get(url).json()["results"]] == ["Bravo!"]
-    assert browser.get("/api/v1/comments/unread").json() == {"count": 1}  # on her card
-    assert browser.put(f"{url}/read").status_code == 204
-    assert browser.get("/api/v1/comments/unread").json() == {"count": 0}
+    news = browser.get("/api/v1/notifications").json()  # on her card: news to her
+    assert (news["unread"], news["results"][0]["target"]) == (
+        1,
+        {"type": "entry", "id": str(swim.pk)},
+    )
+    assert browser.put(f"{url}/read").status_code == 204  # opening the card reads it
+    assert browser.get("/api/v1/notifications").json()["unread"] == 0
     with at("2026-11-09 09:00Z"):
         again = journal(browser, ana)
     shown = next(r for r in again["results"] if r["id"] == str(swim.pk))

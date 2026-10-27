@@ -1,0 +1,26 @@
+{
+  "ro": {
+    "reaction": {
+      "comment": "{actor} a reacționat cu {emoji} la comentariul tău",
+      "*": "{actor} a reacționat cu {emoji} la postarea ta"
+    },
+    "comment": {
+      "*": "{actor} a comentat: {text}"
+    },
+    "reply": {
+      "*": "{actor} ți-a răspuns: {text}"
+    }
+  },
+  "en": {
+    "reaction": {
+      "comment": "{actor} reacted with {emoji} to your comment",
+      "*": "{actor} reacted with {emoji} to your post"
+    },
+    "comment": {
+      "*": "{actor} commented: {text}"
+    },
+    "reply": {
+      "*": "{actor} answered you: {text}"
+    }
+  }
+}

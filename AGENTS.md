@@ -13,9 +13,10 @@ per person), comments on its cards (with replies, photos and GIFs, `docs/plans/c
 Wheel of Doom (punishments for failed windows, `docs/plans/wheel.md`).
 v1 has shipped. The work now is ongoing improvements that make the app more pleasant and
 motivating to use. Items below marked **after v1** were kept out of v1 and are open now: growing
-trees and the garden, streak flames as artwork, Rive animations, custom reaction sets and
-reaction notifications, and Web Push. Confetti on check-ins is in (`shared/motion/confetti.ts`).
-Each one still gets a plan in `docs/plans/` before it is built.
+trees and the garden, streak flames as artwork, Rive animations and custom reaction sets.
+Confetti on check-ins is in (`shared/motion/confetti.ts`); so are notifications (news in the app
+and Web Push, `docs/plans/notifications.md`). Each one still gets a plan in `docs/plans/` before
+it is built.
 
 - How the system is built, and why: `docs/architecture/`
 - Words we use: `docs/glossary.md`
@@ -184,8 +185,9 @@ Always use `make`. Run `make help` to see every target. Never invent commands.
 ## PWA constraints (iOS + Android)
 - Android: capture `beforeinstallprompt`, show our own install button.
 - iOS: no install prompt. Provide an animated "Share -> Add to Home Screen" guide.
-- After v1: iOS push works only when installed to the Home Screen (16.4+) and after a user gesture.
-  Ask for push permission after the first check-in, never on first load.
+- iOS push works only when installed to the Home Screen (16.4+) and after a user gesture.
+  Push permission is asked after the first check-in (`features/notifications`), never on first
+  load; the Me screen has the switch.
 - No background upload, background sync or background fetch on iOS. Uploads pause when the app is
   backgrounded or the screen locks. All timed logic runs on the server and reaches users by Web Push.
 - Browser storage may be evicted on iOS: it is a cache; the server is the source of truth.

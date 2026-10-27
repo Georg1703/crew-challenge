@@ -32,6 +32,10 @@ class Comment(CrewScopedSoftDeleteModel):
     reactions = GenericRelation(
         "reactions.Reaction", content_type_field="target_type", object_id_field="target_id"
     )
+    # The news it made (a hard delete takes it along; a soft one calls `notifications.retract`).
+    notifications = GenericRelation(
+        "notifications.Notification", content_type_field="source_type", object_id_field="source_id"
+    )
 
     class Meta(CrewScopedSoftDeleteModel.Meta):
         ordering = ("created_at",)

@@ -11,6 +11,7 @@ import { Banner, Button, Icon, Screen, Skeleton } from "@/shared/ui";
 
 import { useCrew } from "../api";
 import { CrewStories } from "../components/CrewStories";
+import styles from "../crew.module.css";
 import { freshCounts, markSeen, useSeenVersion } from "../seen";
 
 /**
@@ -37,12 +38,20 @@ export function CrewRoute() {
     <Screen
       title={crew.data?.name ?? t("crew.title")}
       action={
-        <Button
-          variant="ghost"
-          aria-label={t("crew.members.open")}
-          icon={<Icon name="users" size={22} />}
-          onClick={() => navigate("/crew/members")}
-        />
+        <div className={styles.headerActions}>
+          <Button
+            variant="ghost"
+            aria-label={t("news.open")}
+            icon={<Icon name="bell" size={22} />}
+            onClick={() => navigate("/crew/news")}
+          />
+          <Button
+            variant="ghost"
+            aria-label={t("crew.members.open")}
+            icon={<Icon name="users" size={22} />}
+            onClick={() => navigate("/crew/members")}
+          />
+        </div>
       }
     >
       {crew.isPending && <Skeleton lines={4} />}

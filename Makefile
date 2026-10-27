@@ -110,6 +110,11 @@ superuser: ## Create a Django admin user (asks for username, email, password); a
 	$(call require,compose.yaml,Local environment)
 	$(COMPOSE) run --rm backend python manage.py createsuperuser
 
+.PHONY: vapid-keys
+vapid-keys: ## Print a fresh VAPID key pair for Web Push (paste into .env)
+	$(call require,$(BACKEND_DIR)/pyproject.toml,Backend)
+	$(UV) python manage.py vapid_keys --settings=config.settings.test
+
 .PHONY: seed
 seed: ## Load the demo crew, a challenge running this month, weeks of history and spins to try (local only)
 	$(call require,compose.yaml,Local environment)

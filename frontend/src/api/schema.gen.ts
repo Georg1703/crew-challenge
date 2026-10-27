@@ -375,23 +375,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/comments/unread": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description How many of the others' comments you have not seen, for the Crew tab's badge. */
-        get: operations["comments_unread"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/crew": {
         parameters: {
             query?: never;
@@ -605,6 +588,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Your news in this crew, latest first (30 a page), and how many are unread. */
+        get: operations["notifications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description You have seen your news, all of it (the badge clears). */
+        put: operations["notifications_read"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proofs/{proof_id}": {
         parameters: {
             query?: never;
@@ -685,6 +702,41 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The key a browser subscribes to push with; empty when push is off on this server. */
+        get: operations["push_key"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description This browser gets your news by push (send it again whenever the browser renews it). */
+        put: operations["push_subscribe"];
+        post?: never;
+        /** @description This browser stops getting push (its endpoint in the query: a DELETE has no body). */
+        delete: operations["push_unsubscribe"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1343,6 +1395,38 @@ export interface components {
          * @enum {string}
          */
         NeedKindEnum: "count" | "amount";
+        NewsOut: {
+            /** @description Latest first. */
+            results: components["schemas"]["NotificationOut"][];
+            /** @description All of your unread news, for the badge. */
+            unread: number;
+        };
+        NotificationFactsOut: {
+            /** @description The key of what was acted on: entry, comment. */
+            on: string;
+            emoji?: string;
+            /** @description The comment's first words. */
+            text?: string;
+        };
+        NotificationOut: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["NotificationOutKindEnum"];
+            actor: components["schemas"]["MemberOut"];
+            target: components["schemas"]["TargetRefOut"];
+            facts: components["schemas"]["NotificationFactsOut"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            read_at: string | null;
+        };
+        /**
+         * @description * `reaction` - Reacted to something of yours
+         *     * `comment` - Commented on a card of yours, or one you commented on
+         *     * `reply` - Answered your comment
+         * @enum {string}
+         */
+        NotificationOutKindEnum: "reaction" | "comment" | "reply";
         /** @enum {unknown} */
         NullEnum: null;
         OwedOut: {
@@ -1526,6 +1610,19 @@ export interface components {
             /** @description Served with a photo or a video; false: by tapping Done. */
             proof_required: boolean;
         };
+        PushKeyOut: {
+            /** @description The VAPID public key to subscribe with; empty: push is off. */
+            public_key: string;
+        };
+        PushKeysInRequest: {
+            p256dh: string;
+            auth: string;
+        };
+        PushSubscribeInRequest: {
+            /** Format: uri */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysInRequest"];
+        };
         ReactionGroupOut: {
             emoji: string;
             /** @description Who used it, in the order they did. */
@@ -1628,6 +1725,12 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "valid" | "expired" | "used";
+        TargetRefOut: {
+            /** @description A registered target's key: the page that shows it. */
+            type: string;
+            /** Format: uuid */
+            id: string;
+        };
         ThreadOut: {
             /** @description Oldest first: a reply's parent comes before it. */
             results: components["schemas"]["CommentOut"][];
@@ -1693,10 +1796,6 @@ export interface components {
             challenges: components["schemas"]["TodayChallengeOut"][];
             /** @description Everyone with something today, in join order. */
             crew: components["schemas"]["CrewDayOut"][];
-        };
-        UnreadOut: {
-            /** @description Others' unread comments on what you posted or commented on. */
-            count: number;
         };
         /**
          * @description * `single` - One presigned PUT
@@ -2356,25 +2455,6 @@ export interface operations {
             };
         };
     };
-    comments_unread: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UnreadOut"];
-                };
-            };
-        };
-    };
     crew_retrieve: {
         parameters: {
             query?: never;
@@ -2674,6 +2754,46 @@ export interface operations {
             };
         };
     };
+    notifications_list: {
+        parameters: {
+            query?: {
+                /** @description Rows older than this instant (the last row's created_at). */
+                before?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsOut"];
+                };
+            };
+        };
+    };
+    notifications_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     proofs_delete: {
         parameters: {
             query?: never;
@@ -2781,6 +2901,67 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PoolOut"];
                 };
+            };
+        };
+    };
+    push_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushKeyOut"];
+                };
+            };
+        };
+    };
+    push_subscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscribeInRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    push_unsubscribe: {
+        parameters: {
+            query: {
+                endpoint: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

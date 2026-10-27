@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 
 import { isApiError } from "@/api";
 import { useLogout, useMe } from "@/features/auth";
+import { PushToggle } from "@/features/notifications";
 import { setLanguage, type Language } from "@/i18n";
 import { InstallCard } from "@/pwa";
 import { errorMessage } from "@/i18n/errors";
@@ -183,6 +184,7 @@ function MeScreen() {
           />
         </Stack>
       </Card>
+      <PushToggle />
       <InstallCard />
       <Button
         variant="danger"

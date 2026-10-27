@@ -661,22 +661,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/comments/unread:
-    get:
-      operationId: comments_unread
-      description: How many of the others' comments you have not seen, for the Crew
-        tab's badge.
-      tags:
-      - comments
-      security:
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnreadOut'
-          description: ''
   /api/v1/crew:
     get:
       operationId: crew_retrieve
@@ -971,6 +955,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/MemberProgressOut'
           description: ''
+  /api/v1/notifications:
+    get:
+      operationId: notifications_list
+      description: Your news in this crew, latest first (30 a page), and how many
+        are unread.
+      parameters:
+      - in: query
+        name: before
+        schema:
+          type: string
+          format: date-time
+        description: Rows older than this instant (the last row's created_at).
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsOut'
+          description: ''
+  /api/v1/notifications/read:
+    put:
+      operationId: notifications_read
+      description: You have seen your news, all of it (the badge clears).
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/proofs/{proof_id}:
     delete:
       operationId: proofs_delete
@@ -1084,6 +1102,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/PoolOut'
           description: ''
+  /api/v1/push/key:
+    get:
+      operationId: push_key
+      description: The key a browser subscribes to push with; empty when push is off
+        on this server.
+      tags:
+      - push
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushKeyOut'
+          description: ''
+  /api/v1/push/subscriptions:
+    put:
+      operationId: push_subscribe
+      description: This browser gets your news by push (send it again whenever the
+        browser renews it).
+      tags:
+      - push
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscribeInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+    delete:
+      operationId: push_unsubscribe
+      description: 'This browser stops getting push (its endpoint in the query: a
+        DELETE has no body).'
+      parameters:
+      - in: query
+        name: endpoint
+        schema:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2000
+        required: true
+      tags:
+      - push
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/reactions/{target}/{target_id}:
     put:
       operationId: reactions_set
@@ -2382,6 +2454,72 @@ components:
       description: |-
         * `count` - A number of check-ins
         * `amount` - A total amount
+    NewsOut:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationOut'
+          description: Latest first.
+        unread:
+          type: integer
+          description: All of your unread news, for the badge.
+      required:
+      - results
+      - unread
+    NotificationFactsOut:
+      type: object
+      properties:
+        'on':
+          type: string
+          description: 'The key of what was acted on: entry, comment.'
+        emoji:
+          type: string
+        text:
+          type: string
+          description: The comment's first words.
+      required:
+      - 'on'
+    NotificationOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/NotificationOutKindEnum'
+        actor:
+          $ref: '#/components/schemas/MemberOut'
+        target:
+          $ref: '#/components/schemas/TargetRefOut'
+        facts:
+          $ref: '#/components/schemas/NotificationFactsOut'
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - actor
+      - created_at
+      - facts
+      - id
+      - kind
+      - read_at
+      - target
+    NotificationOutKindEnum:
+      enum:
+      - reaction
+      - comment
+      - reply
+      type: string
+      description: |-
+        * `reaction` - Reacted to something of yours
+        * `comment` - Commented on a card of yours, or one you commented on
+        * `reply` - Answered your comment
     NullEnum:
       enum:
       - null
@@ -2769,6 +2907,41 @@ components:
       - position
       - proof_required
       - text
+    PushKeyOut:
+      type: object
+      properties:
+        public_key:
+          type: string
+          description: 'The VAPID public key to subscribe with; empty: push is off.'
+      required:
+      - public_key
+    PushKeysInRequest:
+      type: object
+      properties:
+        p256dh:
+          type: string
+          minLength: 1
+          maxLength: 128
+        auth:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+      - auth
+      - p256dh
+    PushSubscribeInRequest:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 2000
+        keys:
+          $ref: '#/components/schemas/PushKeysInRequest'
+      required:
+      - endpoint
+      - keys
     ReactionGroupOut:
       type: object
       properties:
@@ -2960,6 +3133,18 @@ components:
         * `valid` - valid
         * `expired` - expired
         * `used` - used
+    TargetRefOut:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'A registered target''s key: the page that shows it.'
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - type
     ThreadOut:
       type: object
       properties:
@@ -3101,14 +3286,6 @@ components:
       - crew
       - day
       - deadline
-    UnreadOut:
-      type: object
-      properties:
-        count:
-          type: integer
-          description: Others' unread comments on what you posted or commented on.
-      required:
-      - count
     UploadModeEnum:
       enum:
       - single

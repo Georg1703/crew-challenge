@@ -18,7 +18,7 @@ from apps.proofs.api.serializers import ProofStartIn, ProofUploadOut, proof_data
 from apps.proofs.models import Proof
 from apps.reactions import selectors as reactions
 
-from .serializers import CommentIn, CommentOut, ThreadOut, UnreadOut
+from .serializers import CommentIn, CommentOut, ThreadOut
 
 TARGET = OpenApiParameter(
     "target",
@@ -112,15 +112,6 @@ class ReadView(APIView):
         """You have seen this target's comments, up to now (its card's dot and the badge clear)."""
         services.mark_read(member=_member(request), target=target, target_id=target_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class UnreadView(APIView):
-    permission_classes = [IsCrewMember]
-
-    @extend_schema(responses=UnreadOut, operation_id="comments_unread")
-    def get(self, request: Request) -> Response:
-        """How many of the others' comments you have not seen, for the Crew tab's badge."""
-        return Response(UnreadOut({"count": selectors.unread_count(member=_member(request))}).data)
 
 
 class ImagesView(APIView):

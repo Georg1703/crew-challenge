@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.journal",
     "apps.reactions",
     "apps.comments",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -197,6 +198,14 @@ MEDIACONVERT_ROLE_ARN = env("MEDIACONVERT_ROLE_ARN", default="")
 MEDIA_CDN_DOMAIN = env("MEDIA_CDN_DOMAIN", default="")
 CLOUDFRONT_KEY_PAIR_ID = env("CLOUDFRONT_KEY_PAIR_ID", default="")
 CLOUDFRONT_PRIVATE_KEY_PATH = env("CLOUDFRONT_PRIVATE_KEY_PATH", default="")
+
+# --- Web Push -------------------------------------------------------------------------------
+# "webpush" wherever the VAPID keys are set (`manage.py vapid_keys` makes a pair), "memory" in
+# tests, "off" otherwise: no push, the Me switch hides (see integrations/push).
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_SUBJECT = env("VAPID_SUBJECT", default="mailto:owner@example.com")
+PUSH_BACKEND = env("PUSH_BACKEND", default="webpush" if VAPID_PRIVATE_KEY else "off")
 
 # --- Logging --------------------------------------------------------------------------------
 LOGGING = {

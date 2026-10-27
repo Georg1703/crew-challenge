@@ -51,7 +51,7 @@ src/
 |   `-- lib/                # cx, date formatting in the crew's time zone
 |-- design/                 # /design page (development only) and token tests
 |-- test/                   # setup, renderRoutes/renderScreen, ok()/fail(), fixtures
-|-- pwa/                    # platform.ts, installPrompt.ts, usePwaUpdate.ts, InstallCard, IosInstallGuide, UpdateBanner
+|-- pwa/                    # platform.ts, installPrompt.ts, usePwaUpdate.ts, sw.ts (the service worker), InstallCard, IosInstallGuide, UpdateBanner
 |-- i18n/                   # index.ts, ro.json, en.json
 `-- styles/                 # tokens.css, global.css
 ```
@@ -109,15 +109,24 @@ prefers reduced motion. One signature animation per screen; everything else stay
 - `registerType: 'prompt'`: `usePwaUpdate` registers the service worker, checks for a new version
   every hour and when the app comes back to the foreground. `UpdateBanner` then shows
   "New version ready" with Update / Later. The app never reloads by itself.
-- Workbox precaches the built app shell (JS, CSS, HTML, icons) and serves `index.html` for
-  navigations, so the app opens offline. `/api/*`, `/admin*` and `/static/*` are excluded from the
-  navigation fallback and nothing is cached at runtime: API calls, S3 and CloudFront URLs are
-  network-only. Add `runtimeCaching` only for static assets such as Rive files.
+- The service worker is ours (`src/pwa/sw.ts`, built by `injectManifest`): Workbox precaches the
+  built app shell (JS, CSS, HTML, icons) and serves `index.html` for navigations, so the app
+  opens offline. `/api/*`, `/admin*` and `/static/*` are excluded from the navigation fallback
+  and nothing is cached at runtime: API calls, S3 and CloudFront URLs are network-only. Add a
+  runtime route only for static assets such as Rive files. It also shows push notifications as
+  the server sends them (`{title, body, url, tag}`) and opens `url` on a tap.
+- The service worker only exists in a production build: push can be tried with `make preview`
+  (HTTPS on a phone), never on the dev server.
 - Install: `captureInstallPrompt()` runs in `main.tsx` before React so Chrome's
   `beforeinstallprompt` is never missed. `InstallCard` shows our Install button on Android/desktop
   Chrome and the "Share -> Add to Home Screen" sheet (`IosInstallGuide`) on iOS Safari. It hides
   when the app already runs standalone. On Home it can be dismissed for 14 days; Me always shows it.
-- After v1: ask for push permission after the first check-in, never on first load.
+- Push (`features/notifications`): the Me screen has the switch (`PushToggle`); Today asks once
+  (`PushPrompt`) after the first check-in posted on the device, never on first load. The
+  subscription goes to `PUT /api/v1/push/subscriptions` and is sent again on every app start
+  (browsers renew endpoints). An iPhone in Safari gets the install guide instead: iOS pushes
+  only to the installed app. A link with `?crew=<id>` (a push) opens that crew first
+  (`RequireAuth`).
 - The server must send `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`
   so updates are seen (Caddy config).
 - Service worker behavior is checked by `e2e/pwa.spec.ts` against `vite preview` (production build):

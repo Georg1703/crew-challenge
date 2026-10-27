@@ -1,4 +1,4 @@
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
@@ -17,6 +17,10 @@ class Reaction(CrewScopedModel):
     target = GenericForeignKey("target_type", "target_id")
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="reactions")
     emoji = models.CharField(max_length=32)
+    # The news it made: taken back or replaced, the news goes with it.
+    notifications = GenericRelation(
+        "notifications.Notification", content_type_field="source_type", object_id_field="source_id"
+    )
 
     class Meta:
         ordering = ("created_at",)
