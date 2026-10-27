@@ -161,6 +161,18 @@ describe("push switch", () => {
   });
 });
 
+describe("push switch on an iPhone in Safari", () => {
+  it("shows the install hint instead of a switch (Safari has no PushManager)", async () => {
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1",
+    );
+    mockGets({ unread: 0, results: [] });
+    renderScreen(<PushToggle />);
+    expect(await screen.findByText(/Install the app on your Home Screen/)).toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+});
+
 describe("push prompt", () => {
   it("waits for a check-in on this device, then offers once and goes away for two weeks", async () => {
     fakeBrowser();

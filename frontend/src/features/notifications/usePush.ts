@@ -36,19 +36,21 @@ export function usePush() {
     };
   }, [supported]);
 
-  const state: PushState = !pushSupported()
-    ? "unavailable"
-    : platform.ios && !platform.standalone
+  // An iPhone in Safari has no PushManager at all: say "install" before "unavailable".
+  const state: PushState =
+    platform.ios && !platform.standalone
       ? "install"
-      : key.isPending || subscribed === null
-        ? "unknown"
-        : !key.data
-          ? "unavailable"
-          : pushPermission() === "denied"
-            ? "denied"
-            : subscribed
-              ? "on"
-              : "off";
+      : !pushSupported()
+        ? "unavailable"
+        : key.isPending || subscribed === null
+          ? "unknown"
+          : !key.data
+            ? "unavailable"
+            : pushPermission() === "denied"
+              ? "denied"
+              : subscribed
+                ? "on"
+                : "off";
 
   const enable = async () => {
     setFailed(false);
