@@ -54,7 +54,12 @@ export function SpinFeedCard({
     : undefined;
   return (
     <FeedCard
-      person={{ id: member.id, name: who, seed: member.avatar_seed }}
+      person={{
+        id: member.id,
+        name: who,
+        seed: member.avatar_seed,
+        to: `/crew/members/${member.id}`,
+      }}
       text={t(drawn ? "doom.feed.drew" : "doom.feed.served", { name: who })}
       challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
       time={time}

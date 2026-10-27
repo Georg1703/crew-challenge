@@ -28,6 +28,17 @@
   gap: var(--space-3);
 }
 
+.person {
+  display: inline-flex;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
+.person:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
 .who {
   display: flex;
   flex: 1;

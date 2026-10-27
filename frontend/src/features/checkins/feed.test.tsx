@@ -212,6 +212,10 @@ describe("the crew journal", () => {
     showFeed([walked, read]);
 
     expect(await screen.findByText("Bogdan checked in")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Bogdan" })[0]).toHaveAttribute(
+      "href",
+      `/crew/members/${bogdan.id}`,
+    ); // the avatar opens their page, as the crew row does
     expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(2);
     expect(screen.getByText("3 check-ins, 5 proofs")).toBeInTheDocument();
     expect(screen.getByText("Streak 4")).toBeInTheDocument();

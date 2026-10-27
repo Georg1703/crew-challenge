@@ -35,7 +35,12 @@ export function FailedFeedCard({
   const { t, i18n } = useTranslation();
   return (
     <FeedCard
-      person={{ id: member.id, name: member.display_name, seed: member.avatar_seed }}
+      person={{
+        id: member.id,
+        name: member.display_name,
+        seed: member.avatar_seed,
+        to: `/crew/members/${member.id}`,
+      }}
       text={t("doom.feed.failed", { name: member.display_name })}
       challenge={{ icon: CHALLENGE_ICONS[challenge.icon], label: challenge.title }}
       time={time}

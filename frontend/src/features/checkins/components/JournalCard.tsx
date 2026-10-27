@@ -16,6 +16,7 @@ const person = (member: Person) => ({
   id: member.id,
   name: member.display_name,
   seed: member.avatar_seed,
+  to: `/crew/members/${member.id}`,
 });
 
 /**

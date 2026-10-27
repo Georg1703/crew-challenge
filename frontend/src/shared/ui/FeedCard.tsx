@@ -10,7 +10,8 @@ import { Icon, type IconName } from "./Icon";
 import { ProgressBar } from "./ProgressBar";
 import { ProofMosaic, type FeedProof } from "./ProofMosaic";
 
-type Person = { id: string; name: string; seed: string };
+/** `to`: the avatar links to their page (the crew row does the same). */
+type Person = { id: string; name: string; seed: string; to?: string };
 
 /**
  * One moment in the crew's journal, as a card of its own. The header says who (one avatar with
@@ -84,7 +85,14 @@ export function FeedCard({
         {people ? (
           <AvatarStack members={people.members} label={people.label} />
         ) : (
-          person && <Avatar name={person.name} seed={person.seed} ring={ring} />
+          person &&
+          (person.to ? (
+            <Link to={person.to} className={styles.person} aria-label={person.name}>
+              <Avatar name={person.name} seed={person.seed} ring={ring} />
+            </Link>
+          ) : (
+            <Avatar name={person.name} seed={person.seed} ring={ring} />
+          ))
         )}
         <div className={styles.who}>
           <p className={styles.text}>{text}</p>
