@@ -97,9 +97,11 @@ def add(
 
 
 def _tell(comment: Comment, found: Any, parent: Comment | None) -> None:
-    """News: the target's owner and everyone else who commented on it hear of a comment; the
-    writer of the comment answered hears of a reply instead (one line each)."""
+    """News: whoever the text mentions hears of a mention; the target's owner and everyone else
+    who commented on it hear of a comment; the writer of the comment answered hears of a reply
+    instead (one line each: the first that applies)."""
     facts = {"text": comment.text}
+    notifications.mention(actor=comment.member, source=comment, target=found, text=comment.text)
     answered = parent.member_id if parent is not None else None
     notifications.notify(
         kind=notifications.Notification.Kind.REPLY,

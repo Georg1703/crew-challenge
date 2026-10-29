@@ -9,6 +9,9 @@
     },
     "reply": {
       "*": "{actor} ți-a răspuns: {text}"
+    },
+    "mention": {
+      "*": "{actor} te-a menționat: {text}"
     }
   },
   "en": {
@@ -21,6 +24,9 @@
     },
     "reply": {
       "*": "{actor} answered you: {text}"
+    },
+    "mention": {
+      "*": "{actor} mentioned you: {text}"
     }
   }
 }

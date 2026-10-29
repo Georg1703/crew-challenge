@@ -8,7 +8,7 @@ from apps.comments import services as comments
 from apps.core import clock
 from apps.crews import targets
 from apps.crews.models import Member
-from apps.notifications import selectors, services
+from apps.notifications import selectors, services, texts
 from apps.notifications.models import Notification, PushSubscription
 from apps.reactions import services as reactions
 from tests.factories import AdminFactory, MemberFactory
@@ -125,6 +125,36 @@ def test_a_reply_is_one_line_to_the_writer_answered_and_a_comment_to_the_rest(pe
     assert news(ana)[0] == (Kind.REPLY, "Bogdan", {"text": "Pentru tine", "on": "person"})
     assert Notification.objects.filter(recipient=ana).count() == 3
     assert news(cristina)[0] == (Kind.COMMENT, "Bogdan", {"text": "Pentru tine", "on": "person"})
+
+
+def test_a_mention_is_its_own_line_whoever_else_would_have_heard(people):
+    ana, bogdan, cristina = people
+    say(bogdan, ana, "@Ana @cristina uite")  # the owner and a bystander: both mentioned
+    text = {"text": "@Ana @cristina uite", "on": "person"}
+    assert news(ana) == [(Kind.MENTION, "Bogdan", text)]
+    assert news(cristina) == [(Kind.MENTION, "Bogdan", text)]
+    say(ana, ana, "@Bogdan mersi")  # he commented: a mention instead of a comment; she is not news
+    assert news(bogdan) == [(Kind.MENTION, "Ana", {"text": "@Bogdan mersi", "on": "person"})]
+    assert Notification.objects.filter(recipient__in=[ana, cristina]).count() == 2
+
+
+def test_all_reaches_everyone_who_sees_the_target_but_the_writer(people):
+    ana, bogdan, cristina = people
+    targets.register(  # Cristina sees nobody's page
+        targets.Target(
+            key="person",
+            model=Member,
+            visible=lambda m: Member.objects.none() if m == cristina else _crewmates(m),
+            comments=True,
+            owner="pk",
+        )
+    )
+    say(bogdan, ana, "@all la treaba")
+    assert news(ana) == [(Kind.MENTION, "Bogdan", {"text": "@all la treaba", "on": "person"})]
+    assert (news(bogdan), news(cristina)) == ([], [])
+    assert texts.line(language="ro", kind=Kind.MENTION, actor="Bogdan", facts=news(ana)[0][2]) == (
+        f"Bogdan te-a men{T}ionat: @all la treaba"
+    )
 
 
 def test_a_deleted_comment_takes_its_news_with_it(people):

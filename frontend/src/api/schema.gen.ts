@@ -1424,9 +1424,10 @@ export interface components {
          * @description * `reaction` - Reacted to something of yours
          *     * `comment` - Commented on a card of yours, or one you commented on
          *     * `reply` - Answered your comment
+         *     * `mention` - Mentioned you (@Name or @all) in a comment
          * @enum {string}
          */
-        NotificationOutKindEnum: "reaction" | "comment" | "reply";
+        NotificationOutKindEnum: "reaction" | "comment" | "reply" | "mention";
         /** @enum {unknown} */
         NullEnum: null;
         OwedOut: {

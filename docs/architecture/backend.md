@@ -142,14 +142,18 @@ oldest first (`GET /api/v1/comments/{target}/{id}`). A `CommentRead` row per mem
 keeps when they last saw it: the others' comments after it (and after they joined) are unread.
 
 **Notifications (`apps/notifications`).** News for a member: someone reacted to, commented on
-or answered something of theirs. Any app calls `notify(kind, actor, source, target,
-recipients, facts)`: `source` is the row that caused it (the reaction, the comment; both
+or answered something of theirs, or mentioned them. Any app calls `notify(kind, actor, source,
+target, recipients, facts)`: `source` is the row that caused it (the reaction, the comment; both
 declare a `GenericRelation` so a reaction taken back takes its news with it; a soft-deleted
 comment calls `retract`), `target` the registered target it sits on (the news points at its
 `page`), `facts` what is frozen (the emoji, the comment's first 80 characters). One row per
 person per source; never the actor. `GET /api/v1/notifications` (latest first, with the unread
 count: the Crew tab's badge), `PUT /api/v1/notifications/read` (all of it); opening a card
 (`comments.mark_read`) reads the news shown there. A nightly job drops rows older than 90 days.
+`mention(actor, source, target, text)` is `notify` for whoever `text` points at with `@Name`
+(`crews/mentions.py` resolves names against the crew's members; `@all` is everyone), kept to
+those who may see the target; comments call it first, so a mentioned owner gets one `mention`
+line, not a `comment` one (`docs/plans/mentions.md`).
 Each new row goes out by Web Push on commit (`tasks.push` -> `services.send_push`): one line
 in the recipient's language (`texts.py`) to each of their `PushSubscription` devices, through
 `integrations/push`; a device the push service lost is dropped. `PUSH_BACKEND` is `webpush`

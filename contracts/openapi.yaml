@@ -2515,11 +2515,13 @@ components:
       - reaction
       - comment
       - reply
+      - mention
       type: string
       description: |-
         * `reaction` - Reacted to something of yours
         * `comment` - Commented on a card of yours, or one you commented on
         * `reply` - Answered your comment
+        * `mention` - Mentioned you (@Name or @all) in a comment
     NullEnum:
       enum:
       - null

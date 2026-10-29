@@ -28,6 +28,7 @@ class Notification(CrewScopedModel):
         REACTION = "reaction", "Reacted to something of yours"
         COMMENT = "comment", "Commented on a card of yours, or one you commented on"
         REPLY = "reply", "Answered your comment"
+        MENTION = "mention", "Mentioned you (@Name or @all) in a comment"
 
     recipient = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="notifications")
     actor = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="+")

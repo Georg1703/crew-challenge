@@ -9,7 +9,7 @@ from django.db import transaction
 
 from apps.accounts.models import User
 from apps.core import clock
-from apps.crews import targets
+from apps.crews import mentions, targets
 from apps.crews.models import Member
 
 from . import tasks, texts
@@ -59,6 +59,25 @@ def notify(
                 rows.append(row)
                 transaction.on_commit(partial(tasks.push.delay, str(row.pk)))
     return rows
+
+
+def mention(*, actor: Member, source: Any, target: Any, text: str) -> list[Notification]:
+    """News to everyone `text` points at with `@Name`, or to the whole crew with `@all`, as
+    long as they may see `target`: a line of its own kind, posted before the comment's or the
+    reply's so that it is the one the person gets (one row per person per source)."""
+    found = mentions.find(text, crew_id=actor.crew_id)
+    people = Member.objects.filter(crew_id=actor.crew_id) if found.everyone else found.members
+    sees = targets.of(target).visible
+    # ponytail: one query per person; a crew is a handful of people.
+    recipients = [m.pk for m in people if sees(m).filter(pk=target.pk).exists()]
+    return notify(
+        kind=Notification.Kind.MENTION,
+        actor=actor,
+        source=source,
+        target=target,
+        recipients=recipients,
+        facts={"text": text},
+    )
 
 
 def retract(*, source: Any) -> None:
