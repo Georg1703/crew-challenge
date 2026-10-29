@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Outlet, useLocation, useSearchParams } from "react-router";
 
@@ -10,12 +10,14 @@ import styles from "./app.module.css";
 
 /**
  * Routes below need a session. Applies the user's saved language once they are known. A link
- * with `?crew=<id>` (a push notification) opens that crew first when it is another of theirs.
+ * with `?crew=<id>` (a push notification) opens that crew first when it is another of theirs:
+ * once per link, and the URL stays as it is, so the page still counts as the first one opened
+ * (back from it leads to the crew, not into an empty history).
  */
 export function RequireAuth() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const me = useMe();
   const openCrew = useOpenCrew();
   const preferred = me.data?.user.preferred_language;
@@ -28,12 +30,12 @@ export function RequireAuth() {
   }, [preferred, i18n]);
 
   const open = openCrew.mutate;
+  const opened = useRef<string | null>(null);
   useEffect(() => {
-    if (!wanted || !me.data) return;
+    if (!wanted || !me.data || opened.current === wanted) return;
+    opened.current = wanted;
     if (wanted !== current && mine) open(wanted);
-    params.delete("crew");
-    setParams(params, { replace: true });
-  }, [wanted, current, mine, me.data, open, params, setParams]);
+  }, [wanted, current, mine, me.data, open]);
 
   if (me.isPending) {
     return (

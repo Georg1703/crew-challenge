@@ -3,8 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/api";
-import { ok, renderScreen } from "@/test/render";
+import { ok, renderRoutes, renderScreen } from "@/test/render";
 import { ana, bogdan, crewDetail, meAs } from "@/test/fixtures";
+
+import { RequireAuth } from "@/app/RequireAuth";
+import { CardRoute } from "@/features/crew";
 
 import { NewsRoute, PushPrompt, PushToggle } from ".";
 import { noteCheckIn, toKey } from "./push";
@@ -110,6 +113,61 @@ afterEach(() => {
   delete (navigator as any).serviceWorker;
   vi.unstubAllGlobals();
   localStorage.clear();
+});
+
+describe("a pushed link", () => {
+  it("opens the card in its crew, and back from it leads to the crew page", async () => {
+    vi.spyOn(api, "GET").mockImplementation(((path: string) => {
+      if (path === "/api/v1/me") return ok(meAs(ana));
+      if (path === "/api/v1/notifications") return ok({ unread: 0, results: [] });
+      if (path === "/api/v1/comments/{target}/{target_id}") return ok({ results: [], drafts: [] });
+      if (path === "/api/v1/journal/{entry_id}") {
+        return ok({
+          id: CARD,
+          kind: "check_in",
+          at: "2026-11-10T08:30:00Z",
+          day: "2026-11-10",
+          member: bogdan,
+          challenge: { id: "walk", title: "Walk", icon: "walk", measure: "check", unit: "" },
+          proofs: [],
+          reactions: { groups: [], mine: null },
+          comments: { count: 0, member_ids: [], unread: 0 },
+          check_in: {
+            action: "check",
+            amount: null,
+            total: null,
+            target: null,
+            streak: 4,
+            milestone: null,
+            proofs: 0,
+            note: null,
+          },
+          failed: null,
+          spin: null,
+          served: null,
+          crew_day: null,
+        });
+      }
+      return ok(crewDetail);
+    }) as never);
+    vi.spyOn(api, "PUT").mockImplementation((() => ok(undefined, 204)) as never);
+    renderRoutes(
+      [
+        {
+          element: <RequireAuth />,
+          children: [
+            { path: "/crew/cards/:id", element: <CardRoute /> },
+            { path: "/crew", element: <p>crew page</p> },
+          ],
+        },
+      ],
+      { at: `/crew/cards/${CARD}?crew=${crewDetail.id}` },
+    );
+
+    expect(await screen.findByText("Walk")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Back to the crew" }));
+    expect(await screen.findByText("crew page")).toBeInTheDocument();
+  });
 });
 
 describe("push switch", () => {
