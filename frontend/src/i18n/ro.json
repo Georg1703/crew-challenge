@@ -891,7 +891,12 @@
     "reactionEntry": "a reacționat cu {{emoji}} la postarea ta",
     "reactionComment": "a reacționat cu {{emoji}} la comentariul tău",
     "comment": "a comentat",
-    "reply": "ți-a răspuns"
+    "reply": "ți-a răspuns",
+    "mention": "te-a menționat"
+  },
+  "mentions": {
+    "everyone": "Toată lumea",
+    "label": "Menționează pe cineva"
   },
   "push": {
     "title": "Notificări",

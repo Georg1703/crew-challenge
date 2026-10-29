@@ -1,0 +1,12 @@
+/* A mention inline with the text: a soft accent chip, no underline. */
+.chip {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.chip:is(a):hover {
+  color: var(--color-accent-pressed);
+}

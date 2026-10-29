@@ -33,6 +33,8 @@ import {
   IconTile,
   List,
   ListRow,
+  MentionMenu,
+  MentionText,
   OptionList,
   ProgressBar,
   ProgressRing,
@@ -1032,6 +1034,17 @@ function CommentsDemo() {
           flash
         />
         <CommentBubble
+          name="Cristina"
+          seed="cristina"
+          time="08:24"
+          text={
+            <MentionText
+              text="@Dan @all see you at 7"
+              people={[{ id: "dan", display_name: "Dan" }]}
+            />
+          }
+        />
+        <CommentBubble
           name="Ana"
           seed="ana"
           time="08:25"
@@ -1062,6 +1075,14 @@ function CommentsDemo() {
         />
       </div>
       <Quote name="Ana" seed="ana" text="Same route tomorrow? I want that view too." />
+      <MentionMenu
+        label="Mention someone"
+        options={[
+          { id: "all", name: "Everyone", insert: "all" },
+          { id: "dan", name: "Dan", seed: "dan" },
+        ]}
+        onPick={(option) => setText(`${text}@${option.insert ?? option.name} `)}
+      />
       <Composer
         value={text}
         onChange={setText}

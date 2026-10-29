@@ -891,7 +891,12 @@
     "reactionEntry": "reacted with {{emoji}} to your post",
     "reactionComment": "reacted with {{emoji}} to your comment",
     "comment": "commented",
-    "reply": "answered you"
+    "reply": "answered you",
+    "mention": "mentioned you"
+  },
+  "mentions": {
+    "everyone": "Everyone",
+    "label": "Mention someone"
   },
   "push": {
     "title": "Notifications",

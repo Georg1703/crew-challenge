@@ -29,6 +29,13 @@ export function newsLink(item: Notification): string {
  * News: who reacted to, commented on or answered what is yours, latest first. Opening the page
  * marks it all read (the badge clears); a line keeps its mark until the next refresh.
  */
+// What each kind says after the actor's name; reactions say their emoji instead.
+const LINES: Partial<Record<Notification["kind"], string>> = {
+  comment: "news.comment",
+  reply: "news.reply",
+  mention: "news.mention",
+};
+
 export function NewsRoute() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -47,7 +54,7 @@ export function NewsRoute() {
       const key = facts.on === "comment" ? "news.reactionComment" : "news.reactionEntry";
       return t(key, { emoji: facts.emoji ?? "" });
     }
-    return t(kind === "reply" ? "news.reply" : "news.comment");
+    return t(LINES[kind] ?? "news.comment");
   };
 
   return (

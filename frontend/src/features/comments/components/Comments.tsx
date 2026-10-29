@@ -23,11 +23,14 @@ import {
   Composer,
   EmojiPicker,
   Icon,
+  MentionMenu,
+  MentionText,
   ProofMosaic,
   ProofViewer,
   Sheet,
   Skeleton,
   StatusPill,
+  useMentions,
   useToast,
   type MenuAction,
   type ViewerItem,
@@ -96,6 +99,15 @@ export function Comments({
   const pick = useProofUpload(subject, () => thread.refetch());
   const texts = useMemo(() => pickerTexts(t), [t]);
   const byId = useMemo(() => new Map(people.map((m) => [m.id, m])), [people]);
+  const mentions = useMentions({
+    value: text,
+    onChange: setText,
+    box,
+    people,
+    me,
+    everyone: t("mentions.everyone"),
+    maxLength: MAX_LENGTH,
+  });
   const behavior: ScrollBehavior = still ? "auto" : "smooth";
 
   const list = thread.data?.results ?? [];
@@ -287,15 +299,22 @@ export function Comments({
           attached={ready}
           waiting={uploading}
           above={
-            (drafts.length > 0 || uploading) && (
-              <ProofTiles
-                subject={subject}
-                title={t("comments.yourPhotos")}
-                proofs={drafts}
-                onChanged={() => thread.refetch()}
-                add={false}
+            <>
+              <MentionMenu
+                options={mentions.options}
+                label={t("mentions.label")}
+                onPick={mentions.pick}
               />
-            )
+              {(drafts.length > 0 || uploading) && (
+                <ProofTiles
+                  subject={subject}
+                  title={t("comments.yourPhotos")}
+                  proofs={drafts}
+                  onChanged={() => thread.refetch()}
+                  add={false}
+                />
+              )}
+            </>
           }
         />
       </div>
@@ -376,7 +395,7 @@ function Message({
       name={name}
       seed={seed}
       time={time}
-      text={comment.text}
+      text={<MentionText text={comment.text} people={people} />}
       mine={mine}
       first={first}
       last={last}

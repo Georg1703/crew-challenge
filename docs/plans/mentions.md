@@ -1,7 +1,9 @@
 # Plan: mentions (@name in what people write)
 
-Status: agreed (2026-10-29), on `feat/mentions`: comments only, mentions drawn as chips, `@all`
-for the whole crew. Two stages, each its own commit after the owner's approval. Builds on `docs/plans/notifications.md` (news and push) and
+Status: built on `feat/mentions` (2026-10-29): comments only, mentions drawn as chips, `@all`
+for the whole crew. Stage 1 (backend) and stage 2 (frontend) each one commit. One change on
+the way: the menu rows and the pick live in `useMentions` (`shared/ui`), the `MentionMenu` is
+the rows alone, so the design page can show it still. Builds on `docs/plans/notifications.md` (news and push) and
 `docs/plans/comments.md`.
 
 ## Goal

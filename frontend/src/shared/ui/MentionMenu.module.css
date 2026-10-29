@@ -1,0 +1,14 @@
+.menu {
+  margin-bottom: var(--space-2);
+}
+
+.everyone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}

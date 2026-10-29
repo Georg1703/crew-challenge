@@ -16,7 +16,12 @@ const CARD = "44444444-4444-4444-4444-444444444444";
 const KEY =
   "BFYn-HSS6-6d-1NENPow1Nw0yFvzJjoeKYeHOkXCq7CJYgOt82ACVhl_fnUir8Ildl7qUBussQQHPbkjoSm0LgA";
 
-const line = (id: string, kind: "reaction" | "comment" | "reply", facts: object, read = false) => ({
+const line = (
+  id: string,
+  kind: "reaction" | "comment" | "reply" | "mention",
+  facts: object,
+  read = false,
+) => ({
   id,
   kind,
   actor: bogdan,
@@ -167,6 +172,17 @@ describe("a pushed link", () => {
     expect(await screen.findByText("Walk")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Back to the crew" }));
     expect(await screen.findByText("crew page")).toBeInTheDocument();
+  });
+});
+
+describe("a mention in the news", () => {
+  it("says who mentioned me and where", async () => {
+    mockGets({ unread: 1, results: [line("n1", "mention", { on: "entry", text: "@Ana vezi" })] });
+    vi.spyOn(api, "PUT").mockImplementation((() => ok(undefined, 204)) as never);
+    renderScreen(<NewsRoute />);
+    const row = await screen.findByRole("link", { name: /mentioned you/ });
+    expect(row).toHaveTextContent("Bogdan mentioned you");
+    expect(row).toHaveAttribute("href", `/crew/cards/${CARD}`);
   });
 });
 

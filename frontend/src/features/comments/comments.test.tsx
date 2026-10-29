@@ -100,6 +100,26 @@ async function closeMenu() {
 }
 
 describe("Comments", () => {
+  it("offers the crew after an @ and draws a mention as a chip", async () => {
+    serve([say("a", "@Ana @all look")]);
+    show();
+    const chip = await screen.findByRole("link", { name: "@Ana" });
+    expect(chip).toHaveAttribute("href", `/crew/members/${ana.id}`);
+    expect(screen.getByText("@all")).toBeInTheDocument();
+
+    const field = screen.getByLabelText("Comment");
+    await userEvent.type(field, "hi @");
+    const menu = screen.getByRole("group", { name: "Mention someone" });
+    expect(within(menu).getByRole("button", { name: "Everyone" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: /Bogdan/ })).toBeInTheDocument();
+    expect(within(menu).getAllByRole("button")).toHaveLength(2); // not me
+    await userEvent.type(field, "b");
+    expect(within(menu).queryByRole("button", { name: "Everyone" })).not.toBeInTheDocument();
+    await userEvent.click(within(menu).getByRole("button", { name: /Bogdan/ }));
+    expect(field).toHaveValue("hi @Bogdan ");
+    expect(screen.queryByRole("group", { name: "Mention someone" })).not.toBeInTheDocument();
+  });
+
   it("draws a chat: a writer's name once per run, mine without it, a reply with its quote", async () => {
     serve([
       say("a", "Bravo!"),

@@ -36,7 +36,8 @@ export function CommentBubble({
   seed: string;
   /** "08:23", formatted by the caller. */
   time: string;
-  text: string;
+  /** The text, or it rendered with its mentions (`MentionText`). */
+  text: ReactNode;
   mine?: boolean;
   /** The first of a run of one writer's messages: shows their name. */
   first?: boolean;
